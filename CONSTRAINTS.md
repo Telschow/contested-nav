@@ -4,7 +4,7 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: 405 tests collected — 403 passing, 2 skipped — and 84.75% line
+Last measured: 484 tests collected — 482 passing, 2 skipped — and 85.09% line
 coverage (`python -m pytest`, `python scripts/coverage_report.py`). The two
 skips are the TUM VI reference checks in `tests/test_trajectory_io.py`, which
 need ground truth that is deliberately not vendored (S2); they are skips, not
@@ -65,26 +65,28 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | 405 | `pytest` |
-| Tests passing | 300 | 403 (2 skipped, see below) | `pytest -rs` |
-| Line coverage | 75% | 84.75% | `scripts/coverage_report.py` |
+| Tests collected | 405 | 484 | `pytest` |
+| Tests passing | 300 | 482 (2 skipped, see below) | `pytest -rs` |
+| Line coverage | 75% | 85.09% | `scripts/coverage_report.py` |
 | `io/trajectory.py` coverage | 85% | 90.8% | as above |
 | `analysis/findings.py` coverage | 80% | 97.6% | as above |
 | `config.py` coverage | 80% | 98.4% | as above |
 | `eval/metrics.py` coverage | 60% | 85.6% | as above |
 | `eval/thresholds.py` coverage | 60% | 96.4% | as above |
 | `geometry/align.py` coverage | 60% | 76.6% | as above |
-| `estimators/eskf.py` coverage | 80% | 91.9% | as above |
+| `estimators/eskf.py` coverage | 80% | 90.1% | as above |
+| `fdir/gating.py` coverage | 70% | 87.0% | as above |
+| `fdir/fdir_manager.py` coverage | 70% | 90.2% | as above |
 | `degrade/` coverage | 50% | 78.8% / 73.5% | as above |
-| Docs | README + architecture + calibration + ADR-0001..0004 | 6 of 6 | manual |
+| Docs | README + architecture + calibration + ADR-0001..0005 | 7 of 7 | manual |
 | Documented tables match the generated benchmark | exact | yes | `scripts/check_doc_tables.py` |
 | Open blockers documented | all | see ROADMAP | manual |
 
 ## Known blockers
 
-- **B1 — Visual fusion is overconfident under GNSS denial.** Mean NEES 1051
-  over a 15 s outage (`outage_visual`), with 16.0% of epochs inside 2 sigma
-  against 99.2% expected. A single anchor cannot represent correlated visual
+- **B1 — Visual fusion is overconfident under GNSS denial.** Mean NEES
+  1996.5 over a 15 s outage (`outage_visual`), with 16.0% of epochs inside
+  2 sigma against 99.2% expected. A single anchor cannot represent correlated visual
   drift. Requires a pose graph. Pinned by
   `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`. B2 did not
   change this number: correcting a frame is not the same as modelling
@@ -104,6 +106,29 @@ These are floors, not goals. Each must not regress; raising one is welcome.
   Plotly ground truth and the ATE figure is not a verified reproduction of the
   published 0.069 m. The claim is typed accordingly. This is also why two tests
   skip when the data is absent.
+
+- **B5 — The FDIR gate's premise does not hold in the configurations this
+  project exists to study.** A chi-square test on the innovation assumes a
+  calibrated `S = H P Hᵀ + R`. When the position covariance has collapsed
+  (ADR-0001) `S` is far too small, so the gate rejects *healthy* measurements
+  systematically rather than at the stated `alpha`.
+
+  Measured, not estimated: in `outage_visual` the GNSS fixes that return at
+  `t = 20 s` after the 15 s denial are metres from a filter that believes it
+  knows its position to centimetres, and FDIR rejects 51 of the 75 available.
+  The case degrades from 3.428 m to 5.059 m, and `outage_visual_degraded_camera`
+  from 2.545 m to 3.339 m. The false-alarm rate of 0/1212 quoted for `alpha =
+  0.001` is measured on a *calibrated* filter and does not transfer.
+
+  This is a cost, accepted rather than hidden, and it is why the numbers in
+  the docs tables are the degraded ones. Pinned by
+  `test_fdir_throws_away_the_absolute_fixes_that_would_rescue_a_displaced_filter`,
+  which asserts the direction it happened. The fix is an
+  innovation-consistency monitor that detects the under-estimated `S` and
+  widens the gate when the chi-square premise is void; tracked in `ROADMAP.md`
+  Track A. It is deliberately not implemented here: a consistency monitor that
+  also responds to a genuine spoof has to be told the two apart, and that
+  distinction is a larger design question than the gate itself.
 
 ## Resolved engineering blockers
 

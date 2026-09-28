@@ -36,7 +36,7 @@ reference does not grow with the size of the state vector.
 | far below | underconfident — claims less certainty than it has |
 
 The number to be suspicious of is the gap, not the value. The generated
-`outage_visual` case reports a mean NEES of 1051 against a nominal 3. That is
+`outage_visual` case reports a mean NEES of 1996.5 against a nominal 3. That is
 not a filter that is slightly miscalibrated; it is a filter that is wrong by
 two orders of magnitude.
 

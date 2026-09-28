@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: 405 tests collected, 403 passing, 2 skipped; 84.75% line
+Measured baseline: 484 tests collected, 482 passing, 2 skipped; 85.09% line
 coverage (`python -m pytest`, `python scripts/coverage_report.py`). Every number
 below re-measures against that, not against a remembered value.
 
@@ -121,10 +121,11 @@ previously produced by ad-hoc scripts that were not in the repository.
 - [x] `CONSTRAINTS.md`, `ROADMAP.md`.
 - [x] ADR-0001 (21-state anchor), ADR-0002 (Joseph covariance form), ADR-0003
       (defer the pose graph, ship visual disabled), ADR-0004 (internal
-      quaternion order).
+      quaternion order), ADR-0005 (chi-square FDIR, and the measured cost of
+      it).
 - [x] `docs/architecture.md`, `docs/calibration.md`, `docs/index.html`.
 - [x] GNSS-denial overconfidence framed explicitly as the headline *negative*
-      result rather than a caveat: mean NEES 1051 against an expected 3, 16.0%
+      result rather than a caveat: mean NEES 1996.5 against an expected 3, 16.0%
       coverage against 99.2% expected, `vision_enabled = False` shipped as the
       default, and the failure pinned by
       `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`.
@@ -146,26 +147,47 @@ headline number, and understand the limitation without asking a question.
 Three tracks. The first two are engineering against the measured defect; the
 third is the documentation a programme needs and does not currently have.
 
-### Track A — FDIR module `[ ]`
+### Track A — FDIR module `[~]`
 
 Today a degraded measurement is only visible after the fact, as a NEES number
 that has already been wrong. This track moves detection forward.
 
-- [ ] Innovation-based chi-square gating on the GNSS and visual innovations,
-      using the quantiles already implemented in `eval/statistics.py`. The
-      machinery exists; the gate does not.
+- [x] Innovation-based chi-square gating on the GNSS and visual innovations,
+      without a SciPy dependency. ADR-0005; `fdir/gating.py` holds the
+      thresholds, tabulated for the dof a navigation filter produces and exact
+      or Wilson-Hilferty beyond. 87.0% covered, table checked against
+      `eval/statistics.py` rather than against itself.
+- [x] Per-channel fault state, exclusion after `max_consecutive_rejections`
+      consecutive rejections, and recovery after `auto_recovery_count`
+      consecutive accepted updates. Transitions are logged, transients are
+      not. The two blocks of a relative-pose fix are gated separately, so a
+      broken translation cannot be vouched for by a healthy rotation.
+- [x] Explicit false-alarm trade. `alpha = 0.001`, because 0.99 confidence
+      means 1% of healthy updates are rejected by definition — measured here
+      at 13 of 1212. At 0.001 the same 1212 healthy fixes produce zero
+      rejections and the broken configuration is still detected. Pinned by
+      `test_a_clean_run_produces_zero_false_rejections` and its visual
+      equivalent; a gate that rejects everything fails only these.
+- [x] Exclusion rather than de-weighting. A rejected update returns before the
+      Kalman gain is formed, so `P^+ = P^-`. Inflating `R` to cover a bad
+      measurement is the failure ADR-0003 documents.
+- [!] Blocker B4, new: the gate's premise is a calibrated innovation
+      covariance, and this filter does not have one when the position
+      covariance has collapsed. In `outage_visual` FDIR rejects 51 of the 75
+      GNSS fixes that return after the denial and the case degrades from
+      3.428 m to 5.059 m. Pinned by
+      `test_fdir_throws_away_the_absolute_fixes_that_would_rescue_a_displaced_filter`.
+- [ ] An innovation-consistency monitor: detect that `S` is systematically
+      under-estimated and widen the gate when the chi-square premise is void.
+      This is the fix for B4 and it belongs in the same module, not in a
+      separate one — a gate that silently keeps its threshold while its
+      assumption has failed is worse than no gate.
 - [ ] Per-sensor detection of multipath (elevated innovation variance without
       a mean shift), spoofing (innovation consistent but GNSS-internally
       inconsistent, e.g. against the IMU-predicted position), and sensor
       degradation (bias drift in `db_g` / `db_a` beyond its declared prior).
-- [ ] Exclusion logic: a flagged sensor is de-weighted or removed rather than
-      allowed to keep inflating covariance. Removing it is the honest action;
-      inflating to cover it is the one this repository already documents as
-      wrong.
-- [ ] Decide the false-alarm trade explicitly. A gate that trips on a clean
-      scenario is not safety, it is a second failure mode. Target: zero false
-      trips on the `gnss_only` control, measured, with the detection delay on
-      each injected fault reported as a number.
+      Today the gate detects *implausibility*; it does not yet distinguish
+      which of those three causes produced it.
 - [ ] Extend `analysis/findings.py` so each detection is a typed claim with a
       measured detection rate and a measured false-alarm rate, not a
       demonstration that it fires once.
@@ -173,7 +195,9 @@ that has already been wrong. This track moves detection forward.
 **Exit test:** on the degraded scenarios in `degrade/`, detection rate above
 95% per fault type at a measured false-alarm rate of zero on the control, both
 numbers reproduced by `scripts/run_benchmark.py` and checked into the docs
-tables.
+tables. Currently one fault type (a sustained position step, on either GNSS or
+visual translation) is detected and isolated; the three causes behind it are
+not yet separated.
 
 ### Track B — Back-end optimisation: sliding-window pose graph `[ ]`
 
@@ -182,7 +206,7 @@ Everything in Milestone 1 makes the limitation reproducible and documented;
 this removes it.
 
 - [!] Blocker, unchanged: a single-anchor ESKF cannot represent correlated
-      visual drift. Mean NEES 1051 on `outage_visual`. Not attempted yet,
+      visual drift. Mean NEES 1996.5 on `outage_visual`. Not attempted yet,
       because a pose graph is a piece of engineering rather than a patch.
 - [ ] Decide the formulation: a factor graph over visual keyframes, a
       multi-anchor ESKF, or a loosely-coupled inertial/visual filter.
@@ -199,7 +223,7 @@ this removes it.
       destroy the evidence that the work mattered.
 
 **Exit test:** NEES below 10 with vision enabled and GNSS denied, coverage above
-90%, `vision_enabled = True` as the shipped default. Current value 1051.
+90%, `vision_enabled = True` as the shipped default. Current value 1996.5.
 
 ### Track C — TPM / PM deliverables `[ ]`
 

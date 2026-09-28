@@ -119,6 +119,62 @@ because the visual update had already collapsed the position covariance.
 That coupling was the diagnostic that exposed the original bug, so the
 counters are part of the public result, not debug output.
 
+### FDIR
+
+`fdir/` answers a question the residual gate cannot: not "is this update
+implausible" but "has this sensor stopped producing usable data". Every
+update is tested with a chi-square innovation gate before anything is
+applied.
+
+```
+        y, S = H P H^T + R
+                |
+                v
+        d_M^2 = y^T S^-1 y      via Cholesky; inf if S is not SPD
+                |                or is conditioned past 1e12
+                v
+        d_M^2 <= chi2_{1-alpha, m}?
+           /                    \
+         yes                    no
+          |                      |
+      ACCEPTED            consecutive_rejections += 1
+                                 |
+                    +------------+------------+
+                    |                         |
+              < max_consecutive        >= max_consecutive
+                    |                         |
+         REJECTED_TRANSIENT          REJECTED_PERSISTENT
+                                 -> SENSOR_FAULT: channel excluded
+                                              |
+                              consecutive_accepts >= auto_recovery_count
+                                              |
+                                    channel returns to ACCEPTED
+```
+
+A rejected update returns before the Kalman gain is formed: `P^+ = P^-`
+and the state is untouched. The alternative — inflating `R` until the
+innovation fits — is the failure ADR-0003 documents, where the filter ends
+up confidently wrong rather than merely uncertain.
+
+Three properties are load-bearing and each has a test named after it:
+
+- **The false-alarm rate is stated, not chosen.** `alpha = 0.001` is the
+  default, not the conventional 0.01, because 0.01 rejects 1% of healthy
+  updates *by definition* — measured here at 13 of 1212 healthy fixes. See
+  `gating.DEFAULT_CONFIDENCE`.
+- **Rotation and translation are gated separately.** They arrive as two
+  blocks of one transform, so a single `vision` channel would let the
+  healthy half vouch for the broken one. At a 10 m translation step the
+  translation channel faults and the rotation channel records nothing.
+- **A fault clears.** A channel excluded by a 20-frame step is not a dead
+  sensor. Recovery requires `auto_recovery_count` consecutive accepted
+  updates, and the counter for "updates actually used" stops crediting
+  whatever the gate refused.
+
+The premise is a *calibrated* innovation covariance, and this filter is
+not calibrated in exactly the configurations that matter — see the
+benchmark note below and blocker B4.
+
 ## Evaluation
 
 `eval/calibration.py` is the centre of the project.
@@ -158,3 +214,14 @@ not the trajectory.
 Visual fusion is overconfident under GNSS denial; see ADR-0003. `navkit`
 ships with `vision_enabled = False` for that reason. The fix is a pose graph
 over visual keyframes, tracked in `ROADMAP.md` stage 3.
+
+FDIR interacts with that limitation rather than being independent of it. In
+`outage_visual`, the 15 s denial ends with the filter displaced and holding a
+collapsed covariance, and FDIR rejects the returning GNSS fixes at
+`t = 20.8 s` onwards — 51 of them — because a gate that trusts a covariance
+of a few centimetres reads a healthy 3 m fix as an outlier. The filter then
+dead-reckons the last 9 s instead of snapping back. ATE 3.428 m without
+FDIR, 5.059 m with it. The gate is behaving as specified; the specification
+assumes calibration the filter does not have. Pinned by
+`test_fdir_throws_away_the_absolute_fixes_that_would_rescue_a_displaced_filter`
+and recorded as blocker B4.

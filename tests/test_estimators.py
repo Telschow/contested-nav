@@ -17,6 +17,7 @@ import pytest
 from navkit.degrade.config import Outage
 from navkit.degrade.inject import apply_gnss_outage
 from navkit.estimators.dead_reckoning import DeadReckoning
+from navkit.fdir import FdirConfig
 from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig
 from navkit.geometry.rigid import rot_exp, rot_log_batch
 from navkit.io.imu import ImuNoiseModel, apply_imu_noise
@@ -286,6 +287,7 @@ def _vision_benchmark_fixture(
     vision_enabled=True,
     seed=0,
     outage=None,
+    fdir_enabled=True,
 ):
     """Synthetic vision run used by the covariance-honesty tests.
 
@@ -293,6 +295,14 @@ def _vision_benchmark_fixture(
     benchmark noise model applied. Absolute numbers move by more than an order of
     magnitude between the two, so the tests below assert ratios and bounds
     rather than point values.
+
+    ``fdir_enabled`` exists for one caller. FDIR is default-on in the filter, and
+    it partially *masks* the self-confirmation defect these tests pin, because
+    isolating a GNSS channel whose covariance has collapsed throws away real
+    fixes that would otherwise pull the estimate back. The test that pins the
+    defect therefore turns FDIR off, so that it keeps measuring the defect rather
+    than the mitigation. ``test_fdir_isolates_a_channel_whose_covariance_has_
+    collapsed`` covers the interaction from the other side.
     """
     cfg = SyntheticConfig(duration_s=20.0, rate_hz=100.0)
     gt = synthetic_trajectory(cfg)
@@ -315,6 +325,7 @@ def _vision_benchmark_fixture(
             vision_keyframe_interval=interval,
             vision_anchor_modelled=anchor_modelled,
             vision_enabled=vision_enabled,
+            fdir_config=FdirConfig(enabled=fdir_enabled),
         )
     )
     result = filt.run(imu, gnss=gnss, vision=vision)
@@ -335,12 +346,34 @@ def test_relative_pose_fix_collapses_position_covariance_when_it_may_move_positi
     test_modelled_anchor_restores_calibration_and_gnss_availability.
     """
     result, final_error, claimed = _vision_benchmark_fixture(
-        use_gnss=True, interval=1, anchor_modelled=False
+        use_gnss=True, interval=1, anchor_modelled=False, fdir_enabled=False
     )
     assert final_error > 5.0
     assert claimed < 0.01 * final_error
     # The ground-truth-free symptom: valid absolute fixes are gated away.
     assert float(result.stats["gnss_updates_rejected"]) > 0.0
+
+
+def test_fdir_isolates_a_channel_whose_covariance_has_collapsed() -> None:
+    """FDIR catches the collapse, but isolation is not a repair.
+
+    Same broken configuration as the test above, now with FDIR on. The channel is
+    isolated and the run is *less* wrong -- 4.7 m instead of 16.1 m -- which is
+    worth stating plainly rather than celebrating: the improvement is an artifact
+    of throwing away good fixes, not of fixing the model. The filter is still
+    overconfident by two orders of magnitude, so the covariance collapse itself is
+    untouched. What FDIR adds is that the collapse is now *reported* rather than
+    only inferable from a rejection count.
+    """
+    result, final_error, claimed = _vision_benchmark_fixture(
+        use_gnss=True, interval=1, anchor_modelled=False
+    )
+    assert float(result.stats["fdir_gnss_faulted"]) == 1.0
+    assert float(result.stats["fdir_gnss_rejected"]) > float(result.stats["gnss_fixes_seen"]) / 2
+    statuses = {e["status"] for e in result.trajectory.metadata["fdir_events"]}
+    assert "SENSOR_FAULT" in statuses
+    # Isolation limits the damage; it does not restore honesty about variance.
+    assert claimed < 0.01 * final_error
 
 
 def test_modelled_anchor_restores_calibration_and_gnss_availability() -> None:
@@ -596,7 +629,10 @@ def _capture_blocks(eskf, x, R_rel_meas, t_rel_meas):
     """
     seen: list[tuple[np.ndarray, np.ndarray]] = []
 
-    def fake_update(_x, z, H, _Rcov):
+    def fake_update(_x, z, H, _Rcov, **_kwargs):
+        # The keyword arguments are accepted and ignored: `sensor`/`t_s` were
+        # added for FDIR (ADR-0005) and this stub is only after the measurement
+        # model, which it captures before any gating could run.
         seen.append((np.array(z, float).copy(), np.array(H, float).copy()))
         return True, 0.0
 
@@ -816,7 +852,7 @@ def test_anchor_does_not_leak_into_the_innovation_covariance() -> None:
     eskf = _eskf_with_vision(anchor_modelled=True)
     x = _frozen_state(R_vk, p_vk, R, p, c_p, c_t)
     seen: list[np.ndarray] = []
-    eskf._update = lambda _x, _z, _H, Rcov: (seen.append(np.array(Rcov, float)), (True, 0.0))[1]
+    eskf._update = lambda _x, _z, _H, Rcov, **_kw: (seen.append(np.array(Rcov, float)), (True, 0.0))[1]
     try:
         eskf._vision_update(x, R_rel_meas, t_rel_meas, _ROT_SIGMA_DEG, _TRANS_SIGMA_M)
     finally:

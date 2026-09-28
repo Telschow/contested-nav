@@ -68,6 +68,7 @@ a calibrated 3D filter reports 3.0):
     configuration                  GNSS used   error    1-sigma    NEES
     GNSS only (control)               101/101   0.039 m   0.073 m    2.8
     vision, anchor folded into R       55/101  16.11 m    0.037 m    5.1e4
+    vision, anchor folded into R + FDIR 27/101  4.69 m    0.037 m    1.5e4
     vision, anchor as a state          101/101   0.033 m   0.068 m    3.2
 
 The middle row is the failure in one line: the claimed 1-sigma is 3.7 cm while
@@ -76,7 +77,19 @@ the innovation gate. A system monitoring only its own gating counters would see
 this as "vision is noisy", when the actual fault is that vision has silenced the
 GNSS.
 
-The fix is the bottom row, and it takes two things that are easy to get wrong:
+The third row is that same defect with the FDIR gate active (ADR-0005), and it
+is the clearest statement of what the gate can and cannot do here. FDIR rejects
+74 of 101 fixes instead of 46, which looks like an improvement -- the error does
+drop to 4.69 m. It is not one. Three quarters of the absolute fixes are now gone,
+and the claimed 1-sigma is unchanged at 3.7 cm, so the NEES only falls from
+5.1e4 to 1.5e4. The gate is applying a chi-square test to an innovation
+covariance that the defect has already made wrong, and a stricter threshold on a
+wrong denominator buys a smaller number rather than a more correct filter. The
+run that the regression test measures is the FDIR-off one, on purpose: FDIR
+partially masks this defect, and a test that measured the masked version would
+be measuring the mitigation rather than the fault.
+
+The fix is the last row, and it takes two things that are easy to get wrong:
 
 * The anchor error is carried as six estimated states (``c_p``, ``c_t``) rather
   than folded into the innovation covariance. An error common to every visual
@@ -142,10 +155,11 @@ Known simplifications
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
+from ..fdir.fdir_manager import FdirConfig, FdirTracker
 from ..geometry.rigid import skew as _skew
 from ..geometry.rigid import rot_exp, rot_log
 from ..io.imu import ImuNoiseModel
@@ -219,6 +233,17 @@ class EskfConfig:
     anchor_pos_drift_sigma_m_s: float = 0.0
     anchor_rot_drift_sigma_deg_s: float = 0.0
     gate_sigma: float = 5.0
+    #: Chi-square fault detection, isolation and recovery (ADR-0005).
+    #:
+    #: Default-enabled, and separately from ``gate_sigma`` above rather than
+    #: instead of it. The two answer different questions and the distinction is
+    #: load-bearing: ``gate_sigma`` is a per-update residual test with a threshold
+    #: chosen by hand, whose only observable consequence is a rejection counter,
+    #: while FDIR carries the false-alarm rate with the threshold and adds the
+    #: isolation and recovery state that makes a rejection mean something. A
+    #: spoofed fix is rejected by both; only FDIR notices that the sensor has
+    #: stopped producing good data at all.
+    fdir_config: FdirConfig = field(default_factory=FdirConfig)
     gravity: np.ndarray | None = None
     initial_pos_sigma_m: float = 1.0
     initial_vel_sigma_m_s: float = 0.5
@@ -244,6 +269,10 @@ class EskfConfig:
             "anchor_pos_drift_sigma_m_s": self.anchor_pos_drift_sigma_m_s,
             "anchor_rot_drift_sigma_deg_s": self.anchor_rot_drift_sigma_deg_s,
             "gate_sigma": self.gate_sigma,
+            # FDIR belongs in the serialised config: it decides which updates
+            # enter the filter, so a config hash that omits it describes a
+            # different filter. Same reasoning as the anchor blocks above.
+            "fdir_config": self.fdir_config.as_dict(),
             "initial_pos_sigma_m": self.initial_pos_sigma_m,
             "initial_vel_sigma_m_s": self.initial_vel_sigma_m_s,
             "initial_rot_sigma_deg": self.initial_rot_sigma_deg,
@@ -259,6 +288,7 @@ class ErrorStateKalmanFilter:
     def __init__(self, config: EskfConfig) -> None:
         self.cfg = config
         self.g = GRAVITY.copy() if config.gravity is None else np.asarray(config.gravity, float)
+        self.fdir = FdirTracker(config.fdir_config)
 
     # -- state ---------------------------------------------------------------
 
@@ -382,15 +412,51 @@ class ErrorStateKalmanFilter:
         residual: np.ndarray,
         H: np.ndarray,
         Rcov: np.ndarray,
+        sensor: str = "unknown",
+        t_s: float = 0.0,
     ) -> tuple[bool, float]:
-        """Standard linear KF update followed by the error-state reset."""
+        """Standard linear KF update followed by the error-state reset.
+
+        The innovation covariance ``S = H P H^T + R`` and the residual are
+        computed here and handed to the FDIR tracker before anything is applied
+        (ADR-0005). A rejected update returns without touching the state or the
+        covariance: the prediction stands and ``P^+ = P^-``. That is not a
+        detail, because the alternative -- inflating ``R`` until the innovation
+        fits -- is the failure ADR-0003 documents, where the filter ends up
+        confidently wrong rather than merely uncertain. Not fusing leaves the
+        covariance to grow on process noise alone, which is the honest
+        consequence of not having a measurement.
+
+        The legacy ``gate_sigma`` test still runs, independently and after, on the
+        measurements that passed FDIR. The two are not alternatives: ``gate_sigma``
+        is a coarse residual bound whose threshold nobody derived, and FDIR's
+        chi-square test is the one with a false-alarm rate attached. Keeping both
+        means the existing rejection counters -- which is how the visual-channel
+        bug in ADR-0001 was found -- keep meaning what they meant.
+        """
         P = x["P"]
         S = H @ P @ H.T + Rcov
+
+        # FDIR first, and always. It is the only stage that records *why* an
+        # update did not happen, so anything that can reject must pass through
+        # it: a singular S below would otherwise return with no decision object
+        # and no counter, leaving a channel that stopped updating for an
+        # unrecorded reason. `mahalanobis_sq` already guards non-finite,
+        # non-symmetric and ill-conditioned S by returning inf, which the tracker
+        # treats as a fault rather than a pass.
+        decision = self.fdir.check(sensor, residual, S, t_s=t_s)
+        if not decision.accepted:
+            return False, decision.mahalanobis_sq
+
         try:
             K = np.linalg.solve(S, (P @ H.T).T).T
         except np.linalg.LinAlgError:  # pragma: no cover - defensive
             return False, float("nan")
+        # Computed independently of `decision.mahalanobis_sq` rather than reused
+        # from it: with FDIR disabled the decision reports 0.0 by design, and the
+        # legacy gate still needs the real Mahalanobis distance.
         innov = float(residual @ np.linalg.solve(S, residual))
+
         dof = residual.shape[0]
         if self.cfg.gate_sigma > 0.0 and innov > (self.cfg.gate_sigma**2) * dof:
             return False, innov
@@ -425,11 +491,17 @@ class ErrorStateKalmanFilter:
         x["b_a"] = x["b_a"] + dx[_IDX_BA]
         return True, innov
 
-    def _gnss_update(self, x: dict[str, np.ndarray], p_meas: np.ndarray, sigma: float) -> tuple[bool, float]:
+    def _gnss_update(
+        self,
+        x: dict[str, np.ndarray],
+        p_meas: np.ndarray,
+        sigma: float,
+        t_s: float = 0.0,
+    ) -> tuple[bool, float]:
         Rcov = np.eye(3) * sigma**2
         H = np.zeros((3, _N_STATES))
         H[0, 3] = H[1, 4] = H[2, 5] = 1.0
-        return self._update(x, p_meas - x["p"], H, Rcov)
+        return self._update(x, p_meas - x["p"], H, Rcov, sensor="gnss", t_s=t_s)
 
     def _vision_update(
         self,
@@ -438,6 +510,7 @@ class ErrorStateKalmanFilter:
         t_rel_meas: np.ndarray,
         rot_sigma_deg: float,
         trans_sigma_m: float,
+        t_s: float = 0.0,
     ) -> tuple[bool, float, bool]:
         """Apply the rotation and translation halves of a relative-pose fix.
 
@@ -520,7 +593,15 @@ class ErrorStateKalmanFilter:
         else:
             z_rot = rot_log(R_rel_meas @ R_rel_pred.T)
             Rcov_rot = Rcov_rot + x["P_theta_vk"]
-        ok_rot, innov_rot = self._update(x, z_rot, H_rot, Rcov_rot)
+        # The two halves are gated on separate channels, deliberately. They are
+        # two independent measurements that happen to arrive together, and
+        # sharing one channel would mean a single corrupted rotation block also
+        # invalidated the translation block -- and would make
+        # max_consecutive_rejections count *measurement blocks* rather than
+        # visual frames, declaring a fault at 3 frames where 5 were configured.
+        ok_rot, innov_rot = self._update(
+            x, z_rot, H_rot, Rcov_rot, sensor="vision_rot", t_s=t_s
+        )
 
         # Translation, in the previous body frame. The measurement model is
         #   h(x) = R_prev^T (p_cur - p_prev)
@@ -544,7 +625,9 @@ class ErrorStateKalmanFilter:
         else:
             z_trans = t_rel_meas - R_prev.T @ (x["p"] - p_prev)
             Rcov_trans = Rcov_trans + R_prev.T @ x["P_p_vk"] @ R_prev
-        ok_trans, innov_trans = self._update(x, z_trans, H_trans, Rcov_trans)
+        ok_trans, innov_trans = self._update(
+            x, z_trans, H_trans, Rcov_trans, sensor="vision_trans", t_s=t_s
+        )
 
         # Re-commit the anchor only when the configured interval has elapsed.
         # With the default of None the anchor stays where it was first set, so
@@ -627,7 +710,9 @@ class ErrorStateKalmanFilter:
                     latency = t_k - float(g_fixes.t[g_ptr])
                     max_measurement_latency = max(max_measurement_latency, latency)
                     gnss_seen += 1
-                    ok, _ = self._gnss_update(x, p_meas, cfg.gnss_position_sigma_m)
+                    ok, _ = self._gnss_update(
+                        x, p_meas, cfg.gnss_position_sigma_m, t_s=t_k
+                    )
                     n_gnss_used += int(ok)
                     n_gnss_rejected += int(not ok)
                     g_ptr += 1
@@ -641,6 +726,7 @@ class ErrorStateKalmanFilter:
                         v_updates.t_rel[v_ptr],
                         cfg.vision_rot_sigma_deg,
                         cfg.vision_trans_sigma_m,
+                        t_s=t_k,
                     )
                     v_ptr += 1
                     if not had_keyframe:
@@ -676,7 +762,14 @@ class ErrorStateKalmanFilter:
             "max_measurement_latency_s": max_measurement_latency,
             "realtime_factor": traj.duration / elapsed if elapsed > 0 else float("inf"),
         }
+        # FDIR counters are reported alongside the gate counters rather than
+        # replacing them: "5 updates rejected" and "the GNSS channel was declared
+        # faulty at t=4.2 s and recovered at t=9.0 s" are different facts, and a
+        # downstream consumer needs both. The event list goes into the metadata
+        # because a fault timeline is data, not a log line.
+        stats.update(self.fdir.stats())
         traj.metadata["sigma_p"] = sigma_p
+        traj.metadata["fdir_events"] = [e.as_dict() for e in self.fdir.events]
         return EstimatorResult(
             trajectory=traj,
             runtime_s=elapsed,

@@ -140,11 +140,11 @@ disagree.
   <tbody>
     <tr><td>GNSS only (control)</td><td class="num">0.503</td><td class="num">0.252</td><td class="num">3.7</td><td class="num">100.0%</td><td><span class="tag">mixed</span> bulk overconfident, tail underconfident</td></tr>
     <tr><td>Dead reckoning (no aiding)</td><td class="num">1.877</td><td class="num">n/a</td><td class="num">n/a</td><td class="num">n/a</td><td>no covariance reported</td></tr>
-    <tr><td>Anchor as measurement noise (defect)</td><td class="num">1.259</td><td class="num">0.091</td><td class="num">354.6</td><td class="num">16.0%</td><td><span class="tag bad">overconfident</span></td></tr>
+    <tr><td>Anchor as measurement noise (defect)</td><td class="num">1.307</td><td class="num">0.091</td><td class="num">387.3</td><td class="num">16.0%</td><td><span class="tag bad">overconfident</span></td></tr>
     <tr><td>Vision only</td><td class="num">2.309</td><td class="num">0.156</td><td class="num">331.0</td><td class="num">0.7%</td><td><span class="tag bad">overconfident</span></td></tr>
     <tr><td>GNSS denied, vision off (control)</td><td class="num">3.782</td><td class="num">0.567</td><td class="num">4.1</td><td class="num">100.0%</td><td><span class="tag">mixed</span> bulk overconfident, tail underconfident</td></tr>
-    <tr><td>GNSS denied, vision on</td><td class="num">3.428</td><td class="num">0.154</td><td class="num">1051.3</td><td class="num">16.0%</td><td><span class="tag bad">overconfident</span></td></tr>
-    <tr><td>GNSS denied, 30% frames dropped</td><td class="num">2.545</td><td class="num">0.173</td><td class="num">576.8</td><td class="num">16.2%</td><td><span class="tag bad">overconfident</span></td></tr>
+    <tr><td>GNSS denied, vision on</td><td class="num">5.059</td><td class="num">0.154</td><td class="num">1996.5</td><td class="num">16.0%</td><td><span class="tag bad">overconfident</span></td></tr>
+    <tr><td>GNSS denied, 30% frames dropped</td><td class="num">3.339</td><td class="num">0.173</td><td class="num">931.4</td><td class="num">16.2%</td><td><span class="tag bad">overconfident</span></td></tr>
   </tbody>
 </table>
 
@@ -203,7 +203,7 @@ seeded scenario file, and CI runs the benchmark twice and fails if the two runs 
 cd contested-nav
 python -m pip install -e ".[dev]"
 
-python -m pytest                      # 405 collected: 403 pass, 2 skip
+python -m pytest                      # 484 collected: 482 pass, 2 skip
 python scripts/run_benchmark.py --markdown
 python scripts/make_figures.py</code></pre>
 
@@ -220,6 +220,7 @@ An ATE quoted without its alignment is not a result. The figures and the headlin
 <ul>
   <li><strong>Not field validated.</strong> Synthetic fixture only. No real capture is vendored or evaluated.</li>
   <li><strong>Visual aiding under GNSS denial is not trustworthy yet</strong>, and is disabled by default. This is the central open result, not a footnote.</li>
+  <li><strong>FDIR detects implausible updates but does not explain them.</strong> The chi-square gate isolates a channel and reports how long it was out, but it does not separate multipath from spoofing from sensor degradation, and it assumes a calibrated innovation covariance the filter does not have when the position covariance has collapsed. That assumption costs 1.6&nbsp;m of ATE in the GNSS-denied row above. See ADR-0005.</li>
   <li><strong>Not a flight-ready estimator.</strong> No sensor driver, no live front end, no real-time loop.</li>
   <li><strong>Single trajectory fixture.</strong> One 30 s synthetic path, so the numbers characterise a configuration, not a distribution over scenes.</li>
   <li><strong>Alignment fits positions only</strong>, so attitude error survives a rigid fit untouched. Reported separately for that reason.</li>

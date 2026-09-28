@@ -5,8 +5,8 @@ Replay, evaluation and uncertainty calibration for GNSS-denied navigation.
 [![CI](https://github.com/contested-nav/contested-nav/actions/workflows/ci.yml/badge.svg)](https://github.com/contested-nav/contested-nav/actions/workflows/ci.yml)
 [![Pages](https://github.com/contested-nav/contested-nav/actions/workflows/pages.yml/badge.svg)](https://github.com/contested-nav/contested-nav/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-403%20pass%20%2B%202%20skip-informational.svg)](tests)
-[![Line coverage](https://img.shields.io/badge/line%20coverage-84.75%25-informational.svg)](CONSTRAINTS.md)
+[![Tests](https://img.shields.io/badge/tests-482%20pass%20%2B%202%20skip-informational.svg)](tests)
+[![Line coverage](https://img.shields.io/badge/line%20coverage-85.09%25-informational.svg)](CONSTRAINTS.md)
 
 A 21-state error-state Kalman filter for fused GNSS and visual navigation, built
 around one commitment: **a filter that reports its uncertainty should be
@@ -21,8 +21,8 @@ a measurement rather than a caveat.
 ## The result that motivated this
 
 With GNSS denied for 15 s and visual odometry enabled, the filter reports
-**0.154 m** of position uncertainty while being **3.43 m** wrong. Mean NEES is
-**1051.3** against an expected 3, and only 16.0% of epochs fall inside the
+**0.154 m** of position uncertainty while being **5.06 m** wrong. Mean NEES is
+**1996.5** against an expected 3, and only 16.0% of epochs fall inside the
 2σ ellipsoid where 99.2% should.
 
 This is not a tuning problem and it is not a crash. The filter runs, converges,
@@ -39,7 +39,7 @@ against the source tree.
 python -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 
-.venv/bin/python -m pytest           # 405 collected: 403 pass, 2 skip, ~25 s
+.venv/bin/python -m pytest           # 484 collected: 482 pass, 2 skip, ~35 s
 ```
 
 Runtime dependencies are NumPy, Matplotlib and PyYAML. There is no SciPy, no
@@ -75,11 +75,11 @@ the strictest of the four conventions the code supports.
 | --- | ---: | ---: | ---: | ---: | --- |
 | GNSS only (control) | 0.503 | 0.252 | 3.7 | 100.0% | mixed: bulk overconfident, tail underconfident |
 | Dead reckoning (no aiding) | 1.877 | n/a | n/a | n/a | no covariance reported |
-| Anchor as measurement noise (defect) | 1.259 | 0.091 | 354.6 | 16.0% | overconfident |
+| Anchor as measurement noise (defect) | 1.307 | 0.091 | 387.3 | 16.0% | overconfident |
 | Vision only | 2.309 | 0.156 | 331.0 | 0.7% | overconfident |
 | GNSS denied 5–20 s, vision off (control) | 3.782 | 0.567 | 4.1 | 100.0% | mixed: bulk overconfident, tail underconfident |
-| GNSS denied 5–20 s, vision on | 3.428 | 0.154 | 1051.3 | 16.0% | overconfident |
-| GNSS denied, 30% camera frames dropped | 2.545 | 0.173 | 576.8 | 16.2% | overconfident |
+| GNSS denied 5–20 s, vision on | 5.059 | 0.154 | 1996.5 | 16.0% | overconfident |
+| GNSS denied, 30% camera frames dropped | 3.339 | 0.173 | 931.4 | 16.2% | overconfident |
 
 Three rows deserve more than a glance.
 
@@ -88,11 +88,13 @@ error into the measurement covariance, rather than treating it as filter state,
 drops coverage to 16%. Both variants are in the benchmark so the comparison is
 reproducible, and the broken one is kept in the default run on purpose.
 
-**Turning vision on makes ATE smaller and the filter much less honest.** The
-outage control with vision off ends at 3.78 m with its uncertainty grown to
-match, so coverage stays at 100%. The aided case reports a *lower* 3.43 m while
-claiming 0.15 m. Anyone comparing ATE alone picks the worse filter, which is
-the whole argument for reporting calibration next to accuracy.
+**Turning vision on makes the filter much less honest, and the FDIR gate makes
+it less accurate too.** The outage control with vision off ends at 3.78 m with
+its uncertainty grown to match, so coverage stays at 100%. The aided case
+claims 0.15 m while being 5.06 m wrong. Before the FDIR gate this row reported
+a *lower* 3.43 m, so comparing ATE alone picked the dishonest filter; it now
+picks the honest one, by accident rather than by design. The two are separate
+failures and the table shows both.
 
 **Dead reckoning has no claimed-σ or NEES value.** An integrator with no
 uncertainty model has nothing to calibrate. Printing a covariance it never
@@ -230,6 +232,7 @@ See [docs/calibration.md](docs/calibration.md) for how to read these, and
 ```
 src/navkit/
   estimators/     21-state ESKF, dead reckoning
+  fdir/           chi-square innovation gating, per-channel fault isolation
   sensors/        GNSS, visual, IMU stream models
   degrade/        outages, sensor degradation, scenario configs
   eval/           metrics, calibration, failure thresholds, statistics
@@ -239,7 +242,7 @@ src/navkit/
 configs/          benchmark scenarios
 scripts/          run_benchmark.py, make_figures.py, coverage_report.py
 docs/             architecture, calibration, ADRs, figures, site
-tests/            405 tests (403 pass, 2 skip without TUM VI data)
+tests/            484 tests (482 pass, 2 skip without TUM VI data)
 ```
 
 ## Status and limits
@@ -248,6 +251,13 @@ tests/            405 tests (403 pass, 2 skip without TUM VI data)
   or evaluated, and no number is a field measurement.
 - **Visual aiding under GNSS denial is untrustworthy**, and disabled by default.
   See [above](#the-one-thing-this-cannot-do).
+- **FDIR detects implausible updates; it does not yet explain them.** The
+  chi-square gate in `fdir/` isolates a channel and says how long it was out,
+  but it does not separate multipath from spoofing from sensor degradation, and
+  it assumes a calibrated innovation covariance that the filter does not have
+  when the position covariance has collapsed. In the `outage_visual` case that
+  assumption costs 1.6 m of ATE. See [ADR-0005](docs/adr/0005-chi-square-fdir-gating.md)
+  and blocker B5.
 - **One trajectory fixture.** A single 30 s synthetic path, so the numbers
   characterise a configuration, not a distribution over scenes. A Monte Carlo
   sweep is the obvious next step and is not done.
