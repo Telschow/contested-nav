@@ -159,7 +159,10 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from ..fdir.fdir_manager import FdirConfig, FdirTracker
+from ..fdir.fdir_manager import (
+    FdirConfig,
+    FdirManager,
+)
 from ..geometry.rigid import skew as _skew
 from ..geometry.rigid import rot_exp, rot_log
 from ..io.imu import ImuNoiseModel
@@ -185,6 +188,31 @@ _IDX_CT = slice(18, 21)
 #: silently disagree with the matrices built from it.
 _N_NOMINAL = 15
 _N_STATES = 21
+
+#: Which state block each measurement channel may have inflated, used to place
+#: adaptive covariance inflation (ADR-0006).
+#:
+#: GNSS only, and the restriction is deliberate on two grounds.
+#:
+#: Units. ``reacq_sigma_m`` and ``max_drift_sigma_mps`` are metres and metres per
+#: second, and the drift bound is a statement about dead-reckoned *translation*.
+#: The visual anchor blocks are pose offsets in metres and radians, and a
+#: translational drift rate says nothing about how far an attitude offset can
+#: legitimately have moved. Adding a metre-derived variance to ``_IDX_CT`` would
+#: be a dimensional mistake that still produced a valid covariance, so nothing
+#: downstream would have objected.
+#:
+#: Evidence. Blocker B5 is a GNSS re-acquisition problem and the measurements
+#: that fix it are on this channel. The visual channels are the ones that
+#: produced the self-confirmation failure in ADR-0001, and loosening the filter
+#: on the channel that is known to be able to lie about its own uncertainty is
+#: the wrong direction to move without evidence that it is needed.
+#:
+#: A channel added here needs a matching unit and a matching evidence base, not
+#: just a row in the table.
+_FDIR_INFLATION_BLOCK = {
+    "gnss": (3, 4, 5),
+}
 
 
 @dataclass
@@ -288,7 +316,8 @@ class ErrorStateKalmanFilter:
     def __init__(self, config: EskfConfig) -> None:
         self.cfg = config
         self.g = GRAVITY.copy() if config.gravity is None else np.asarray(config.gravity, float)
-        self.fdir = FdirTracker(config.fdir_config)
+        self.fdir = FdirManager(config.fdir_config)
+        self.fdir_inflations = 0
 
     # -- state ---------------------------------------------------------------
 
@@ -418,7 +447,7 @@ class ErrorStateKalmanFilter:
         """Standard linear KF update followed by the error-state reset.
 
         The innovation covariance ``S = H P H^T + R`` and the residual are
-        computed here and handed to the FDIR tracker before anything is applied
+        computed here and handed to the FDIR manager before anything is applied
         (ADR-0005). A rejected update returns without touching the state or the
         covariance: the prediction stands and ``P^+ = P^-``. That is not a
         detail, because the alternative -- inflating ``R`` until the innovation
@@ -426,6 +455,21 @@ class ErrorStateKalmanFilter:
         confidently wrong rather than merely uncertain. Not fusing leaves the
         covariance to grow on process noise alone, which is the honest
         consequence of not having a measurement.
+
+        There is one exception, and it is the resolution of blocker B5. A *run*
+        of rejections on a trusted channel is not evidence of a bad sensor; it is
+        evidence that this filter has become overconfident while displaced, and
+        continuing to reject there trades a bounded error for an unbounded one.
+        After ``fdir_config.reacq_consecutive_rejections`` consecutive failures
+        the manager re-tests the same innovation against a covariance that has
+        had ``reacq_sigma_m`` of position uncertainty added to it, and asks the
+        estimator to honour that if the re-test passes (ADR-0006). The added
+        variance is bounded by ``max_inflation_factor``, applied to the state
+        block this channel constrains and not the whole state, and applied before
+        the gain so that the fused update is the one the gate cleared. A single
+        rejected update is never inflated -- that is the multipath and spoof
+        impulse case, and loosening the filter for it is the failure mode this
+        package exists to avoid.
 
         The legacy ``gate_sigma`` test still runs, independently and after, on the
         measurements that passed FDIR. The two are not alternatives: ``gate_sigma``
@@ -444,9 +488,38 @@ class ErrorStateKalmanFilter:
         # unrecorded reason. `mahalanobis_sq` already guards non-finite,
         # non-symmetric and ill-conditioned S by returning inf, which the tracker
         # treats as a fault rather than a pass.
-        decision = self.fdir.check(sensor, residual, S, t_s=t_s)
+        #
+        # `evaluate_and_adapt` rather than the bare `check`, because the decision
+        # may come back asking for a bounded amount of covariance (ADR-0006). A
+        # run of rejections on a trusted channel is evidence that the filter
+        # itself is overconfident -- the post-outage re-acquisition case, where
+        # the honest fix arrives while the covariance has collapsed -- and
+        # rejecting those fixes is how a filter walks itself further from truth
+        # while holding the measurements that would correct it.
+        block = _FDIR_INFLATION_BLOCK.get(sensor, ())
+        decision = self.fdir.evaluate_and_adapt(
+            sensor,
+            residual,
+            S,
+            t_s=t_s,
+            P=P,
+            H=H,
+            block=block,
+        )
         if not decision.accepted:
             return False, decision.mahalanobis_sq
+
+        if decision.inflated:
+            # Honour the request before forming the gain, and recompute S from
+            # the inflated covariance rather than reusing the value the gate
+            # re-tested against. The two are the same matrix by construction --
+            # the gate built its re-gate as S + H dP H^T -- so the update below is
+            # the one whose distance the verdict was based on. Reusing the old S
+            # here would fuse an update the gate had not actually cleared.
+            idx = list(decision.inflation_block)
+            P[idx, idx] += decision.inflation_variance
+            S = H @ P @ H.T + Rcov
+            self.fdir_inflations += 1
 
         try:
             K = np.linalg.solve(S, (P @ H.T).T).T
@@ -768,6 +841,7 @@ class ErrorStateKalmanFilter:
         # downstream consumer needs both. The event list goes into the metadata
         # because a fault timeline is data, not a log line.
         stats.update(self.fdir.stats())
+        stats["fdir_inflations"] = float(self.fdir_inflations)
         traj.metadata["sigma_p"] = sigma_p
         traj.metadata["fdir_events"] = [e.as_dict() for e in self.fdir.events]
         return EstimatorResult(

@@ -65,32 +65,37 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | 484 | `pytest` |
-| Tests passing | 300 | 482 (2 skipped, see below) | `pytest -rs` |
-| Line coverage | 75% | 85.09% | `scripts/coverage_report.py` |
+| Tests collected | 405 | 534 | `pytest` |
+| Tests passing | 300 | 532 (2 skipped, see below) | `pytest -rs` |
+| Line coverage | 75% | 85.29% | `scripts/coverage_report.py` |
 | `io/trajectory.py` coverage | 85% | 90.8% | as above |
 | `analysis/findings.py` coverage | 80% | 97.6% | as above |
 | `config.py` coverage | 80% | 98.4% | as above |
 | `eval/metrics.py` coverage | 60% | 85.6% | as above |
 | `eval/thresholds.py` coverage | 60% | 96.4% | as above |
 | `geometry/align.py` coverage | 60% | 76.6% | as above |
-| `estimators/eskf.py` coverage | 80% | 90.1% | as above |
+| `estimators/eskf.py` coverage | 80% | 90.5% | as above |
 | `fdir/gating.py` coverage | 70% | 87.0% | as above |
-| `fdir/fdir_manager.py` coverage | 70% | 90.2% | as above |
+| `fdir/fdir_manager.py` coverage | 70% | 87.2% | as above |
+| `fdir/nis_monitor.py` coverage | 80% | 94.2% | as above |
 | `degrade/` coverage | 50% | 78.8% / 73.5% | as above |
-| Docs | README + architecture + calibration + ADR-0001..0005 | 7 of 7 | manual |
+| Docs | README + architecture + calibration + ADR-0001..0006 | 8 of 8 | manual |
 | Documented tables match the generated benchmark | exact | yes | `scripts/check_doc_tables.py` |
 | Open blockers documented | all | see ROADMAP | manual |
 
 ## Known blockers
 
-- **B1 — Visual fusion is overconfident under GNSS denial.** Mean NEES
-  1996.5 over a 15 s outage (`outage_visual`), with 16.0% of epochs inside
-  2 sigma against 99.2% expected. A single anchor cannot represent correlated visual
+- **B1 — Visual fusion is overconfident under GNSS denial.** Mean NEES 419.4
+  over a 15 s outage (`outage_visual`), with 20.0% of epochs inside 2 sigma
+  against 99.2% expected. A single anchor cannot represent correlated visual
   drift. Requires a pose graph. Pinned by
   `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`. B2 did not
-  change this number: correcting a frame is not the same as modelling
-  correlated error.
+  change this number, and neither did ADR-0006: correcting a frame is not the
+  same as modelling correlated error, and re-admitting the GNSS fixes that B5
+  caused to be discarded shrank the error without repairing the model that made
+  `P` wrong. The number fell from 1996.5 to 419.4 as a side effect of taking the
+  filter's own uncertainty more seriously, not because the anchor is now
+  modelled correctly.
 
 - **B2 — No lint or typecheck gate has ever run locally.** `ruff` and `mypy`
   are not installed in the working environment, so no style or type error is
@@ -106,29 +111,6 @@ These are floors, not goals. Each must not regress; raising one is welcome.
   Plotly ground truth and the ATE figure is not a verified reproduction of the
   published 0.069 m. The claim is typed accordingly. This is also why two tests
   skip when the data is absent.
-
-- **B5 — The FDIR gate's premise does not hold in the configurations this
-  project exists to study.** A chi-square test on the innovation assumes a
-  calibrated `S = H P Hᵀ + R`. When the position covariance has collapsed
-  (ADR-0001) `S` is far too small, so the gate rejects *healthy* measurements
-  systematically rather than at the stated `alpha`.
-
-  Measured, not estimated: in `outage_visual` the GNSS fixes that return at
-  `t = 20 s` after the 15 s denial are metres from a filter that believes it
-  knows its position to centimetres, and FDIR rejects 51 of the 75 available.
-  The case degrades from 3.428 m to 5.059 m, and `outage_visual_degraded_camera`
-  from 2.545 m to 3.339 m. The false-alarm rate of 0/1212 quoted for `alpha =
-  0.001` is measured on a *calibrated* filter and does not transfer.
-
-  This is a cost, accepted rather than hidden, and it is why the numbers in
-  the docs tables are the degraded ones. Pinned by
-  `test_fdir_throws_away_the_absolute_fixes_that_would_rescue_a_displaced_filter`,
-  which asserts the direction it happened. The fix is an
-  innovation-consistency monitor that detects the under-estimated `S` and
-  widens the gate when the chi-square premise is void; tracked in `ROADMAP.md`
-  Track A. It is deliberately not implemented here: a consistency monitor that
-  also responds to a genuine spoof has to be told the two apart, and that
-  distinction is a larger design question than the gate itself.
 
 ## Resolved engineering blockers
 
@@ -165,6 +147,68 @@ residual numerically.
   `test_position_jacobian_is_the_exact_derivative`,
   `test_translation_anchor_jacobian_is_the_exact_derivative`). B1 is unchanged
   by this fix.
+
+- **R2 (was B5) — The FDIR gate's premise did not hold in the configurations
+  this project exists to study.** A chi-square test on the innovation assumes a
+  calibrated `S = H P Hᵀ + R`. When the position covariance has collapsed
+  (ADR-0001) `S` is far too small, so the gate rejected *healthy* measurements
+  systematically rather than at the stated `alpha`: 51 of 75 GNSS fixes in
+  `outage_visual`, degrading that case from 3.428 m to 5.059 m. Widening the
+  gate would have fixed it and lost the false-alarm rate ADR-0005 exists to
+  provide.
+
+  Fixed by ADR-0006: a per-channel NIS window monitor and a bounded adaptive
+  covariance inflation, applied only when the channel was actually silent. The
+  distinction that makes it decidable is the silence, not the size of the
+  innovation — silence comes from the filter's own state and needs no
+  assumption about the threat model, and a channel streaming at 5 Hz earns no
+  drift budget however long the attack runs.
+
+  Measured: `outage_visual` 5.059 m to 2.541 m, 51 rejections to 5, mean NEES
+  1996.5 to 419.4. `outage_visual_degraded_camera` 3.339 m to 2.005 m, 931.4
+  to 264.8. Pinned by
+  `test_adaptive_inflation_recovers_the_fixes_that_the_plain_gate_threw_away`,
+  which asserts the improvement *and* the old value, so a regression to it
+  fails even while the new assertions pass.
+
+  Two limits, both stated in the ADR rather than left to the reader:
+
+  - **This is not calibration.** 2.541 m of error against 0.161 m claimed is
+    still overconfident. B1 is untouched and remains the open blocker. What is
+    closed is the filter's refusal to hear a working sensor, not the modelled
+    visual anchor error that made the covariance wrong.
+  - **The ATE column stopped being an accidental honesty check.** Before this
+    fix the dishonest aided case was also the more inaccurate one, so sorting
+    by error happened to separate them. Recovering the error put the dishonest
+    filter back on top of the table, and `outage_visual` now reports a
+    *lower* ATE than the honest 3.782 m control while being less calibrated.
+    Any comparison in this repository must read the coverage and NEES columns
+    too, and a table sorted on ATE alone is not evidence of a good filter.
+
+  Original text, kept for the record:
+
+> - **B5 — The FDIR gate's premise does not hold in the configurations this
+>   project exists to study.** A chi-square test on the innovation assumes a
+>   calibrated `S = H P Hᵀ + R`. When the position covariance has collapsed
+>   (ADR-0001) `S` is far too small, so the gate rejects *healthy* measurements
+>   systematically rather than at the stated `alpha`.
+>
+>   Measured, not estimated: in `outage_visual` the GNSS fixes that return at
+>   `t = 20 s` after the 15 s denial are metres from a filter that believes it
+>   knows its position to centimetres, and FDIR rejects 51 of the 75 available.
+>   The case degrades from 3.428 m to 5.059 m, and `outage_visual_degraded_camera`
+>   from 2.545 m to 3.339 m. The false-alarm rate of 0/1212 quoted for `alpha =
+>   0.001` is measured on a *calibrated* filter and does not transfer.
+>
+>   This is a cost, accepted rather than hidden, and it is why the numbers in
+>   the docs tables are the degraded ones. Pinned by
+>   `test_fdir_throws_away_the_absolute_fixes_that_would_rescue_a_displaced_filter`,
+>   which asserts the direction it happened. The fix is an
+>   innovation-consistency monitor that detects the under-estimated `S` and
+>   widens the gate when the chi-square premise is void; tracked in `ROADMAP.md`
+>   Track A. It is deliberately not implemented here: a consistency monitor that
+>   also responds to a genuine spoof has to be told the two apart, and that
+>   distinction is a larger design question than the gate itself.
 
 ## Adding a constraint
 

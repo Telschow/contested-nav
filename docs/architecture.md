@@ -217,11 +217,24 @@ over visual keyframes, tracked in `ROADMAP.md` stage 3.
 
 FDIR interacts with that limitation rather than being independent of it. In
 `outage_visual`, the 15 s denial ends with the filter displaced and holding a
-collapsed covariance, and FDIR rejects the returning GNSS fixes at
-`t = 20.8 s` onwards — 51 of them — because a gate that trusts a covariance
-of a few centimetres reads a healthy 3 m fix as an outlier. The filter then
-dead-reckons the last 9 s instead of snapping back. ATE 3.428 m without
-FDIR, 5.059 m with it. The gate is behaving as specified; the specification
-assumes calibration the filter does not have. Pinned by
-`test_fdir_throws_away_the_absolute_fixes_that_would_rescue_a_displaced_filter`
-and recorded as blocker B4.
+collapsed covariance, and the ADR-0005 gate rejected the returning GNSS fixes
+at `t = 20.8 s` onwards — 51 of them — because a gate that trusts a
+covariance of a few centimetres reads a healthy 3 m fix as an outlier. ATE
+3.428 m without FDIR, 5.059 m with it. The gate was behaving as specified; the
+specification assumed calibration the filter did not have. That was blocker B5.
+
+ADR-0006 fixed it without touching the false-alarm rate. `FdirManager` keeps
+the ADR-0005 gate as the first pass and adds a second one, reached only when a
+per-channel NIS window (`fdir/nis_monitor.py`) reports a trailing run of
+rejections *and* the channel was actually silent. It then inflates the GNSS
+position block, recomputes `S' = S + H ΔP Hᵀ` — the covariance the estimator
+will actually have, not an approximation of it — and re-gates with headroom. The
+grant is bounded by a factor cap, by a drift rate per second of the channel's
+longest single silence, and by one grant per episode. In `outage_visual` this
+takes ATE 5.059 m to 2.541 m and rejections 51 to 5.
+
+A channel streaming at 5 Hz has no silence, so it earns no budget and a
+sustained spoof never becomes plausible: verified at 40 m and 100 m with zero
+grants. Pinned by `test_adaptive_inflation_recovers_the_fixes_that_the_plain_gate_threw_away`
+and `tests/test_nis_monitor.py`. The residual overconfidence is the unmodelled
+anchor error above, which this does not touch.

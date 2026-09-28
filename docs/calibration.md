@@ -36,9 +36,16 @@ reference does not grow with the size of the state vector.
 | far below | underconfident — claims less certainty than it has |
 
 The number to be suspicious of is the gap, not the value. The generated
-`outage_visual` case reports a mean NEES of 1996.5 against a nominal 3. That is
-not a filter that is slightly miscalibrated; it is a filter that is wrong by
-two orders of magnitude.
+`outage_visual` case reports a mean NEES of 419.4 against a nominal 3, and
+`vision_only` reports 331.0. Two orders of magnitude, against a nominal 3, is
+not a filter that is slightly miscalibrated.
+
+Those figures fell from 1996.5 when ADR-0006 stopped the filter discarding the
+GNSS fixes that B5 caused it to reject. The remaining gap is the unmodelled
+visual anchor error, which is a separate defect: the filter is more honest now
+because it stopped throwing away evidence, not because the model behind `P` was
+repaired. Read NEES and the coverage column together with ATE — see the note in
+`CONSTRAINTS.md` on why ATE alone stopped flagging this case.
 
 **Why it is decisive:** NEES only blows up when the error is large *and*
 `P` is small. A filter that merely tracks badly has a large error but an

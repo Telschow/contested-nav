@@ -91,10 +91,10 @@ inspectable.
 <h2>The finding</h2>
 
 <div class="grid">
-  <div class="card"><div class="n">1053</div><div class="l">Mean NEES with visual aiding through an outage (expected 3)</div></div>
-  <div class="card"><div class="n">16%</div><div class="l">Coverage inside the 2-sigma ellipsoid (expected 99.2%)</div></div>
-  <div class="card"><div class="n">0.154 m</div><div class="l">Uncertainty the filter claims</div></div>
-  <div class="card"><div class="n">3.43 m</div><div class="l">Error it actually makes</div></div>
+  <div class="card"><div class="n">419</div><div class="l">Mean NEES with visual aiding through an outage (expected 3)</div></div>
+  <div class="card"><div class="n">20%</div><div class="l">Coverage inside the 2-sigma ellipsoid (expected 99.2%)</div></div>
+  <div class="card"><div class="n">0.161 m</div><div class="l">Uncertainty the filter claims</div></div>
+  <div class="card"><div class="n">2.54 m</div><div class="l">Error it actually makes</div></div>
 </div>
 
 <p>
@@ -143,8 +143,8 @@ disagree.
     <tr><td>Anchor as measurement noise (defect)</td><td class="num">1.307</td><td class="num">0.091</td><td class="num">387.3</td><td class="num">16.0%</td><td><span class="tag bad">overconfident</span></td></tr>
     <tr><td>Vision only</td><td class="num">2.309</td><td class="num">0.156</td><td class="num">331.0</td><td class="num">0.7%</td><td><span class="tag bad">overconfident</span></td></tr>
     <tr><td>GNSS denied, vision off (control)</td><td class="num">3.782</td><td class="num">0.567</td><td class="num">4.1</td><td class="num">100.0%</td><td><span class="tag">mixed</span> bulk overconfident, tail underconfident</td></tr>
-    <tr><td>GNSS denied, vision on</td><td class="num">5.059</td><td class="num">0.154</td><td class="num">1996.5</td><td class="num">16.0%</td><td><span class="tag bad">overconfident</span></td></tr>
-    <tr><td>GNSS denied, 30% frames dropped</td><td class="num">3.339</td><td class="num">0.173</td><td class="num">931.4</td><td class="num">16.2%</td><td><span class="tag bad">overconfident</span></td></tr>
+    <tr><td>GNSS denied, vision on</td><td class="num">2.541</td><td class="num">0.161</td><td class="num">419.4</td><td class="num">20.0%</td><td><span class="tag bad">overconfident</span></td></tr>
+    <tr><td>GNSS denied, 30% frames dropped</td><td class="num">2.005</td><td class="num">0.178</td><td class="num">264.8</td><td class="num">16.7%</td><td><span class="tag bad">overconfident</span></td></tr>
   </tbody>
 </table>
 
@@ -156,8 +156,9 @@ would be the same error as printing one it does not deserve.
 <p>
 The outage control is the honest comparison. With vision off, the error grows to 3.78&nbsp;m and
 the filter's uncertainty grows with it, so coverage stays at 100%. Turning vision on makes the
-number <em>smaller</em> and the filter far less honest. A reader comparing only ATE would conclude
-the aided case is better.
+number <em>smaller</em> and the filter far less honest. Adaptive covariance inflation (ADR-0006)
+recovered much of the aided case's error, which removed the accidental signal that used to warn
+a reader off it: sorting by ATE no longer separates the dishonest filter from the honest one.
 </p>
 
 <figure>

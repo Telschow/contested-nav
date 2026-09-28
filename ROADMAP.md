@@ -122,10 +122,11 @@ previously produced by ad-hoc scripts that were not in the repository.
 - [x] ADR-0001 (21-state anchor), ADR-0002 (Joseph covariance form), ADR-0003
       (defer the pose graph, ship visual disabled), ADR-0004 (internal
       quaternion order), ADR-0005 (chi-square FDIR, and the measured cost of
-      it).
+      it), ADR-0006 (NIS window monitor with adaptive covariance inflation,
+      which paid that cost back).
 - [x] `docs/architecture.md`, `docs/calibration.md`, `docs/index.html`.
 - [x] GNSS-denial overconfidence framed explicitly as the headline *negative*
-      result rather than a caveat: mean NEES 1996.5 against an expected 3, 16.0%
+      result rather than a caveat: mean NEES 419.4 against an expected 3, 20.0%
       coverage against 99.2% expected, `vision_enabled = False` shipped as the
       default, and the failure pinned by
       `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`.
@@ -171,17 +172,28 @@ that has already been wrong. This track moves detection forward.
 - [x] Exclusion rather than de-weighting. A rejected update returns before the
       Kalman gain is formed, so `P^+ = P^-`. Inflating `R` to cover a bad
       measurement is the failure ADR-0003 documents.
-- [!] Blocker B4, new: the gate's premise is a calibrated innovation
-      covariance, and this filter does not have one when the position
-      covariance has collapsed. In `outage_visual` FDIR rejects 51 of the 75
-      GNSS fixes that return after the denial and the case degrades from
-      3.428 m to 5.059 m. Pinned by
-      `test_fdir_throws_away_the_absolute_fixes_that_would_rescue_a_displaced_filter`.
-- [ ] An innovation-consistency monitor: detect that `S` is systematically
-      under-estimated and widen the gate when the chi-square premise is void.
-      This is the fix for B4 and it belongs in the same module, not in a
-      separate one — a gate that silently keeps its threshold while its
-      assumption has failed is worse than no gate.
+- [x] An innovation-consistency monitor, and the fix for the collapsed-covariance
+      case it was written for (blocker B5, now R2). ADR-0006;
+      `fdir/nis_monitor.py` holds a bounded per-channel window and reads a
+      *trailing run* of rejections, not a count. `outage_visual` 5.059 m to
+      2.541 m with rejections 51 to 5; `outage_visual_degraded_camera`
+      3.339 m to 2.005 m. Pinned by
+      `test_adaptive_inflation_recovers_the_fixes_that_the_plain_gate_threw_away`,
+      which asserts the old value as well so the regression fails on its own.
+- [x] The gate widened *conditionally*, not globally. The premise is tested
+      rather than assumed: relief is available only when the channel was
+      actually silent, and is bounded three ways — a factor cap, a drift rate
+      per second of the channel's longest single silence, and a re-gate that
+      must pass with headroom. One grant per divergence episode. The sustained
+      offset earns no silence, so it earns no budget: verified at 40 m and
+      100 m with zero grants and no movement of the estimate.
+- [!] B5's closure is not B1's. The aided case still over-trusts vision
+      (NEES 419.4, 20.0% coverage) because the anchor error is still
+      unmodelled, and recovering the GNSS fixes shrank the symptom without
+      repairing the cause. Related side effect worth watching: the ATE column
+      no longer separates this case from the honest 3.782 m control, so
+      `CONSTRAINTS.md` now requires the coverage and NEES columns to be read
+      alongside it.
 - [ ] Per-sensor detection of multipath (elevated innovation variance without
       a mean shift), spoofing (innovation consistent but GNSS-internally
       inconsistent, e.g. against the IMU-predicted position), and sensor

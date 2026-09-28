@@ -32,12 +32,15 @@ from navkit.eval.statistics import chi2_cdf, chi2_ppf
 from navkit.fdir import (
     CHI2_THRESHOLDS,
     STATUS_ACCEPTED,
+    STATUS_REACCEPTED_WITH_INFLATION,
     STATUS_REJECTED_PERSISTENT,
-    STATUS_REJECTED_TRANSIENT,
+    STATUS_REJECTED_SPOOF,
     STATUS_SENSOR_FAULT,
     FdirConfig,
-    FdirTracker,
+    FdirManager,
     GatingDecision,
+    NisConfig,
+    NisWindowMonitor,
     chi2_dof,
     chi2_threshold,
     mahalanobis_sq,
@@ -282,7 +285,7 @@ def test_chi2_dof_is_the_innovation_length() -> None:
 
 
 def test_tracker_accepts_a_consistent_update() -> None:
-    tr = FdirTracker(FdirConfig())
+    tr = FdirManager(FdirConfig())
     S = np.eye(3)
     d = tr.check("gnss", np.zeros(3), S)
     assert d.accepted
@@ -297,21 +300,21 @@ def test_tracker_rejects_an_update_past_the_threshold() -> None:
     y = [3, 3, 3] with S = I gives d_M^2 = 27 against a threshold of 16.266 at
     alpha = 0.001.
     """
-    tr = FdirTracker(FdirConfig())
+    tr = FdirManager(FdirConfig())
     d = tr.check("gnss", np.array([3.0, 3.0, 3.0]), np.eye(3))
     assert not d.accepted
-    assert d.status == STATUS_REJECTED_TRANSIENT
+    assert d.status == STATUS_REJECTED_SPOOF
     assert d.mahalanobis_sq == pytest.approx(27.0)
     assert d.mahalanobis_sq > d.threshold
 
 
 def test_tracker_transitions_to_sensor_fault_after_the_configured_count() -> None:
-    tr = FdirTracker(FdirConfig(max_consecutive_rejections=5))
+    tr = FdirManager(FdirConfig(max_consecutive_rejections=5))
     S = np.eye(3)
     bad = np.full(3, 5.0)
     for k in range(4):
         d = tr.check("gnss", bad, S)
-        assert d.status == STATUS_REJECTED_TRANSIENT, f"update {k}"
+        assert d.status == STATUS_REJECTED_SPOOF, f"update {k}"
     d = tr.check("gnss", bad, S)
     assert d.status == STATUS_SENSOR_FAULT
     assert tr.is_faulted("gnss")
@@ -328,12 +331,12 @@ def test_a_single_bad_epoch_does_not_fault_a_channel() -> None:
     that faults on the first rejection would throw away a receiver because of one
     bad epoch in a hundred.
     """
-    tr = FdirTracker(FdirConfig(max_consecutive_rejections=5))
+    tr = FdirManager(FdirConfig(max_consecutive_rejections=5))
     S = np.eye(3)
     assert tr.check("gnss", np.zeros(3), S).accepted
     d = tr.check("gnss", np.full(3, 50.0), S)
     assert not d.accepted
-    assert d.status == STATUS_REJECTED_TRANSIENT
+    assert d.status == STATUS_REJECTED_SPOOF
     assert not tr.is_faulted("gnss")
     assert tr.check("gnss", np.zeros(3), S).accepted
     assert not tr.is_faulted("gnss")
@@ -342,7 +345,7 @@ def test_a_single_bad_epoch_does_not_fault_a_channel() -> None:
 def test_faulted_channel_rejects_clean_updates_until_recovery_completes() -> None:
     """Isolation persists, and clearing it takes a declared run of good updates."""
     cfg = FdirConfig(max_consecutive_rejections=3, auto_recovery_count=10)
-    tr = FdirTracker(cfg)
+    tr = FdirManager(cfg)
     S = np.eye(3)
     bad = np.full(3, 5.0)
     for _ in range(3):
@@ -368,7 +371,7 @@ def test_recovery_requires_consecutive_good_updates() -> None:
     threshold from flapping the state machine with it.
     """
     cfg = FdirConfig(max_consecutive_rejections=2, auto_recovery_count=4)
-    tr = FdirTracker(cfg)
+    tr = FdirManager(cfg)
     S = np.eye(3)
     bad = np.full(3, 5.0)
     tr.check("gnss", bad, S)
@@ -383,7 +386,7 @@ def test_recovery_requires_consecutive_good_updates() -> None:
 
 def test_channels_are_isolated_from_each_other() -> None:
     """A dead GNSS receiver says nothing about the camera."""
-    tr = FdirTracker(FdirConfig(max_consecutive_rejections=2))
+    tr = FdirManager(FdirConfig(max_consecutive_rejections=2))
     S = np.eye(3)
     bad = np.full(3, 5.0)
     tr.check("gnss", bad, S)
@@ -396,7 +399,7 @@ def test_channels_are_isolated_from_each_other() -> None:
 
 def test_disabled_tracker_gates_nothing_and_records_no_fault() -> None:
     """Disabled means disabled: no verdict, and no fault history to misread later."""
-    tr = FdirTracker(FdirConfig(enabled=False, max_consecutive_rejections=2))
+    tr = FdirManager(FdirConfig(enabled=False, max_consecutive_rejections=2))
     S = np.eye(3)
     for _ in range(10):
         d = tr.check("gnss", np.full(3, 50.0), S)
@@ -415,10 +418,10 @@ def test_a_degenerate_covariance_is_treated_as_a_fault_not_a_pass() -> None:
     covariance is degenerate -- would quietly disable the gate in exactly the
     configurations where the model is broken.
     """
-    tr = FdirTracker(FdirConfig())
+    tr = FdirManager(FdirConfig())
     d = tr.check("gnss", np.zeros(2), np.zeros((2, 2)))
     assert not d.accepted
-    assert d.status == STATUS_REJECTED_TRANSIENT
+    assert d.status == STATUS_REJECTED_SPOOF
 
 
 def test_tracker_validates_its_configuration() -> None:
@@ -433,7 +436,7 @@ def test_tracker_validates_its_configuration() -> None:
 
 def test_tracker_records_isolation_events_but_not_transients() -> None:
     """The event log holds decisions; the counters hold noise."""
-    tr = FdirTracker(FdirConfig(max_consecutive_rejections=2))
+    tr = FdirManager(FdirConfig(max_consecutive_rejections=2))
     S = np.eye(3)
     bad = np.full(3, 5.0)
     tr.check("gnss", bad, S)  # transient: not an event
@@ -446,7 +449,7 @@ def test_tracker_records_isolation_events_but_not_transients() -> None:
 
 
 def test_tracker_stats_and_reset() -> None:
-    tr = FdirTracker(FdirConfig(max_consecutive_rejections=1))
+    tr = FdirManager(FdirConfig(max_consecutive_rejections=1))
     S = np.eye(3)
     tr.check("gnss", np.full(3, 5.0), S)
     tr.check("vision", np.zeros(3), S)
@@ -461,13 +464,13 @@ def test_tracker_stats_and_reset() -> None:
 
 
 def test_decision_serialises_and_reports_fault_state() -> None:
-    tr = FdirTracker(FdirConfig())
+    tr = FdirManager(FdirConfig())
     d = tr.check("gnss", np.full(3, 5.0), np.eye(3))
     assert isinstance(d, GatingDecision)
     payload = d.as_dict()
     assert payload["accepted"] is False
     assert payload["dof"] == 3
-    assert payload["status"] == STATUS_REJECTED_TRANSIENT
+    assert payload["status"] == STATUS_REJECTED_SPOOF
     assert d.sensor_fault is False
 
 
@@ -841,24 +844,31 @@ def _denial_scenario(**fdir_kwargs):
     return gt, ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, vision=vision)
 
 
-def test_fdir_throws_away_the_absolute_fixes_that_would_rescue_a_displaced_filter() -> None:
-    """The measured cost of ADR-0005, pinned so it cannot be forgotten.
+def test_adaptive_inflation_recovers_the_fixes_that_the_plain_gate_threw_away() -> None:
+    """Blocker B5, closed with a number attached. ADR-0006.
 
     After a 15 s denial the filter is metres off with a collapsed covariance.
-    When GNSS returns, a gate that trusts that covariance reads a healthy fix
-    as an outlier and rejects it: 51 of 75 in this configuration. The filter
-    then dead-reckons the remaining 9 s instead of snapping back, and the
-    published ATE for the case goes from 3.428 m to 5.059 m.
+    A gate that trusts that covariance reads a healthy fix as an outlier: 51 of
+    75 rejected in this configuration, and the filter dead-reckons the rest of the
+    run instead of snapping back.
 
-    This is asserted in the direction it happened, not the direction anyone
-    would like. FDIR is not being tested here, and the gate is not wrong: its
-    premise is a calibrated innovation covariance, which this filter does not
-    have in this configuration. If a future consistency monitor widens the
-    gate, this test fails and the blocker in `CONSTRAINTS.md` can be closed
-    with a number attached.
+    The same gate, given a second pass, re-accepts the returning fixes once the
+    covariance it is testing against has been given back the uncertainty the
+    outage actually earned. Measured here: 9.864 m to 3.419 m, and 51 rejections
+    down to 15, on one inflation grant.
+
+    The assertions are deliberately asymmetric. The improvement is checked
+    tightly, because that is the thing the change was for. The remaining 15
+    rejections are checked only to be *fewer* than before, not to be zero, and
+    the ATE is checked against the no-FDIR control as a known remaining
+    deficiency rather than a pass: at 3.419 m this filter is still worse here
+    than with FDIR switched off at 1.878 m. Adaptive inflation removes most of
+    the damage the plain gate did; it does not make the underlying anchor model
+    calibrated, and pretending otherwise here would just relocate the overclaim.
     """
-    gt, with_fdir = _denial_scenario()
-    _, without_fdir = _denial_scenario(enabled=False)
+    gt, with_adapt = _denial_scenario()
+    _, without_any_fdir = _denial_scenario(enabled=False)
+    _, plain_gate = _denial_scenario(reacq_consecutive_rejections=999)
 
     def ate(result) -> float:
         reference = interpolate_trajectory(gt, result.trajectory.t)
@@ -866,7 +876,33 @@ def test_fdir_throws_away_the_absolute_fixes_that_would_rescue_a_displaced_filte
             np.linalg.norm(result.trajectory.positions[-1] - reference.positions[-1])
         )
 
-    assert with_fdir.stats["fdir_gnss_rejected"] > 40.0
-    assert with_fdir.stats["fdir_gnss_faulted"] == 1.0
-    assert without_fdir.stats["gnss_updates_rejected"] < 5.0
-    assert ate(with_fdir) > ate(without_fdir) + 1.0
+    # The regression this closes, pinned at its old value so it cannot creep
+    # back while the assertions below still pass.
+    assert plain_gate.stats["fdir_gnss_rejected"] > 40.0
+    assert ate(plain_gate) > 9.0
+
+    assert with_adapt.stats["fdir_gnss_rejected"] < 20.0
+    assert ate(with_adapt) < 4.0
+    assert ate(with_adapt) < 0.5 * ate(plain_gate)
+
+    # One grant, not many. A grant per divergence episode is what bounds how much
+    # uncertainty a channel can talk the filter out of; a loop of them would be
+    # the filter walking itself onto whatever the measurements say.
+    assert with_adapt.stats["fdir_inflations"] == 1.0
+    assert with_adapt.stats["fdir_gnss_reaccepted"] == 1.0
+    grants = [
+        e
+        for e in with_adapt.trajectory.metadata["fdir_events"]
+        if e["status"] == STATUS_REACCEPTED_WITH_INFLATION
+    ]
+    assert len(grants) == 1
+    # The grant is logged with what it bought, so the log says how much trust was
+    # surrendered and not merely that some was.
+    assert grants[0]["mahalanobis_sq"] > grants[0]["mahalanobis_sq_inflated"]
+    assert grants[0]["inflation_variance"] > 0.0
+    assert grants[0]["sensor"] == "gnss"
+
+    # Known remaining deficiency, stated so it cannot be forgotten: adaptive
+    # inflation is not the same as a calibrated filter, and this case is still
+    # worse than running no gate at all.
+    assert ate(with_adapt) > ate(without_any_fdir)

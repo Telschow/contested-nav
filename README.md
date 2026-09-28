@@ -21,14 +21,18 @@ a measurement rather than a caveat.
 ## The result that motivated this
 
 With GNSS denied for 15 s and visual odometry enabled, the filter reports
-**0.154 m** of position uncertainty while being **5.06 m** wrong. Mean NEES is
-**1996.5** against an expected 3, and only 16.0% of epochs fall inside the
+**0.161 m** of position uncertainty while being **2.54 m** wrong. Mean NEES is
+**419.4** against an expected 3, and only 20.0% of epochs fall inside the
 2σ ellipsoid where 99.2% should.
 
 This is not a tuning problem and it is not a crash. The filter runs, converges,
 and produces confident nonsense. It is therefore shipped with
 `vision_enabled=False` by default, and the failure is documented rather than
 hidden. [Why it happens](#the-one-thing-this-cannot-do) is below.
+
+Adaptive covariance inflation (ADR-0006) has since recovered part of this case —
+ATE 5.059 m to 2.541 m, rejections 51 to 5 — but the remaining NEES gap is
+unresolved, so the honesty requirement above stands.
 
 ## Install
 
@@ -78,8 +82,8 @@ the strictest of the four conventions the code supports.
 | Anchor as measurement noise (defect) | 1.307 | 0.091 | 387.3 | 16.0% | overconfident |
 | Vision only | 2.309 | 0.156 | 331.0 | 0.7% | overconfident |
 | GNSS denied 5–20 s, vision off (control) | 3.782 | 0.567 | 4.1 | 100.0% | mixed: bulk overconfident, tail underconfident |
-| GNSS denied 5–20 s, vision on | 5.059 | 0.154 | 1996.5 | 16.0% | overconfident |
-| GNSS denied, 30% camera frames dropped | 3.339 | 0.173 | 931.4 | 16.2% | overconfident |
+| GNSS denied 5–20 s, vision on | 2.541 | 0.161 | 419.4 | 20.0% | overconfident |
+| GNSS denied, 30% camera frames dropped | 2.005 | 0.178 | 264.8 | 16.7% | overconfident |
 
 Three rows deserve more than a glance.
 
@@ -88,13 +92,15 @@ error into the measurement covariance, rather than treating it as filter state,
 drops coverage to 16%. Both variants are in the benchmark so the comparison is
 reproducible, and the broken one is kept in the default run on purpose.
 
-**Turning vision on makes the filter much less honest, and the FDIR gate makes
-it less accurate too.** The outage control with vision off ends at 3.78 m with
-its uncertainty grown to match, so coverage stays at 100%. The aided case
-claims 0.15 m while being 5.06 m wrong. Before the FDIR gate this row reported
-a *lower* 3.43 m, so comparing ATE alone picked the dishonest filter; it now
-picks the honest one, by accident rather than by design. The two are separate
-failures and the table shows both.
+**Turning vision on makes the filter much less honest, though not much less
+accurate.** The outage control with vision off ends at 3.78 m with its
+uncertainty grown to match, so coverage stays at 100%. The aided case claims
+0.16 m while being 2.54 m wrong. Note what adaptive inflation did to this
+comparison: before it, the FDIR gate made the aided case *worse* on ATE (5.06 m),
+so a reader sorting by ATE at least got sent to the honest filter. Recovering
+the error put the dishonest filter back on top, and the ATE column no longer
+flags it at all. Ranking by error is not a calibration check, and this table is
+a demonstration of that rather than an argument against the fix.
 
 **Dead reckoning has no claimed-σ or NEES value.** An integrator with no
 uncertainty model has nothing to calibrate. Printing a covariance it never
