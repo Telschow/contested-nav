@@ -204,7 +204,7 @@ seeded scenario file, and CI runs the benchmark twice and fails if the two runs 
 cd contested-nav
 python -m pip install -e ".[dev]"
 
-python -m pytest                      # 484 collected: 482 pass, 2 skip
+python -m pytest                      # 534 collected: 532 pass, 2 skip
 python scripts/run_benchmark.py --markdown
 python scripts/make_figures.py</code></pre>
 
@@ -221,10 +221,26 @@ An ATE quoted without its alignment is not a result. The figures and the headlin
 <ul>
   <li><strong>Not field validated.</strong> Synthetic fixture only. No real capture is vendored or evaluated.</li>
   <li><strong>Visual aiding under GNSS denial is not trustworthy yet</strong>, and is disabled by default. This is the central open result, not a footnote.</li>
-  <li><strong>FDIR detects implausible updates but does not explain them.</strong> The chi-square gate isolates a channel and reports how long it was out, but it does not separate multipath from spoofing from sensor degradation, and it assumes a calibrated innovation covariance the filter does not have when the position covariance has collapsed. That assumption costs 1.6&nbsp;m of ATE in the GNSS-denied row above. See ADR-0005.</li>
+  <li><strong>FDIR detects implausible updates but does not explain them.</strong> The chi-square gate isolates a channel and reports how long it was out, but it does not separate multipath from spoofing from sensor degradation. See ADR-0005.</li>
+  <li><strong>The calibrated-covariance failure is mitigated, not fixed.</strong> The gate assumed a calibrated innovation covariance the filter does not have when the position covariance has collapsed, which cost 1.6&nbsp;m of ATE in the GNSS-denied row above. That was blocker B5, closed by ADR-0006 with a per-channel NIS window and adaptive GNSS covariance inflation: ATE 5.059&nbsp;m to 2.541&nbsp;m, rejections 51 to 5, false-alarm rate unchanged.</li>
+  <li><strong>The filter is still overconfident under visual aiding.</strong> Mean NEES 419.4 against a nominal 3, 2&sigma; coverage 20.0% where 95% is required. It converges and is confidently wrong. Blocker B1 is open, and it is a pose-graph problem that no FDIR threshold will move.</li>
   <li><strong>Not a flight-ready estimator.</strong> No sensor driver, no live front end, no real-time loop.</li>
   <li><strong>Single trajectory fixture.</strong> One 30 s synthetic path, so the numbers characterise a configuration, not a distribution over scenes.</li>
   <li><strong>Alignment fits positions only</strong>, so attitude error survives a rigid fit untouched. Reported separately for that reason.</li>
+</ul>
+
+<h2>Product management and systems engineering</h2>
+
+<p>
+Three documents in <code>docs/product_management/</code>, written against the measured state of the
+repository. Every figure is tagged as measured, derived, configured, estimated or proposed, and the
+things that are not verifiable today are marked <strong>NOT VERIFIED</strong> rather than left out.
+</p>
+
+<ul>
+  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/product_management/01_system_requirements_spec.md">System Requirements Specification</a> &mdash; the three operational user needs, 32 technical requirements, per-requirement verdicts. Only one OUN passes in full.</li>
+  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/product_management/02_swapc_tradeoff_matrix.md">SWaP-C and Sensor Selection Trade-off</a> &mdash; three platform profiles, IMU grades, cost and power bands, and when to move off pure ESKF dead reckoning.</li>
+  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/product_management/03_fdir_and_spoofing_strategy.md">FDIR and Adversarial Spoofing Strategy</a> &mdash; threat taxonomy, the two-stage defence architecture, and what the operator is actually shown.</li>
 </ul>
 
 <h2>Reading order</h2>
@@ -238,6 +254,8 @@ regenerated numbers.
 <ul>
   <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/architecture.md">Architecture</a> &mdash; states, Jacobians, update sequence.</li>
   <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/calibration.md">Calibration guide</a> &mdash; how to read NEES and coverage, and where they mislead.</li>
+  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/adr/0005-chi-square-fdir-gating.md">ADR-0005</a> &mdash; why the update is gated before the gain is formed.</li>
+  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/adr/0006-nis-window-monitor.md">ADR-0006</a> &mdash; why re-acquisition is bounded by drift times silence.</li>
   <li><a href="https://github.com/contested-nav/contested-nav/tree/main/docs/adr">Decision records</a> &mdash; why the anchor is filter state, why Joseph, why visual is off by default, and the quaternion convention.</li>
   <li><a href="https://github.com/contested-nav/contested-nav">Source</a></li>
 </ul>

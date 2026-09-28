@@ -43,7 +43,7 @@ against the source tree.
 python -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 
-.venv/bin/python -m pytest           # 484 collected: 482 pass, 2 skip, ~35 s
+.venv/bin/python -m pytest           # 534 collected: 532 pass, 2 skip, ~50 s
 ```
 
 Runtime dependencies are NumPy, Matplotlib and PyYAML. There is no SciPy, no
@@ -247,9 +247,28 @@ src/navkit/
   analysis/       typed claims and report rendering
 configs/          benchmark scenarios
 scripts/          run_benchmark.py, make_figures.py, coverage_report.py
-docs/             architecture, calibration, ADRs, figures, site
-tests/            484 tests (482 pass, 2 skip without TUM VI data)
+docs/             architecture, calibration, ADRs, figures, site,
+                  product_management/ (SRS, SWaP-C matrix, FDIR strategy)
+tests/            534 tests (532 pass, 2 skip without TUM VI data)
 ```
+
+## Product management and systems engineering
+
+Three documents in `docs/product_management/`, written against the measured
+state of this repository rather than an aspiration. Every number in them is
+tagged **[M]** measured, **[D]** derived, **[C]** configured, **[E]** estimate
+or **[P]** proposed, and the two that are not verifiable today are marked
+**NOT VERIFIED** rather than omitted.
+
+| Document | ID | What it settles |
+|---|---|---|
+| [System Requirements Specification](docs/product_management/01_system_requirements_spec.md) | PM-SRS-001 | The three operational user needs, 32 technical requirements, and a per-requirement verdict. **Only one OUN passes in full.** |
+| [SWaP-C and Sensor Selection Trade-off](docs/product_management/02_swapc_tradeoff_matrix.md) | PM-SWAPC-002 | Three platform profiles, IMU grades, cost and power bands, and the rule for when to move off pure ESKF dead reckoning. |
+| [FDIR and Adversarial Spoofing Strategy](docs/product_management/03_fdir_and_spoofing_strategy.md) | PM-FDIR-003 | Threat taxonomy, the two-stage defence architecture, and what the operator is actually shown. |
+
+Start with the SRS if you want one number: **AC-03 and AC-04 fail**, so the
+filter is not yet trustworthy under GNSS denial, and the cause is a model error
+rather than a tuning error.
 
 ## Status and limits
 
@@ -259,11 +278,20 @@ tests/            484 tests (482 pass, 2 skip without TUM VI data)
   See [above](#the-one-thing-this-cannot-do).
 - **FDIR detects implausible updates; it does not yet explain them.** The
   chi-square gate in `fdir/` isolates a channel and says how long it was out,
-  but it does not separate multipath from spoofing from sensor degradation, and
-  it assumes a calibrated innovation covariance that the filter does not have
-  when the position covariance has collapsed. In the `outage_visual` case that
-  assumption costs 1.6 m of ATE. See [ADR-0005](docs/adr/0005-chi-square-fdir-gating.md)
-  and blocker B5.
+  but it does not separate multipath from spoofing from sensor degradation. See
+  [ADR-0005](docs/adr/0005-chi-square-fdir-gating.md).
+- **The calibrated-covariance failure is mitigated, not fixed.** The ADR-0005
+  gate assumed a calibrated innovation covariance the filter does not have once
+  position covariance has collapsed, and in `outage_visual` that cost 1.6 m of
+  ATE. That was blocker B5, closed by
+  [ADR-0006](docs/adr/0006-nis-window-monitor.md): a per-channel NIS window plus
+  adaptive GNSS covariance inflation, which re-gates a returning fix once
+  under an inflated covariance. ATE 5.059 m to 2.541 m and rejections 51 to 5,
+  with the false-alarm rate unchanged. B1 is still open — see below.
+- **The filter is still overconfident under visual aiding.** Mean NEES 419.4
+  against a nominal 3, 2σ coverage 20.0% where 95% is required. It converges and
+  is confidently wrong. This is blocker B1, and it is a pose-graph problem that
+  no threshold in the FDIR subsystem will move.
 - **One trajectory fixture.** A single 30 s synthetic path, so the numbers
   characterise a configuration, not a distribution over scenes. A Monte Carlo
   sweep is the obvious next step and is not done.
