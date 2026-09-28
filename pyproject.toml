@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "navkit"
+version = "0.1.0"
+description = "Replay, evaluation and uncertainty calibration for GNSS-denied navigation"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "contested-nav contributors" }]
+keywords = [
+    "navigation",
+    "kalman-filter",
+    "state-estimation",
+    "uncertainty-calibration",
+    "gnss-denied",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "numpy>=1.26",
+    "matplotlib>=3.8",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[project.urls]
+Homepage = "https://github.com/contested-nav/contested-nav"
+Issues = "https://github.com/contested-nav/contested-nav/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/navkit"]
+
+[tool.pytest.ini_options]
+# Tests run against the source tree with no install step, so a fresh clone needs
+# only `pytest`. This also keeps the suite independent of build-backend state.
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+filterwarnings = ["error::RuntimeWarning"]

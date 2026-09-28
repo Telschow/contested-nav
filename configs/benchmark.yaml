@@ -1,0 +1,204 @@
+# Reproducible benchmark definition for the 21-state ESKF.
+#
+# Every scenario here is synthetic. The reference is the analytic trajectory
+# the generator is built from, so ground truth is exact rather than another
+# estimate. Cases differ only in what is degraded, which is what makes them
+# comparable: a difference in ATE between two cases is a difference in the
+# scenario, not in the initial conditions.
+#
+# Run with:
+#   python scripts/run_benchmark.py
+#   python scripts/run_benchmark.py --list
+#   python scripts/run_benchmark.py --only gnss_only outage_visual
+
+defaults:
+  synthetic:
+    duration_s: 30.0
+    rate_hz: 100.0
+    radius_m: 4.0
+    circles: 1.5
+    sway_amplitude_m: 0.6
+    sway_cycles: 3.0
+    yaw_amplitude_deg: 35.0
+    yaw_cycles: 1.0
+    start_position: [1.0, 0.0, 1.6]
+
+  estimator:
+    # 1 re-commits the anchor pose at every visual update, so each measurement
+    # compares consecutive frames. None holds a single anchor for the whole
+    # run, which makes the anchor error one unknown shared by every measurement
+    # and measures measurably worse (mean NEES 23 rather than 3).
+    vision_keyframe_interval: 1
+    vision_anchor_modelled: true
+    rpe_delta_s: 1.0
+
+cases:
+  # --- controls -------------------------------------------------------------
+
+  gnss_only:
+    name: gnss_only
+    description: >-
+      GNSS at 5 Hz, no outage, no vision. This is the reference point every
+      other case is read against; it establishes that the filter is calibrated
+      when a satellite solution is available.
+    scenario:
+      name: gnss_only
+      description: GNSS only, nominal noise.
+      gnss:
+        enabled: true
+        rate_hz: 5.0
+        sigma_m: 0.8
+        seed: 0
+
+  dead_reckoning:
+    name: dead_reckoning
+    description: >-
+      Inertial integration with no aiding at all. Reported as the control for
+      "how much of the result is the filter and how much is the motion model".
+    estimator:
+      class: DeadReckoning
+    scenario:
+      name: dead_reckoning
+      description: No aiding whatsoever.
+      gnss:
+        enabled: false
+        seed: 0
+
+  # --- the defect this refactor fixed ---------------------------------------
+  #
+  # vision_anchor_modelled: false puts the anchor error back into the R matrix as
+  # if it were measurement noise. It is wrong, and it is kept only so the
+  # failure can be reproduced on demand: the number it produces is the evidence
+  # for modelling the anchor as filter state instead.
+
+  vision_anchor_in_measurement_noise:
+    name: vision_anchor_in_measurement_noise
+    description: >-
+      The pre-refactor arrangement, where the visual anchor error is folded into
+      the measurement covariance. Retained as a regression control, not as a
+      supported configuration.
+    estimator:
+      vision_fuse: true
+      vision_anchor_modelled: false
+    scenario:
+      name: vision_anchor_in_measurement_noise
+      description: Anchor error in R rather than in filter state (incorrect).
+      gnss:
+        enabled: true
+        rate_hz: 5.0
+        sigma_m: 0.8
+        seed: 0
+      vision:
+        enabled: true
+        rate_hz: 20.0
+        rot_sigma_deg: 0.35
+        trans_sigma_m: 0.05
+        seed: 0
+
+  # --- visual only ----------------------------------------------------------
+
+  vision_only:
+    name: vision_only
+    description: >-
+      Visual odometry at 20 Hz with no GNSS. Calibrated, and much better than
+      dead reckoning, but it cannot be trusted for an unbounded outage: a single
+      anchor held for a long run freezes the position uncertainty.
+    estimator:
+      vision_fuse: true
+    scenario:
+      name: vision_only
+      description: Visual odometry, no GNSS.
+      gnss:
+        enabled: false
+        seed: 0
+      vision:
+        enabled: true
+        rate_hz: 20.0
+        rot_sigma_deg: 0.35
+        trans_sigma_m: 0.05
+        seed: 0
+
+  # --- the case this project is about ---------------------------------------
+
+  outage_control:
+    name: outage_control
+    description: >-
+      15 s GNSS outage, 5 s to 20 s, with vision OFF. This is the honest
+      baseline for a contested receiver: the error grows, the filter knows it
+      grows, and the coverage stays at nominal throughout.
+    estimator:
+      vision_fuse: false
+    scenario:
+      name: outage_control
+      description: GNSS outage with no visual aiding.
+      gnss:
+        enabled: true
+        rate_hz: 5.0
+        sigma_m: 0.8
+        seed: 0
+      gnss_outages:
+        - start_s: 5.0
+          duration_s: 15.0
+          reason: contested
+
+  outage_visual:
+    name: outage_visual
+    description: >-
+      The same 15 s outage with vision ON. This is the case the 21-state
+      refactor was supposed to fix, and the numbers say it did not: the filter
+      reports roughly 0.3 m of uncertainty while being tens of metres wrong, and
+      coverage collapses. That is why vision_enabled defaults to false, and why
+      closing the gap needs a pose graph rather than a better filter.
+    estimator:
+      vision_fuse: true
+    scenario:
+      name: outage_visual
+      description: GNSS outage with visual aiding, 21-state anchor.
+      gnss:
+        enabled: true
+        rate_hz: 5.0
+        sigma_m: 0.8
+        seed: 0
+      vision:
+        enabled: true
+        rate_hz: 20.0
+        rot_sigma_deg: 0.35
+        trans_sigma_m: 0.05
+        seed: 0
+      gnss_outages:
+        - start_s: 5.0
+          duration_s: 15.0
+          reason: contested
+
+  # --- degraded front end ---------------------------------------------------
+
+  outage_visual_degraded_camera:
+    name: outage_visual_degraded_camera
+    description: >-
+      Visual aiding through the outage with 30% of camera frames dropped in
+      bursts. Checks that the anchor model does not collapse when the visual
+      stream is intermittent rather than clean.
+    estimator:
+      vision_fuse: true
+    scenario:
+      name: outage_visual_degraded_camera
+      description: 30% camera drop, burst period 1 s.
+      gnss:
+        enabled: true
+        rate_hz: 5.0
+        sigma_m: 0.8
+        seed: 0
+      vision:
+        enabled: true
+        rate_hz: 20.0
+        rot_sigma_deg: 0.35
+        trans_sigma_m: 0.05
+        seed: 0
+      gnss_outages:
+        - start_s: 5.0
+          duration_s: 15.0
+          reason: contested
+      camera_drop:
+        fraction: 0.3
+        burst_period_s: 1.0
+        seed: 3

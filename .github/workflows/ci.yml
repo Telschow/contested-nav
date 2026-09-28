@@ -1,0 +1,146 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor is the declared minimum in pyproject.toml. Testing only the
+        # newest interpreter would let a 3.11 incompatibility ship unnoticed, and
+        # the upper bound is included because that is where new breakage appears.
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Test
+        run: python -m pytest -q
+
+      - name: Coverage ratchet
+        # Fails if any module drops below its floor, or if total coverage drops.
+        # The point is to make coverage regression a build failure rather than
+        # something a reviewer has to notice in a diff.
+        run: python scripts/coverage_report.py
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip ruff mypy
+      - name: ruff check
+        run: ruff check src tests scripts
+      - name: ruff format --check
+        run: ruff format --check src tests scripts
+      - name: mypy
+        # Untyped third-party stubs are expected here: NumPy and Matplotlib do
+        # not ship complete ones, and silencing that is the point of the flag
+        # rather than a workaround.
+        run: mypy src --ignore-missing-imports
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade pip build
+      - name: Build sdist and wheel
+        run: python -m build
+      - name: Check the wheel installs and imports in a clean env
+        run: |
+          python -m venv /tmp/verify
+          /tmp/verify/bin/python -m pip install --upgrade pip
+          /tmp/verify/bin/python -m pip install dist/*.whl
+          # Importing is the actual test: a wheel that builds but cannot be
+          # imported is a packaging bug the build step alone will not catch.
+          /tmp/verify/bin/python -c "import navkit; print(navkit.__version__)"
+
+  benchmark:
+    name: benchmark reproducibility
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+      - name: Run the benchmark twice and require identical output
+        # The benchmark is only evidence if it is reproducible. Running it twice
+        # and diffing the two result files is the cheapest way to catch an
+        # unseeded random draw, which would otherwise make every quoted number
+        # unreproducible while still looking plausible.
+        run: |
+          python scripts/run_benchmark.py --out /tmp/run1.json
+          python scripts/run_benchmark.py --out /tmp/run2.json
+          python - <<'PY'
+          import json, sys
+
+          # Wall-clock derived values, stripped wherever they appear. These are
+          # measurements of how fast the machine ran the filter, not
+          # measurements of the filter, so they are expected to differ between
+          # runs. They show up in more than one place (top level, `stats` and
+          # `summary`), hence the recursive walk rather than a fixed key list.
+          TIMING_KEYS = frozenset({"runtime_s", "wall_s", "realtime_factor"})
+
+          def strip(node):
+              if isinstance(node, dict):
+                  return {k: strip(v) for k, v in node.items() if k not in TIMING_KEYS}
+              if isinstance(node, list):
+                  return [strip(v) for v in node]
+              return node
+
+          def norm(path):
+              return json.dumps(strip(json.load(open(path))), sort_keys=True)
+
+          if norm("/tmp/run1.json") != norm("/tmp/run2.json"):
+              print("benchmark is NOT reproducible across runs")
+              sys.exit(1)
+          print("benchmark is reproducible")
+          PY
+      - name: Check the documented tables against the generated benchmark
+        # README.md and docs/index.html both claim their numbers are generated
+        # rather than typed. This is what makes that claim testable: the
+        # benchmark is regenerated here, then every numeric cell of both tables
+        # is compared against it. Without this step a re-run that moves a number
+        # would leave the prose describing the old one, and nothing else fails.
+        run: |
+          python scripts/run_benchmark.py --out /tmp/bench.json
+          python scripts/check_doc_tables.py --results /tmp/bench.json

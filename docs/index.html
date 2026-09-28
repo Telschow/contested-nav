@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>contested-nav &middot; GNSS-denied navigation with honest uncertainty</title>
+<meta name="description" content="A 21-state error-state Kalman filter for GNSS-denied navigation, with a measured account of where its uncertainty model breaks.">
+<style>
+  :root {
+    --ink: #16232e;
+    --muted: #5b6b78;
+    --line: #dfe6ec;
+    --accent: #1b6ca8;
+    --bad: #c0392b;
+    --ok: #1e8449;
+    --bg: #ffffff;
+    --panel: #f7f9fb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e8eef3; --muted: #9db0bf; --line: #2b3a47;
+      --accent: #6fb3e0; --bad: #e88b7d; --ok: #6cc79a;
+      --bg: #101820; --panel: #17222c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; padding: 2.5rem 1.25rem 5rem; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 .4rem; letter-spacing: -.02em; }
+  h2 { font-size: 1.3rem; margin: 3rem 0 .8rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.05rem; margin: 1.8rem 0 .5rem; }
+  p, li { color: var(--ink); }
+  .sub { color: var(--muted); font-size: 1.05rem; margin: 0 0 1.5rem; }
+  .lede { font-size: 1.1rem; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .875em; }
+  pre { background: var(--panel); padding: .9rem 1rem; border-radius: 6px; overflow-x: auto; border: 1px solid var(--line); }
+  a { color: var(--accent); }
+  .flag {
+    border-left: 3px solid var(--bad); background: var(--panel);
+    padding: .9rem 1.1rem; margin: 1.5rem 0; border-radius: 0 6px 6px 0;
+  }
+  .flag p { margin: 0 0 .5rem; }
+  .flag p:last-child { margin: 0; }
+  .flag strong { color: var(--bad); }
+  table { border-collapse: collapse; width: 100%; margin: 1.2rem 0; font-size: .9rem; }
+  th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--line); }
+  th { font-weight: 600; color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  figure { margin: 1.8rem 0; }
+  figure img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  figcaption { color: var(--muted); font-size: .85rem; margin-top: .5rem; }
+  .tag { display: inline-block; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em;
+         padding: .15rem .5rem; border-radius: 3px; border: 1px solid var(--line); color: var(--muted); }
+  .tag.bad { color: var(--bad); border-color: var(--bad); }
+  .tag.ok { color: var(--ok); border-color: var(--ok); }
+  .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); margin: 1.5rem 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.1rem; }
+  .card .n { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+  .card .l { color: var(--muted); font-size: .8rem; }
+  footer { margin-top: 4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>contested-nav</h1>
+<p class="sub">GNSS-denied navigation with an uncertainty model that is measured rather than asserted.</p>
+
+<p class="lede">
+This project exists because of one uncomfortable result. A 21-state error-state Kalman filter fuses
+visual odometry and GNSS, and when GNSS is denied mid-run the filter reports about
+<strong>0.15&nbsp;m</strong> of position uncertainty while being <strong>3.4&nbsp;m</strong> wrong. The
+filter is not crashing, not diverging, and not producing a warning. It is confidently incorrect,
+and no amount of tuning fixes it. Everything below is published so that the failure is
+inspectable.
+</p>
+
+<div class="flag">
+  <p><strong>Read this before the numbers.</strong> Every result on this page comes from a
+  known-answer <em>synthetic</em> fixture: an analytic trajectory with a filter initialised
+  exactly at the truth. These are not field measurements, and nothing here should be read as
+  performance on real sensor data. No real capture is included in this repository.</p>
+  <p>The synthetic setting is chosen precisely so the error is attributable: because the initial
+  state is exact, every subsequent error belongs to the estimator rather than to a
+  mis-initialised filter or an approximate ground truth.</p>
+</div>
+
+<h2>The finding</h2>
+
+<div class="grid">
+  <div class="card"><div class="n">1053</div><div class="l">Mean NEES with visual aiding through an outage (expected 3)</div></div>
+  <div class="card"><div class="n">16%</div><div class="l">Coverage inside the 2-sigma ellipsoid (expected 99.2%)</div></div>
+  <div class="card"><div class="n">0.154 m</div><div class="l">Uncertainty the filter claims</div></div>
+  <div class="card"><div class="n">3.43 m</div><div class="l">Error it actually makes</div></div>
+</div>
+
+<p>
+The cause is structural, not a coding slip. The visual front end supplies a relative transform
+between consecutive frames, so the absolute pose has to come from somewhere. The filter declares
+an anchor pose at the start of the run and carries its error as two estimated states
+(<code>c_p</code>, <code>c_t</code>). That is correct, and it works when a GNSS solution keeps
+the anchor honest. It fails when GNSS disappears, because then the only thing constraining the
+anchor is the anchor itself.
+</p>
+<p>
+Treating the anchor error as measurement noise instead, which is the obvious shortcut, is
+demonstrably worse: it drops coverage to 16% while looking identical in the source. Both variants
+are in the benchmark so the comparison is reproducible.
+</p>
+<p>
+The fix is a pose graph over the visual constraints, which models the correlation the error-state
+form cannot express. That is not implemented yet, and until it is, <code>vision_enabled</code>
+defaults to <code>False</code>. A filter that is wrong by 3&nbsp;m should not be handed to a caller
+who did not ask for that failure mode.
+</p>
+
+<figure>
+  <img src="figures/error-vs-claim.png" alt="Scatter of ATE RMSE against claimed one-sigma uncertainty for each scenario, with a dashed one-to-one line. The visual scenarios sit far above the line.">
+  <figcaption>Error against claimed uncertainty. A calibrated filter lies on the dashed line; these do not.</figcaption>
+</figure>
+
+<h2>Calibration is reported as two tests, not one</h2>
+
+<p>
+A filter can be marginally overconfident almost everywhere while never producing an error outside
+its 2-sigma ellipsoid, and collapsing that into a single "calibrated" flag throws away half the
+evidence. So this project reports a <em>bulk</em> verdict (mean NEES against its expectation) and
+a <em>tail</em> verdict (coverage, by Wilson interval), and names the disagreement when they
+disagree.
+</p>
+
+<table>
+  <thead><tr>
+    <th>Scenario</th><th class="num">ATE RMSE (m)</th><th class="num">Claims 1&sigma; (m)</th>
+    <th class="num">Mean NEES</th><th class="num">Coverage @ 2&sigma;</th><th>Verdict</th>
+  </tr></thead>
+  <tbody>
+    <tr><td>GNSS only (control)</td><td class="num">0.503</td><td class="num">0.252</td><td class="num">3.7</td><td class="num">100.0%</td><td><span class="tag">mixed</span> bulk overconfident, tail underconfident</td></tr>
+    <tr><td>Dead reckoning (no aiding)</td><td class="num">1.877</td><td class="num">n/a</td><td class="num">n/a</td><td class="num">n/a</td><td>no covariance reported</td></tr>
+    <tr><td>Anchor as measurement noise (defect)</td><td class="num">1.259</td><td class="num">0.091</td><td class="num">354.6</td><td class="num">16.0%</td><td><span class="tag bad">overconfident</span></td></tr>
+    <tr><td>Vision only</td><td class="num">2.309</td><td class="num">0.156</td><td class="num">331.0</td><td class="num">0.7%</td><td><span class="tag bad">overconfident</span></td></tr>
+    <tr><td>GNSS denied, vision off (control)</td><td class="num">3.782</td><td class="num">0.567</td><td class="num">4.1</td><td class="num">100.0%</td><td><span class="tag">mixed</span> bulk overconfident, tail underconfident</td></tr>
+    <tr><td>GNSS denied, vision on</td><td class="num">3.428</td><td class="num">0.154</td><td class="num">1051.3</td><td class="num">16.0%</td><td><span class="tag bad">overconfident</span></td></tr>
+    <tr><td>GNSS denied, 30% frames dropped</td><td class="num">2.545</td><td class="num">0.173</td><td class="num">576.8</td><td class="num">16.2%</td><td><span class="tag bad">overconfident</span></td></tr>
+  </tbody>
+</table>
+
+<p>
+Dead reckoning has no row for claimed uncertainty or NEES, and that is deliberate: an integrator
+with no uncertainty model has nothing to calibrate, and printing a covariance it never computed
+would be the same error as printing one it does not deserve.
+</p>
+<p>
+The outage control is the honest comparison. With vision off, the error grows to 3.78&nbsp;m and
+the filter's uncertainty grows with it, so coverage stays at 100%. Turning vision on makes the
+number <em>smaller</em> and the filter far less honest. A reader comparing only ATE would conclude
+the aided case is better.
+</p>
+
+<figure>
+  <img src="figures/outage-error.png" alt="Position error against time for the two outage scenarios, with the GNSS outage shaded and the claimed uncertainty drawn as a dashed line.">
+  <figcaption>Through the 15 s outage. The dashed line is what the filter claims; it stays flat while the error climbs.</figcaption>
+</figure>
+
+<figure>
+  <img src="figures/coverage.png" alt="Bar chart of observed coverage at one, two and three sigma per axis for each scenario, against the expected coverage for three degrees of freedom.">
+  <figcaption>Coverage against the exact 3-dof ellipsoid expectation, not the one-dimensional 68/95/99.7 figures.</figcaption>
+</figure>
+
+<figure>
+  <img src="figures/nees.png" alt="Horizontal bar chart of mean NEES per scenario on a log scale, with a dashed line at the expected value of three.">
+  <figcaption>Mean NEES, log scale. Anything far right of the dashed line is overconfidence.</figcaption>
+</figure>
+
+<h2>What is actually in the filter</h2>
+
+<p>
+Twenty-one states, in the error-state form: attitude error, velocity error, position error, gyro
+and accel bias error, plus the six anchor-error states. Covariance is propagated in the 21&times;21
+form and updated with the Joseph formulation, so the matrix stays symmetric positive definite
+through the run rather than drifting until something breaks.
+</p>
+
+<p>
+The measurement Jacobians are where the original bug lived, and they are worth stating because
+the frame error is easy to make and invisible in review. For a relative visual transform the
+anchor-error Jacobian is <code>-R_rel_pred</code>, not <code>+R_rel_pred</code>, and the rotation
+blocks are <code>±R_rel_pred</code> rather than <code>±I</code> because
+<code>rot_log(Q&nbsp;Exp(v)&nbsp;Q<sup>T</sup>)&nbsp;=&nbsp;Q&nbsp;v</code> conjugates the increment into the
+previous body frame. That sign and frame are what make modelling the anchor as filter state
+correct rather than merely different.</p>
+
+<h2>Reproducing every number here</h2>
+
+<p>
+No number on this page is typed in by hand. The table and the figures are generated from a
+seeded scenario file, and CI runs the benchmark twice and fails if the two runs disagree.</p>
+
+<pre><code>git clone https://github.com/contested-nav/contested-nav
+cd contested-nav
+python -m pip install -e ".[dev]"
+
+python -m pytest                      # 405 collected: 403 pass, 2 skip
+python scripts/run_benchmark.py --markdown
+python scripts/make_figures.py</code></pre>
+
+<p>
+Absolute pose error is reported four ways and never alone, because the alignment convention
+changes the number by metres: <code>none</code> for a filter already in the reference frame,
+<code>rigid</code> fitted over the whole sequence, <code>rigid_start</code> fitted on the first
+20% only so it cannot absorb accumulated drift, and <code>similarity</code> with a free scale.
+An ATE quoted without its alignment is not a result. The figures and the headline table both use
+<code>none</code>, which is the strictest choice here.</p>
+
+<h2>Status and limits</h2>
+
+<ul>
+  <li><strong>Not field validated.</strong> Synthetic fixture only. No real capture is vendored or evaluated.</li>
+  <li><strong>Visual aiding under GNSS denial is not trustworthy yet</strong>, and is disabled by default. This is the central open result, not a footnote.</li>
+  <li><strong>Not a flight-ready estimator.</strong> No sensor driver, no live front end, no real-time loop.</li>
+  <li><strong>Single trajectory fixture.</strong> One 30 s synthetic path, so the numbers characterise a configuration, not a distribution over scenes.</li>
+  <li><strong>Alignment fits positions only</strong>, so attitude error survives a rigid fit untouched. Reported separately for that reason.</li>
+</ul>
+
+<h2>Reading order</h2>
+
+<p>
+The prose documents live in the repository as Markdown rather than being duplicated here, so
+there is only ever one copy of each to keep correct. This site carries the figures and the
+regenerated numbers.
+</p>
+
+<ul>
+  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/architecture.md">Architecture</a> &mdash; states, Jacobians, update sequence.</li>
+  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/calibration.md">Calibration guide</a> &mdash; how to read NEES and coverage, and where they mislead.</li>
+  <li><a href="https://github.com/contested-nav/contested-nav/tree/main/docs/adr">Decision records</a> &mdash; why the anchor is filter state, why Joseph, why visual is off by default, and the quaternion convention.</li>
+  <li><a href="https://github.com/contested-nav/contested-nav">Source</a></li>
+</ul>
+
+<footer>
+  MIT licensed. Synthetic results throughout; see the note above. Numbers regenerate from
+  <code>configs/benchmark.yaml</code>.
+</footer>
+
+</main>
+</body>
+</html>

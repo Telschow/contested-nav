@@ -1,0 +1,46 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+
+# Coverage and profiling
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.prof
+*.lprof
+
+# Local agent tooling config, not project source
+.opencode/
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Datasets and generated artefacts
+#
+# Third-party datasets (TUM VI, EuRoC) are not vendored; fetch them locally.
+# Reproducibility comes from seeded configs plus committed figures, not from
+# committing megabytes of raw capture.
+data/raw/
+data/subsets/
+*.bag
+*.db3
+
+# Benchmark output. Figures under docs/figures/ ARE committed on purpose:
+# they are the evidence behind the numbers quoted in README.md and docs/.
+results/
+*.json.tmp
+coverage.json

@@ -1,0 +1,148 @@
+# Project constraints
+
+Invariants this project holds itself to. Every entry is either currently true
+or is a stated blocker; nothing here is aspirational. Ratchets are measured,
+not estimated, and the command to re-measure each one is given.
+
+Last measured: 405 tests collected — 403 passing, 2 skipped — and 84.75% line
+coverage (`python -m pytest`, `python scripts/coverage_report.py`). The two
+skips are the TUM VI reference checks in `tests/test_trajectory_io.py`, which
+need ground truth that is deliberately not vendored (S2); they are skips, not
+passes, and are counted separately here so the number cannot read higher than
+it measures.
+
+## Correctness
+
+- **C1 — Quaternions are `(w, x, y, z)` internally.** TUM and Plotly files
+  store `(x, y, z, w)`. Conversion happens only in `io/trajectory.py`, via
+  `xyzw_to_wxyz` / `wxyz_to_xyzw`. A bare `[3, 0, 1, 2]` slice at a call site
+  is a bug: the result is still unit-norm and still orthonormal.
+  *Enforced by* `tests/test_trajectory_io.py`, which round-trips every format
+  and checks specific known rotations.
+
+- **C2 — A wrong-order rotation must fail loudly.** Orthonormality and
+  `det == 1` are not sufficient: a permuted quaternion satisfies both. Tests
+  assert known matrices, and assert ATE against published TUM VI numbers.
+
+- **C3 — Poses are `T_wb`.** Body frame in world frame, everywhere. No
+  inverted convention anywhere in the codebase.
+
+- **C4 — Covariance updates must preserve positive semidefiniteness.** The
+  ESKF uses the Joseph form
+  `G @ (I-KH) P (I-KH)^T + K R K^T` followed by reset, never the
+  `(I-KH) P` shortcut. *Enforced by*
+  `test_covariance_stays_positive_semidefinite_across_a_visual_run`.
+
+- **C5 — No fabricated or extrapolated results.** Every number in README.md
+  and `docs/` is reproducible from a committed config and a fixed seed via
+  `scripts/run_benchmark.py`. Claims are labelled `FACT`, `MEASUREMENT`,
+  `INTERPRETATION`, or `HYPOTHESIS` (`analysis/findings.py`).
+
+- **C6 — Synthetic results are never presented as real-sensor performance.**
+  The synthetic suite isolates estimator structure; it says nothing about a
+  real IMU, a real camera, or a real outage.
+
+## Scope
+
+- **S1 — Pure Python + NumPy is the runtime.** Matplotlib for figures, PyYAML
+  for configs. No SciPy, GTSAM, `evo`, C++/CMake, neural networks, or cloud
+  services. Chi-square quantiles are implemented in `eval/statistics.py`
+  because the alternative is an unverifiable dependency.
+
+- **S2 — No third-party data is vendored.** Fetch locally; commit seeded
+  configs and frozen figures instead.
+
+- **S3 — `vision_enabled` stays `False` by default** until the
+  GNSS-denial limitation below is resolved. Shipping a confidently-wrong
+  filter is worse than shipping no visual fusion.
+
+- **S4 — MIT.** No CLA. No employer or defence-sector framing in any public
+  artefact.
+
+## Quality ratchets
+
+These are floors, not goals. Each must not regress; raising one is welcome.
+
+| Ratchet | Floor | Current | Re-measure with |
+|---|---:|---:|---|
+| Tests collected | 405 | 405 | `pytest` |
+| Tests passing | 300 | 403 (2 skipped, see below) | `pytest -rs` |
+| Line coverage | 75% | 84.75% | `scripts/coverage_report.py` |
+| `io/trajectory.py` coverage | 85% | 90.8% | as above |
+| `analysis/findings.py` coverage | 80% | 97.6% | as above |
+| `config.py` coverage | 80% | 98.4% | as above |
+| `eval/metrics.py` coverage | 60% | 85.6% | as above |
+| `eval/thresholds.py` coverage | 60% | 96.4% | as above |
+| `geometry/align.py` coverage | 60% | 76.6% | as above |
+| `estimators/eskf.py` coverage | 80% | 91.9% | as above |
+| `degrade/` coverage | 50% | 78.8% / 73.5% | as above |
+| Docs | README + architecture + calibration + ADR-0001..0004 | 6 of 6 | manual |
+| Documented tables match the generated benchmark | exact | yes | `scripts/check_doc_tables.py` |
+| Open blockers documented | all | see ROADMAP | manual |
+
+## Known blockers
+
+- **B1 — Visual fusion is overconfident under GNSS denial.** Mean NEES 1051
+  over a 15 s outage (`outage_visual`), with 16.0% of epochs inside 2 sigma
+  against 99.2% expected. A single anchor cannot represent correlated visual
+  drift. Requires a pose graph. Pinned by
+  `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`. B2 did not
+  change this number: correcting a frame is not the same as modelling
+  correlated error.
+
+- **B2 — No lint or typecheck gate has ever run locally.** `ruff` and `mypy`
+  are not installed in the working environment, so no style or type error is
+  caught outside the test run. CI installs them and runs both; see ROADMAP.
+
+- **B3 — Package build is unverified locally.** `pip` and `setuptools` are
+  absent here, so `pyproject.toml` metadata and the Hatchling build path have
+  never been executed, only reasoned about. CI builds an sdist and a wheel and
+  imports the wheel in a clean environment; see ROADMAP.
+
+- **B4 — Full TUM VI room1 ground truth is unavailable.** The published
+  mocap trajectory was not obtained, so the ATE comparison uses a subsampled
+  Plotly ground truth and the ATE figure is not a verified reproduction of the
+  published 0.069 m. The claim is typed accordingly. This is also why two tests
+  skip when the data is absent.
+
+## Resolved engineering blockers
+
+Kept here rather than deleted, because the reason each defect was invisible is
+the useful part. A defect that runs, fuses, and is wrong without raising is not
+found by review; it is found by a test that differentiates the filter's own
+residual numerically.
+
+- **R1 (was B2) — Rotation Jacobians were in the wrong frame.** `H_theta` and
+  `H_ct` were `+I` and `-I` rather than `R_rel_pred` and `-R_rel_pred`.
+
+  The residual is `rot_log(R_rel_meas · Exp(dtheta) · R_rel_predᵀ)`. By the
+  conjugation identity `rot_log(Q Exp(v) Qᵀ) = Q v`, that equals
+  `R_rel_pred · dtheta`, not `dtheta`. The increment is conjugated into the
+  previous body frame, so the identity is correct only when the inter-frame
+  rotation is zero — which it is not in general, only in the trivial case. The
+  translational pair was wrong in the same way for the same reason:
+  `h(x) = R_prevᵀ (p_cur − p_prev)` so `∂h/∂p = +R_prevᵀ`, not `−R_prevᵀ`.
+
+  The four blocks are therefore:
+
+  | Block | Value | Frame |
+  |---|---|---|
+  | `H_theta` | `R_rel_pred` | previous body |
+  | `H_ct` | `-R_rel_pred` | previous body |
+  | `H_p` | `R_prevᵀ` | previous body |
+  | `H_cp` | `-R_prevᵀ` | previous body |
+
+  At 20 Hz against a smooth trajectory the error moved the benchmark only in the
+  third decimal, which is why it survived review. Pinned by central
+  differences of the filter's own residual in `tests/test_estimators.py`
+  (`test_attitude_jacobian_is_the_exact_derivative`,
+  `test_anchor_attitude_jacobian_is_the_exact_derivative`,
+  `test_position_jacobian_is_the_exact_derivative`,
+  `test_translation_anchor_jacobian_is_the_exact_derivative`). B1 is unchanged
+  by this fix.
+
+## Adding a constraint
+
+Add it above with a stable id, a statement that is true or explicitly a
+blocker, and how it is enforced. If it cannot be enforced, it is a wish, and
+belongs in `ROADMAP.md` instead.
