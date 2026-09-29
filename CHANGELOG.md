@@ -147,5 +147,7 @@ this project uses [semantic versioning](https://semver.org/).
 
 ## [0.1.0] and earlier
 
-Commits `c81c6f9`, `5d83216`, `4fa780b`, `466ab48` and their ancestors. No
+Commits `abb62bb`, `cc998d1`, `c571e91`, `8f6fcd7` and their ancestors. (These
+were `c81c6f9`, `5d83216`, `4fa780b` and `466ab48` until the history rewrite
+described in `docs/PROJECT_STATE.md` §5 replaced the author identity.) No
 changelog was kept; see `git log` and `docs/audit/`.

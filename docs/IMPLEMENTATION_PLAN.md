@@ -5,7 +5,7 @@ Derived from `docs/ENGINEERING_BASELINE.md` and `docs/PUBLICATION_READINESS.md`
 research credibility, and publication safety. Not a wish list: every item cites
 the finding it closes.
 
-Baselines recorded before any edit (HEAD `c81c6f9`):
+Baselines recorded before any edit (HEAD `c81c6f9`, now `abb62bb`):
 
 | Gate | Baseline |
 |---|---|
