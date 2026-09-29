@@ -20,8 +20,13 @@ htmlcov/
 *.prof
 *.lprof
 
-# Local agent tooling config, not project source
+# Local agent tooling config, not project source.
+#
+# `opencode.json` is listed separately from `.opencode/` because it sits at the
+# repo root and carries a provider API key. Ignoring the directory alone left it
+# stageable, so a `git add .` would have committed a live credential.
 .opencode/
+opencode.json
 
 # Editors and OS
 .vscode/
