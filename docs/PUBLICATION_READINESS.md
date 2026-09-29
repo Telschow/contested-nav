@@ -8,9 +8,9 @@
 > the current state see `CHANGELOG.md` and re-run the commands quoted
 > above.
 
-Audit date: 2026-09-29. Scope: working tree at `/mnt/immich/projects/contested-nav`,
-all 4 local commits, and the 2 dangling commits in the object store. Nothing was
-published, pushed, or rewritten during this audit.
+Audit date: 2026-09-29. Scope: the working tree of this repository, all 4 local
+commits, and the 2 dangling commits in the object store. Nothing was published,
+pushed, or rewritten during this audit.
 
 **Verdict: NOT READY TO PUBLISH AS-IS.** One CRITICAL item (a live API key one
 `git add` away from public) and one HIGH item (a red CI lint gate) stand between
@@ -137,16 +137,27 @@ expected and correct for a Python lockfile; they are not private information.
 
 ## 5. LOW — Personal email in Git history (expected, not a leak)
 
-All 4 commits are authored by `Telschow <48818540+Telschow@users.noreply.github.com>`. No
-`.mailmap` is present, so GitHub will not link these commits to a profile. This
-is normal for a solo project and is not a leak. If a professional identity is
-preferred, add a `.mailmap` going forward; rewriting history is neither needed
-nor recommended.
+All 4 commits are authored by a single author whose commit email is a personal
+address. No `.mailmap` is present, so GitHub will not link these commits to a
+profile. This is normal for a solo project and is not a leak.
 
-No other personal data, no `Co-authored-by` trailers, no machine-specific
-absolute paths in tracked files, and no employer-internal information were found.
-The only filesystem paths in tracked files are none; the `/home/daniel/.ssh`
-directory that exists on this machine is outside the repository.
+**Amended 2026-09-29:** the original finding recommended leaving history
+unchanged. That advice is withdrawn. The author has since stated that a personal
+email address must not be published, and the same address is still present in
+commit metadata, so publishing this history as-is would publish it. Two
+follow-ups are now required, and neither is a code change:
+
+1. Add a `.mailmap` and use a GitHub-provided `noreply` address for all future
+   commits, so the address stops appearing in new objects.
+2. Decide, before any push, whether to publish a sanitized history. A history
+   rewrite is destructive and needs explicit approval; it has not been
+   performed. Until it is, this repository must not be pushed.
+
+No other personal data, no `Co-authored-by` trailers, and no employer-internal
+information were found. The only machine-specific absolute path in a tracked
+file was in this document's own scope line and has been removed. A local
+credential file at `opencode.json` sits outside version control by design; see
+`SECURITY.md`.
 
 ---
 

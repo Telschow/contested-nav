@@ -174,7 +174,7 @@ running the fast gates would have prevented F2 from ever reaching `main`.
 | F12 | Committed PNGs differ from a fresh `make_figures.py` run. **Deterministic run-to-run**, difference is matplotlib version metadata (3.11.2). Not a code defect, but a reviewer diffing figures will see noise. | `docs/figures/*.png`, `strings` shows `Matplotlib version3.11.2` |
 | F13 | `EXE001` ×5: scripts have shebangs without the executable bit. | `scripts/*.py` |
 | F14 | `RUF100` ×13 unused `# noqa`, i.e. suppressions that no longer suppress anything. Project-wide `CONSTRAINTS.md` watches for exactly this pattern. | ruff |
-| F15 | No `.mailmap`; 4 commits by `48818540+Telschow@users.noreply.github.com` will not link to a GitHub profile. | `git log` |
+| F15 | No `.mailmap`; the 4 local commits carry a personal author email, so they will not link to a GitHub profile. | `git log` |
 
 ---
 
