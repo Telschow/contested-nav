@@ -39,7 +39,7 @@ from ..types import (
     rot_log_batch,
 )
 
-_NUM = r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?"
+_NUM = re.compile(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?")
 
 
 @dataclass
@@ -59,7 +59,7 @@ class ImuNoiseModel:
     gyro_bias_sigma: float = 0.0
     accel_bias_sigma: float = 0.0
 
-    def scaled(self, factor: float) -> "ImuNoiseModel":
+    def scaled(self, factor: float) -> ImuNoiseModel:
         """Multiply every noise term by ``factor`` (1.0 = unchanged)."""
         return ImuNoiseModel(
             gyro_noise_density=self.gyro_noise_density * factor,
@@ -103,7 +103,7 @@ def read_euroc_imu(path: str, name: str = "imu") -> ImuSample:
     if not os.path.isfile(path):
         raise FileNotFoundError(path)
     rows: list[list[float]] = []
-    with open(path, "r", encoding="utf-8", errors="replace") as fh:
+    with open(path, encoding="utf-8", errors="replace") as fh:
         for raw in fh:
             line = raw.strip()
             if not line or line.startswith("#"):
@@ -115,9 +115,28 @@ def read_euroc_imu(path: str, name: str = "imu") -> ImuSample:
     if not rows:
         raise ValueError(f"{path}: no IMU rows found")
     a = np.asarray(rows, dtype=float)
-    t = a[:, 0] / 1e9 if abs(a[0, 0]) > 1e12 else a[:, 0]
+    t = a[:, 0] / 1e9 if _looks_like_nanoseconds(a[:, 0]) else a[:, 0]
     order = np.argsort(t, kind="stable")
     return ImuSample(t=t[order], accel=a[order, 4:7], gyro=a[order, 1:4], name=name)
+
+
+# A monotonic clock at any realistic rate exceeds 1e12 in the first ten minutes
+# of recording, whereas a relative timeline does not. The previous check used
+# only the first sample, so a file that begins near t=0 and runs in nanoseconds
+# was read as if it were already seconds -- silently stretching a 20 s recording
+# into a 20-billion-second one, which no test caught because nothing covered
+# this loader at all.
+_NANOSECOND_THRESHOLD = 1e12
+
+
+def _looks_like_nanoseconds(t: np.ndarray) -> bool:
+    """True if ``t`` is an absolute clock in nanoseconds rather than seconds.
+
+    The maximum is used rather than the first sample so that the decision does
+    not depend on where the recording happens to start.
+    """
+    finite = t[np.isfinite(t)]
+    return bool(finite.size) and float(np.max(np.abs(finite))) > _NANOSECOND_THRESHOLD
 
 
 def resample(t_src: np.ndarray, x_src: np.ndarray, t_dst: np.ndarray) -> np.ndarray:
