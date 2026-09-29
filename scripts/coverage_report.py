@@ -37,10 +37,23 @@ FLOORS: dict[str, float] = {
     "src/navkit/eval/thresholds.py": 60.0,
     "src/navkit/geometry/align.py": 60.0,
     "src/navkit/estimators/eskf.py": 80.0,
+    # These four were declared in CONSTRAINTS.md but missing here, so the
+    # security-relevant modules carried no enforced floor at all. A floor that
+    # is documented but absent from this table is not a floor.
+    "src/navkit/fdir/gating.py": 70.0,
+    "src/navkit/fdir/fdir_manager.py": 70.0,
+    "src/navkit/fdir/nis_monitor.py": 80.0,
+    "src/navkit/degrade/config.py": 50.0,
+    "src/navkit/degrade/inject.py": 50.0,
 }
 # Total floor, matching the "Line coverage 75%" ratchet in CONSTRAINTS.md. The
 # two must agree: a gate lower than the documented floor is not the documented
 # gate, and CONSTRAINTS.md claims every ratchet here is enforced.
+# The total floor is 75% because that is what CONSTRAINTS.md declares. Note the
+# consequence, which is deliberate: this is a floor, not a ratchet. At 85.29%
+# actual, roughly 10 points of `eskf.py` coverage can be deleted before this
+# fails. Tightening it is a judgement call about how much slack a refactor should
+# be allowed, and it is tracked in ROADMAP.md rather than changed silently.
 TOTAL_FLOOR = 75.0
 
 

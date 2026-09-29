@@ -12,11 +12,11 @@ import pytest
 
 from navkit.geometry.rigid import (
     matrix_to_quat,
-    quat_normalize,
-    quat_to_matrix,
     pose_exp,
     pose_inverse,
     pose_log,
+    quat_normalize,
+    quat_to_matrix,
     rot_exp,
     rot_log,
     rot_log_batch,
@@ -78,7 +78,7 @@ def test_rot_log_batch_matches_scalar() -> None:
     axes = rng.standard_normal((64, 3))
     axes /= np.linalg.norm(axes, axis=1, keepdims=True)
     angles = rng.uniform(0.0, np.pi - 1e-3, 64)
-    Rs = np.stack([rot_exp(a * t) for a, t in zip(axes, angles)])
+    Rs = np.stack([rot_exp(a * t) for a, t in zip(axes, angles, strict=False)])
     batch = rot_log_batch(Rs)
     assert batch.shape == (64, 3)
     for i, R in enumerate(Rs):

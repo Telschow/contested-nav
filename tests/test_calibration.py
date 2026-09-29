@@ -9,6 +9,7 @@ tolerances, since they are statements about a sample rather than a value.
 
 from __future__ import annotations
 
+import itertools
 import math
 
 import numpy as np
@@ -250,7 +251,7 @@ def test_chi2_cdf_is_monotone_in_both_arguments() -> None:
     for dof in (1, 3, 50, 9000):
         xs = np.geomspace(1e-3, 1e3, 40)
         vals = [chi2_cdf(x, dof) for x in xs]
-        assert all(a <= b + 1e-12 for a, b in zip(vals, vals[1:]))
+        assert all(a <= b + 1e-12 for a, b in itertools.pairwise(vals))
 
 
 # --- bulk vs tail verdicts ---------------------------------------------------
@@ -261,7 +262,7 @@ def test_chi2_cdf_is_monotone_in_both_arguments() -> None:
 
 
 def _report(mean_nees: float, covered_at_2sigma: float, epochs: int = 3000):
-    from navkit.eval.calibration import CoveragePoint, CoverageReport, CalibrationReport
+    from navkit.eval.calibration import CalibrationReport, CoveragePoint, CoverageReport
 
     cov = CoverageReport(
         points=(

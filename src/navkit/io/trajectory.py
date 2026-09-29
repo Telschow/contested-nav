@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Callable, Iterable
+from collections.abc import Callable, Iterable
 
 import numpy as np
 
@@ -65,7 +65,7 @@ def _read_rows(path: str) -> tuple[np.ndarray, list[str]]:
         raise TrajectoryParseError(f"no such file: {path}")
     rows: list[list[float]] = []
     header: list[str] = []
-    with open(path, "r", encoding="utf-8", errors="replace") as fh:
+    with open(path, encoding="utf-8", errors="replace") as fh:
         for lineno, raw in enumerate(fh, start=1):
             line = raw.strip()
             if not line:
@@ -183,7 +183,7 @@ def _read_euroc_txt(path: str, name: str | None = None) -> Trajectory:
     return _build(a[:, 0], a[:, 1:4], a[:, 4:8], name or os.path.basename(path), path, hdr)
 
 
-READERS: dict[str, Callable[[str, "str | None"], Trajectory]] = {
+READERS: dict[str, Callable[[str, str | None], Trajectory]] = {
     "tum": _read_tum,
     "euroc": _read_euroc,
     "csv_xyz_qw": _read_plotly,
@@ -208,7 +208,7 @@ def detect_format(path: str) -> str:
     """Guess the file format from its header and separators."""
     header: list[str] = []
     first_data = ""
-    with open(path, "r", encoding="utf-8", errors="replace") as fh:
+    with open(path, encoding="utf-8", errors="replace") as fh:
         for raw in fh:
             line = raw.strip()
             if not line:
@@ -261,8 +261,8 @@ def write_euroc(path: str, traj: Trajectory, nanoseconds: bool = True) -> None:
         )
         for i in range(len(traj)):
             fh.write(
-                "%.9f, %.9e, %.9e, %.9e, %.9e, %.9e, %.9e, %.9e\n"
-                % (t[i], p[i, 0], p[i, 1], p[i, 2], q[i, 0], q[i, 1], q[i, 2], q[i, 3])
+                f"{t[i]:.9f}, {p[i, 0]:.9e}, {p[i, 1]:.9e}, {p[i, 2]:.9e}, "
+                f"{q[i, 0]:.9e}, {q[i, 1]:.9e}, {q[i, 2]:.9e}, {q[i, 3]:.9e}\n"
             )
 
 

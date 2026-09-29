@@ -19,8 +19,8 @@ import pytest
 
 from navkit.eval.metrics import (
     absolute_error,
-    ate_bundle,
     associate_nearest,
+    ate_bundle,
     drift,
     error_stats,
     outage_summary,
@@ -397,7 +397,8 @@ def test_drift_reports_percent_of_time():
 
 def test_drift_fits_a_growth_slope_when_asked():
     t = np.linspace(0, 20, 200)
-    ate = absolute_error(_traj(t, np.stack([np.zeros_like(t)] * 3, axis=1)), _traj(t, np.zeros((200, 3))), alignment="none")
+    stationary = _traj(t, np.stack([np.zeros_like(t)] * 3, axis=1))
+    ate = absolute_error(stationary, _traj(t, np.zeros((200, 3))), alignment="none")
     growing = _traj(t, np.stack([0.05 * t, np.zeros_like(t), np.zeros_like(t)], axis=1))
     d = drift(absolute_error(growing, _traj(t, np.zeros((200, 3))), alignment="none"), _traj(t, np.zeros((200, 3))))
     assert d.growth is not None

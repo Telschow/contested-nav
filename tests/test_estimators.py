@@ -17,8 +17,8 @@ import pytest
 from navkit.degrade.config import Outage
 from navkit.degrade.inject import apply_gnss_outage
 from navkit.estimators.dead_reckoning import DeadReckoning
-from navkit.fdir import FdirConfig
 from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig
+from navkit.fdir import FdirConfig
 from navkit.geometry.rigid import rot_exp, rot_log_batch
 from navkit.io.imu import ImuNoiseModel, apply_imu_noise
 from navkit.sensors.models import GnssConfig, VisionConfig, gnss_fixes, visual_updates
@@ -29,7 +29,7 @@ DURATION_S = 20.0
 
 
 @pytest.fixture(scope="module")
-def truth() -> "object":
+def truth() -> object:
     cfg = SyntheticConfig(duration_s=DURATION_S, rate_hz=100.0)
     gt = synthetic_trajectory(cfg)
     # Start at the identity pose so the filter's zero initial state is correct.
@@ -225,7 +225,6 @@ def test_visual_translation_jacobian_is_the_measurement_model() -> None:
     """
     R_prev = rot_exp(np.array([0.0, 0.0, 0.3]))
     p_prev = np.array([1.0, 2.0, 0.0])
-    R_rel = rot_exp(np.array([0.0, 0.0, 0.01]))
     t_rel = np.array([0.05, 0.0, 0.01])
     p = p_prev + np.array([0.10, -0.03, 0.02])
 
@@ -403,7 +402,7 @@ def test_modelled_anchor_restores_calibration_and_gnss_availability() -> None:
     unmodelled, _, _ = _vision_benchmark_fixture(
         use_gnss=True, interval=1, anchor_modelled=False
     )
-    control, control_err, control_sigma = _vision_benchmark_fixture(
+    _control, control_err, control_sigma = _vision_benchmark_fixture(
         use_gnss=True, interval=1, vision_enabled=False
     )
 
@@ -580,14 +579,13 @@ def test_enabling_the_visual_channel_no_longer_silences_the_gnss() -> None:
 #      to a *rotation increment*, so the perturbation has to be R @ Exp(dtheta).
 #      Perturbing a matrix element would test a different parameterisation.
 
-from navkit.estimators.eskf import (  # noqa: E402
+from navkit.estimators.eskf import (
     _IDX_CP,
     _IDX_CT,
     _IDX_P,
     _IDX_THETA,
     _N_STATES,
 )
-from navkit.geometry.rigid import rot_exp  # noqa: E402
 
 _ROT_SIGMA_DEG = 0.35
 _TRANS_SIGMA_M = 0.05

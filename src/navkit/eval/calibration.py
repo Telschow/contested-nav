@@ -157,7 +157,7 @@ def normalized_error_squared(
         return MahalanobisSeries(squared=np.zeros(0), radius=np.zeros(0), dof=dof)
 
     out = np.empty(len(est))
-    for i, (e, P) in enumerate(zip(est - ref, cov)):
+    for i, (e, P) in enumerate(zip(est - ref, cov, strict=True)):
         # Symmetric eigendecomposition, with a floor on the smallest eigenvalue.
         # A filter that has collapsed a direction to near-zero variance would
         # otherwise produce a huge normalised error from a rounding-level

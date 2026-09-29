@@ -130,7 +130,7 @@ def check(results_path: Path, documents: list[Path]) -> int:
             continue
         for index, want in enumerate(expected):
             case = results["cases"][index]["name"]
-            for column, w in zip(columns, want):
+            for column, w in zip(columns, want, strict=False):
                 got = _cell(found, index, columns.index(column) + 1)
                 if w is None:
                     # A case with no reported covariance shows "n/a" in the docs.
