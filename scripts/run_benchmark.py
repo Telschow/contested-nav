@@ -64,7 +64,7 @@ from navkit.eval.metrics import (
     relative_pose_error,
 )
 from navkit.sensors.models import gnss_fixes, visual_updates
-from navkit.synthetic import SyntheticConfig, synthetic_imu, synthetic_trajectory
+from navkit.synthetic import SyntheticConfig, seeded_scene, synthetic_imu, synthetic_trajectory
 
 # Claim types, from navkit.analysis.findings. Every scalar this script emits is
 # tagged so a downstream document cannot accidentally present a synthetic number
@@ -113,6 +113,7 @@ def run_case(
     case: dict[str, Any],
     defaults: dict[str, Any],
     seed: int | None = None,
+    scene_seed: int | None = None,
 ) -> dict[str, Any]:
     """Run one scenario end to end and return its result record.
 
@@ -120,9 +121,16 @@ def run_case(
     and camera drop) so a benchmark can be repeated over independent draws.
     Because the scenario is mutated before it is hashed, each override produces
     its own ``config_hash`` and the provenance stays truthful.
+
+    ``scene_seed`` is a separate axis: it varies the *trajectory* rather than
+    the sensor noise, so the question becomes "is this a property of the filter"
+    instead of "was this a property of one noise draw". The two are independent
+    on purpose, and passing both sweeps the full cross product.
     """
     merged = {**defaults.get("synthetic", {}), **case.get("synthetic", {})}
     syn = SyntheticConfig(**merged)
+    if scene_seed is not None:
+        syn = seeded_scene(syn, scene_seed)
     keys = {**defaults.get("estimator", {}), **case.get("estimator", {})}
 
     scenario = scenario_from_dict(case.get("scenario", {}))
@@ -184,6 +192,7 @@ def run_case(
         "data_class": "synthetic",
         "config_hash": config_hash(scenario),
         "seed": scenario.gnss.seed,
+        "scene_seed": scene_seed,
         "synthetic": syn.as_dict(),
         "scenario": scenario.as_dict(),
         "estimator": {"class": estimator_name, **cfg.as_dict()},
@@ -296,6 +305,15 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="override every stochastic stream in the scenario (GNSS, vision, camera drop)",
     )
+    ap.add_argument(
+        "--scene-seed",
+        type=int,
+        default=None,
+        help=(
+            "vary the trajectory itself (radius, turning, sway) rather than the sensor noise. "
+            "Use with --seed to sweep the cross product; both default to the configured scene"
+        ),
+    )
     args = ap.parse_args(argv)
 
     doc = yaml.safe_load(args.config.read_text()) or {}
@@ -318,7 +336,7 @@ def main(argv: list[str] | None = None) -> int:
     for name in selected:
         print(f"running {name} ...", file=sys.stderr, flush=True)
         t0 = time.perf_counter()
-        rec = run_case(name, cases[name], defaults, seed=args.seed)
+        rec = run_case(name, cases[name], defaults, seed=args.seed, scene_seed=args.scene_seed)
         rec["wall_s"] = round(time.perf_counter() - t0, 3)
         results.append(rec)
         h = rec["headline"]
