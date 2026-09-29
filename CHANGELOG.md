@@ -23,6 +23,12 @@ this project uses [semantic versioning](https://semver.org/).
   the annotation was wrong.
 - Four `pytest.raises(match=...)` patterns in `tests/test_config.py` contained
   unescaped `.`, so `dataset.kind` also matched `datasetXkind`.
+- The `outage_visual_degraded_camera` case specified `camera_drop.fraction`, but
+  `CameraDropConfig` names that field `drop_fraction`. The key was not
+  recognised and the dataclass default was used instead, so the case ran with
+  20% of camera frames dropped in 2 s bursts instead of the 30% in 1 s bursts the
+  case intends. The benchmark config now sets `drop_fraction`, and the case's
+  published numbers are those of the scenario it claims to measure.
 
 ### Security
 
@@ -136,9 +142,8 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Breaking
 
-- None. No public API changed, no published number changed, and the benchmark
-  output is bit-identical to the previous release once the new `scene_seed`
-  provenance key is accounted for.
+- None. No public API changed. One published number changed: see the
+  `outage_visual_degraded_camera` correction under Fixed.
 
 ## [0.1.0] and earlier
 

@@ -85,6 +85,7 @@ audit.
 python scripts/run_benchmark.py --out results/benchmark.json   # ~40 s, 7 cases
 python scripts/seed_sweep.py --seeds 10 --markdown             # sensor noise
 python scripts/scene_sweep.py --seeds 8  --markdown            # trajectory
+python scripts/make_figures.py                                 # docs/figures/*.png
 python scripts/check_doc_tables.py --results results/benchmark.json
 ```
 
@@ -95,6 +96,14 @@ reproducible too, and CI checks them at three seeds.
 `results/` is gitignored. The numbers in the docs are verified against a fresh
 run rather than committed, so a stale artifact can never be mistaken for
 evidence.
+
+The PNGs under `docs/figures/` are the exception: they are committed, so they
+must be regenerated with `scripts/make_figures.py` in the same change that
+alters any published number, or they will contradict the tables beside them.
+Nothing checks this automatically, because pixel output depends on the
+Matplotlib build and a byte comparison would fail on a different machine for
+reasons that have nothing to do with the data. Compare the underlying
+`results/benchmark.json` instead, which CI does verify.
 
 ## Commits and pull requests
 
