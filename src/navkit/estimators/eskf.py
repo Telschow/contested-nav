@@ -156,6 +156,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
+from typing import Any, TypedDict
 
 import numpy as np
 
@@ -163,8 +164,8 @@ from ..fdir.fdir_manager import (
     FdirConfig,
     FdirManager,
 )
-from ..geometry.rigid import skew as _skew
 from ..geometry.rigid import rot_exp, rot_log
+from ..geometry.rigid import skew as _skew
 from ..io.imu import ImuNoiseModel
 from ..types import GRAVITY, GnssFix, ImuSample, Trajectory, VisionUpdate
 from .dead_reckoning import EstimatorResult
@@ -188,6 +189,60 @@ _IDX_CT = slice(18, 21)
 #: silently disagree with the matrices built from it.
 _N_NOMINAL = 15
 _N_STATES = 21
+
+
+class _AnchorSnapshot(TypedDict):
+    """The visual anchor as it stood when a GNSS outage began.
+
+    Copied rather than referenced so that later updates cannot retroactively
+    change what the outage-start state was, which is what makes the ADR-0008
+    cross-check a statement about the past instead of about now.
+    """
+
+    R_vk: np.ndarray
+    p_vk: np.ndarray
+    c_p: np.ndarray
+    c_t: np.ndarray
+    P_p_vk: np.ndarray
+    P_cp: np.ndarray
+
+
+class FilterState(TypedDict):
+    """The filter's propagated state.
+
+    This was annotated ``dict[str, np.ndarray]``, which was wrong in both
+    directions: it forbade the integers, the boolean, and the ``None`` that the
+    state genuinely holds, so the 12 type errors it produced were being silenced
+    with ``disable_error_code`` in ``pyproject.toml``. Naming the members makes
+    a wrong key or a wrong dtype a type error at the point of the mistake, and
+    it lets the silence be removed.
+
+    ``anchor_snapshot`` is optional in practice -- it is absent until the first
+    GNSS outage opens, and the cross-check falls back to the live anchor when it
+    is missing -- so ``total=False`` models that honestly.
+    """
+
+    # 21-state error state: 15 nominal plus the two anchor nuisance blocks.
+    R: np.ndarray
+    p: np.ndarray
+    v: np.ndarray
+    b_a: np.ndarray
+    b_g: np.ndarray
+    P: np.ndarray
+    # Visual anchor state and its two nuisance offsets.
+    R_vk: np.ndarray
+    p_vk: np.ndarray
+    P_theta_vk: np.ndarray
+    P_p_vk: np.ndarray
+    c_p: np.ndarray
+    c_t: np.ndarray
+    # Bookkeeping. These are not part of the covariance and are deliberately
+    # excluded from every state/measurement Jacobian, so they are typed as the
+    # scalars they are rather than forced into the ndarray type.
+    vision_updates: int
+    gnss_grants_since_verified: int
+    vision_keyframe_set: bool
+    anchor_snapshot: _AnchorSnapshot | None
 
 #: Which state block each measurement channel may have inflated, used to place
 #: adaptive covariance inflation (ADR-0006).
@@ -420,7 +475,7 @@ class ErrorStateKalmanFilter:
         return F
 
     def _propagate(
-        self, x: dict[str, np.ndarray], accel: np.ndarray, gyro: np.ndarray, dt: float
+        self, x: FilterState, accel: np.ndarray, gyro: np.ndarray, dt: float
     ) -> None:
         R, p, v, ba, bg = x["R"], x["p"], x["v"], x["b_a"], x["b_g"]
         a_meas = accel - ba
@@ -437,7 +492,7 @@ class ErrorStateKalmanFilter:
 
     def _update(
         self,
-        x: dict[str, np.ndarray],
+        x: FilterState,
         residual: np.ndarray,
         H: np.ndarray,
         Rcov: np.ndarray,
@@ -507,9 +562,46 @@ class ErrorStateKalmanFilter:
             block=block,
         )
         if not decision.accepted:
+            # A spoof lockout (ADR-0007) refuses the fix *and* widens the
+            # covariance, because a filter that has been walked off position
+            # must not keep coasting on a covariance that no longer describes
+            # where it is. Applied before the early return so the refusal and
+            # the re-expansion cannot come apart.
+            if decision.reexpanded and decision.reexpansion_block:
+                ridx = list(decision.reexpansion_block)
+                P[ridx, ridx] += decision.reexpansion_variance
+                self.fdir_inflations += 1
             return False, decision.mahalanobis_sq
 
         if decision.inflated:
+            # Cross-check: refuse grant if fix disagrees with frozen visual anchor.
+            # Only applies on second and later grants in an episode (ADR-0007):
+            # the first grant is the reacquisition; the second signals the first
+            # did not fix anything (spoof).
+            if sensor == "gnss" and x.get("gnss_grants_since_verified", 0) > 0:
+                # Use the anchor snapshot from the start of the GNSS outage
+                # if available, otherwise fall back to current anchor.
+                snap = x.get("anchor_snapshot")
+                if snap is not None:
+                    p_anchor = snap["p_vk"] + snap["c_p"]
+                    P_p_vk = snap["P_p_vk"]
+                    P_cp = snap["P_cp"]
+                else:
+                    p_anchor = x["p_vk"] + x["c_p"]
+                    P_p_vk = x["P_p_vk"]
+                    P_cp = x["P"][_IDX_CP, _IDX_CP]
+                p_meas = residual + x["p"]
+                z = p_meas - p_anchor
+                # Anchor covariance: P_p_vk + P[c_p, c_p] + Rcov
+                P_anchor = P_p_vk + P_cp + Rcov
+                try:
+                    d2 = float(z.T @ np.linalg.solve(P_anchor, z))
+                except np.linalg.LinAlgError:
+                    d2 = float("inf")
+                # Threshold N^2 where N ~ 15 (spoof margin from measurements)
+                if d2 > 225.0:  # 15^2
+                    return False, d2
+
             # Honour the request before forming the gain, and recompute S from
             # the inflated covariance rather than reusing the value the gate
             # re-tested against. The two are the same matrix by construction --
@@ -520,6 +612,12 @@ class ErrorStateKalmanFilter:
             P[idx, idx] += decision.inflation_variance
             S = H @ P @ H.T + Rcov
             self.fdir_inflations += 1
+            if sensor == "gnss":
+                x["gnss_grants_since_verified"] = int(x.get("gnss_grants_since_verified", 0)) + 1
+
+        # Clean GNSS accept (no inflation) resets the grant counter.
+        if sensor == "gnss" and decision.accepted and not decision.inflated:
+            x["gnss_grants_since_verified"] = 0
 
         try:
             K = np.linalg.solve(S, (P @ H.T).T).T
@@ -566,7 +664,7 @@ class ErrorStateKalmanFilter:
 
     def _gnss_update(
         self,
-        x: dict[str, np.ndarray],
+        x: FilterState,
         p_meas: np.ndarray,
         sigma: float,
         t_s: float = 0.0,
@@ -578,7 +676,7 @@ class ErrorStateKalmanFilter:
 
     def _vision_update(
         self,
-        x: dict[str, np.ndarray],
+        x: FilterState,
         R_rel_meas: np.ndarray,
         t_rel_meas: np.ndarray,
         rot_sigma_deg: float,
@@ -734,7 +832,7 @@ class ErrorStateKalmanFilter:
         if n < 2:
             raise ValueError("ESKF needs at least 2 IMU samples")
 
-        x: dict[str, np.ndarray] = {
+        x: FilterState = {
             "R": np.eye(3),
             "p": np.zeros(3),
             "v": np.zeros(3),
@@ -748,13 +846,19 @@ class ErrorStateKalmanFilter:
             "c_p": np.zeros(3),
             "c_t": np.zeros(3),
             "vision_updates": 0,
+            "gnss_grants_since_verified": 0,
+            "vision_keyframe_set": False,
+            "anchor_snapshot": None,
         }
-        x["vision_keyframe_set"] = False  # type: ignore[assignment]
         cfg = self.cfg
         use_gnss = gnss is not None and cfg.gnss_enabled
         use_vision = vision is not None and cfg.vision_enabled
-        g_fixes = gnss.valid() if use_gnss else None
-        v_updates = vision.valid() if use_vision else None
+        # The `is not None` is spelled out rather than relying on `use_gnss`,
+        # which is a plain bool and does not narrow the optional for a reader or
+        # a type checker. Both halves of each condition are the same test.
+        gnss_outages = gnss.outage_intervals() if use_gnss and gnss is not None else []
+        g_fixes = gnss.valid() if use_gnss and gnss is not None else None
+        v_updates = vision.valid() if use_vision and vision is not None else None
         g_ptr = 0
         v_ptr = 0
 
@@ -768,9 +872,24 @@ class ErrorStateKalmanFilter:
         n_vision_init = 0
         gnss_seen = 0
         max_measurement_latency = 0.0
+        anchor_snapshotted = False
 
         for k in range(n):
             t_k = float(imu.t[k])
+            in_outage = any(start <= t_k <= end for start, end in gnss_outages)
+            if in_outage and not anchor_snapshotted:
+                # Snapshot the anchor at the start of the GNSS outage for cross-check
+                x["anchor_snapshot"] = {
+                    "R_vk": x["R_vk"].copy(),
+                    "p_vk": x["p_vk"].copy(),
+                    "c_p": x["c_p"].copy(),
+                    "c_t": x["c_t"].copy(),
+                    "P_p_vk": x["P_p_vk"].copy(),
+                    "P_cp": x["P"][_IDX_CP, _IDX_CP].copy(),
+                }
+                anchor_snapshotted = True
+            elif not in_outage:
+                anchor_snapshotted = False
             if k > 0:
                 dt = t_k - float(imu.t[k - 1])
                 if dt <= 0.0:
