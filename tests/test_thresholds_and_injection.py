@@ -29,6 +29,7 @@ from navkit.sensors.models import GnssConfig, VisionConfig, gnss_fixes, visual_u
 from navkit.synthetic import SyntheticConfig, synthetic_imu, synthetic_trajectory
 from navkit.types import GnssFix, ImuSample, VisionUpdate
 
+
 def thr(sustained: float = 0.5, peak: float | None = None, **kw) -> ThresholdSet:
     """A coherent ThresholdSet.
 
@@ -44,6 +45,19 @@ def thr(sustained: float = 0.5, peak: float | None = None, **kw) -> ThresholdSet
 
 
 # --- _runs / ThresholdSet ----------------------------------------------------
+
+
+
+def _only_event(report, kind):
+    """Return the single event of ``kind``, asserting exactly one exists.
+
+    ``[x for x in events if x.kind == k][0]`` also passes when a second event of
+    the same kind was emitted, so a duplicated failure event -- which would be
+    reported to a reader as two separate problems -- went unnoticed.
+    """
+    matches = [x for x in report.events if x.kind == kind]
+    assert len(matches) == 1, f"expected exactly 1 {kind!r} event, got {len(matches)}"
+    return matches[0]
 
 
 def test_thresholds_defaults_are_self_consistent():
@@ -149,7 +163,7 @@ def test_exceedance_run_that_touches_the_end_of_the_array_is_found():
 def test_event_records_the_threshold_that_fired_it():
     t = np.linspace(0, 20, 400)
     e = np.where(t > 5, 2.0, 0.05)
-    ev = [x for x in detect_failures(t, e, thr(0.5)).events if x.kind == "threshold_exceeded"][0]
+    ev = _only_event(detect_failures(t, e, thr(0.5)), "threshold_exceeded")
     assert ev.threshold_m == 0.5
     assert "0.5 m" in ev.detail
 
@@ -214,7 +228,7 @@ def test_at_most_one_divergence_event_is_emitted():
 def test_rejected_updates_become_a_filter_health_event():
     t = np.linspace(0, 20, 400)
     rep = detect_failures(t, np.full_like(t, 0.05), ThresholdSet(), rejected_runs=12)
-    ev = [x for x in rep.events if x.kind == "rejected_updates"][0]
+    ev = _only_event(rep, "rejected_updates")
     assert "12" in ev.detail
     assert np.isnan(ev.peak_m)
     assert not rep.passed, "a filter rejecting its own measurements is a failure"
@@ -229,7 +243,7 @@ def test_no_rejected_updates_produces_no_event():
 def test_drift_above_threshold_becomes_an_event():
     t = np.linspace(0, 20, 400)
     rep = detect_failures(t, np.full_like(t, 0.05), ThresholdSet(drift_pct_path_length=5.0), drift_pct_path=9.0)
-    ev = [x for x in rep.events if x.kind == "drift_exceeded"][0]
+    ev = _only_event(rep, "drift_exceeded")
     assert "9.00%" in ev.detail
 
 
@@ -537,13 +551,12 @@ def test_inject_applies_imu_noise_and_records_the_bias():
 def test_inject_with_zero_noise_scale_is_a_passthrough():
     gt, imu, gnss, vis = _streams()
     scen = Scenario(name="normal", imu_noise_scale=0.0)
-    scen.imu_noise = scen.imu_noise.__class__(**{k: 0.0 for k in scen.imu_noise.as_dict()})
+    scen.imu_noise = scen.imu_noise.__class__(**dict.fromkeys(scen.imu_noise.as_dict(), 0.0))
     out = inject(scen, imu, gnss, vis, gt)
     assert np.array_equal(out.imu.accel, imu.accel)
 
 
 def test_inject_applies_camera_drops():
-    from navkit.degrade.config import CameraDropConfig
 
     gt, imu, gnss, vis = _streams()
     scen = Scenario(
@@ -589,7 +602,7 @@ def test_a_valid_scenario_passes_the_parser():
 def test_inject_vision_noise_scaling_needs_a_reference():
     """Regenerating the vision stream requires truth; refuse clearly rather
     than silently keeping the old noise."""
-    gt, imu, gnss, vis = _streams()
+    _gt, imu, gnss, vis = _streams()
     scen = Scenario(name="normal")
     scen.vision.noise_multiplier = 2.0
     with pytest.raises(AssertionError, match="needs the reference trajectory"):

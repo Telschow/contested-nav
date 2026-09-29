@@ -15,7 +15,7 @@ from typing import Any
 
 import numpy as np
 
-from .geometry.rigid import matrix_to_quat, quat_to_matrix, skew, rot_log_batch, transform_points
+from .geometry.rigid import matrix_to_quat, quat_to_matrix, rot_log_batch, skew, transform_points
 
 GRAVITY = np.array([0.0, 0.0, 9.80665])
 
@@ -82,7 +82,7 @@ class Trajectory:
         span = self.duration
         return float(len(self) - 1) / span if span > 0 else float("inf")
 
-    def subset(self, t0: float | None = None, t1: float | None = None) -> "Trajectory":
+    def subset(self, t0: float | None = None, t1: float | None = None) -> Trajectory:
         lo = self.t[0] if t0 is None else max(self.t[0], float(t0))
         hi = self.t[-1] if t1 is None else min(self.t[-1], float(t1))
         m = (self.t >= lo) & (self.t <= hi)
@@ -94,7 +94,7 @@ class Trajectory:
             metadata=dict(self.metadata),
         )
 
-    def time_offset(self, dt: float) -> "Trajectory":
+    def time_offset(self, dt: float) -> Trajectory:
         """Return a copy with every timestamp shifted by ``dt`` seconds."""
         return Trajectory(
             t=self.t + float(dt),
@@ -104,7 +104,7 @@ class Trajectory:
             metadata=dict(self.metadata),
         )
 
-    def transformed(self, T: np.ndarray) -> "Trajectory":
+    def transformed(self, T: np.ndarray) -> Trajectory:
         """Return a copy with every pose left-multiplied by ``T``."""
         return Trajectory(
             t=self.t.copy(),
@@ -208,7 +208,7 @@ class ImuSample:
         span = float(self.t[-1] - self.t[0])
         return float(len(self) - 1) / span if span > 0 else float("inf")
 
-    def time_offset(self, dt: float) -> "ImuSample":
+    def time_offset(self, dt: float) -> ImuSample:
         """Return a copy with every timestamp shifted by ``dt`` seconds."""
         return ImuSample(
             t=self.t + float(dt),
@@ -219,7 +219,7 @@ class ImuSample:
             name=self.name,
         )
 
-    def subset(self, t0: float | None = None, t1: float | None = None) -> "ImuSample":
+    def subset(self, t0: float | None = None, t1: float | None = None) -> ImuSample:
         lo = self.t[0] if t0 is None else max(self.t[0], float(t0))
         hi = self.t[-1] if t1 is None else min(self.t[-1], float(t1))
         m = (self.t >= lo) & (self.t <= hi)
@@ -256,7 +256,7 @@ class GnssFix:
     def __len__(self) -> int:
         return int(self.t.shape[0])
 
-    def valid(self) -> "GnssFix":
+    def valid(self) -> GnssFix:
         """Return a copy with unavailable fixes removed."""
         if self.available is None:
             return self
@@ -286,7 +286,7 @@ class GnssFix:
         out: list[tuple[float, float]] = []
         start: float | None = None
         end = lo
-        for ti, av, di in zip(self.t, self.available, dt):
+        for ti, av, di in zip(self.t, self.available, dt, strict=True):
             half = 0.5 * float(di)
             if not av:
                 if start is None:
@@ -344,7 +344,7 @@ class VisionUpdate:
     def __len__(self) -> int:
         return int(self.t.shape[0])
 
-    def valid(self) -> "VisionUpdate":
+    def valid(self) -> VisionUpdate:
         """Return only the measurements that were not dropped."""
         if self.dropped is None:
             return self
@@ -359,7 +359,7 @@ class VisionUpdate:
             name=self.name,
         )
 
-    def time_offset(self, dt: float) -> "VisionUpdate":
+    def time_offset(self, dt: float) -> VisionUpdate:
         return VisionUpdate(
             t=self.t + float(dt),
             R_rel=self.R_rel,
@@ -428,7 +428,7 @@ def residual_errors(
     dp = estimate.positions - ref.positions
     pos_err = np.linalg.norm(dp, axis=1)
     rot_err = np.array(
-        [np.linalg.norm(rot_log_batch(R @ Rt.T)) for R, Rt in zip(estimate.rotations, ref.rotations)]
+        [np.linalg.norm(rot_log_batch(R @ Rt.T)) for R, Rt in zip(estimate.rotations, ref.rotations, strict=True)]
     )
     return pos_err, rot_err, dp
 

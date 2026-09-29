@@ -135,7 +135,6 @@ def synthetic_imu(cfg: SyntheticConfig | None = None, rate_hz: float = 200.0):
     and compares against :func:`analytic_pose` is testing the propagation
     maths and nothing else.
     """
-    from .types import ImuSample
 
     cfg = cfg or SyntheticConfig()
     n = int(round(cfg.duration_s * rate_hz)) + 1
