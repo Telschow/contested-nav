@@ -199,6 +199,6 @@ cases:
           duration_s: 15.0
           reason: contested
       camera_drop:
-        fraction: 0.3
+        drop_fraction: 0.3
         burst_period_s: 1.0
         seed: 3

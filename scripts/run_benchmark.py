@@ -49,22 +49,22 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from navkit.degrade.config import Outage, Scenario, scenario_from_dict  # noqa: E402
-from navkit.degrade.inject import config_hash, inject  # noqa: E402
-from navkit.estimators.dead_reckoning import DeadReckoning  # noqa: E402
-from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig  # noqa: E402
-from navkit.eval.calibration import (  # noqa: E402
+from navkit.degrade.config import Scenario, scenario_from_dict
+from navkit.degrade.inject import config_hash, inject
+from navkit.estimators.dead_reckoning import DeadReckoning
+from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig
+from navkit.eval.calibration import (
     normalized_error_squared,
     summarise,
 )
-from navkit.eval.metrics import (  # noqa: E402
+from navkit.eval.metrics import (
     ate_bundle,
     drift,
     outage_summary,
     relative_pose_error,
 )
-from navkit.sensors.models import GnssConfig, VisionConfig, gnss_fixes, visual_updates  # noqa: E402
-from navkit.synthetic import SyntheticConfig, synthetic_imu, synthetic_trajectory  # noqa: E402
+from navkit.sensors.models import gnss_fixes, visual_updates
+from navkit.synthetic import SyntheticConfig, synthetic_imu, synthetic_trajectory
 
 # Claim types, from navkit.analysis.findings. Every scalar this script emits is
 # tagged so a downstream document cannot accidentally present a synthetic number
@@ -108,8 +108,19 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
     )
 
 
-def run_case(name: str, case: dict[str, Any], defaults: dict[str, Any]) -> dict[str, Any]:
-    """Run one scenario end to end and return its result record."""
+def run_case(
+    name: str,
+    case: dict[str, Any],
+    defaults: dict[str, Any],
+    seed: int | None = None,
+) -> dict[str, Any]:
+    """Run one scenario end to end and return its result record.
+
+    ``seed`` overrides every stochastic stream in the scenario (GNSS, vision
+    and camera drop) so a benchmark can be repeated over independent draws.
+    Because the scenario is mutated before it is hashed, each override produces
+    its own ``config_hash`` and the provenance stays truthful.
+    """
     merged = {**defaults.get("synthetic", {}), **case.get("synthetic", {})}
     syn = SyntheticConfig(**merged)
     keys = {**defaults.get("estimator", {}), **case.get("estimator", {})}
@@ -118,6 +129,11 @@ def run_case(name: str, case: dict[str, Any], defaults: dict[str, Any]) -> dict[
     if scenario is None:
         raise ValueError(f"case {name!r} has no scenario block")
     scenario.name = case.get("name", name)
+    if seed is not None:
+        scenario.gnss.seed = seed
+        scenario.vision.seed = seed
+        if scenario.camera_drop is not None:
+            scenario.camera_drop.seed = seed
 
     # Clean streams from the analytic reference, then degraded by the scenario.
     reference = synthetic_trajectory(syn, name=f"{name}-reference")
@@ -277,6 +293,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--all", action="store_true", help="run every case (the default)")
     ap.add_argument("--list", action="store_true", help="list case names and exit")
     ap.add_argument("--markdown", action="store_true", help="also print the results table as Markdown")
+    ap.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="override every stochastic stream in the scenario (GNSS, vision, camera drop)",
+    )
     args = ap.parse_args(argv)
 
     doc = yaml.safe_load(args.config.read_text()) or {}
@@ -299,7 +321,7 @@ def main(argv: list[str] | None = None) -> int:
     for name in selected:
         print(f"running {name} ...", file=sys.stderr, flush=True)
         t0 = time.perf_counter()
-        rec = run_case(name, cases[name], defaults)
+        rec = run_case(name, cases[name], defaults, seed=args.seed)
         rec["wall_s"] = round(time.perf_counter() - t0, 3)
         results.append(rec)
         h = rec["headline"]
