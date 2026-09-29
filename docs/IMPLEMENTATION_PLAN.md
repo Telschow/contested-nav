@@ -76,3 +76,73 @@ Baselines recorded before any edit (HEAD `c81c6f9`):
 - **Any claim of novelty.** Not supported by the evidence, and not requested.
 - **`git add -A` of the whole tree as one commit.** The prior work is committed in
   coherent slices so it stays reviewable.
+
+---
+
+## Outcome
+
+Measured, not asserted. Baselines at the top of this document are what the
+repository did before any edit; these are the same gates after.
+
+| Gate | Before | After |
+|---|---|---|
+| `pytest` | 563 passed, 2 skipped, 2 xfailed | 597 passed, 2 skipped, 2 xfailed |
+| coverage | 86.58% | 87.59% |
+| `ruff check` | 131 errors | clean |
+| `ruff format --check` | 35 files would reformat | clean |
+| `mypy` | 15 errors in 3 files | clean, no codes suppressed |
+| `build` | blocked behind failing `lint` | sdist + wheel, imports in a clean venv |
+| benchmark | bit-reproducible | bit-reproducible, unchanged |
+
+### Delivered
+
+| ID | Status | Note |
+|---|---|---|
+| P0-1 | done | `opencode.json` ignored; verified unstaged by `git add -An .` |
+| P0-2 | done | rule set declared, tools pinned, gates green; 4 `zip(strict=True)`, one wrong return annotation, one dead import, 2 ruff rules disabled with recorded reasons |
+| P0-3 | done | duplicate export removed; `__all__` now 21 unique |
+| P0-4 | done | 534/532 → 597, badge, README, CONSTRAINTS, ROADMAP |
+| P0-5 | done | 16 URLs corrected |
+| P1-1 | done | `seeded_scene` + `scene_sweep.py`; verdict unanimous across 8 scenes |
+| P1-2 | not done | see deferred below |
+| P1-3 | done | bootstrap CIs in `scene_sweep.py`, deterministic and global-state independent |
+| P1-4 | done | `uv.lock` committed |
+| P1-5 | not done | see deferred below |
+| P2-1 | done | `FilterState` TypedDict; 3 mypy codes no longer suppressed |
+| P2-2 | done | `tests/test_imu_io.py`, and the loader turned out to be broken |
+| P3-1 | done | `SECURITY.md`, `CONTRIBUTING.md` |
+| P3-2 | done | `CHANGELOG.md` |
+| P3-3 | done | Dependabot, CodeQL, `contents: read` default |
+| P3-4 | done | README install path and counts |
+| P3-5 | not done | see deferred below |
+
+### Found while implementing, not predicted
+
+`read_euroc_imu` raised `AttributeError` on every call: `_NUM` was a plain
+string called with `.fullmatch()`. It had no test at all, which is why nothing
+caught it. Its nanosecond heuristic was independently wrong. This is the
+strongest argument in the plan for P2-2 having been worth doing: the module with
+the lowest coverage contained a total failure of its entry point.
+
+Three tests were also asserting nothing, or asserting less than they read:
+`assert X or True` in the sweep provenance test, `[0]` slices that pass on a
+duplicate, and four unescaped regex dots. All now have demonstrated mutations.
+
+### Deferred, with reasons
+
+- **P1-2, baseline-vs-current comparison.** Needs a second estimator
+  configuration to compare against, and the only candidate is a
+  published-baseline re-implementation, which is a research contribution rather
+  than an engineering one. Attempting it without a real baseline would
+  manufacture the comparison the task asks for, which is worse than not having
+  it.
+- **P1-5, falsification test Q1 (accelerometer bias).** The experiment is
+  described in `MECHANISM_LIBRARY` but not run. It needs a bias-injection
+  harness and a decision about whether a null result is publishable. It is the
+  right next research step, not a patch.
+- **P3-5, pre-commit.** A local hook that fails is a worse experience than a CI
+  job that fails, and CI now runs all five gates. Worth revisiting when the
+  failure rate is low enough that the hooks are quick.
+- **P4, cosmetic.** Unchanged by intent.
+- **ADR-0008 guard, ADR-0007 permanence.** Track B; a security-relevant refusal
+  path starting to fire is an architectural decision, not a cleanup.
