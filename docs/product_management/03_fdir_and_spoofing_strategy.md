@@ -367,7 +367,7 @@ attack surface.
   the estimator emitting anything unusual.
 - **Inflation is logged, not prompted.** The operator is *told* the filter
   widened its covariance; they are not asked to approve it. Approval on a
-  100 Hz loop is not a human task.
+  200 Hz loop is not a human task.
 
 ---
 
@@ -384,7 +384,7 @@ success is not useful to the person deciding whether to rely on it.
 | L-4 | `max_drift_sigma_mps` = 0.5 is a single default, 33× loose for consumer MEMS and 7 500× for FOG | Spoof resistance is not matched to the installed hardware | Open, PM-SWAPC-002 action 2 |
 | L-5 | No benchmark case exceeds a 15 s denial | Everything beyond 15 s is extrapolation | Open, PM-SWAPC-002 action 3 |
 | L-6 | 1–2 m step bias costs a fault and 3.4–5.4 m of coast | Correct, but a large transient operators must expect | Documented, §1.2 |
-| L-7 | No target-port timing, WCET or jitter measurement | 100 Hz deadline unverified on hardware | Open, OUN-03 |
+| L-7 | No target-port timing, WCET or jitter measurement | 200 Hz deadline unverified on hardware | Open, OUN-03 |
 | L-8 | The visual channels have no relief path | Detection without recovery | By design, §1.4 |
 | L-9 | All evidence is synthetic; no flight or bench hardware | No accredited performance claim is possible | Fundamental, §0 of PM-SRS-001 |
 

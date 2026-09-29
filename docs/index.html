@@ -72,7 +72,7 @@
 <p class="lede">
 This project exists because of one uncomfortable result. A 21-state error-state Kalman filter fuses
 visual odometry and GNSS, and when GNSS is denied mid-run the filter reports about
-<strong>0.15&nbsp;m</strong> of position uncertainty while being <strong>3.4&nbsp;m</strong> wrong. The
+<strong>0.161&nbsp;m</strong> of position uncertainty while being <strong>2.541&nbsp;m</strong> wrong. The
 filter is not crashing, not diverging, and not producing a warning. It is confidently incorrect,
 and no amount of tuning fixes it. Everything below is published so that the failure is
 inspectable.
@@ -144,7 +144,7 @@ disagree.
     <tr><td>Vision only</td><td class="num">2.309</td><td class="num">0.156</td><td class="num">331.0</td><td class="num">0.7%</td><td><span class="tag bad">overconfident</span></td></tr>
     <tr><td>GNSS denied, vision off (control)</td><td class="num">3.782</td><td class="num">0.567</td><td class="num">4.1</td><td class="num">100.0%</td><td><span class="tag">mixed</span> bulk overconfident, tail underconfident</td></tr>
     <tr><td>GNSS denied, vision on</td><td class="num">2.541</td><td class="num">0.161</td><td class="num">419.4</td><td class="num">20.0%</td><td><span class="tag bad">overconfident</span></td></tr>
-    <tr><td>GNSS denied, 30% frames dropped</td><td class="num">2.005</td><td class="num">0.178</td><td class="num">264.8</td><td class="num">16.7%</td><td><span class="tag bad">overconfident</span></td></tr>
+    <tr><td>GNSS denied, 30% frames dropped</td><td class="num">1.872</td><td class="num">0.190</td><td class="num">216.6</td><td class="num">18.5%</td><td><span class="tag bad">overconfident</span></td></tr>
   </tbody>
 </table>
 
@@ -200,7 +200,7 @@ correct rather than merely different.</p>
 No number on this page is typed in by hand. The table and the figures are generated from a
 seeded scenario file, and CI runs the benchmark twice and fails if the two runs disagree.</p>
 
-<pre><code>git clone https://github.com/contested-nav/contested-nav
+<pre><code>git clone https://github.com/Telschow/contested-nav
 cd contested-nav
 python -m pip install -e ".[dev]"
 
@@ -238,9 +238,9 @@ things that are not verifiable today are marked <strong>NOT VERIFIED</strong> ra
 </p>
 
 <ul>
-  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/product_management/01_system_requirements_spec.md">System Requirements Specification</a> &mdash; the three operational user needs, 32 technical requirements, per-requirement verdicts. Only one OUN passes in full.</li>
-  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/product_management/02_swapc_tradeoff_matrix.md">SWaP-C and Sensor Selection Trade-off</a> &mdash; three platform profiles, IMU grades, cost and power bands, and when to move off pure ESKF dead reckoning.</li>
-  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/product_management/03_fdir_and_spoofing_strategy.md">FDIR and Adversarial Spoofing Strategy</a> &mdash; threat taxonomy, the two-stage defence architecture, and what the operator is actually shown.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/product_management/01_system_requirements_spec.md">System Requirements Specification</a> &mdash; the three operational user needs, 32 technical requirements, per-requirement verdicts. Only one OUN passes in full.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/product_management/02_swapc_tradeoff_matrix.md">SWaP-C and Sensor Selection Trade-off</a> &mdash; three platform profiles, IMU grades, cost and power bands, and when to move off pure ESKF dead reckoning.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/product_management/03_fdir_and_spoofing_strategy.md">FDIR and Adversarial Spoofing Strategy</a> &mdash; threat taxonomy, the two-stage defence architecture, and what the operator is actually shown.</li>
 </ul>
 
 <h2>Reading order</h2>
@@ -252,12 +252,14 @@ regenerated numbers.
 </p>
 
 <ul>
-  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/architecture.md">Architecture</a> &mdash; states, Jacobians, update sequence.</li>
-  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/calibration.md">Calibration guide</a> &mdash; how to read NEES and coverage, and where they mislead.</li>
-  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/adr/0005-chi-square-fdir-gating.md">ADR-0005</a> &mdash; why the update is gated before the gain is formed.</li>
-  <li><a href="https://github.com/contested-nav/contested-nav/blob/main/docs/adr/0006-nis-window-monitor.md">ADR-0006</a> &mdash; why re-acquisition is bounded by drift times silence.</li>
-  <li><a href="https://github.com/contested-nav/contested-nav/tree/main/docs/adr">Decision records</a> &mdash; why the anchor is filter state, why Joseph, why visual is off by default, and the quaternion convention.</li>
-  <li><a href="https://github.com/contested-nav/contested-nav">Source</a></li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/architecture.md">Architecture</a> &mdash; states, Jacobians, update sequence.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/calibration.md">Calibration guide</a> &mdash; how to read NEES and coverage, and where they mislead.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/adr/0005-chi-square-fdir-gating.md">ADR-0005</a> &mdash; why the update is gated before the gain is formed.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/adr/0006-nis-window-monitor.md">ADR-0006</a> &mdash; why re-acquisition is bounded by drift times silence.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/adr/0007-spoof-permanence-hysteresis.md">ADR-0007</a> &mdash; spoof-permanence escalation and the detection signal it still lacks.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/adr/0008-frozen-anchor-cross-check.md">ADR-0008</a> &mdash; the frozen-anchor cross-check: correct arithmetic, unreachable guard, and why it is documented as not yet working.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/tree/main/docs/adr">Decision records</a> &mdash; why the anchor is filter state, why Joseph, why visual is off by default, and the quaternion convention.</li>
+  <li><a href="https://github.com/Telschow/contested-nav">Source</a></li>
 </ul>
 
 <footer>

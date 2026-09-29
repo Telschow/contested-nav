@@ -1,5 +1,13 @@
 # Research and References
 
+
+> **Point-in-time snapshot (2026-09-29).** This document records the
+> repository as the audit found it, before the remediation in
+> `CHANGELOG.md` was applied. Counts, line numbers, and findings here are
+> deliberately not updated: several of them are what the work was for. For
+> the current state see `CHANGELOG.md` and re-run the commands quoted
+> above.
+
 This section documents the state-of-the-art competitive analysis and external recommendations relevant to this repository.
 
 ## State-of-the-Art: Single-Anchor EKF Limitations

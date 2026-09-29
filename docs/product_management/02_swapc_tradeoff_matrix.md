@@ -39,15 +39,15 @@ this document, and it does not depend on a single [E] figure.
 ## 1. What `navkit` costs the platform
 
 The estimator is a 21-state error-state Kalman filter [C] running a
-predict/update loop at 100 Hz over IMU data, with an optional visual anchor
+predict/update loop at 200 Hz over IMU data, with an optional visual anchor
 re-commitment at the front-end rate, and a chi-square gate plus an NIS monitor
 on every aided update [M].
 
 | Property | Value | Tag | Note |
 |---|---|---|---|
 | State dimension | 21 | [C] | `_N_STATES = 21` |
-| Filter rate | 100 Hz | [M] | 3001 epochs per 30 s case |
-| Heavyest case, x86 CPython | 0.897 s wall per 30 s scenario | [M] | **not a target estimate** |
+| Filter rate | 200 Hz | [M] | 6001 IMU epochs per 30 s case |
+| Heavyest case, x86 CPython | 0.897 s estimator runtime per 30 s scenario | [M] | **not a target estimate**; 2.811 s wall including fixture setup |
 | Heavyest case, filter only | 0.842–0.897 s | [M] | see caveat below |
 | SciPy | none | [M] | hand-rolled χ² and quantiles |
 | Learned components | none | [M] | no NN anywhere in the graph |
@@ -56,7 +56,7 @@ on every aided update [M].
 **The 0.897 s figure must not be quoted as an A53 budget.** It is CPython on
 x86, and CPython overhead would dominate on any target. What it does establish
 is that the algorithm is not pathologically expensive: 0.897 s of work spread
-over 3001 epochs is 300 µs of x86 per epoch for dense 21×21 algebra, which
+over 6001 epochs is 150 µs of x86 per epoch for dense 21×21 algebra, which
 leaves a great deal of headroom for a native build on a much slower core. A
 real A53 number requires a native build, and no timing, WCET or jitter
 measurement exists anywhere in this project (SRS TR-32).
@@ -65,7 +65,7 @@ The practical consequence for platform selection: **the filter is not the
 reason to choose a compute tier.** On any of the three profiles below, the
 power and cost budget is dominated by the sensor suite and the compute module's
 standby overhead, not by 21-state linear algebra. Where the filter does impose
-a constraint is on the *front end*: 100 Hz of fused IMU with a visual anchor
+a constraint is on the *front end*: 200 Hz of fused IMU with a visual anchor
 re-commitment at every keyframe is a real-time deadline, and Python-with-GIL
 will not meet it without a native extension. That is a porting task, not an
 algorithmic one, and it should be scoped as such.
@@ -132,6 +132,13 @@ usually disqualified by warm-up and cost simultaneously, not by performance.
 | Rotation noise budget | 0.35° 1σ/frame [C] | 0.1–0.35° [C] | 0.05–0.2° [E] |
 | Translation noise budget | 0.05 m 1σ/frame [C] | 0.02–0.05 m [C] | 0.01–0.03 m [E] |
 | Frame drop tolerance | 30% burst, verified [M] | 30% burst, verified [M] | > 50% [E] |
+
+> Corrected 2026-09: both "verified" cells previously described a 30% burst that
+> was never run. The benchmark config misspelled `drop_fraction`, so the case
+> executed at the 20% default. The config is fixed and both columns are now
+> genuinely 30% (`outage_visual_degraded_camera`: 1.872 m, mean NEES 216.6,
+> 2σ coverage 18.5%). The 20%→30% comparison is no longer available, so
+> "verified" rests on the single 30% point; see ADR-0008.
 | Additional aiding | none | wheel/airspeed optional | wheel odometry, altitude |
 | Front-end processing | on SoC, CPU only | on SoC, CPU + NPU optional | dedicated, GPU optional |
 | Sensor power [W] | 0.5–1.5 [E] | 2–5 [E] | 10–30 [E] |

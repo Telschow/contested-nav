@@ -1,5 +1,13 @@
 # Implementation Status: Verified vs Intended Feature Matrix
 
+
+> **Point-in-time snapshot (2026-09-29).** This document records the
+> repository as the audit found it, before the remediation in
+> `CHANGELOG.md` was applied. Counts, line numbers, and findings here are
+> deliberately not updated: several of them are what the work was for. For
+> the current state see `CHANGELOG.md` and re-run the commands quoted
+> above.
+
 This matrix cross-references the codebase against the intended feature set documented in ADRs, CONSTRAINTS.md, and ROADMAP.md. Every entry is grounded in observable evidence: file paths, line numbers, and test commands.
 
 ## Feature Verification Matrix

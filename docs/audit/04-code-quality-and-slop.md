@@ -1,5 +1,13 @@
 # Code Quality and AI-Slop Audit
 
+
+> **Point-in-time snapshot (2026-09-29).** This document records the
+> repository as the audit found it, before the remediation in
+> `CHANGELOG.md` was applied. Counts, line numbers, and findings here are
+> deliberately not updated: several of them are what the work was for. For
+> the current state see `CHANGELOG.md` and re-run the commands quoted
+> above.
+
 This section identifies AI-generated code patterns, redundant abstractions, dead code, weak tests, and other quality issues grounded in observable evidence.
 
 ## AI-Slop Inventory

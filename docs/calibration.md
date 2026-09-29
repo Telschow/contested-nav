@@ -47,6 +47,14 @@ because it stopped throwing away evidence, not because the model behind `P` was
 repaired. Read NEES and the coverage column together with ATE — see the note in
 `CONSTRAINTS.md` on why ATE alone stopped flagging this case.
 
+A 10-seed sweep changes the reading of the digits, not the verdict. `outage_visual`
+gives mean NEES 844 across noise realisations (range 211.7 to 2103.4) and
+`vision_only` 331 to 2660, so 419.4 and 331.0 are individual draws. The
+conclusion is unaffected: the minimum over 10 seeds is still 211.7 against a
+nominal 3, and coverage never exceeds 34.8% where 99.2% is required. Two orders
+of magnitude is the right order to write down, but not two orders of magnitude
+*specifically*.
+
 **Why it is decisive:** NEES only blows up when the error is large *and*
 `P` is small. A filter that merely tracks badly has a large error but an
 honestly large `P`, and its NEES stays near nominal. A NEES in the hundreds
