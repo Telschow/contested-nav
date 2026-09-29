@@ -34,8 +34,10 @@ from typing import Any
 
 import numpy as np
 
-from ..io.imu import ImuSample, apply_imu_noise as add_imu_noise
-from ..types import GnssFix, ImuSample as ImuType, Trajectory, VisionUpdate
+from ..io.imu import ImuSample
+from ..io.imu import apply_imu_noise as add_imu_noise
+from ..types import GnssFix, Trajectory, VisionUpdate
+from ..types import ImuSample as ImuType
 from .config import Outage, Scenario
 
 
@@ -89,9 +91,7 @@ def apply_gnss_outage(gnss: GnssFix, outages: list[Outage], total_enabled: bool)
     )
 
 
-def apply_camera_drop(
-    vision: VisionUpdate, drop_fraction: float, burst_period_s: float, seed: int
-) -> VisionUpdate:
+def apply_camera_drop(vision: VisionUpdate, drop_fraction: float, burst_period_s: float, seed: int) -> VisionUpdate:
     """Drop frames in correlated bursts.
 
     Within each period of ``burst_period_s`` a single contiguous burst of
@@ -209,9 +209,7 @@ def apply_imu_outage(imu: ImuSample, outages: list[Outage]) -> ImuSample:
     )
 
 
-def apply_imu_noise(
-    imu: ImuSample, scenario: Scenario
-) -> tuple[ImuSample, np.ndarray, np.ndarray]:
+def apply_imu_noise(imu: ImuSample, scenario: Scenario) -> tuple[ImuSample, np.ndarray, np.ndarray]:
     """Add noise and bias according to the scenario's IMU noise model."""
     model = scenario.imu_noise.scaled(scenario.imu_noise_scale)
     if all(v == 0.0 for v in model.as_dict().values()):
@@ -261,7 +259,9 @@ def inject(
     # 3. Camera frame drops.
     if scenario.camera_drop is not None:
         vision = apply_camera_drop(
-            vision, scenario.camera_drop.drop_fraction, scenario.camera_drop.burst_period_s,
+            vision,
+            scenario.camera_drop.drop_fraction,
+            scenario.camera_drop.burst_period_s,
             scenario.camera_drop.seed,
         )
 
@@ -290,16 +290,21 @@ def inject(
         vision = visual_updates(reference, cfg)
         if scenario.camera_drop is not None:
             vision = apply_camera_drop(
-                vision, scenario.camera_drop.drop_fraction,
-                scenario.camera_drop.burst_period_s, scenario.camera_drop.seed,
+                vision,
+                scenario.camera_drop.drop_fraction,
+                scenario.camera_drop.burst_period_s,
+                scenario.camera_drop.seed,
             )
         if scenario.vision_time_offset_s != 0.0:
             vision = vision.time_offset(scenario.vision_time_offset_s)
         if scenario.vision_outages:
             d = vision.dropped.copy() if vision.dropped is not None else np.zeros(len(vision), bool)
             vision = VisionUpdate(
-                t=vision.t, R_rel=vision.R_rel, t_rel=vision.t_rel,
-                rot_cov=vision.rot_cov, trans_cov=vision.trans_cov,
+                t=vision.t,
+                R_rel=vision.R_rel,
+                t_rel=vision.t_rel,
+                rot_cov=vision.rot_cov,
+                trans_cov=vision.trans_cov,
                 dropped=d | mark_outages(vision.t, scenario.vision_outages),
                 name=vision.name,
             )

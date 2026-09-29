@@ -118,8 +118,7 @@ def test_nanosecond_unit_is_taken_from_the_header_not_the_magnitude(tmp_path):
     clock by magnitude alone, so the header is the only usable signal."""
     path = tmp_path / "data.csv"
     path.write_text(
-        "#timestamp [ns], px, py, pz, q_w, q_x, q_y, q_z\n"
-        f"1000000000, 0, 0, 0, {SQRT_HALF}, 0, 0, {SQRT_HALF}\n"
+        f"#timestamp [ns], px, py, pz, q_w, q_x, q_y, q_z\n1000000000, 0, 0, 0, {SQRT_HALF}, 0, 0, {SQRT_HALF}\n"
     )
     assert np.allclose(read_trajectory(str(path), fmt="euroc").t, [1.0])
 
@@ -146,8 +145,7 @@ def test_euroc_reader_keeps_velocity_when_present(tmp_path):
 def test_euroc_reader_omits_velocity_when_absent(tmp_path):
     path = tmp_path / "data.csv"
     path.write_text(
-        "#timestamp [ns], px, py, pz, q_w, q_x, q_y, q_z\n"
-        f"1000000000, 0, 0, 0, {SQRT_HALF}, 0, 0, {SQRT_HALF}\n"
+        f"#timestamp [ns], px, py, pz, q_w, q_x, q_y, q_z\n1000000000, 0, 0, 0, {SQRT_HALF}, 0, 0, {SQRT_HALF}\n"
     )
     assert "velocity" not in read_trajectory(str(path), fmt="euroc").metadata
 
@@ -160,9 +158,7 @@ def test_plotly_csv_round_trip_preserves_rotation(tmp_path):
     for i in range(len(traj)):
         q = wxyz_to_xyzw(traj.quaternions[i])
         p = traj.positions[i]
-        rows.append(
-            f"{traj.t[i]:.12e},{p[0]:e},{p[1]:e},{p[2]:e},{q[0]:e},{q[1]:e},{q[2]:e},{q[3]:e}"
-        )
+        rows.append(f"{traj.t[i]:.12e},{p[0]:e},{p[1]:e},{p[2]:e},{q[0]:e},{q[1]:e},{q[2]:e},{q[3]:e}")
     path.write_text("\n".join(rows) + "\n")
     back = read_trajectory(str(path), fmt="csv_xyz_qw")
     assert np.allclose(back.rotations, traj.rotations, atol=1e-9)
@@ -175,6 +171,7 @@ def test_euroc_txt_round_trip_preserves_rotation(tmp_path):
     back = read_trajectory(str(path), fmt="euroc_txt")
     assert np.allclose(back.rotations, traj.rotations, atol=1e-9)
     assert np.allclose(back.t, traj.t, atol=1e-6)
+
 
 def test_writers_agree_on_rotation_by_construction(tmp_path):
     traj = _trajectory()
@@ -213,11 +210,7 @@ def test_quaternion_normalization_is_tolerated(tmp_path):
 
 def test_unsorted_and_duplicate_timestamps_are_normalised(tmp_path):
     path = tmp_path / "t.txt"
-    path.write_text(
-        f"1.0 0 0 0 {SQRT_HALF} 0 0 {SQRT_HALF}\n"
-        f"0.0 9 9 9 1 0 0 0\n"
-        f"1.0 5 5 5 1 0 0 0\n"
-    )
+    path.write_text(f"1.0 0 0 0 {SQRT_HALF} 0 0 {SQRT_HALF}\n0.0 9 9 9 1 0 0 0\n1.0 5 5 5 1 0 0 0\n")
     traj = read_trajectory(str(path), fmt="tum")
     assert np.allclose(traj.t, [0.0, 1.0])
     # Sorting is stable and the first occurrence of a duplicate timestamp wins.

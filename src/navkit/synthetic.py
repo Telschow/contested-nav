@@ -95,9 +95,7 @@ def analytic_pose(cfg: SyntheticConfig, t: np.ndarray) -> np.ndarray:
     w_yaw = tau * cfg.yaw_cycles / cfg.duration_s
     w_roll = tau * cfg.roll_cycles / cfg.duration_s
 
-    x = cfg.start_position[0] + _swing(cfg.radius_m, w_orbit, t) + _swing(
-        cfg.sway_amplitude_m, w_sway, t
-    )
+    x = cfg.start_position[0] + _swing(cfg.radius_m, w_orbit, t) + _swing(cfg.sway_amplitude_m, w_sway, t)
     y = cfg.start_position[1] + _swing(0.6 * cfg.radius_m, 1.5 * w_orbit, t)
     z = cfg.start_position[2] + _swing(cfg.height_amplitude_m, 0.7 * w_sway, t)
 
@@ -105,9 +103,7 @@ def analytic_pose(cfg: SyntheticConfig, t: np.ndarray) -> np.ndarray:
     roll = np.deg2rad(cfg.roll_amplitude_deg) * (1.0 - np.cos(w_roll * t))
     # Yaw about the world Z, roll about the body X.
     q_yaw = np.stack([np.cos(yaw / 2.0), np.zeros_like(yaw), np.zeros_like(yaw), np.sin(yaw / 2.0)], axis=1)
-    q_roll = np.stack(
-        [np.cos(roll / 2.0), np.sin(roll / 2.0), np.zeros_like(roll), np.zeros_like(roll)], axis=1
-    )
+    q_roll = np.stack([np.cos(roll / 2.0), np.sin(roll / 2.0), np.zeros_like(roll), np.zeros_like(roll)], axis=1)
 
     out = np.zeros((len(t), 4, 4))
     for i in range(len(t)):

@@ -103,9 +103,7 @@ CHI2_THRESHOLDS: dict[tuple[int, float], float] = {
 
 #: The same values keyed by ``1 - alpha``, so a caller holding a confidence
 #: level gets an exact hit rather than a floating-point-comparison miss.
-NORMAL_QUANTILES_INVERTED: dict[float, float] = {
-    1.0 - a: z for a, z in NORMAL_QUANTILES.items()
-}
+NORMAL_QUANTILES_INVERTED: dict[float, float] = {1.0 - a: z for a, z in NORMAL_QUANTILES.items()}
 
 #: Default confidence level, and therefore the default ``alpha = 0.001``.
 #:
@@ -128,14 +126,24 @@ NORMAL_QUANTILES_INVERTED: dict[float, float] = {
 DEFAULT_CONFIDENCE = 0.999
 
 # Acklam's coefficients for the inverse normal CDF, |relative error| < 1.15e-9.
-_A = (-3.969683028665376e01, 2.209460984245205e02, -2.759285104469687e02,
-      1.383577518672690e02, -3.066479806614716e01, 2.506628277459239e00)
-_B = (-5.447609879822406e01, 1.615858368580409e02, -1.556989798598866e02,
-      6.680131188771972e01, -1.328068155288572e01)
-_C = (-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e00,
-      -2.549732539343734e00, 4.374664141464968e00, 2.938163982698783e00)
-_D = (7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e00,
-      3.754408661907416e00)
+_A = (
+    -3.969683028665376e01,
+    2.209460984245205e02,
+    -2.759285104469687e02,
+    1.383577518672690e02,
+    -3.066479806614716e01,
+    2.506628277459239e00,
+)
+_B = (-5.447609879822406e01, 1.615858368580409e02, -1.556989798598866e02, 6.680131188771972e01, -1.328068155288572e01)
+_C = (
+    -7.784894002430293e-03,
+    -3.223964580411365e-01,
+    -2.400758277161838e00,
+    -2.549732539343734e00,
+    4.374664141464968e00,
+    2.938163982698783e00,
+)
+_D = (7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e00, 3.754408661907416e00)
 
 
 def _acklam_ppf(p: float) -> float:
@@ -156,10 +164,13 @@ def _acklam_ppf(p: float) -> float:
     else:
         q = p - 0.5
         r = q * q
-        x = (((((_A[0] * r + _A[1]) * r + _A[2]) * r + _A[3]) * r + _A[4]) * r + _A[5]) * q / (
-            ((((_B[0] * r + _B[1]) * r + _B[2]) * r + _B[3]) * r + _B[4]) * r + 1.0
+        x = (
+            (((((_A[0] * r + _A[1]) * r + _A[2]) * r + _A[3]) * r + _A[4]) * r + _A[5])
+            * q
+            / (((((_B[0] * r + _B[1]) * r + _B[2]) * r + _B[3]) * r + _B[4]) * r + 1.0)
         )
     return x
+
 
 #: Above this condition number ``S`` is treated as unusable. 1e12 is roughly
 #: where double precision loses the smaller direction of an anisotropic

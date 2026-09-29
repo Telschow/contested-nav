@@ -77,9 +77,7 @@ class Claim:
                     "an explanation with nothing that could refute it is an opinion"
                 )
             if self.confidence not in ("low", "medium", "high"):
-                raise ValueError(
-                    f"INTERPRETATION needs a confidence of low/medium/high, got {self.confidence!r}"
-                )
+                raise ValueError(f"INTERPRETATION needs a confidence of low/medium/high, got {self.confidence!r}")
         if self.type is ClaimType.MEASUREMENT and self.value is None:
             raise ValueError("a MEASUREMENT must carry a numeric value")
         if self.type is ClaimType.FACT and self.n_samples is not None:
@@ -338,8 +336,7 @@ def build_analysis(
     a.claims.append(
         Claim(
             type=ClaimType.MEASUREMENT,
-            text="Absolute trajectory error, rigid alignment fitted on the first 20% of the "
-            "sequence (rigid_start).",
+            text="Absolute trajectory error, rigid alignment fitted on the first 20% of the sequence (rigid_start).",
             value=float(pos.get("rmse", float("nan"))),
             unit="m",
             n_samples=n,
@@ -434,8 +431,7 @@ def build_analysis(
             a.claims.append(
                 Claim(
                     type=ClaimType.MEASUREMENT,
-                    text=f"Steady-state drift slope changed from {float(bslope):.4g} m/s to "
-                    f"{float(cslope):.4g} m/s.",
+                    text=f"Steady-state drift slope changed from {float(bslope):.4g} m/s to {float(cslope):.4g} m/s.",
                     value=float(cslope) - float(bslope),
                     unit="m/s (delta)",
                     tags=["comparison", "drift"],

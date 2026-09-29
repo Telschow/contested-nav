@@ -309,9 +309,7 @@ def test_config_hash_is_stable_across_loads(tmp_path):
 
 def test_config_hash_changes_when_a_number_changes(tmp_path):
     a = load_config(write(tmp_path, VALID, "a.yaml")).config_hash()
-    b = load_config(
-        write(tmp_path, dict(VALID, estimator={"gnss_position_sigma_m": 0.9}), "b.yaml")
-    ).config_hash()
+    b = load_config(write(tmp_path, dict(VALID, estimator={"gnss_position_sigma_m": 0.9}), "b.yaml")).config_hash()
     assert a != b
 
 
@@ -392,20 +390,12 @@ def test_validate_config_dict_flags_a_misspelled_camera_drop_key():
     from an absent key selects a different experiment without complaint, which
     is why this asserts the *plain* spelling is flagged below.
     """
-    problems = validate_config_dict(
-        {
-            "scenarios": [
-                {"name": "degraded", "camera_drop": {"fraction": 0.3}}
-            ]
-        }
-    )
+    problems = validate_config_dict({"scenarios": [{"name": "degraded", "camera_drop": {"fraction": 0.3}}]})
     assert any("camera_drop" in p and "fraction" in p for p in problems), problems
 
 
 def test_validate_config_dict_accepts_the_correct_camera_drop_spelling():
-    problems = validate_config_dict(
-        {"scenarios": [{"name": "degraded", "camera_drop": {"drop_fraction": 0.3}}]}
-    )
+    problems = validate_config_dict({"scenarios": [{"name": "degraded", "camera_drop": {"drop_fraction": 0.3}}]})
     assert not any("camera_drop" in p for p in problems), problems
 
 

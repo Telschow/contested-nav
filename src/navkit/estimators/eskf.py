@@ -156,7 +156,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, TypedDict
+from typing import TypedDict
 
 import numpy as np
 
@@ -243,6 +243,7 @@ class FilterState(TypedDict):
     gnss_grants_since_verified: int
     vision_keyframe_set: bool
     anchor_snapshot: _AnchorSnapshot | None
+
 
 #: Which state block each measurement channel may have inflated, used to place
 #: adaptive covariance inflation (ADR-0006).
@@ -425,9 +426,7 @@ class ErrorStateKalmanFilter:
         if not self.cfg.vision_anchor_modelled:
             return
         P[_IDX_CP, _IDX_CP] = np.eye(3) * self.cfg.anchor_pos_sigma_m**2
-        P[_IDX_CT, _IDX_CT] = (
-            np.eye(3) * np.deg2rad(self.cfg.anchor_rot_sigma_deg) ** 2
-        )
+        P[_IDX_CT, _IDX_CT] = np.eye(3) * np.deg2rad(self.cfg.anchor_rot_sigma_deg) ** 2
 
     def _process_noise(self, dt: float) -> np.ndarray:
         """Discrete process noise, first-order-in-dt form.
@@ -474,9 +473,7 @@ class ErrorStateKalmanFilter:
         F[_IDX_THETA, _IDX_BG] += -np.eye(3) * dt
         return F
 
-    def _propagate(
-        self, x: FilterState, accel: np.ndarray, gyro: np.ndarray, dt: float
-    ) -> None:
+    def _propagate(self, x: FilterState, accel: np.ndarray, gyro: np.ndarray, dt: float) -> None:
         R, p, v, ba, bg = x["R"], x["p"], x["v"], x["b_a"], x["b_g"]
         a_meas = accel - ba
         w_meas = gyro - bg
@@ -770,9 +767,7 @@ class ErrorStateKalmanFilter:
         # invalidated the translation block -- and would make
         # max_consecutive_rejections count *measurement blocks* rather than
         # visual frames, declaring a fault at 3 frames where 5 were configured.
-        ok_rot, innov_rot = self._update(
-            x, z_rot, H_rot, Rcov_rot, sensor="vision_rot", t_s=t_s
-        )
+        ok_rot, innov_rot = self._update(x, z_rot, H_rot, Rcov_rot, sensor="vision_rot", t_s=t_s)
 
         # Translation, in the previous body frame. The measurement model is
         #   h(x) = R_prev^T (p_cur - p_prev)
@@ -796,9 +791,7 @@ class ErrorStateKalmanFilter:
         else:
             z_trans = t_rel_meas - R_prev.T @ (x["p"] - p_prev)
             Rcov_trans = Rcov_trans + R_prev.T @ x["P_p_vk"] @ R_prev
-        ok_trans, innov_trans = self._update(
-            x, z_trans, H_trans, Rcov_trans, sensor="vision_trans", t_s=t_s
-        )
+        ok_trans, innov_trans = self._update(x, z_trans, H_trans, Rcov_trans, sensor="vision_trans", t_s=t_s)
 
         # Re-commit the anchor only when the configured interval has elapsed.
         # With the default of None the anchor stays where it was first set, so
@@ -902,9 +895,7 @@ class ErrorStateKalmanFilter:
                     latency = t_k - float(g_fixes.t[g_ptr])
                     max_measurement_latency = max(max_measurement_latency, latency)
                     gnss_seen += 1
-                    ok, _ = self._gnss_update(
-                        x, p_meas, cfg.gnss_position_sigma_m, t_s=t_k
-                    )
+                    ok, _ = self._gnss_update(x, p_meas, cfg.gnss_position_sigma_m, t_s=t_k)
                     n_gnss_used += int(ok)
                     n_gnss_rejected += int(not ok)
                     g_ptr += 1

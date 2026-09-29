@@ -67,15 +67,11 @@ def fig_error_vs_claim(cases: list[dict]) -> Path:
 
     for claim, ate, name in pts:
         bad = ate > claim
-        ax.scatter([claim], [ate], s=70, color=C_ERR if bad else C_OK, zorder=3,
-                   edgecolor="white", linewidth=0.8)
-        ax.annotate(name, (claim, ate), textcoords="offset points", xytext=(7, 5),
-                    fontsize=7.5, color="#333333")
+        ax.scatter([claim], [ate], s=70, color=C_ERR if bad else C_OK, zorder=3, edgecolor="white", linewidth=0.8)
+        ax.annotate(name, (claim, ate), textcoords="offset points", xytext=(7, 5), fontsize=7.5, color="#333333")
 
-    _style(ax, "Error against claimed uncertainty",
-           "Claimed position 1-sigma (m)", "ATE RMSE (m)")
-    fig.text(0.01, 0.01, "Synthetic fixture. Above the dashed line = overconfident.",
-             fontsize=7, color=C_GREY)
+    _style(ax, "Error against claimed uncertainty", "Claimed position 1-sigma (m)", "ATE RMSE (m)")
+    fig.text(0.01, 0.01, "Synthetic fixture. Above the dashed line = overconfident.", fontsize=7, color=C_GREY)
     fig.tight_layout(rect=(0, 0.03, 1, 1))
     out = FIGDIR / "error-vs-claim.png"
     fig.savefig(out, dpi=160)
@@ -135,8 +131,9 @@ def fig_outage(cases: list[dict]) -> Path:
 
         claim = c["headline"].get("claimed_sigma_p95_m")
         if isinstance(claim, (int, float)):
-            ax.axhline(claim, color=C_CLAIM, linestyle="--", linewidth=1.0,
-                       label=f"claimed 1-sigma (p95) = {claim:.2f} m")
+            ax.axhline(
+                claim, color=C_CLAIM, linestyle="--", linewidth=1.0, label=f"claimed 1-sigma (p95) = {claim:.2f} m"
+            )
         ax.plot(t, e, color=C_ERR, linewidth=1.2, zorder=3, label="position error")
         _style(ax, c["name"], "time (s)", "position error (m)")
         ax.legend(fontsize=7, frameon=False)

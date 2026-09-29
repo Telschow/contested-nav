@@ -169,8 +169,7 @@ def detect_failures(
                     peak_m=float(np.max(e[a:b])),
                     duration_s=duration,
                     threshold_m=thresholds.sustained_error_m,
-                    detail=f"error above {thresholds.sustained_error_m:g} m for "
-                    f"{duration:.2f} s",
+                    detail=f"error above {thresholds.sustained_error_m:g} m for {duration:.2f} s",
                 )
             )
 
@@ -195,8 +194,7 @@ def detect_failures(
                 peak_m=float(np.max(seg)),
                 duration_s=float(t[a + win - 1] - t[a]),
                 threshold_m=thresholds.divergence_growth_m,
-                detail=f"error grew {growth:.3f} m over "
-                f"{thresholds.divergence_window_s:g} s without recovering",
+                detail=f"error grew {growth:.3f} m over {thresholds.divergence_window_s:g} s without recovering",
             )
         )
         break  # one divergence event per run is enough to flag the run
@@ -231,13 +229,9 @@ def detect_failures(
     rmse = float(np.sqrt(np.mean(e**2)))
     peak = float(np.max(e))
     if rmse > thresholds.position_rmse_m:
-        report.reasons.append(
-            f"ATE RMSE {rmse:.3f} m exceeds threshold {thresholds.position_rmse_m:g} m"
-        )
+        report.reasons.append(f"ATE RMSE {rmse:.3f} m exceeds threshold {thresholds.position_rmse_m:g} m")
     if peak > thresholds.position_peak_m:
-        report.reasons.append(
-            f"peak error {peak:.3f} m exceeds threshold {thresholds.position_peak_m:g} m"
-        )
+        report.reasons.append(f"peak error {peak:.3f} m exceeds threshold {thresholds.position_peak_m:g} m")
     if report.events:
         report.reasons.append(f"{len(report.events)} failure event(s) detected")
     report.passed = not report.reasons

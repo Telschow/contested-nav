@@ -45,8 +45,7 @@ def _results() -> dict:
             },
             {
                 "name": "dead_reckoning",
-                "headline": {"ate_rmse_m": 1.877, "claimed_sigma_p_m": None,
-                             "nees_mean": None, "coverage": None},
+                "headline": {"ate_rmse_m": 1.877, "claimed_sigma_p_m": None, "nees_mean": None, "coverage": None},
             },
             {
                 "name": "vision_only",
@@ -146,8 +145,9 @@ def test_a_missing_document_fails(tmp_path: Path) -> None:
 def test_n_a_row_is_required_for_an_uncalibrated_case(tmp_path: Path) -> None:
     """A case with no covariance must show n/a, not a fabricated zero."""
     results = _write(tmp_path / "results.json", json.dumps(_results()))
-    readme = _write(tmp_path / "README.md", MARKDOWN.replace("| 1.877 | n/a | n/a | n/a |",
-                                                            "| 1.877 | 0.000 | 0.000 | 0.000 |"))
+    readme = _write(
+        tmp_path / "README.md", MARKDOWN.replace("| 1.877 | n/a | n/a | n/a |", "| 1.877 | 0.000 | 0.000 | 0.000 |")
+    )
     assert check_doc_tables.check(results, [readme]) == 1
 
 

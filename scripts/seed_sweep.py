@@ -80,9 +80,7 @@ def _spread(values: list[float]) -> dict[str, float]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", type=Path, default=ROOT / "configs" / "benchmark.yaml")
     ap.add_argument("--out", type=Path, default=ROOT / "results" / "seed_sweep.json")
     ap.add_argument("--seeds", type=int, default=10, help="number of seeds, starting at 0")

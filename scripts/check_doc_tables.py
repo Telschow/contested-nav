@@ -39,12 +39,14 @@ def _expected_rows(results: dict) -> list[list[str | None]]:
     for case in results["cases"]:
         head = case["headline"]
         coverage = head.get("coverage") or {}
-        rows.append([
-            _fmt(head.get("ate_rmse_m")),
-            _fmt(head.get("claimed_sigma_p_m")),
-            _fmt(head.get("nees_mean")) if head.get("nees_mean") is not None else None,
-            _fmt(coverage.get("2sigma"), percent=True),
-        ])
+        rows.append(
+            [
+                _fmt(head.get("ate_rmse_m")),
+                _fmt(head.get("claimed_sigma_p_m")),
+                _fmt(head.get("nees_mean")) if head.get("nees_mean") is not None else None,
+                _fmt(coverage.get("2sigma"), percent=True),
+            ]
+        )
     return rows
 
 
@@ -84,8 +86,10 @@ def _html_cells(text: str) -> list[list[str]]:
         return []
     rows = []
     for row in re.findall(r"<tr>(.*?)</tr>", body.group(1), re.S):
-        cells = [re.sub(r"<[^>]+>", "", c).replace("&sigma;", "sigma").strip()
-                 for c in re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)]
+        cells = [
+            re.sub(r"<[^>]+>", "", c).replace("&sigma;", "sigma").strip()
+            for c in re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)
+        ]
         if cells:
             rows.append(cells)
     return rows
@@ -124,9 +128,7 @@ def check(results_path: Path, documents: list[Path]) -> int:
         found = _html_cells(text) if document.suffix == ".html" else _markdown_cells(text)
         name = _display(document)
         if len(found) != len(expected):
-            failures.append(
-                f"{name}: {len(found)} benchmark rows, expected {len(expected)}"
-            )
+            failures.append(f"{name}: {len(found)} benchmark rows, expected {len(expected)}")
             continue
         for index, want in enumerate(expected):
             case = results["cases"][index]["name"]
@@ -139,10 +141,7 @@ def check(results_path: Path, documents: list[Path]) -> int:
                     continue
                 want_text = f"{float(w):.1f}" if column == "mean NEES" else w
                 if got is None or not got.startswith(want_text):
-                    failures.append(
-                        f"{name}: {case} {column}: "
-                        f"document says {got}, generated value is {want_text}"
-                    )
+                    failures.append(f"{name}: {case} {column}: document says {got}, generated value is {want_text}")
 
     if failures:
         print("documentation tables disagree with the generated benchmark:", file=sys.stderr)

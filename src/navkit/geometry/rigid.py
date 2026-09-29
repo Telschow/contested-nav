@@ -30,9 +30,7 @@ _EPS = 1e-12
 def skew(v: np.ndarray) -> np.ndarray:
     """Return the 3x3 skew-symmetric matrix of ``v``."""
     v = np.asarray(v, dtype=float).reshape(3)
-    return np.array(
-        [[0.0, -v[2], v[1]], [v[2], 0.0, -v[0]], [-v[1], v[0], 0.0]]
-    )
+    return np.array([[0.0, -v[2], v[1]], [v[2], 0.0, -v[0]], [-v[1], v[0], 0.0]])
 
 
 def unskew(m: np.ndarray) -> np.ndarray:
@@ -105,12 +103,7 @@ def rot_left_jacobian(phi: np.ndarray) -> np.ndarray:
     if theta < 1e-8:
         return np.eye(3) + 0.5 * k + (1.0 / 6.0) * (k @ k)
     t2 = theta * theta
-    return (
-        np.eye(3)
-        + ((1.0 - np.cos(theta)) / t2) * k
-        + ((theta - np.sin(theta)) / (t2 * theta)) * (k @ k)
-    )
-
+    return np.eye(3) + ((1.0 - np.cos(theta)) / t2) * k + ((theta - np.sin(theta)) / (t2 * theta)) * (k @ k)
 
 
 def rot_log_batch(R: np.ndarray) -> np.ndarray:
@@ -228,7 +221,6 @@ def pose_log(T: np.ndarray) -> np.ndarray:
     phi = rot_log(T[:3, :3])
     J_inv = np.linalg.inv(rot_left_jacobian(phi))
     return np.concatenate([J_inv @ T[:3, 3], phi])
-
 
 
 def pose_inverse(T: np.ndarray) -> np.ndarray:

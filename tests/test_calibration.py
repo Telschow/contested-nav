@@ -80,9 +80,7 @@ def test_ellipsoid_coverage_quantifies_the_per_axis_shorthand() -> None:
 
 @pytest.mark.parametrize("coverage", [0.5, 0.9, 0.95, 0.99])
 def test_ellipsoid_sigma_inverts_coverage(coverage: float) -> None:
-    assert ellipsoid_coverage(ellipsoid_sigma(coverage, 3), 3) == pytest.approx(
-        coverage, abs=1e-12
-    )
+    assert ellipsoid_coverage(ellipsoid_sigma(coverage, 3), 3) == pytest.approx(coverage, abs=1e-12)
 
 
 def test_wilson_interval_brackets_the_estimate_and_stays_in_range() -> None:
@@ -265,15 +263,11 @@ def _report(mean_nees: float, covered_at_2sigma: float, epochs: int = 3000):
     from navkit.eval.calibration import CalibrationReport, CoveragePoint, CoverageReport
 
     cov = CoverageReport(
-        points=(
-            CoveragePoint(sigma_per_axis=2.0, covered=int(covered_at_2sigma * epochs), epochs=epochs),
-        ),
+        points=(CoveragePoint(sigma_per_axis=2.0, covered=int(covered_at_2sigma * epochs), epochs=epochs),),
         mean_normalised_error=mean_nees,
         dof=3,
     )
-    return CalibrationReport(
-        estimator="eskf", scenario="s", coverage=cov, inflation_to_95=1.0, conformal={}
-    )
+    return CalibrationReport(estimator="eskf", scenario="s", coverage=cov, inflation_to_95=1.0, conformal={})
 
 
 def test_high_nees_is_overconfident() -> None:

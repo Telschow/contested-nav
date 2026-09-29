@@ -245,9 +245,7 @@ def absolute_error(
         est_pos = est.positions
         A = Alignment(scale=1.0, R=np.eye(3), t=np.zeros(3), kind="none")
     else:
-        A, ref, _ = align_trajectory(
-            estimate, reference, mode=alignment, fractions=fractions, association=association
-        )
+        A, ref, _ = align_trajectory(estimate, reference, mode=alignment, fractions=fractions, association=association)
         if association == "nearest":
             keep = np.asarray(ref.metadata["index"], dtype=int)
             est_pos = A.apply(estimate.positions[keep])
@@ -258,16 +256,16 @@ def absolute_error(
     if association == "nearest":
         keep = np.asarray(ref.metadata["index"], dtype=int)
         est_traj = Trajectory(
-            t=estimate.t[keep], poses=estimate.poses[keep], name=estimate.name,
+            t=estimate.t[keep],
+            poses=estimate.poses[keep],
+            name=estimate.name,
             metadata=estimate.metadata,
         )
     est_rot = est_traj.rotations
     d_pos = est_pos - ref.positions
     pos_err = np.linalg.norm(d_pos, axis=1)
     rot_err_deg = np.rad2deg(
-        np.array(
-            [np.linalg.norm(rot_log_batch(R @ Rt.T)) for R, Rt in zip(est_rot, ref.rotations, strict=True)]
-        )
+        np.array([np.linalg.norm(rot_log_batch(R @ Rt.T)) for R, Rt in zip(est_rot, ref.rotations, strict=True)])
     )
     return AteResult(
         alignment=alignment,
@@ -286,9 +284,7 @@ def absolute_error(
     )
 
 
-def ate_bundle(
-    estimate: Trajectory, reference: Trajectory, association: str = "interpolate"
-) -> dict[str, AteResult]:
+def ate_bundle(estimate: Trajectory, reference: Trajectory, association: str = "interpolate") -> dict[str, AteResult]:
     """The four ATE variants reported for every run.
 
     ``none``          -- no alignment, raw error in the estimator's own frame.
@@ -303,9 +299,7 @@ def ate_bundle(
     ``"rigid_start"``, because an ATE reported as "rigid" while having been
     fitted on 20% of the sequence is a different number under the same name.
     """
-    start = absolute_error(
-        estimate, reference, alignment="rigid", fractions=(0.0, 0.2), association=association
-    )
+    start = absolute_error(estimate, reference, alignment="rigid", fractions=(0.0, 0.2), association=association)
     start.alignment = "rigid_start"
     return {
         "none": absolute_error(estimate, reference, alignment="none", association=association),
@@ -359,7 +353,9 @@ def relative_pose_error(
     if association == "nearest":
         keep = np.asarray(ref.metadata["index"], dtype=int)
         est = Trajectory(
-            t=estimate.t[keep], poses=estimate.poses[keep], name=estimate.name,
+            t=estimate.t[keep],
+            poses=estimate.poses[keep],
+            name=estimate.name,
             metadata=estimate.metadata,
         )
     t = est.t
@@ -375,9 +371,7 @@ def relative_pose_error(
     elif mode == "distance":
         if delta <= 0:
             raise ValueError(f"delta must be > 0 for mode='distance', got {delta}")
-        cum = np.concatenate(
-            [[0.0], np.cumsum(np.linalg.norm(np.diff(ref.positions, axis=0), axis=1))]
-        )
+        cum = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(ref.positions, axis=0), axis=1))])
         j = np.searchsorted(cum, cum + delta, side="left")
         i = np.arange(len(t))
         valid = j < len(t)
@@ -389,8 +383,12 @@ def relative_pose_error(
 
     if i.size == 0:
         return RpeResult(
-            delta=delta_desc, value=delta, delta_s=delta,
-            translation_m=error_stats([]), rotation_deg=error_stats([]), pairs=0,
+            delta=delta_desc,
+            value=delta,
+            delta_s=delta,
+            translation_m=error_stats([]),
+            rotation_deg=error_stats([]),
+            pairs=0,
         )
 
     # E = (Q_i^-1 Q_j)^-1 (P_i^-1 P_j): the error of the relative motion, in
@@ -479,9 +477,7 @@ def drift(
     """
     ref = interpolate_trajectory(reference, ate.t)
     t = ate.t - ate.t[0]
-    cum = np.concatenate(
-        [[0.0], np.cumsum(np.linalg.norm(np.diff(ref.positions, axis=0), axis=1))]
-    )
+    cum = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(ref.positions, axis=0), axis=1))])
     err = ate.per_pose_position_m
     with np.errstate(divide="ignore", invalid="ignore"):
         pct_path = np.where(cum > 1e-6, 100.0 * err / np.maximum(cum, 1e-6), 0.0)

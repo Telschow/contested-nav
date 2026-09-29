@@ -126,8 +126,7 @@ def main() -> int:
             failures.append(f"TOTAL: {total_pct}% < floor {TOTAL_FLOOR}%")
 
     if args.json:
-        print(json.dumps({"modules": rows, "total_pct": total_pct,
-                          "failures": failures}, indent=1))
+        print(json.dumps({"modules": rows, "total_pct": total_pct, "failures": failures}, indent=1))
     else:
         gated = set(FLOORS)
         print(f"{'module':<40}{'hit':>7}{'exec':>7}{'  %':>7}  floor")

@@ -41,9 +41,7 @@ class Trajectory:
         self.t = _as_sorted(self.t)
         self.poses = np.asarray(self.poses, dtype=float).reshape(-1, 4, 4)
         if self.t.shape[0] != self.poses.shape[0]:
-            raise ValueError(
-                f"t has {self.t.shape[0]} entries but poses has {self.poses.shape[0]}"
-            )
+            raise ValueError(f"t has {self.t.shape[0]} entries but poses has {self.poses.shape[0]}")
         if self.t.size == 0:
             raise ValueError("empty trajectory")
         if not np.allclose(self.poses[:, 3, :], np.array([0, 0, 0, 1.0]), atol=1e-6):
@@ -144,9 +142,7 @@ class Trajectory:
         return out
 
 
-def finite_difference(
-    t: np.ndarray, x: np.ndarray, second: bool = False
-) -> np.ndarray:
+def finite_difference(t: np.ndarray, x: np.ndarray, second: bool = False) -> np.ndarray:
     """Non-uniform central differences, with one-sided ends.
 
     Deliberately simple: this repository replays trajectories at 100-200 Hz
@@ -269,9 +265,7 @@ class GnssFix:
             name=self.name,
         )
 
-    def outage_intervals(
-        self, t0: float | None = None, t1: float | None = None
-    ) -> list[tuple[float, float]]:
+    def outage_intervals(self, t0: float | None = None, t1: float | None = None) -> list[tuple[float, float]]:
         """Contiguous ``[start, end]`` intervals where the fix is unavailable.
 
         A sample at time ``t_i`` is treated as covering ``[t_i - dt/2, t_i +
@@ -383,9 +377,7 @@ def interpolate_trajectory(traj: Trajectory, t_query: np.ndarray) -> Trajectory:
     inside = (t_query >= lo) & (t_query <= hi)
     tq = np.clip(t_query, lo, hi)
 
-    pos = np.stack(
-        [np.interp(tq, traj.t, traj.positions[:, k]) for k in range(3)], axis=1
-    )
+    pos = np.stack([np.interp(tq, traj.t, traj.positions[:, k]) for k in range(3)], axis=1)
     idx = np.clip(np.searchsorted(traj.t, tq, side="right") - 1, 0, len(traj) - 2)
     t0, t1 = traj.t[idx], traj.t[idx + 1]
     alpha = np.clip((tq - t0) / np.maximum(t1 - t0, 1e-12), 0.0, 1.0)
@@ -415,9 +407,7 @@ def _slerp(q0: np.ndarray, q1: np.ndarray, a: float) -> np.ndarray:
     return (np.sin((1.0 - a) * th0) / s) * q0 + (np.sin(a * th0) / s) * q1
 
 
-def residual_errors(
-    estimate: Trajectory, reference: Trajectory
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def residual_errors(estimate: Trajectory, reference: Trajectory) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Per-pose position error (m) and rotation error (rad) versus reference.
 
     The estimate is associated with the reference by timestamp: the reference
