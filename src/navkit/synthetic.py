@@ -23,7 +23,7 @@ localization performance. It is a test fixture.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 import numpy as np
@@ -80,6 +80,68 @@ class SyntheticConfig:
 def _swing(amplitude: float, w: float, t: np.ndarray) -> np.ndarray:
     """``amplitude * (1 - cos(w t))``: zero value and zero slope at t=0."""
     return amplitude * (1.0 - np.cos(w * t))
+
+
+#: Multiplicative range for each scene parameter under :func:`seeded_scene`.
+#:
+#: These bounds are the honest ones for a *generalisation* claim rather than a
+#: robustness one. They hold the motion inside the regime the estimator was
+#: configured for -- a slow wander with mild rotation, no loops, no reversals,
+#: and the same duration and rate as the committed baseline so the number stays
+#: comparable to the published one. What varies is the geometry: how far the
+#: platform travels, how quickly, and how it turns.
+#:
+#: The narrower of the two is `radius_m`, at 0.6x. A shorter path leaves less
+#: distance for drift to accumulate, so it is the favourable direction for an
+#: estimator, not a neutral one. Widening it to 0.4x would make the spread
+#: easier to find and much easier to overstate.
+_SCENE_RANGES: dict[str, tuple[float, float]] = {
+    "radius_m": (0.6, 1.4),
+    "circles": (0.6, 1.4),
+    "sway_amplitude_m": (0.5, 1.5),
+    "sway_cycles": (0.7, 1.3),
+    "yaw_amplitude_deg": (0.7, 1.3),
+    "yaw_cycles": (0.7, 1.3),
+    "roll_amplitude_deg": (0.5, 1.5),
+    "roll_cycles": (0.8, 1.2),
+    "height_amplitude_m": (0.5, 1.5),
+}
+
+
+def seeded_scene(cfg: SyntheticConfig, seed: int) -> SyntheticConfig:
+    """A :class:`SyntheticConfig` with its motion parameters varied by ``seed``.
+
+    The seed sweep already exists and varies sensor noise. That answers "is this
+    filter overconfident under this noise", which is not the same question as
+    "does this filter overconfident in general". Every published number comes
+    from one trajectory, so a result that is an artefact of that trajectory --
+    a particular excursion, a particular turn -- would be indistinguishable from
+    a property of the estimator. This makes that distinction testable.
+
+    Two invariants are preserved, and both are load-bearing:
+
+    * ``duration_s`` and ``rate_hz`` are untouched, so a swept result is
+      directly comparable to the committed single-scene baseline.
+    * The motion is still built from ``1 - cos(w t)`` terms, so position,
+      velocity, and rotation are exactly zero at ``t = 0`` regardless of the
+      seed. An estimator initialised at the identity pose with zero velocity
+      remains *exactly* correct at the first sample, which is the property that
+      makes the fixture a known-answer test. A generator that varied the start
+      state would quietly break that and make every error un-attributable.
+
+    Parameters are drawn jointly from one generator, so a given seed is a single
+    reproducible scene rather than a sequence of independent ones.
+    """
+    rng = np.random.default_rng(seed)
+    varied: dict[str, Any] = {}
+    for name, (lo, hi) in _SCENE_RANGES.items():
+        current = float(getattr(cfg, name))
+        # A multiplicative log-uniform draw: uniform-in-multiplier is what keeps
+        # the geometric centre of the range at the configured value, so the
+        # swept ensemble is centred on the committed baseline rather than
+        # biased towards one end of it.
+        varied[name] = current * float(np.exp(rng.uniform(np.log(lo), np.log(hi))))
+    return replace(cfg, **varied)
 
 
 def analytic_pose(cfg: SyntheticConfig, t: np.ndarray) -> np.ndarray:
