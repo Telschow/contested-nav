@@ -6,7 +6,7 @@ Replay, evaluation and uncertainty calibration for GNSS-denied navigation.
 [![Pages](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-597%20pass%20%2B%202%20skip%20%2B%202%20xfail-informational.svg)](tests)
-[![Line coverage](https://img.shields.io/badge/line%20coverage-87.59%25-informational.svg)](CONSTRAINTS.md)
+[![Line coverage](https://img.shields.io/badge/line%20coverage-91.61%25-informational.svg)](CONSTRAINTS.md)
 
 A 21-state error-state Kalman filter for fused GNSS and visual navigation, built
 around one commitment: **a filter that reports its uncertainty should be

@@ -5,12 +5,14 @@ or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
 Last measured: 601 tests collected — 597 passing, 2 skipped, 2 expected failures —
-and 87.59% line coverage (`python -m pytest`,
-`python scripts/coverage_report.py`). The two
-skips are the TUM VI reference checks in `tests/test_trajectory_io.py`, which
-need ground truth that is deliberately not vendored (S2); they are skips, not
-passes, and are counted separately here so the number cannot read higher than
-it measures.
+and 91.61% line coverage (3799/4147 executable lines), measured with
+`python scripts/coverage_report.py`. Coverage is quoted from that script alone:
+it is the project's dependency-free tracer (S1 forbids adding `pytest-cov`), and
+a number taken from a different tool is not comparable with the module figures
+below. The two skips are the TUM VI reference checks in
+`tests/test_trajectory_io.py`, which need ground truth that is deliberately not
+vendored (S2); they are skips, not passes, and are counted separately here so the
+number cannot read higher than it measures.
 
 ## Correctness
 
@@ -68,18 +70,18 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 |---|---:|---:|---|
 | Tests collected | 405 | 601 | `pytest` |
 | Tests passing | 300 | 597 (2 skipped, 2 xfail, see below) | `pytest -rs` |
-| Line coverage | 75% | 87.59% | `scripts/coverage_report.py` |
-| `io/trajectory.py` coverage | 85% | 90.6% | as above |
-| `analysis/findings.py` coverage | 80% | 97.6% | as above |
+| Line coverage | 75% | 91.61% | `scripts/coverage_report.py` |
+| `io/trajectory.py` coverage | 85% | 95.0% | as above |
+| `analysis/findings.py` coverage | 80% | 99.7% | as above |
 | `config.py` coverage | 80% | 98.4% | as above |
-| `eval/metrics.py` coverage | 60% | 85.6% | as above |
-| `eval/thresholds.py` coverage | 60% | 96.3% | as above |
-| `geometry/align.py` coverage | 60% | 76.6% | as above |
-| `estimators/eskf.py` coverage | 80% | 90.5% | as above |
-| `fdir/gating.py` coverage | 70% | 87.0% | as above |
-| `fdir/fdir_manager.py` coverage | 70% | 87.2% | as above |
-| `fdir/nis_monitor.py` coverage | 80% | 94.2% | as above |
-| `degrade/` coverage | 50% | 78.8% / 73.5% | as above |
+| `eval/metrics.py` coverage | 60% | 95.7% | as above |
+| `eval/thresholds.py` coverage | 60% | 100.0% | as above |
+| `geometry/align.py` coverage | 60% | 92.2% | as above |
+| `estimators/eskf.py` coverage | 80% | 97.2% | as above |
+| `fdir/gating.py` coverage | 70% | 89.5% | as above |
+| `fdir/fdir_manager.py` coverage | 70% | 98.8% | as above |
+| `fdir/nis_monitor.py` coverage | 80% | 98.8% | as above |
+| `degrade/` coverage | 50% | 78.0% (`config.py`) / 84.2% (`inject.py`) | as above |
 | Docs | README + architecture + calibration + ADR-0001..0008 | 8 of 8 docs | manual |
 | Documented tables match the generated benchmark | exact | yes | `scripts/check_doc_tables.py` |
 | Open blockers documented | all | see ROADMAP | manual |

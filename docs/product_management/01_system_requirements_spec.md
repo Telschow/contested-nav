@@ -413,7 +413,7 @@ tier.
 | AC-08 | 0 | 0 of 1212 | **PASS**, but see note |
 | AC-09 | exit 0 | matches `results/benchmark.json` | **PASS** |
 | AC-10 | 0 failures | 597 passed, 2 skipped, 2 xfailed | **PASS** |
-| AC-11 | ≥ 75% (script floor) | 87.59% | **PASS** |
+| AC-11 | ≥ 75% (script floor) | 91.61% | **PASS** |
 
 **AC-03 and AC-04 are not seed artefacts.** Both were re-measured after this table
 was first written, under two independent sweeps: 10 noise realisations of the
