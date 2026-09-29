@@ -24,6 +24,20 @@ from navkit.analysis.findings import (
     validate_claims,
 )
 
+
+def _exactly_one(claims, predicate, label):
+    """Return the single claim matching ``predicate``, asserting there is one.
+
+    Indexing with ``[0]`` or calling ``next()`` both pass when the analysis
+    emits two claims that both match, which is precisely the duplication this
+    suite is supposed to catch: a claim appearing twice means a number is being
+    published twice, and either copy can then drift from the other.
+    """
+    matches = [c for c in claims if predicate(c)]
+    assert len(matches) == 1, f"expected exactly 1 {label}, got {len(matches)}: {matches}"
+    return matches[0]
+
+
 MANIFEST = {
     "gnss": {
         "enabled": True,
@@ -255,7 +269,7 @@ def test_build_analysis_reports_timestamp_offsets_with_a_sign():
 
 def test_build_analysis_emits_ate_measurements_with_sample_counts():
     ms = build_analysis("gnss_denied", "", MANIFEST, METRICS).of_type(ClaimType.MEASUREMENT)
-    ate = [c for c in ms if "rigid_start" in c.text][0]
+    ate = _exactly_one(ms, lambda c: "rigid_start" in c.text, "rigid_start claim")
     assert ate.value == pytest.approx(0.21)
     assert ate.n_samples == 1000
     assert ate.unit == "m"
@@ -263,7 +277,7 @@ def test_build_analysis_emits_ate_measurements_with_sample_counts():
 
 def test_build_analysis_emits_drift_slope_with_its_fit_quality():
     ms = build_analysis("gnss_denied", "", MANIFEST, METRICS).of_type(ClaimType.MEASUREMENT)
-    slope = [c for c in ms if "slope" in c.text.lower() and c.unit == "m/s"][0]
+    slope = _exactly_one(ms, lambda c: "slope" in c.text.lower() and c.unit == "m/s", "drift slope claim")
     assert slope.value == pytest.approx(0.02)
     assert "R^2=0.910" in slope.text
 
@@ -276,17 +290,16 @@ def test_build_analysis_omits_drift_slope_when_absent():
 
 def test_build_analysis_reports_one_claim_per_failure_event():
     ms = build_analysis("gnss_denied", "", MANIFEST, METRICS).of_type(ClaimType.MEASUREMENT)
-    ev = [c for c in ms if "failure event" in c.text][0]
+    ev = _exactly_one(ms, lambda c: "failure event" in c.text, "failure-event claim")
     assert "did not pass" in ev.text
-    detail = [c for c in ms if "divergence" in c.text and "from 5.0 s" in c.text]
-    assert len(detail) == 1
-    assert detail[0].value == pytest.approx(0.9)
+    detail = _exactly_one(ms, lambda c: "divergence" in c.text and "from 5.0 s" in c.text, "divergence claim")
+    assert detail.value == pytest.approx(0.9)
 
 
 def test_build_analysis_adds_the_baseline_comparison():
     delta = {"baseline_ate_rmse_m": 0.1, "ate_rmse_m": 0.4}
     ms = build_analysis("gnss_denied", "", MANIFEST, METRICS, delta).of_type(ClaimType.MEASUREMENT)
-    cmp = [c for c in ms if "changed from" in c.text][0]
+    cmp = _exactly_one(ms, lambda c: "changed from" in c.text, "comparison claim")
     assert "factor of 4" in cmp.text
     assert "higher" in cmp.text
     assert cmp.value == pytest.approx(0.3)
@@ -296,7 +309,7 @@ def test_baseline_comparison_survives_a_zero_baseline():
     """A zero baseline has no ratio; the claim must not divide by it."""
     delta = {"baseline_ate_rmse_m": 0.0, "ate_rmse_m": 0.4}
     ms = build_analysis("gnss_denied", "", MANIFEST, METRICS, delta).of_type(ClaimType.MEASUREMENT)
-    cmp = [c for c in ms if "changed from" in c.text][0]
+    cmp = _exactly_one(ms, lambda c: "changed from" in c.text, "comparison claim")
     assert "factor of nan" in cmp.text
 
 
@@ -308,7 +321,7 @@ def test_baseline_comparison_includes_drift_slope_delta_when_present():
         "drift_slope_m_per_s": 0.03,
     }
     ms = build_analysis("gnss_denied", "", MANIFEST, METRICS, delta).of_type(ClaimType.MEASUREMENT)
-    d = [c for c in ms if "Steady-state drift slope" in c.text][0]
+    d = _exactly_one(ms, lambda c: "Steady-state drift slope" in c.text, "steady-state slope claim")
     assert d.value == pytest.approx(0.02)
 
 

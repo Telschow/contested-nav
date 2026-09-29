@@ -35,12 +35,13 @@ data, so a reader can disagree with a specific entry without changing the code.
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass, field
-from enum import Enum
-from typing import Any, Iterable, Sequence
+from enum import StrEnum
+from typing import Any
 
 
-class ClaimType(str, Enum):
+class ClaimType(StrEnum):
     FACT = "FACT"
     MEASUREMENT = "MEASUREMENT"
     INTERPRETATION = "INTERPRETATION"
