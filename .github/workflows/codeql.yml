@@ -1,0 +1,54 @@
+name: CodeQL
+
+# Static analysis for the interpreted parts of the codebase. Python is analysed
+# as a first-class language, so the query suite is the JavaScript set, which is
+# the one that applies.
+#
+# The project is a numerical library with no web surface, so the realistic
+# findings here are injection-shaped rather than memory-safety ones. It is cheap
+# (a matrix of one language) and it runs on a weekly schedule in addition to
+# pushes, so a dependency that starts calling something alarming is caught
+# without waiting for a commit of your own.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Off the hour on the hour: the default lands at a congested point and is
+    # often queued.
+    - cron: "23 5 * * 1"
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: analyze (python)
+    runs-on: ubuntu-latest
+    permissions:
+      # Required by CodeQL to upload results. Nothing else is granted, so a
+      # compromised step in this job cannot write to the repository.
+      security-events: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          # No `config file` on purpose: the default suite is the right
+          # default, and a query config that silently stops matching a new
+          # language is worse than none.
+          queries: security-and-quality
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"
