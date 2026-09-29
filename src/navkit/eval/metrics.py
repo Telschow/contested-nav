@@ -39,8 +39,9 @@ against a third party, not a self-consistency check.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
-from typing import Any, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -156,14 +157,19 @@ def align_trajectory(
     mode: str = "rigid",
     fractions: tuple[float, float] = (0.0, 1.0),
     association: str = "interpolate",
-) -> tuple[Alignment, np.ndarray, np.ndarray]:
-    """Fit an alignment and apply it, returning the aligned estimate and mask.
+) -> tuple[Alignment, Trajectory, np.ndarray]:
+    """Fit an alignment, returning it with the reference stream and the mask.
 
     Only the *positions* are used to fit the transform. Fitting on 6-DoF poses
     would require a pose-graph solve for a result that, for a rigid sensor
     platform, is identical to the least-squares rigid fit on positions; that is
     the standard choice in the SLAM evaluation literature and it is stated here
     so the number can be reproduced.
+
+    The second element is a :class:`Trajectory`, not a position array: under
+    ``association="nearest"`` the caller needs ``ref.metadata["index"]`` to map
+    back to the estimate's own samples, which an array would not carry. The
+    annotation previously claimed ``np.ndarray`` and was simply wrong.
     """
     ref = _reference_at(estimate, reference, association)
     if association == "interpolate":
@@ -260,7 +266,7 @@ def absolute_error(
     pos_err = np.linalg.norm(d_pos, axis=1)
     rot_err_deg = np.rad2deg(
         np.array(
-            [np.linalg.norm(rot_log_batch(R @ Rt.T)) for R, Rt in zip(est_rot, ref.rotations)]
+            [np.linalg.norm(rot_log_batch(R @ Rt.T)) for R, Rt in zip(est_rot, ref.rotations, strict=True)]
         )
     )
     return AteResult(
@@ -421,7 +427,10 @@ class DriftResult:
     growth: DriftGrowth | None = None
 
     def as_dict(self) -> dict[str, Any]:
-        d = {
+        # Annotated explicitly: without it the literal is inferred as
+        # dict[str, float] from its first six values, and adding the nested
+        # growth dict below is then a type error.
+        d: dict[str, Any] = {
             "max_drift_pct_path_length": self.max_drift_pct_path,
             "final_drift_pct_path_length": self.final_drift_pct_path,
             "max_drift_pct_time": self.max_drift_pct_time,
@@ -518,7 +527,7 @@ def time_to_recovery(
     the error to stay below the threshold for that long, so a single lucky
     sample does not count as recovery. Returns ``None`` if it never recovers.
     """
-    lo, hi = window
+    _lo, hi = window  # window start is irrelevant: recovery is searched forward only
     t = np.asarray(t, float)
     error = np.asarray(error, float)
     m = t >= hi

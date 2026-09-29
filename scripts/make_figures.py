@@ -22,8 +22,8 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")  # headless: required for CI and for a server without a display
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
+import matplotlib.pyplot as plt
+import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 FIGDIR = ROOT / "docs" / "figures"
@@ -125,7 +125,7 @@ def fig_outage(cases: list[dict]) -> Path:
     if not sel:
         return None
     fig, axes = plt.subplots(1, len(sel), figsize=(5.0 * len(sel), 3.8), squeeze=False)
-    for ax, c in zip(axes[0], sel):
+    for ax, c in zip(axes[0], sel, strict=False):
         ts = c["error_time_series"]
         t = np.asarray(ts["t"], float)
         e = np.asarray(ts["position_error_m"], float)
@@ -163,7 +163,7 @@ def fig_nees(cases: list[dict]) -> Path:
     ax.text(3.0, len(sel) - 0.4, " expected = 3", fontsize=8, color=C_GREY)
     ax.set_xscale("log")
     ax.set_yticks(y, names)
-    for yi, v in zip(y, vals):
+    for yi, v in zip(y, vals, strict=False):
         ax.text(v * 1.15, yi, f"{v:.1f}", va="center", fontsize=7.5, color="#333333")
     _style(ax, "Mean NEES by scenario (log scale)", "mean NEES", "")
     fig.tight_layout()

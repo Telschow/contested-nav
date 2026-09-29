@@ -643,7 +643,7 @@ def test_fdir_disabled_leaves_the_legacy_gate_in_charge() -> None:
     rejection counters were measured against, and a change there would silently
     move every published number in the README.
     """
-    gt, imu, gnss = _stationary_fixture()
+    _gt, imu, gnss = _stationary_fixture()
     off = _filter(gnss_position_sigma_m=0.1, fdir_config=FdirConfig(enabled=False)).run(
         imu, gnss=_corrupt(gnss, np.array([50.0, 0.0, 0.0]), 40, 1)
     )
@@ -694,7 +694,7 @@ def _run_with_visual_jump(drot=None, dt=None, start=200, count=1, **kwargs):
     ``drot`` is a rotation applied on the right of the relative pose and ``dt`` a
     translation added to it, both to `count` frames from `start`.
     """
-    gt, imu, noise, vision = _vision_fixture()
+    _gt, imu, noise, vision = _vision_fixture()
     R_rel = vision.R_rel.copy()
     t_rel = vision.t_rel.copy()
     if drot is not None:
@@ -906,3 +906,59 @@ def test_adaptive_inflation_recovers_the_fixes_that_the_plain_gate_threw_away() 
     # inflation is not the same as a calibrated filter, and this case is still
     # worse than running no gate at all.
     assert ate(with_adapt) > ate(without_any_fdir)
+
+
+# ---------------------------------------- ADR-0007 re-expansion in the filter --
+
+def test_a_lockout_re_expansion_widens_the_covariance_while_refusing_the_fix() -> None:
+    """The ESKF honours a lockout's re-expansion *before* the early return.
+
+    This is the branch that prevents a walked-off filter from coasting on a
+    covariance that no longer describes where it is. It must both refuse the
+    fix and widen ``P[3:6, 3:6]``; a filter that does only one of the two has
+    not implemented the ADR.
+
+    Driven with a stub FDIR because a real lockout needs two grants in one
+    episode, and the filter-level recoveries grant only once.
+    """
+    class LockoutFdir(FdirManager):
+        def evaluate_and_adapt(self, sensor, innovation, S, t_s=0.0, P=None,
+                               H=None, block=()):
+            return GatingDecision(
+                accepted=False,
+                mahalanobis_sq=80.0,
+                threshold=16.266,
+                dof=3,
+                status=STATUS_REJECTED_SPOOF,
+                reexpansion_variance=25.0,
+                reexpansion_block=(3, 4, 5),
+                outlier=True,
+            )
+
+    cfg = EskfConfig(
+        imu_noise=ImuNoiseModel(),
+        gnss_position_sigma_m=0.8,
+    )
+    f = ErrorStateKalmanFilter(cfg)
+    f.fdir = LockoutFdir(FdirConfig())
+    x = {
+        "R": np.eye(3),
+        "p": np.zeros(3),
+        "v": np.zeros(3),
+        "b_a": np.zeros(3),
+        "b_g": np.zeros(3),
+        "P": f._initial_covariance(),
+        "R_vk": np.eye(3),
+        "p_vk": np.zeros(3),
+        "P_theta_vk": np.zeros((3, 3)),
+        "P_p_vk": np.zeros((3, 3)),
+        "c_p": np.zeros(3),
+        "c_t": np.zeros(3),
+        "vision_updates": 0,
+    }
+    P_before = x["P"][3:6, 3:6].copy()
+    ok, _innov = f._gnss_update(x, np.array([50.0, 0.0, 0.0]), 0.8, t_s=0.0)
+    assert ok is False, "a lockout must refuse the measurement"
+    grown = x["P"][3:6, 3:6] - P_before
+    np.testing.assert_allclose(grown, np.eye(3) * 25.0, atol=1e-9)
+    assert f.fdir_inflations == 1, "the re-expansion is a covariance event, so it is counted"

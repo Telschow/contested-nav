@@ -12,8 +12,8 @@ import numpy as np
 import pytest
 
 from navkit.io.imu import DEFAULT_NOISE, ImuNoiseModel, apply_imu_noise, imu_residual
-from navkit.types import ImuSample
 from navkit.synthetic import SyntheticConfig, synthetic_imu
+from navkit.types import ImuSample
 
 
 @pytest.fixture()

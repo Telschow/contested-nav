@@ -52,7 +52,7 @@ class EstimatorResult:
             "trajectory_duration_s": self.trajectory.duration,
             "path_length_m": self.trajectory.path_length(),
             "reports_covariance": self.position_cov is not None,
-            **{k: v for k, v in self.stats.items()},
+            **dict(self.stats),
         }
 
 
@@ -100,6 +100,9 @@ class DeadReckoning:
         return EstimatorResult(
             trajectory=traj,
             runtime_s=elapsed,
-            stats={"final_speed_m_s": float(np.linalg.norm(v)), "realtime_factor": traj.duration / elapsed if elapsed > 0 else float("inf")},
+            stats={
+                "final_speed_m_s": float(np.linalg.norm(v)),
+                "realtime_factor": traj.duration / elapsed if elapsed > 0 else float("inf"),
+            },
             name=self.name,
         )

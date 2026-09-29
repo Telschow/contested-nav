@@ -33,14 +33,92 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.4"]
+# B2 was that no lint or typecheck gate could be run outside CI. The two
+# tools are here so `uv run ruff check` and `uv run mypy src` work locally and
+# resolve to the same versions the CI job installs, which are unpinned there.
+dev = ["pytest>=7.4", "ruff==0.16.9", "mypy==2.3.1"]
 
 [project.urls]
-Homepage = "https://github.com/contested-nav/contested-nav"
-Issues = "https://github.com/contested-nav/contested-nav/issues"
+Homepage = "https://github.com/Telschow/contested-nav"
+Issues = "https://github.com/Telschow/contested-nav/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/navkit"]
+
+# The lint rule set is declared rather than inherited.
+#
+# `ruff check` with no configuration selects whatever ruff's defaults are that
+# month, so the gate moved from 14 to 131 findings as upstream shipped new rules
+# -- and a gate that fails for reasons unrelated to the code trains everyone to
+# ignore it. Pinning the selection makes the standard a property of this
+# repository. The set below is deliberately explicit: correctness and
+# import-hygiene rules, plus the readability rules that catch real defects
+# (PLR0124, SIM222, RUF007). Style-only rules the formatter does not enforce
+# are left out on purpose.
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes: unused imports, redefinitions, unused locals
+    "I",    # import sorting
+    "UP",   # pyupgrade: modern syntax for the declared minimum, 3.11
+    "B",    # bugbear: mutable defaults, shadowing, loop pitfalls
+    "C4",   # comprehensions
+    "SIM",  # simplifications that are not merely taste
+    "RUF",  # ruff-specific correctness and modernisation
+]
+ignore = [
+    # Implicit string concatenation inside a collection literal is how long
+    # prose messages are wrapped in this codebase, and it is readable.
+    "ISC001",
+    "ISC002",
+    "ISC003",
+    # `__all__` is kept in a deliberate, documented order rather than sorted:
+    # the constants read as a state machine, and the order carries meaning.
+    "RUF022",
+    # `int(x)` on a value already known to be integral documents the type
+    # transition at the boundary of the JSON/YAML config layer.
+    "RUF046",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests import fixtures and re-export names deliberately, and build helper
+# scripts manipulate sys.path before importing the package.
+"tests/*" = ["E402", "F401"]
+"scripts/*" = ["E402"]
+# `__init__.py` re-exports define the public API and are not "unused".
+"src/navkit/**/__init__.py" = ["F401"]
+# The HTML table rows below are one line per row on purpose. Wrapping a `<tr>`
+# across lines makes the rendered-table structure harder to check by eye, and
+# these are the exact strings `check_doc_tables.py` matches against the docs.
+"tests/test_doc_tables.py" = ["E501"]
+# `as_markdown` builds a Markdown table whose header says "Coverage @2sigma" and
+# whose cells use an en dash as a range separator. Both are intended typography,
+# and substituting the ASCII lookalikes would be a real regression in the output.
+"scripts/seed_sweep.py" = ["RUF001"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["navkit"]
+
+[tool.mypy]
+# numpy and matplotlib do not ship complete stubs; `--ignore-missing-imports`
+# is in the CI command too, and duplicating it here means a bare `mypy src`
+# behaves the same as the gate.
+#
+# 3.13 matches the interpreter the CI lint job runs on. Setting the declared
+# minimum of 3.11 instead makes mypy reject numpy's own stubs, which use `type`
+# statements, so the gate could not check the code it was written to check.
+python_version = "3.13"
+warn_unused_configs = true
+# No error codes are suppressed. The filter state used to need
+# `assignment`, `dict-item`, and `union-attr` silenced because it was annotated
+# `dict[str, np.ndarray]` while holding ints, a bool, and a None; it is now a
+# TypedDict, so the silencer is gone rather than narrowed.
 
 [tool.pytest.ini_options]
 # Tests run against the source tree with no install step, so a fresh clone needs

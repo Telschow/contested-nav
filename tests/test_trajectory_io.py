@@ -14,9 +14,9 @@ from navkit.io.trajectory import (
     TrajectoryParseError,
     detect_format,
     read_trajectory,
-    wxyz_to_xyzw,
     write_euroc,
     write_tum,
+    wxyz_to_xyzw,
     xyzw_to_wxyz,
 )
 from navkit.types import Trajectory
@@ -161,7 +161,7 @@ def test_plotly_csv_round_trip_preserves_rotation(tmp_path):
         q = wxyz_to_xyzw(traj.quaternions[i])
         p = traj.positions[i]
         rows.append(
-            "%.12e,%e,%e,%e,%e,%e,%e,%e" % (traj.t[i], p[0], p[1], p[2], q[0], q[1], q[2], q[3])
+            f"{traj.t[i]:.12e},{p[0]:e},{p[1]:e},{p[2]:e},{q[0]:e},{q[1]:e},{q[2]:e},{q[3]:e}"
         )
     path.write_text("\n".join(rows) + "\n")
     back = read_trajectory(str(path), fmt="csv_xyz_qw")
@@ -205,7 +205,7 @@ def test_quaternion_normalization_is_tolerated(tmp_path):
     q = np.array([0.1, 0.2, 0.3, 0.4])
     q = q / np.linalg.norm(q)
     path = tmp_path / "t.txt"
-    path.write_text("0.0 0 0 0 %e %e %e %e\n" % tuple(q * 5.0))
+    path.write_text("0.0 0 0 0 {:e} {:e} {:e} {:e}\n".format(*tuple(q * 5.0)))
     R = read_trajectory(str(path), fmt="tum").rotations[0]
     assert np.allclose(R @ R.T, np.eye(3), atol=1e-9)
     assert np.allclose(R, quat_to_matrix(xyzw_to_wxyz(q)))
