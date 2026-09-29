@@ -1,0 +1,39 @@
+version: 2
+
+updates:
+  # Actions are the main supply-chain surface for a repository that runs its
+  # own CI: a compromised action executes with the workflow's token. These are
+  # kept current automatically and pinned by digest in the workflow files.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: [dependencies, ci]
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # pip: the runtime and test dependencies. Grouped so a transitive bump does
+  # not open a separate pull request for every package in the tree, and so the
+  # group is reviewed as a unit with uv.lock regenerated alongside it.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    groups:
+      test-and-lint:
+        patterns:
+          - "pytest"
+          - "pytest-*"
+          - "ruff"
+          - "mypy"
+          - "coverage"
+      build:
+        patterns:
+          - "hatchling"
+          - "build"
+          - "wheel"
+          - "setuptools"
