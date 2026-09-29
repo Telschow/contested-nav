@@ -8,8 +8,10 @@
 > the current state see `CHANGELOG.md` and re-run the commands quoted
 > above.
 
-Audit date: 2026-09-29. Describes the repository as it exists today, at commit
-`c81c6f9` on `main` plus a large uncommitted working tree.
+Audit date: 2026-09-29. Describes the repository as it existed when the audit
+began: commit `c81c6f9` (since rewritten to `abb62bb`) on `main`, plus a large
+uncommitted working tree. See §5 for what changed when the project was later
+published.
 
 This document answers "what is true right now" and nothing more. Where the
 repository disagrees with itself, both values are recorded rather than one being
@@ -137,57 +139,75 @@ These are load-bearing and were made for stated reasons.
 
 ## 5. Git state
 
-| Property | Value |
-|---|---|
-| Branch | `main` (only branch) |
-| Commits | 4 |
-| First commit | `466ab48` 2026-09-28 13:26 `docs(navkit): reconcile test metrics, correct Jacobians, and update roadmap` |
-| Latest commit | `c81c6f9` 2026-09-28 15:31 `docs(tpm): add SRS, SWaP-C trade-off matrix, and FDIR strategy whitepaper` |
-| Remotes | **none configured** |
-| Tags | none |
+> **Status update, 2026-09-29 (after this audit).** Every hash, count and
+> relation in this section describes the repository as it stood *before* the
+> audit work was committed. The project has since been published to
+> `https://github.com/Telschow/contested-nav`. Publishing required a history
+> rewrite to purge a personal email address that had been committed in author
+> metadata and in two audit documents, so the hashes cited here no longer
+> resolve; the current equivalents are given below. The dangling objects
+> described further down were removed by that rewrite and are no longer
+> recoverable. The unrelated GitHub history has been merged rather than
+> discarded, so both roots are ancestors of the published `main`.
+
+| Property | Value at audit time | Value now |
+|---|---|---|
+| Branch | `main` (only branch) | `main` |
+| Commits | 4 | 22 |
+| First commit | `466ab48` → now `8f6fcd7` `docs(navkit): reconcile test metrics, correct Jacobians, and update roadmap` | same commit, new hash |
+| Latest commit | `c81c6f9` → now `abb62bb` `docs(tpm): add SRS, SWaP-C trade-off matrix, and FDIR strategy whitepaper` | superseded by later release commits |
+| Remotes | **none configured** | `origin` → `git@github.com:Telschow/contested-nav.git` |
+| Tags | none | none |
 | Submodules | none |
 | Git LFS | not in use |
 | Stashes | none |
 | Dangling commits | 2 (dropped stashes, content already in working tree — see below) |
-| Tracked files | 70 |
-| Modified (unstaged) | 20 |
-| Untracked | 8 paths |
+| Tracked files | 70 | 103 |
+| Modified (unstaged) | 20 | none |
+| Untracked | 8 paths | none tracked; build and result directories ignored |
 
-Full history is four commits, all by one author on one day:
+The four commits were, in reverse chronological order (hashes are the pre-rewrite
+values, with their current equivalents):
 
 ```
-c81c6f9 docs(tpm): add SRS, SWaP-C trade-off matrix, and FDIR strategy whitepaper
-5d83216 feat(fdir): implement NIS window monitor and adaptive covariance inflation (resolve B5)
-4fa780b feat(fdir): implement zero-dependency chi-square innovation gating and sensor fault isolation
-466ab48 docs(navkit): reconcile test metrics, correct Jacobians, and update roadmap
+abb62bb  (was c81c6f9) docs(tpm): add SRS, SWaP-C trade-off matrix, and FDIR strategy whitepaper
+cc998d1  (was 5d83216) feat(fdir): implement NIS window monitor and adaptive covariance inflation (resolve B5)
+c571e91  (was 4fa780b) feat(fdir): implement zero-dependency chi-square innovation gating and sensor fault isolation
+8f6fcd7  (was 466ab48) docs(navkit): reconcile test metrics, correct Jacobians, and update roadmap
 ```
 
 ### Dangling commits are not lost work
 
-`git fsck` reports `1fa6393` and `58bc8eb`, both with the message form
-`WIP on main: …`, which is the signature of `git stash` entries that were later
-dropped. I verified their content is already present in the working tree before
-concluding this:
+At audit time `git fsck` reported `1fa6393` and `58bc8eb`, both with the message
+form `WIP on main: …`, which is the signature of `git stash` entries that were
+later dropped. I verified their content was already present in the working tree
+before concluding this:
 
-- `58bc8eb` → `fdir_manager.py`: working tree differs only by added comment
+- `58bc8eb` → `fdir_manager.py`: working tree differed only by added comment
   lines; no removed functionality.
-- `1fa6393` → `eskf.py`: the 6 differing removed lines are docstring prose and
+- `1fa6393` → `eskf.py`: the 6 differing removed lines were docstring prose and
   an earlier FDIR import signature that later commits replaced.
 
-Both are recoverable via `git stash list` alternatives
-(`git show 58bc8eb`) if ever needed. **No history was modified during this
-audit.**
+The conclusion held and nothing was lost. Neither object was ever reachable
+from a branch, and the history rewrite that preceded publication removed both,
+so `git show` on them no longer works. This is recorded because it is the reason
+those hashes appear nowhere in the current history. No history was modified
+during the audit itself.
 
-### Local and GitHub histories are unrelated
+### Local and GitHub histories were unrelated
 
-`https://github.com/Telschow/contested-nav` exists and is reachable, but it
-contains **one commit** (`4b7be00`, "Initial commit", 2026-09-29 18:06) whose
+`https://github.com/Telschow/contested-nav` existed and was reachable, but it
+contained **one commit** (`4b7be00`, "Initial commit", 2026-09-29 18:06) whose
 entire content is a `README.md` containing the single line `# contested-nav`.
+That commit is still in the published history and is still an ancestor of
+`main`.
 
-The local history and the remote share **no commits**. The local repository is
-therefore *ahead by 4 and behind by 1* in the sense of unrelated histories, and
-cannot be reconciled by a normal push or pull. This is documented, not fixed —
-see `ENGINEERING_BASELINE.md` §2 for the recommended non-destructive sequence.
+The local history and the remote shared **no commits**, so the repository was
+*ahead by 4 and behind by 1* in the sense of unrelated histories and could not
+be reconciled by a normal push or pull. `ENGINEERING_BASELINE.md` §2 recorded
+the recommended non-destructive sequence. Publication followed it: the remote
+commit was merged in rather than discarded, so the push was an ordinary
+fast-forward.
 
 ---
 
@@ -213,6 +233,12 @@ It is coherent, well-tested and worth keeping:
 **One hazard:** `opencode.json` sits in the same directory, untracked *and not
 gitignored*, holding a live API key. `git add .` stages it. See
 `PUBLICATION_READINESS.md` §1.
+
+> **Resolved.** The hazard was real: the file was staged by an unqualified
+> `git add .` during the audit and the fix was to gitignore it. It has never
+> been committed, and it is absent from the published history, which
+> `gitleaks` confirms across all 22 commits. The credential in it is still the
+> owner's to rotate; ignoring a file is not the same as rotating a key.
 
 ---
 
