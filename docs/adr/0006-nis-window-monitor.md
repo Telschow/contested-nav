@@ -114,8 +114,24 @@ produces is not something a covariance grown by its own outage explains.
 ## Consequences
 
 - B5 closes. On the benchmark case: ATE 5.059 m to 2.541 m, rejections 51 to 5,
-  mean NEES 1996.5 to 419.4. With 30% of camera frames dropped, 3.339 m to
-  2.005 m and 931.4 to 264.8.
+  mean NEES 1996.5 to 419.4. With camera frames dropped, 3.339 m to 1.872 m and
+  931.4 to 216.6.
+- **Scale (2026-09, seed sweep).** All the figures above are the seed-0 draw.
+  Repeating `outage_visual` over 10 noise realisations gives mean NEES 844
+  (range 211.7 to 2103.4), so 419.4 is a low draw rather than a central value,
+  and the pre-inflation 1996.5 is likewise one sample. The mitigation's
+  *direction* is robust — the filter is overconfident at every seed — but the
+  magnitudes are single draws and should be read as orders of magnitude. The
+  camera-drop pair is weaker still: its two cases have overlapping ranges, so
+  216.6 versus 419.4 does not establish that dropping frames helps. See N10 in
+  `docs/audit/06-revised-roadmap.md`.
+- **Correction (2026-09, audit).** The figures above originally read "30% of
+  camera frames dropped, 3.339 m to 2.005 m and 931.4 to 264.8". The benchmark
+  config asked for a 30% drop but misspelled the key, so that case ran at the
+  20% default while being described as 30%. The direction and the conclusion are
+  unchanged — B5 still closes and the degraded case is still better with the
+  monitor — but the measured values are the 20% ones until re-measured, and the
+  30% numbers are now 1.872 m and 216.6.
 - **The blockage is not the same as calibration.** A 2.54 m error with 0.161 m
   claimed is still overconfident, and the coverage column still says so. What
   is resolved is the filter's refusal to hear a working sensor; what is not

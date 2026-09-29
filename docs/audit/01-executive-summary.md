@@ -1,5 +1,13 @@
 # Executive Summary
 
+
+> **Point-in-time snapshot (2026-09-29).** This document records the
+> repository as the audit found it, before the remediation in
+> `CHANGELOG.md` was applied. Counts, line numbers, and findings here are
+> deliberately not updated: several of them are what the work was for. For
+> the current state see `CHANGELOG.md` and re-run the commands quoted
+> above.
+
 **Baseline Health**: 567 tests collected — 563 passing, 2 skipped, 2 expected failures. Line coverage 86.58%. The test suite is the strongest evidence of repository health, with 99.3% pass rate.
 
 **Critical Architectural Gap**: Visual-aided GNSS navigation under 15s denial is **not trustworthy**. The 21-state anchor model is well-calibrated with GNSS available (mean NEES 3.7 vs 3 nominal, 100% 2σ coverage), but becomes dramatically overconfident during GNSS denial (mean NEES 419.4 vs 3 nominal, 20.0% 2σ coverage vs 99.2% expected). The filter reports 0.161 m uncertainty while being 2.54 m wrong — confident nonsense.

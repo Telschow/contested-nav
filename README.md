@@ -2,11 +2,11 @@
 
 Replay, evaluation and uncertainty calibration for GNSS-denied navigation.
 
-[![CI](https://github.com/contested-nav/contested-nav/actions/workflows/ci.yml/badge.svg)](https://github.com/contested-nav/contested-nav/actions/workflows/ci.yml)
-[![Pages](https://github.com/contested-nav/contested-nav/actions/workflows/pages.yml/badge.svg)](https://github.com/contested-nav/contested-nav/actions/workflows/pages.yml)
+[![CI](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml)
+[![Pages](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-482%20pass%20%2B%202%20skip-informational.svg)](tests)
-[![Line coverage](https://img.shields.io/badge/line%20coverage-85.09%25-informational.svg)](CONSTRAINTS.md)
+[![Tests](https://img.shields.io/badge/tests-597%20pass%20%2B%202%20skip%20%2B%202%20xfail-informational.svg)](tests)
+[![Line coverage](https://img.shields.io/badge/line%20coverage-86.58%25-informational.svg)](CONSTRAINTS.md)
 
 A 21-state error-state Kalman filter for fused GNSS and visual navigation, built
 around one commitment: **a filter that reports its uncertainty should be
@@ -24,6 +24,13 @@ With GNSS denied for 15 s and visual odometry enabled, the filter reports
 **0.161 m** of position uncertainty while being **2.54 m** wrong. Mean NEES is
 **419.4** against an expected 3, and only 20.0% of epochs fall inside the
 2σ ellipsoid where 99.2% should.
+
+Those are one draw. Repeating the case over 10 independent noise realisations,
+`outage_visual` is overconfident at **every** seed (mean NEES 844, range 211.7 to
+2103.4; coverage 6.8% to 34.8%), so the failure is a property of the design
+rather than of a lucky fixture. The exact digits are not, and are quoted here as
+one sample of a wide distribution. Reproduce with
+`python scripts/seed_sweep.py --seeds 10`.
 
 This is not a tuning problem and it is not a crash. The filter runs, converges,
 and produces confident nonsense. It is therefore shipped with
@@ -43,7 +50,7 @@ against the source tree.
 python -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 
-.venv/bin/python -m pytest           # 534 collected: 532 pass, 2 skip, ~50 s
+.venv/bin/python -m pytest           # 597 passed, 2 skipped, 2 xfailed, ~110 s
 ```
 
 Runtime dependencies are NumPy, Matplotlib and PyYAML. There is no SciPy, no
@@ -83,7 +90,7 @@ the strictest of the four conventions the code supports.
 | Vision only | 2.309 | 0.156 | 331.0 | 0.7% | overconfident |
 | GNSS denied 5–20 s, vision off (control) | 3.782 | 0.567 | 4.1 | 100.0% | mixed: bulk overconfident, tail underconfident |
 | GNSS denied 5–20 s, vision on | 2.541 | 0.161 | 419.4 | 20.0% | overconfident |
-| GNSS denied, 30% camera frames dropped | 2.005 | 0.178 | 264.8 | 16.7% | overconfident |
+| GNSS denied, 30% camera frames dropped | 1.872 | 0.190 | 216.6 | 18.5% | overconfident |
 
 Three rows deserve more than a glance.
 
@@ -249,7 +256,8 @@ configs/          benchmark scenarios
 scripts/          run_benchmark.py, make_figures.py, coverage_report.py
 docs/             architecture, calibration, ADRs, figures, site,
                   product_management/ (SRS, SWaP-C matrix, FDIR strategy)
-tests/            534 tests (532 pass, 2 skip without TUM VI data)
+tests/            597 tests (597 pass, 2 skip without TUM VI data, 2 xfail by
+                  design pending ADR-0007 Track B)
 ```
 
 ## Product management and systems engineering
@@ -291,10 +299,19 @@ rather than a tuning error.
 - **The filter is still overconfident under visual aiding.** Mean NEES 419.4
   against a nominal 3, 2σ coverage 20.0% where 95% is required. It converges and
   is confidently wrong. This is blocker B1, and it is a pose-graph problem that
-  no threshold in the FDIR subsystem will move.
-- **One trajectory fixture.** A single 30 s synthetic path, so the numbers
-  characterise a configuration, not a distribution over scenes. A Monte Carlo
-  sweep is the obvious next step and is not done.
+  no threshold in the FDIR subsystem will move. Robust across 10 seeds: the
+  worst case is still NEES 211.7 and 6.8% coverage.
+- **The published numbers are single draws.** A 10-seed sweep shows NEES varying
+  by 4.4x to 45x between cases, and the two controls the tables call calibrated
+  (`gnss_only`, `outage_control`) flip verdict across seeds — `outage_control` is
+  never clean in 10 draws. The shipped tables remain the seed-0 benchmark, which
+  is the committed artefact; treat the magnitudes as order-of-magnitude and the
+  verdicts as the claim.
+- **One trajectory fixture, one scene.** A single 30 s analytic path, so the
+  numbers characterise a configuration, not a distribution over scenes. The seed
+  sweep varied sensor noise realisations on that one deterministic motion; it did
+  not vary geometry, outage timing or duration. Multi-scene validation is still
+  open.
 - **Not flight-ready.** No sensor driver, no live front end, no real-time loop,
   no failure-mode handling beyond a measurement gate.
 - **TUM VI regression is partial.** The trajectory reader is validated against

@@ -4,9 +4,9 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: 484 tests collected, 482 passing, 2 skipped; 85.09% line
-coverage (`python -m pytest`, `python scripts/coverage_report.py`). Every number
-below re-measures against that, not against a remembered value.
+Measured baseline: 601 tests collected, 597 passing, 2 skipped, 2 xfail; 87.59%
+line coverage (`python -m pytest`, `python scripts/coverage_report.py`). Every
+number below re-measures against that, not against a remembered value.
 
 ---
 
@@ -177,7 +177,8 @@ that has already been wrong. This track moves detection forward.
       `fdir/nis_monitor.py` holds a bounded per-channel window and reads a
       *trailing run* of rejections, not a count. `outage_visual` 5.059 m to
       2.541 m with rejections 51 to 5; `outage_visual_degraded_camera`
-      3.339 m to 2.005 m. Pinned by
+      3.339 m to 2.005 m (20% drop, key misspelled — corrected 30% measures
+      1.872 m; see ADR-0006). Pinned by
       `test_adaptive_inflation_recovers_the_fixes_that_the_plain_gate_threw_away`,
       which asserts the old value as well so the regression fails on its own.
 - [x] The gate widened *conditionally*, not globally. The premise is tested
@@ -218,8 +219,12 @@ Everything in Milestone 1 makes the limitation reproducible and documented;
 this removes it.
 
 - [!] Blocker, unchanged: a single-anchor ESKF cannot represent correlated
-      visual drift. Mean NEES 1996.5 on `outage_visual`. Not attempted yet,
-      because a pose graph is a piece of engineering rather than a patch.
+      visual drift. Mean NEES 419.4 on `outage_visual`, 20.0% coverage against
+      99.2% expected. Not attempted yet, because a pose graph is a piece of
+      engineering rather than a patch. (The figure was 1996.5 before ADR-0006;
+      the number fell because the filter began taking its own uncertainty more
+      seriously, not because the anchor is now modelled correctly. See
+      `CONSTRAINTS.md:B1`.)
 - [ ] Decide the formulation: a factor graph over visual keyframes, a
       multi-anchor ESKF, or a loosely-coupled inertial/visual filter.
 - [ ] NumPy-only implementation — S1 holds. A sliding window of keyframes with
@@ -235,7 +240,7 @@ this removes it.
       destroy the evidence that the work mattered.
 
 **Exit test:** NEES below 10 with vision enabled and GNSS denied, coverage above
-90%, `vision_enabled = True` as the shipped default. Current value 1996.5.
+90%, `vision_enabled = True` as the shipped default. Current value 419.4.
 
 ### Track C — TPM / PM deliverables `[ ]`
 

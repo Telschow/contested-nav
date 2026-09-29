@@ -1,5 +1,13 @@
 # Revised Roadmap
 
+
+> **Point-in-time snapshot (2026-09-29).** This document records the
+> repository as the audit found it, before the remediation in
+> `CHANGELOG.md` was applied. Counts, line numbers, and findings here are
+> deliberately not updated: several of them are what the work was for. For
+> the current state see `CHANGELOG.md` and re-run the commands quoted
+> above.
+
 Based on the evidence gathered in this audit, the following actionable plan is proposed. Items inherit status from ROADMAP.md and CONSTRAINTS.md; new items are tagged with their evidence level.
 
 ## Now (Immediate, within 1 sprint)
