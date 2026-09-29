@@ -4,8 +4,8 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: 601 tests collected, 597 passing, 2 skipped, 2 xfail; 87.59%
-line coverage (`python -m pytest`, `python scripts/coverage_report.py`). Every
+Measured baseline: 601 tests collected, 597 passing, 2 skipped, 2 xfail; 91.61%
+line coverage (`python scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
 ---
