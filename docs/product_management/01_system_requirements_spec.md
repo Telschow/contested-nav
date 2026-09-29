@@ -412,8 +412,16 @@ tier.
 | AC-07 | exact | holds | **PASS** |
 | AC-08 | 0 | 0 of 1212 | **PASS**, but see note |
 | AC-09 | exit 0 | matches `results/benchmark.json` | **PASS** |
-| AC-10 | 0 failures | 563 passed, 2 skipped, 2 xfailed | **PASS** |
-| AC-11 | ≥ 75% (script floor) | 86.58% | **PASS** |
+| AC-10 | 0 failures | 597 passed, 2 skipped, 2 xfailed | **PASS** |
+| AC-11 | ≥ 75% (script floor) | 87.59% | **PASS** |
+
+**AC-03 and AC-04 are not seed artefacts.** Both were re-measured after this table
+was first written, under two independent sweeps: 10 noise realisations of the
+benchmark scene (`scripts/seed_sweep.py`) and 8 scenes with the trajectory
+geometry varied over a 4.65x path-length range (`scripts/scene_sweep.py`). All 7
+case verdicts are identical in all 8 scenes, and `outage_visual` is overconfident
+at every noise seed. The *verdicts* are therefore robust; only the magnitudes are
+single draws. This strengthens the FAILs — it does not soften them.
 
 **AC-08 is the one PASS here that no test enforces.** The 0-of-1212 result is
 recorded in the `fdir/gating.py` module comment, which also documents the
