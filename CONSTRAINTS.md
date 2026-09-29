@@ -66,14 +66,14 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | 553 | `pytest` |
-| Tests passing | 300 | 563 (2 skipped, 2 xfail, see below) | `pytest -rs` |
-| Line coverage | 75% | 86.58% | `scripts/coverage_report.py` |
-| `io/trajectory.py` coverage | 85% | 90.8% | as above |
+| Tests collected | 405 | 601 | `pytest` |
+| Tests passing | 300 | 597 (2 skipped, 2 xfail, see below) | `pytest -rs` |
+| Line coverage | 75% | 87.59% | `scripts/coverage_report.py` |
+| `io/trajectory.py` coverage | 85% | 90.6% | as above |
 | `analysis/findings.py` coverage | 80% | 97.6% | as above |
 | `config.py` coverage | 80% | 98.4% | as above |
 | `eval/metrics.py` coverage | 60% | 85.6% | as above |
-| `eval/thresholds.py` coverage | 60% | 96.4% | as above |
+| `eval/thresholds.py` coverage | 60% | 96.3% | as above |
 | `geometry/align.py` coverage | 60% | 76.6% | as above |
 | `estimators/eskf.py` coverage | 80% | 90.5% | as above |
 | `fdir/gating.py` coverage | 70% | 87.0% | as above |

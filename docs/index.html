@@ -198,14 +198,17 @@ correct rather than merely different.</p>
 
 <p>
 No number on this page is typed in by hand. The table and the figures are generated from a
-seeded scenario file, and CI runs the benchmark twice and fails if the two runs disagree.</p>
+seeded scenario file, and CI runs the benchmark and both robustness sweeps twice and fails if
+any two runs disagree.</p>
 
 <pre><code>git clone https://github.com/Telschow/contested-nav
 cd contested-nav
 python -m pip install -e ".[dev]"
 
-python -m pytest                      # 534 collected: 532 pass, 2 skip
+python -m pytest                      # 601 collected: 597 pass, 2 skip, 2 xfail
 python scripts/run_benchmark.py --markdown
+python scripts/seed_sweep.py --seeds 10
+python scripts/scene_sweep.py
 python scripts/make_figures.py</code></pre>
 
 <p>
@@ -223,9 +226,9 @@ An ATE quoted without its alignment is not a result. The figures and the headlin
   <li><strong>Visual aiding under GNSS denial is not trustworthy yet</strong>, and is disabled by default. This is the central open result, not a footnote.</li>
   <li><strong>FDIR detects implausible updates but does not explain them.</strong> The chi-square gate isolates a channel and reports how long it was out, but it does not separate multipath from spoofing from sensor degradation. See ADR-0005.</li>
   <li><strong>The calibrated-covariance failure is mitigated, not fixed.</strong> The gate assumed a calibrated innovation covariance the filter does not have when the position covariance has collapsed, which cost 1.6&nbsp;m of ATE in the GNSS-denied row above. That was blocker B5, closed by ADR-0006 with a per-channel NIS window and adaptive GNSS covariance inflation: ATE 5.059&nbsp;m to 2.541&nbsp;m, rejections 51 to 5, false-alarm rate unchanged.</li>
-  <li><strong>The filter is still overconfident under visual aiding.</strong> Mean NEES 419.4 against a nominal 3, 2&sigma; coverage 20.0% where 95% is required. It converges and is confidently wrong. Blocker B1 is open, and it is a pose-graph problem that no FDIR threshold will move.</li>
+  <li><strong>The filter is still overconfident under visual aiding.</strong> Mean NEES 419.4 against a nominal 3, 2&sigma; coverage 20.0% where 95% is required. It converges and is confidently wrong. Blocker B1 is open, and it is a pose-graph problem that no FDIR threshold will move. It holds at every one of 10 noise seeds and in all 8 scenes.</li>
   <li><strong>Not a flight-ready estimator.</strong> No sensor driver, no live front end, no real-time loop.</li>
-  <li><strong>Single trajectory fixture.</strong> One 30 s synthetic path, so the numbers characterise a configuration, not a distribution over scenes.</li>
+  <li><strong>Scene generalisation is shown; external validity is not.</strong> Eight scenes vary trajectory geometry over a 4.65&times; path-length range and all seven verdicts hold. No real capture, no measured sensor characteristic, and no outage-timing variation.</li>
   <li><strong>Alignment fits positions only</strong>, so attitude error survives a rigid fit untouched. Reported separately for that reason.</li>
 </ul>
 
@@ -241,6 +244,33 @@ things that are not verifiable today are marked <strong>NOT VERIFIED</strong> ra
   <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/product_management/01_system_requirements_spec.md">System Requirements Specification</a> &mdash; the three operational user needs, 32 technical requirements, per-requirement verdicts. Only one OUN passes in full.</li>
   <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/product_management/02_swapc_tradeoff_matrix.md">SWaP-C and Sensor Selection Trade-off</a> &mdash; three platform profiles, IMU grades, cost and power bands, and when to move off pure ESKF dead reckoning.</li>
   <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/product_management/03_fdir_and_spoofing_strategy.md">FDIR and Adversarial Spoofing Strategy</a> &mdash; threat taxonomy, the two-stage defence architecture, and what the operator is actually shown.</li>
+</ul>
+
+<h2>What this is, and is not</h2>
+
+<p>
+A research and evaluation library in a publicly studied field. Not a navigation
+product, not field-validated, not novel, and not qualified for any platform.
+</p>
+
+<p>
+<strong>The failure documented above is a known failure mode with established
+remedies, and this repository implements none of them.</strong> Overconfidence in
+EKF-based visual-inertial estimation was traced to an observability mismatch in
+the peer-reviewed literature by 2014, and remedies &mdash; observability-constrained
+EKF, first-estimate Jacobians, invariant filters, pose graphs &mdash; are
+established. What this repository adds is a harness that measures the failure and
+refuses to ship the broken configuration. Every claim below is labelled, and
+every external claim carries a citation with an access date.
+</p>
+
+<ul>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/defense/README.md">Assessment index and claim labels</a> &mdash; what this is, what it is not, and how to read every claim.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/defense/DEFENSE_RELEVANCE.md">Defense relevance</a> &mdash; capability-level mapping, and the table of overstating words with permitted alternatives.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/defense/DUAL_USE_ANALYSIS.md">Dual-use analysis</a> &mdash; risk assessment, design limits, and what a deployer would still have to supply.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/defense/TECHNOLOGY_MAPPING.md">Technology mapping</a> &mdash; the technical areas and the public ecosystem, with the closest prior work named.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/defense/LIMITATIONS.md">Limitations</a> &mdash; consolidated, ordered by how much each one changes the conclusions.</li>
+  <li><a href="https://github.com/Telschow/contested-nav/blob/main/docs/defense/SOURCES.md">Sources</a> &mdash; every citation, with source type and access date.</li>
 </ul>
 
 <h2>Reading order</h2>

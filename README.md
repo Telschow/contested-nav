@@ -309,6 +309,20 @@ Start with the SRS if you want one number: **AC-03 and AC-04 fail**, so the
 filter is not yet trustworthy under GNSS denial, and the cause is a model error
 rather than a tuning error.
 
+## What this is, and is not
+
+This is a research and evaluation library in a publicly studied field. It is not
+a navigation product, not field-validated, not novel, and not qualified for any
+platform. [`docs/defense/`](docs/defense/README.md) is a public, source-cited
+assessment of where it sits: capability-level relevance, a dual-use review, the
+technical ecosystem, a consolidated limitations list, and the literature it
+relates to.
+
+The most important line in that assessment is this: **the failure documented
+above is a known failure mode with established remedies, and this repository
+implements none of them.** What it adds is a harness that measures the failure
+and refuses to ship the broken configuration.
+
 ## Status and limits
 
 - **Not field validated.** Synthetic fixture only. No real capture is vendored
