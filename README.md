@@ -383,6 +383,20 @@ short. See [CONSTRAINTS.md](CONSTRAINTS.md).
 - Claims are typed `FACT`, `MEASUREMENT`, `INTERPRETATION` or `HYPOTHESIS`, and
   a synthetic result is never presented as a field measurement.
 
+## Documentation
+
+| If you want | Read |
+|---|---|
+| How the filter works | [docs/architecture.md](docs/architecture.md) |
+| Why the covariance is calibrated, or not | [docs/calibration.md](docs/calibration.md) |
+| Reproduce every published number | [Reproduce every number](#reproduce-every-number) above, and [CONSTRAINTS.md](CONSTRAINTS.md) for the gates |
+| The evidence, and what it bounds | [Results](#results) above, and the acceptance criteria in the [system requirements](docs/product_management/01_system_requirements_spec.md) |
+| Research context and prior art | [docs/defense/SOURCES.md](docs/defense/SOURCES.md), and [What this is, and is not](#what-this-is-and-is-not) |
+| What it cannot do | [Status and limits](#status-and-limits) above, and the consolidated [LIMITATIONS.md](docs/defense/LIMITATIONS.md) |
+| What is planned, and what is not | [ROADMAP.md](ROADMAP.md) |
+| Defense and dual-use assessment | [docs/defense/](docs/defense/README.md) |
+| Design decisions of record | [docs/adr/](docs/adr/0001-anchor-as-filter-state.md) — eight ADRs, each with its alternatives and consequences |
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
