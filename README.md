@@ -6,7 +6,7 @@ Replay, evaluation and uncertainty calibration for GNSS-denied navigation.
 [![Pages](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-597%20pass%20%2B%202%20skip%20%2B%202%20xfail-informational.svg)](tests)
-[![Line coverage](https://img.shields.io/badge/line%20coverage-86.58%25-informational.svg)](CONSTRAINTS.md)
+[![Line coverage](https://img.shields.io/badge/line%20coverage-87.59%25-informational.svg)](CONSTRAINTS.md)
 
 A 21-state error-state Kalman filter for fused GNSS and visual navigation, built
 around one commitment: **a filter that reports its uncertainty should be
@@ -25,12 +25,24 @@ With GNSS denied for 15 s and visual odometry enabled, the filter reports
 **419.4** against an expected 3, and only 20.0% of epochs fall inside the
 2σ ellipsoid where 99.2% should.
 
-Those are one draw. Repeating the case over 10 independent noise realisations,
-`outage_visual` is overconfident at **every** seed (mean NEES 844, range 211.7 to
-2103.4; coverage 6.8% to 34.8%), so the failure is a property of the design
-rather than of a lucky fixture. The exact digits are not, and are quoted here as
-one sample of a wide distribution. Reproduce with
-`python scripts/seed_sweep.py --seeds 10`.
+Those are one draw, and the draw is not the point. Two sweeps test whether the
+finding is an artefact of that particular fixture.
+
+**10 independent noise realisations** of the same trajectory, holding geometry
+fixed (`scripts/seed_sweep.py --seeds 10`): `outage_visual` is overconfident at
+**every** seed, mean NEES 844, range 211.7 to 2103.4, coverage 6.8% to 34.8%.
+
+**8 scenes** with the trajectory geometry varied — path length spans 17.3 m to
+80.6 m, a 4.65x range — holding duration, sample rate and the exact `t=0`
+initial state fixed (`scripts/scene_sweep.py`): **all seven case verdicts are
+identical in all eight scenes**, and `outage_visual` gives mean NEES
+**419.7 [414.4, 424.9]** at **20.0%** coverage. Every case reports a stable
+verdict, so the ordering in the results table is not an accident of one path.
+
+So the failure is a property of the design rather than of a lucky fixture. The
+exact digits are not, and are quoted here as one sample of a wide distribution.
+Confident intervals are deterministic percentile bootstrap, 10 000 resamples,
+fixed RNG seed, so two runs of a sweep cannot disagree.
 
 This is not a tuning problem and it is not a crash. The filter runs, converges,
 and produces confident nonsense. It is therefore shipped with
@@ -67,13 +79,16 @@ twice and fails the build if the two runs disagree.
 
 ```bash
 .venv/bin/python scripts/run_benchmark.py --markdown   # table + results/benchmark.json
+.venv/bin/python scripts/seed_sweep.py --seeds 10      # noise robustness
+.venv/bin/python scripts/scene_sweep.py                 # geometry robustness
 .venv/bin/python scripts/make_figures.py                # docs/figures/*.png
 .venv/bin/python scripts/coverage_report.py             # coverage ratchet
 ```
 
 Scenarios live in [`configs/benchmark.yaml`](configs/benchmark.yaml). JSON lands
 in `results/` (gitignored); the figures under `docs/figures/` are committed
-because they are the evidence.
+because they are the evidence. CI runs the benchmark and both sweeps twice and
+fails the build if any two runs disagree.
 
 ## Results
 
@@ -176,10 +191,24 @@ The alternatives do not rescue it:
 - **A larger gate or a bigger anchor prior** — inflates the uncertainty to
   acknowledge the error instead of fixing it.
 
-The real fix is a **pose graph** over the visual constraints, which models the
-correlation between frames that the error-state form cannot express. That is
-not implemented. Until it is, `vision_enabled` defaults to `False`: a caller
-who did not ask for a confidently-wrong filter should not receive one.
+The anchor model is the wrong tool, and this is a known failure mode rather than
+a discovery. A visual front end supplies only *relative* transforms, so the
+absolute pose has to come from a single arbitrary reference; when that reference
+is only weakly constrained, an error-state filter gains spurious information
+along the unobservable directions and becomes overconfident. This has been
+characterised in the vision-aided inertial navigation literature for over a
+decade — Hesch et al. (IEEE T-RO, 2014) traced it to a mismatch between the
+observability of the linearised estimator and that of the true system, and the
+remedies are established: observability-constrained EKF, first-estimate
+Jacobians, invariant and Schmidt filters, and pose-graph formulations. See
+[docs/defense/DEFENSE_RELEVANCE.md](docs/defense/DEFENSE_RELEVANCE.md) for the
+citations.
+
+**This repository implements none of those remedies.** What it contributes is a
+reproducible harness that measures the failure in its own anchor formulation and
+refuses to ship the configuration. Until one of the known fixes is implemented,
+`vision_enabled` defaults to `False`: a caller who did not ask for a
+confidently-wrong filter should not receive one.
 
 The reasoning is recorded in
 [ADR 0001](docs/adr/0001-anchor-as-filter-state.md) and
@@ -253,10 +282,12 @@ src/navkit/
   io/             trajectory formats, IMU, config
   analysis/       typed claims and report rendering
 configs/          benchmark scenarios
-scripts/          run_benchmark.py, make_figures.py, coverage_report.py
+scripts/          run_benchmark.py, seed_sweep.py, scene_sweep.py,
+                  make_figures.py, coverage_report.py
 docs/             architecture, calibration, ADRs, figures, site,
+                  defense/ (public dual-use assessment),
                   product_management/ (SRS, SWaP-C matrix, FDIR strategy)
-tests/            597 tests (597 pass, 2 skip without TUM VI data, 2 xfail by
+tests/            601 tests (597 pass, 2 skip without TUM VI data, 2 xfail by
                   design pending ADR-0007 Track B)
 ```
 
@@ -299,19 +330,23 @@ rather than a tuning error.
 - **The filter is still overconfident under visual aiding.** Mean NEES 419.4
   against a nominal 3, 2σ coverage 20.0% where 95% is required. It converges and
   is confidently wrong. This is blocker B1, and it is a pose-graph problem that
-  no threshold in the FDIR subsystem will move. Robust across 10 seeds: the
-  worst case is still NEES 211.7 and 6.8% coverage.
+  no threshold in the FDIR subsystem will move. Robust across 10 noise seeds
+  (worst case NEES 211.7, 6.8% coverage) and across all 8 scenes
+  (419.7 [414.4, 424.9], 20.0%).
 - **The published numbers are single draws.** A 10-seed sweep shows NEES varying
   by 4.4x to 45x between cases, and the two controls the tables call calibrated
   (`gnss_only`, `outage_control`) flip verdict across seeds — `outage_control` is
   never clean in 10 draws. The shipped tables remain the seed-0 benchmark, which
   is the committed artefact; treat the magnitudes as order-of-magnitude and the
   verdicts as the claim.
-- **One trajectory fixture, one scene.** A single 30 s analytic path, so the
-  numbers characterise a configuration, not a distribution over scenes. The seed
-  sweep varied sensor noise realisations on that one deterministic motion; it did
-  not vary geometry, outage timing or duration. Multi-scene validation is still
-  open.
+- **Scene generalisation is demonstrated, external validity is not.** The
+  8-scene sweep varies trajectory geometry over a 4.65x path-length range and all
+  seven verdicts hold, so the failure above is not a property of one path. What is
+  *not* shown: any real capture, any measured sensor characteristic, or any scene
+  outside an analytic trajectory generator. Eight synthetic scenes bound the
+  claim "the anchor model is structurally wrong under visual aiding"; they do not
+  bound its behaviour on real imagery. Varying duration, outage timing and outage
+  duration remains open.
 - **Not flight-ready.** No sensor driver, no live front end, no real-time loop,
   no failure-mode handling beyond a measurement gate.
 - **TUM VI regression is partial.** The trajectory reader is validated against
