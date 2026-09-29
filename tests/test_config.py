@@ -7,6 +7,7 @@ nonsensical value is how an outage of 45 s quietly becomes an outage of 10 s
 and still reports a plausible-looking metric.
 """
 
+import re
 import textwrap
 
 import pytest
@@ -131,13 +132,13 @@ def test_dataset_kind_accepts_documented_values(tmp_path, kind):
 
 def test_unknown_dataset_kind_is_rejected(tmp_path):
     data = dict(VALID, dataset={"kind": "kafka"})
-    with pytest.raises(ConfigError, match="dataset.kind must be"):
+    with pytest.raises(ConfigError, match=re.escape("dataset.kind must be")):
         load_config(write(tmp_path, data))
 
 
 def test_file_dataset_requires_a_groundtruth_path(tmp_path):
     data = dict(VALID, dataset={"kind": "file"})
-    with pytest.raises(ConfigError, match="requires dataset.groundtruth_path"):
+    with pytest.raises(ConfigError, match=re.escape("requires dataset.groundtruth_path")):
         load_config(write(tmp_path, data))
 
 
@@ -181,7 +182,7 @@ def test_trim_values_are_coerced_to_float(tmp_path):
 
 def test_unknown_estimator_kind_is_rejected(tmp_path):
     data = dict(VALID, estimator={"kind": "particle_filter"})
-    with pytest.raises(ConfigError, match="estimator.kind must be"):
+    with pytest.raises(ConfigError, match=re.escape("estimator.kind must be")):
         load_config(write(tmp_path, data))
 
 
@@ -236,7 +237,7 @@ def test_unknown_threshold_key_is_rejected(tmp_path):
 
 def test_threshold_violations_are_reported_with_a_prefix(tmp_path):
     data = dict(VALID, thresholds={"sustained_error_m": 2.0, "position_peak_m": 1.0})
-    with pytest.raises(ConfigError, match="thresholds.position_peak_m must be >= sustained_error_m"):
+    with pytest.raises(ConfigError, match=re.escape("thresholds.position_peak_m must be >= sustained_error_m")):
         load_config(write(tmp_path, data))
 
 
@@ -381,6 +382,33 @@ def test_validate_config_dict_passes_a_clean_mapping():
     assert validate_config_dict(VALID) == []
 
 
+def test_validate_config_dict_flags_a_misspelled_camera_drop_key():
+    """The audit's finding #2, as a regression test.
+
+    `configs/benchmark.yaml` asked for `fraction: 0.3`, the field is
+    `drop_fraction`, and the unknown key was discarded silently -- so the
+    degraded-camera case ran at the 0.2 default while five documents described
+    a 30% burst and tagged it measured. A config parser that cannot tell a typo
+    from an absent key selects a different experiment without complaint, which
+    is why this asserts the *plain* spelling is flagged below.
+    """
+    problems = validate_config_dict(
+        {
+            "scenarios": [
+                {"name": "degraded", "camera_drop": {"fraction": 0.3}}
+            ]
+        }
+    )
+    assert any("camera_drop" in p and "fraction" in p for p in problems), problems
+
+
+def test_validate_config_dict_accepts_the_correct_camera_drop_spelling():
+    problems = validate_config_dict(
+        {"scenarios": [{"name": "degraded", "camera_drop": {"drop_fraction": 0.3}}]}
+    )
+    assert not any("camera_drop" in p for p in problems), problems
+
+
 def test_validate_config_dict_tolerates_absent_scenarios():
     assert validate_config_dict({"name": "x"}) == []
 
@@ -394,7 +422,7 @@ def test_subconfig_as_dict_round_trips_through_construction():
         (EstimatorConfig(gate_sigma=3.0), EstimatorConfig),
         (EvaluationConfig(association="nearest"), EvaluationConfig),
     ):
-        rebuilt = cls(**{k: v for k, v in obj.as_dict().items()})
+        rebuilt = cls(**dict(obj.as_dict()))
         assert rebuilt.as_dict() == obj.as_dict()
 
 
