@@ -276,9 +276,7 @@ def test_rigid_start_on_a_constant_error_curve_behaves_like_rigid():
 def test_ate_result_percentiles_agree_with_its_own_per_pose_errors():
     gt = _line()
     r = absolute_error(_noisy(), gt, alignment="none")
-    assert r.position_percentiles_m["p50"] == pytest.approx(
-        float(np.percentile(r.per_pose_position_m, 50))
-    )
+    assert r.position_percentiles_m["p50"] == pytest.approx(float(np.percentile(r.per_pose_position_m, 50)))
     assert len(r.per_pose_position_m) == len(gt)
 
 

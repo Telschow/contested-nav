@@ -159,25 +159,16 @@ class NisConfig:
             raise ValueError(f"window_size must be >= 1, got {self.window_size}")
         if self.consecutive_rejection_threshold < 1:
             raise ValueError(
-                "consecutive_rejection_threshold must be >= 1, got "
-                f"{self.consecutive_rejection_threshold}"
+                f"consecutive_rejection_threshold must be >= 1, got {self.consecutive_rejection_threshold}"
             )
         if self.max_inflation_factor < 1.0:
-            raise ValueError(
-                f"max_inflation_factor must be >= 1, got {self.max_inflation_factor}"
-            )
+            raise ValueError(f"max_inflation_factor must be >= 1, got {self.max_inflation_factor}")
         if not 0.0 < self.reaccept_margin <= 1.0:
-            raise ValueError(
-                f"reaccept_margin must lie in (0, 1], got {self.reaccept_margin}"
-            )
+            raise ValueError(f"reaccept_margin must lie in (0, 1], got {self.reaccept_margin}")
         if self.max_drift_sigma_mps <= 0.0:
-            raise ValueError(
-                f"max_drift_sigma_mps must be > 0, got {self.max_drift_sigma_mps}"
-            )
+            raise ValueError(f"max_drift_sigma_mps must be > 0, got {self.max_drift_sigma_mps}")
         if self.reacq_pos_sigma_m <= 0.0:
-            raise ValueError(
-                f"reacq_pos_sigma_m must be > 0, got {self.reacq_pos_sigma_m}"
-            )
+            raise ValueError(f"reacq_pos_sigma_m must be > 0, got {self.reacq_pos_sigma_m}")
 
 
 class NisWindowMonitor:

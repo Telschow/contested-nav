@@ -43,7 +43,7 @@ rather than the part that does the diagnosis.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from typing import Any
 
 import numpy as np
@@ -142,13 +142,42 @@ class FdirConfig:
     #: :attr:`navkit.fdir.nis_monitor.NisConfig.reaccept_margin` for why a
     #: marginal pass is the dangerous case rather than the safe one.
     reaccept_margin: float = 0.25
+    #: Consecutive updates needing an inflation grant before the channel is
+    #: treated as spoofed rather than displaced, per ADR-0007.
+    #:
+    #: One grant is a filter that has been walked off position and is being
+    #: walked back. A *second* grant is something else: the first grant moved the
+    #: state part-way toward the offset, and if the same offset then needs
+    #: inflating again, either the first grant was too small (the channel is
+    #: genuinely drifting and the filter cannot keep up) or the channel was
+    #: never truthful and the grant is compounding an attack. The filter cannot
+    #: tell those apart from a single channel, so it takes the safe branch.
+    #:
+    #: Two rather than three, because the benchmark's own cases grant exactly
+    #: once on a spoof, which means the discriminator has to fire on the
+    #: *second* need, not on the first. A threshold of one would escalate every
+    #: genuine post-outage re-acquisition and lock out a working receiver.
+    spoof_grant_threshold: int = 2
+    #: Seconds a channel stays locked out as spoofed before it may be evaluated
+    #: again, per ADR-0007.
+    #:
+    #: This is not a retry timer. A 60 s lockout on a 5 Hz channel discards ~300
+    #: fixes, and a GNSS receiver that is genuinely denied for that long has lost
+    #: the outage anyway, so the cost of being wrong in this direction is bounded
+    #: by the denial the system is trying to survive. A shorter lockout would
+    #: spend the same attacker step over and over.
+    spoof_lockout_s: float = 60.0
+    #: Extra covariance, in units of the granted 1-sigma, forced onto the block
+    #: when a channel is locked out, per ADR-0007 option 2.
+    #:
+    #: Re-expansion is what makes the lockout recoverable. Without it the filter
+    #: would coast on a covariance that no longer reflects a displaced mean, and
+    #: would re-acquire into the same error the moment the lockout expired.
+    spoof_reexpansion_factor: float = 2.0
 
     def __post_init__(self) -> None:
         if not 0.0 < self.confidence_level < 1.0:
-            raise ValueError(
-                f"confidence_level must lie strictly inside (0, 1), got "
-                f"{self.confidence_level}"
-            )
+            raise ValueError(f"confidence_level must lie strictly inside (0, 1), got {self.confidence_level}")
         if self.max_consecutive_rejections < 1:
             raise ValueError("max_consecutive_rejections must be at least 1")
         if self.auto_recovery_count < 1:
@@ -165,6 +194,12 @@ class FdirConfig:
             raise ValueError("max_drift_sigma_mps must be positive")
         if not 0.0 < self.reaccept_margin <= 1.0:
             raise ValueError("reaccept_margin must lie in (0, 1]")
+        if self.spoof_grant_threshold < 1:
+            raise ValueError("spoof_grant_threshold must be at least 1")
+        if self.spoof_lockout_s <= 0.0:
+            raise ValueError("spoof_lockout_s must be positive")
+        if self.spoof_reexpansion_factor < 1.0:
+            raise ValueError("spoof_reexpansion_factor must be at least 1")
 
     @property
     def alpha(self) -> float:
@@ -254,6 +289,18 @@ class GatingDecision:
     #: A fault is a security decision, and a 0.1 m budget must not be able to
     #: overturn it. Only a genuine outlier is eligible for relief.
     outlier: bool = False
+    #: Variance to add to ``inflation_block`` even though the update is *not*
+    #: being fused, and the state indices to add it to. ADR-0007 option 2.
+    #:
+    #: This is the one place a rejection carries a covariance change, and it is
+    #: what makes a lockout recoverable. Without it the filter would coast on a
+    #: covariance that no longer describes a displaced mean, and would walk
+    #: straight back into the same error the moment the lockout expired. Adding
+    #: variance while refusing the measurement keeps the two apart: the filter
+    #: admits it no longer knows where it is, without believing the thing that
+    #: told it.
+    reexpansion_variance: float = 0.0
+    reexpansion_block: tuple = ()
 
     @property
     def sensor_fault(self) -> bool:
@@ -262,6 +309,10 @@ class GatingDecision:
     @property
     def inflated(self) -> bool:
         return self.inflation_variance > 0.0
+
+    @property
+    def reexpanded(self) -> bool:
+        return self.reexpansion_variance > 0.0
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -276,6 +327,9 @@ class GatingDecision:
             "mahalanobis_sq_inflated": self.mahalanobis_sq_inflated,
             "recovered": self.recovered,
             "outlier": self.outlier,
+            "reexpanded": self.reexpanded,
+            "reexpansion_variance": self.reexpansion_variance,
+            "reexpansion_block": list(self.reexpansion_block),
         }
 
 
@@ -339,6 +393,23 @@ class ChannelState:
     #: turns it into a bound on the total uncertainty a channel can ever talk the
     #: filter out of, which is the quantity the security argument is about.
     inflation_granted_in_episode: bool = False
+    #: Inflation grants this channel has needed in the current episode, per
+    #: ADR-0007.
+    #:
+    #: Distinct from :attr:`inflation_granted_in_episode`, which is a one-shot
+    #: latch guarding the "one grant per episode" bound. This counter is what
+    #: detects *permanence*: the latch resets on any clean accept, but a channel
+    #: that keeps needing covariance is telling the filter something the latch
+    #: cannot express. Two grants inside one episode is the discriminator.
+    grants_this_episode: int = 0
+    #: Whether this channel is currently locked out as spoofed, and until when.
+    #: ADR-0007.
+    locked_out: bool = False
+    lockout_until_s: float = float("nan")
+    #: Extra variance forced onto the measurement block at the moment of
+    #: lockout, in m^2. Retained so the escalation is auditable after the fact
+    #: rather than being a one-shot side effect with no record.
+    reexpansion_variance: float = 0.0
     #: Timestamp of the last measurement this channel passed through the
     #: *unmodified* gate.
     #:
@@ -392,6 +463,7 @@ class ChannelState:
         self.consecutive_rejections = 0
         self.consecutive_accepts = 0
         self.inflation_granted_in_episode = False
+        self.grants_this_episode = 0
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -406,6 +478,10 @@ class ChannelState:
             "reaccepted_total": self.reaccepted_total,
             "inflation_variance_total": self.inflation_variance_total,
             "inflation_granted_in_episode": self.inflation_granted_in_episode,
+            "grants_this_episode": self.grants_this_episode,
+            "locked_out": self.locked_out,
+            "lockout_until_s": self.lockout_until_s,
+            "reexpansion_variance": self.reexpansion_variance,
             "t_last_trusted": self.t_last_trusted,
             "longest_silence_s": self.longest_silence_s,
             "silence_at_run_start": self.silence_at_run_start,
@@ -450,6 +526,54 @@ class FdirManager:
 
     def is_faulted(self, sensor: str) -> bool:
         return self.state(sensor).fault_declared
+
+    def is_locked_out(self, sensor: str) -> bool:
+        """True while this channel is in an ADR-0007 spoof cooldown.
+
+        Separate from :meth:`is_faulted` because the two expire on different
+        clocks: a fault clears on ``auto_recovery_count`` clean updates, a
+        lockout only on elapsed time. A caller reporting "is this sensor usable"
+        needs both.
+        """
+        return self.state(sensor).locked_out
+
+    def _maybe_release_lockout(self, st: ChannelState, t_s: float) -> None:
+        """Expire a lockout whose cooldown has elapsed, per ADR-0007.
+
+        Release clears the lockout but deliberately leaves ``fault_declared``
+        alone. The channel must then earn its way back through the ordinary
+        ``auto_recovery_count`` hysteresis, so the cooldown buys time rather
+        than granting trust: an attacker who replays the same step the instant
+        the lockout expires is still looking at a faulted channel, and has to
+        produce ``auto_recovery_count`` clean updates first.
+        """
+        if not st.locked_out:
+            return
+        if not math.isfinite(st.lockout_until_s) or t_s < st.lockout_until_s:
+            return
+        st.locked_out = False
+        st.lockout_until_s = float("nan")
+        st.grants_this_episode = 0
+        st.reexpansion_variance = 0.0
+        st.consecutive_rejections = 0
+        st.consecutive_accepts = 0
+
+    def _lock_out(self, st: ChannelState, t_s: float, variance: float) -> None:
+        """Escalate this channel to a spoof lockout, per ADR-0007.
+
+        Sets both the fault and the lockout because the two answer different
+        questions. The fault says "do not fuse this channel right now"; the
+        lockout says "do not come back to this channel for ``spoof_lockout_s``",
+        which ordinary recovery hysteresis cannot express, because recovery
+        counts clean accepts and a spoofed channel produces them once the filter
+        has moved.
+        """
+        st.fault_declared = True
+        st.locked_out = True
+        st.lockout_until_s = float(t_s) + self.cfg.spoof_lockout_s
+        st.reexpansion_variance = float(variance)
+        st.consecutive_rejections += 1
+        st.consecutive_accepts = 0
 
     @property
     def channels(self) -> dict[str, ChannelState]:
@@ -532,6 +656,7 @@ class FdirManager:
             )
 
         st = self.state(sensor)
+        self._maybe_release_lockout(st, t_s)
         if math.isfinite(st.t_last_arrival):
             gap = t_s - st.t_last_arrival
             if gap > 0.0:
@@ -704,9 +829,7 @@ class FdirManager:
             self._log_decision(decision, t_s, sensor)
             return decision
         if P is not None and H is not None and block:
-            adapted = self._reaccept_with_inflation(
-                sensor, innovation, S, P, H, block, decision, t_s
-            )
+            adapted = self._reaccept_with_inflation(sensor, innovation, S, P, H, block, decision, t_s)
         else:
             # The second pass is unavailable, but what the monitor knows is not:
             # it still knows this is a run of failures rather than a stray one.
@@ -735,15 +858,50 @@ class FdirManager:
     ) -> GatingDecision:
         """Second pass. Returns a decision that may or might ask for inflation."""
         st = self.state(sensor)
+        if st.locked_out:
+            # Inside a spoof lockout. The channel is not eligible for anything,
+            # least of all more uncertainty: a lockout exists precisely because
+            # covariance is what the attacker was able to buy once already.
+            return decision
         if st.inflation_granted_in_episode:
             # Already spent this episode's grant. A channel that keeps failing
             # after having been relieved once is not re-acquiring, and the
             # answer is isolation, not more uncertainty.
+            #
+            # ADR-0007 sharpens this. "Keeps failing" is now measured as a
+            # count of grants needed within the episode rather than as a single
+            # latch, because the latch resets on any clean accept and a spoofed
+            # channel produces clean accepts once the filter has moved. The
+            # second grant is the signal that the first one did not fix
+            # anything, which is what distinguishes a permanently adopted
+            # offset from a filter genuinely walking back to truth.
+            st.grants_this_episode += 1
+            if st.grants_this_episode >= self.cfg.spoof_grant_threshold:
+                variance = self.nis.inflation_variance(
+                    decision.mahalanobis_sq, decision.threshold, st.longest_silence_s
+                )
+                reexpansion = (
+                    variance * self.cfg.spoof_reexpansion_factor
+                    if variance > 0.0
+                    else self.cfg.reacq_sigma_m**2 * self.cfg.spoof_reexpansion_factor
+                )
+                self._lock_out(st, t_s, reexpansion)
+                self._log_lockout(sensor, t_s, reexpansion, st.grants_this_episode)
+                # The variance rides out on the decision so the estimator can
+                # widen the block while refusing the fix. It is carried in
+                # `reexpansion_*` and not `inflation_*` precisely because this
+                # update is not a fusion: conflating the two would let the
+                # estimator's `if decision.inflated` branch treat a lockout as
+                # a re-acquisition.
+                return replace(
+                    decision,
+                    status=STATUS_REJECTED_SPOOF,
+                    reexpansion_variance=reexpansion,
+                    reexpansion_block=block,
+                )
             return decision
         blind_s = st.longest_silence_s
-        variance = self.nis.inflation_variance(
-            decision.mahalanobis_sq, decision.threshold, blind_s
-        )
+        variance = self.nis.inflation_variance(decision.mahalanobis_sq, decision.threshold, blind_s)
         if not variance > 0.0:
             return decision
 
@@ -782,6 +940,7 @@ class FdirManager:
         st.reaccepted_total += 1
         st.inflation_variance_total += variance
         st.inflation_granted_in_episode = True
+        st.grants_this_episode += 1
         cleared_fault = st.fault_declared
         st.fault_declared = False
         st.last_mahalanobis_sq_inflated = d2_inflated
@@ -798,9 +957,7 @@ class FdirManager:
             recovered=cleared_fault,
         )
 
-    def _accept(
-        self, st: ChannelState, d2: float, threshold: float, dof: int, t_s: float
-    ) -> GatingDecision:
+    def _accept(self, st: ChannelState, d2: float, threshold: float, dof: int, t_s: float) -> GatingDecision:
         st.consecutive_rejections = 0
         st.consecutive_accepts += 1
         st.accepted_total += 1
@@ -816,10 +973,7 @@ class FdirManager:
         # not evidence that a displaced filter is well placed, and the
         # auto_recovery_count threshold is the standard this file already applies
         # to that same question.
-        if (
-            st.consecutive_accepts >= self.cfg.auto_recovery_count
-            and st.silence_at_run_start > 0.0
-        ):
+        if st.consecutive_accepts >= self.cfg.auto_recovery_count and st.silence_at_run_start > 0.0:
             st.longest_silence_s = 0.0
         # The episode is over: this update needed no help, so the next run of
         # failures will have to earn its own grant.
@@ -895,6 +1049,27 @@ class FdirManager:
                 mahalanobis_sq=float(d2),
                 threshold=float(threshold),
                 consecutive_rejections=int(consecutive),
+            )
+        )
+
+    def _log_lockout(self, sensor: str, t_s: float, variance: float, grants: int) -> None:
+        """Record a spoof escalation. See :meth:`_log` for what is worth recording.
+
+        A lockout is logged even though it is a rejection, because it is not a
+        rejection like the others: it is the subsystem concluding that covariance
+        relief has been used against it, and that fact is what an operator needs
+        to see. Logging it under the same rule as a transient rejection would
+        bury the one line that says the receiver was judged compromised.
+        """
+        self.events.append(
+            FdirEvent(
+                t_s=float(t_s),
+                sensor=sensor,
+                status=STATUS_REJECTED_SPOOF,
+                mahalanobis_sq=float("nan"),
+                threshold=float("nan"),
+                consecutive_rejections=int(grants),
+                inflation_variance=float(variance),
             )
         )
 

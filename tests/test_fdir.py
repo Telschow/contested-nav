@@ -59,10 +59,18 @@ from navkit.types import GnssFix, VisionUpdate, interpolate_trajectory
 #: from the module, so that a wrong constant in the module cannot make its own test
 #: pass.
 PUBLISHED = {
-    (1, 0.05): 3.841, (1, 0.01): 6.635, (1, 0.001): 10.828,
-    (2, 0.05): 5.991, (2, 0.01): 9.210, (2, 0.001): 13.816,
-    (3, 0.05): 7.815, (3, 0.01): 11.345, (3, 0.001): 16.266,
-    (6, 0.05): 12.592, (6, 0.01): 16.812, (6, 0.001): 22.458,
+    (1, 0.05): 3.841,
+    (1, 0.01): 6.635,
+    (1, 0.001): 10.828,
+    (2, 0.05): 5.991,
+    (2, 0.01): 9.210,
+    (2, 0.001): 13.816,
+    (3, 0.05): 7.815,
+    (3, 0.01): 11.345,
+    (3, 0.001): 16.266,
+    (6, 0.05): 12.592,
+    (6, 0.01): 16.812,
+    (6, 0.001): 22.458,
 }
 
 
@@ -113,9 +121,7 @@ def test_threshold_falls_back_to_exact_quantiles_for_untabulated_small_dof() -> 
 def test_threshold_falls_back_to_wilson_hilferty_for_large_dof() -> None:
     for dof in (9, 12, 21):
         for alpha in (0.05, 0.01):
-            assert chi2_threshold(dof, alpha) == pytest.approx(
-                wilson_hilferty(alpha, dof), rel=1e-12
-            )
+            assert chi2_threshold(dof, alpha) == pytest.approx(wilson_hilferty(alpha, dof), rel=1e-12)
 
 
 def test_wilson_hilferty_accuracy_is_bounded_and_improves_with_dof() -> None:
@@ -142,9 +148,7 @@ def test_wilson_hilferty_refuses_the_dof_where_it_is_invalid() -> None:
 
 
 def test_normal_quantile_matches_the_published_z_scores() -> None:
-    for alpha, z in ((0.05, 1.6448536269514722),
-                     (0.01, 2.3263478740408408),
-                     (0.001, 3.090232306167813)):
+    for alpha, z in ((0.05, 1.6448536269514722), (0.01, 2.3263478740408408), (0.001, 3.090232306167813)):
         assert normal_quantile(alpha) == pytest.approx(z, rel=1e-12)
 
 
@@ -206,9 +210,7 @@ def test_mahalanobis_is_invariant_to_rotation_of_the_coordinate_frame() -> None:
     Q = la.qr(rng.standard_normal((3, 3)))[0]
     if la.det(Q) < 0:
         Q[:, 0] *= -1.0
-    assert mahalanobis_sq(y, S) == pytest.approx(
-        mahalanobis_sq(Q @ y, Q @ S @ Q.T), rel=1e-10
-    )
+    assert mahalanobis_sq(y, S) == pytest.approx(mahalanobis_sq(Q @ y, Q @ S @ Q.T), rel=1e-10)
 
 
 def test_mahalanobis_is_zero_for_a_zero_innovation() -> None:
@@ -498,9 +500,7 @@ def _stationary_fixture(sigma_m: float = 0.1, seed: int = 3):
 
 
 def _filter(**kwargs) -> ErrorStateKalmanFilter:
-    return ErrorStateKalmanFilter(
-        EskfConfig(imu_noise=ImuNoiseModel(), **kwargs)
-    )
+    return ErrorStateKalmanFilter(EskfConfig(imu_noise=ImuNoiseModel(), **kwargs))
 
 
 def _corrupt(fixes, offset, start, count):
@@ -526,13 +526,8 @@ def _run_with_offset(offset, start, count, **kwargs):
     pass a filter that tracked the spoof and then got lucky.
     """
     gt, imu, fixes = _stationary_fixture()
-    result = _filter(gnss_position_sigma_m=0.1, **kwargs).run(
-        imu, gnss=_corrupt(fixes, offset, start, count)
-    )
-    error = np.abs(
-        result.trajectory.positions[:, 0]
-        - np.interp(result.trajectory.t, gt.t, gt.positions[:, 0])
-    )
+    result = _filter(gnss_position_sigma_m=0.1, **kwargs).run(imu, gnss=_corrupt(fixes, offset, start, count))
+    error = np.abs(result.trajectory.positions[:, 0] - np.interp(result.trajectory.t, gt.t, gt.positions[:, 0]))
     return result, float(np.max(error))
 
 
@@ -607,9 +602,7 @@ def test_a_persistent_spoofed_signal_isolates_the_channel() -> None:
     response from a system that just lost one measurement.
     """
     cfg = FdirConfig(max_consecutive_rejections=5)
-    result, peak_error = _run_with_offset(
-        np.array([15.0, 0.0, 0.0]), 40, 30, fdir_config=cfg
-    )
+    result, peak_error = _run_with_offset(np.array([15.0, 0.0, 0.0]), 40, 30, fdir_config=cfg)
     events = result.trajectory.metadata["fdir_events"]
     faults = [e for e in events if e["status"] == STATUS_SENSOR_FAULT]
     assert len(faults) == 1, "expected exactly one fault declaration"
@@ -820,16 +813,21 @@ def _denial_scenario(**fdir_kwargs):
     has since moved is not the same number.
     """
     syn = SyntheticConfig(
-        duration_s=30.0, rate_hz=100.0, radius_m=4.0, circles=1.5,
-        sway_amplitude_m=0.6, sway_cycles=3.0, yaw_amplitude_deg=35.0,
-        yaw_cycles=1.0, start_position=(1.0, 0.0, 1.6),
+        duration_s=30.0,
+        rate_hz=100.0,
+        radius_m=4.0,
+        circles=1.5,
+        sway_amplitude_m=0.6,
+        sway_cycles=3.0,
+        yaw_amplitude_deg=35.0,
+        yaw_cycles=1.0,
+        start_position=(1.0, 0.0, 1.6),
     )
     gt = synthetic_trajectory(syn)
     gt = gt.transformed(la.inv(gt.poses[0]))
     imu = synthetic_imu(syn)
     gnss = gnss_fixes(gt, GnssConfig(rate_hz=5.0, sigma_m=0.8, seed=0))
-    vision = visual_updates(gt, VisionConfig(rate_hz=20.0, rot_sigma_deg=0.35,
-                                             trans_sigma_m=0.05, seed=0))
+    vision = visual_updates(gt, VisionConfig(rate_hz=20.0, rot_sigma_deg=0.35, trans_sigma_m=0.05, seed=0))
     gnss = apply_gnss_outage(gnss, [Outage(start_s=5.0, duration_s=15.0)], True)
     noise = ImuNoiseModel(2e-4, 2e-3, 2e-6, 1e-4, 1e-5, 2e-3)
     cfg = EskfConfig(
@@ -872,9 +870,7 @@ def test_adaptive_inflation_recovers_the_fixes_that_the_plain_gate_threw_away() 
 
     def ate(result) -> float:
         reference = interpolate_trajectory(gt, result.trajectory.t)
-        return float(
-            np.linalg.norm(result.trajectory.positions[-1] - reference.positions[-1])
-        )
+        return float(np.linalg.norm(result.trajectory.positions[-1] - reference.positions[-1]))
 
     # The regression this closes, pinned at its old value so it cannot creep
     # back while the assertions below still pass.
@@ -891,9 +887,7 @@ def test_adaptive_inflation_recovers_the_fixes_that_the_plain_gate_threw_away() 
     assert with_adapt.stats["fdir_inflations"] == 1.0
     assert with_adapt.stats["fdir_gnss_reaccepted"] == 1.0
     grants = [
-        e
-        for e in with_adapt.trajectory.metadata["fdir_events"]
-        if e["status"] == STATUS_REACCEPTED_WITH_INFLATION
+        e for e in with_adapt.trajectory.metadata["fdir_events"] if e["status"] == STATUS_REACCEPTED_WITH_INFLATION
     ]
     assert len(grants) == 1
     # The grant is logged with what it bought, so the log says how much trust was
@@ -910,6 +904,7 @@ def test_adaptive_inflation_recovers_the_fixes_that_the_plain_gate_threw_away() 
 
 # ---------------------------------------- ADR-0007 re-expansion in the filter --
 
+
 def test_a_lockout_re_expansion_widens_the_covariance_while_refusing_the_fix() -> None:
     """The ESKF honours a lockout's re-expansion *before* the early return.
 
@@ -921,9 +916,9 @@ def test_a_lockout_re_expansion_widens_the_covariance_while_refusing_the_fix() -
     Driven with a stub FDIR because a real lockout needs two grants in one
     episode, and the filter-level recoveries grant only once.
     """
+
     class LockoutFdir(FdirManager):
-        def evaluate_and_adapt(self, sensor, innovation, S, t_s=0.0, P=None,
-                               H=None, block=()):
+        def evaluate_and_adapt(self, sensor, innovation, S, t_s=0.0, P=None, H=None, block=()):
             return GatingDecision(
                 accepted=False,
                 mahalanobis_sq=80.0,

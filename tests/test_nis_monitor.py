@@ -92,11 +92,7 @@ def _final_position_error(gt, result) -> float:
 
 
 def _grants(result) -> list[dict]:
-    return [
-        e
-        for e in result.trajectory.metadata["fdir_events"]
-        if e["status"] == STATUS_REACCEPTED_WITH_INFLATION
-    ]
+    return [e for e in result.trajectory.metadata["fdir_events"] if e["status"] == STATUS_REACCEPTED_WITH_INFLATION]
 
 
 # --- the monitor itself -----------------------------------------------------
@@ -277,9 +273,15 @@ class TestPersistentOffsetIsRelieved:
         that has since moved is not the same number.
         """
         syn = SyntheticConfig(
-            duration_s=30.0, rate_hz=100.0, radius_m=4.0, circles=1.5,
-            sway_amplitude_m=0.6, sway_cycles=3.0, yaw_amplitude_deg=35.0,
-            yaw_cycles=1.0, start_position=(1.0, 0.0, 1.6),
+            duration_s=30.0,
+            rate_hz=100.0,
+            radius_m=4.0,
+            circles=1.5,
+            sway_amplitude_m=0.6,
+            sway_cycles=3.0,
+            yaw_amplitude_deg=35.0,
+            yaw_cycles=1.0,
+            start_position=(1.0, 0.0, 1.6),
         )
         gt = synthetic_trajectory(syn)
         gt = gt.transformed(la.inv(gt.poses[0]))
@@ -289,9 +291,7 @@ class TestPersistentOffsetIsRelieved:
             [Outage(start_s=5.0, duration_s=15.0)],
             True,
         )
-        vision = visual_updates(
-            gt, VisionConfig(rate_hz=20.0, rot_sigma_deg=0.35, trans_sigma_m=0.05, seed=0)
-        )
+        vision = visual_updates(gt, VisionConfig(rate_hz=20.0, rot_sigma_deg=0.35, trans_sigma_m=0.05, seed=0))
         cfg = EskfConfig(
             imu_noise=ImuNoiseModel(2e-4, 2e-3, 2e-6, 1e-4, 1e-5, 2e-3),
             gnss_position_sigma_m=0.8,
@@ -387,9 +387,7 @@ class TestInflationLimits:
             result = _filter(
                 gnss_position_sigma_m=0.1,
                 fdir_config=FdirConfig(max_consecutive_rejections=5),
-            ).run(
-                imu, gnss=_offset_fixes(fixes, [offset, 0.0, 0.0], start=40, count=30)
-            )
+            ).run(imu, gnss=_offset_fixes(fixes, [offset, 0.0, 0.0], start=40, count=30))
             assert result.stats["fdir_inflations"] == 0.0, f"{offset} m got a grant"
             assert _grants(result) == []
             # Small enough that the filter drifts toward it and the innovation
@@ -413,9 +411,7 @@ class TestInflationLimits:
         P = np.eye(21) * 0.01
         H = np.zeros((3, 21))
         H[0, 3] = 1.0
-        d = m.evaluate_and_adapt(
-            "gnss", np.zeros(3), S, t_s=0.2, P=P, H=H, block=(3, 4, 5)
-        )
+        d = m.evaluate_and_adapt("gnss", np.zeros(3), S, t_s=0.2, P=P, H=H, block=(3, 4, 5))
         assert not d.accepted
         assert d.status == STATUS_REJECTED_PERSISTENT
         assert not d.outlier, "a consistent sample is not an outlier"
@@ -431,8 +427,13 @@ class TestInflationLimits:
         H[0, 3] = 1.0
         for i in range(3):
             d = m.evaluate_and_adapt(
-                "gnss", np.array([0.6, 0.0, 0.0]), S, t_s=i * 0.2,
-                P=P, H=H, block=(3, 4, 5),
+                "gnss",
+                np.array([0.6, 0.0, 0.0]),
+                S,
+                t_s=i * 0.2,
+                P=P,
+                H=H,
+                block=(3, 4, 5),
             )
         assert d.outlier
         assert d.mahalanobis_sq > d.threshold
@@ -440,9 +441,9 @@ class TestInflationLimits:
     def test_a_sustained_offset_still_escalates_to_a_fault(self):
         """Relief is one grant, and the channel is still isolated after it."""
         _, imu, fixes = _platform()
-        result = _filter(
-            gnss_position_sigma_m=0.1, fdir_config=FdirConfig(max_consecutive_rejections=5)
-        ).run(imu, gnss=_offset_fixes(fixes, [60.0, 0.0, 0.0], start=40, count=30))
+        result = _filter(gnss_position_sigma_m=0.1, fdir_config=FdirConfig(max_consecutive_rejections=5)).run(
+            imu, gnss=_offset_fixes(fixes, [60.0, 0.0, 0.0], start=40, count=30)
+        )
         statuses = {e["status"] for e in result.trajectory.metadata["fdir_events"]}
         assert STATUS_SENSOR_FAULT in statuses
 
@@ -480,9 +481,7 @@ class TestInflationLimits:
         gt = synthetic_trajectory(cfg)
         gt = gt.transformed(la.inv(gt.poses[0]))
         imu = synthetic_imu(cfg, rate_hz=200.0)
-        vision = visual_updates(
-            gt, VisionConfig(rate_hz=20.0, rot_sigma_deg=0.35, trans_sigma_m=0.05, seed=0)
-        )
+        vision = visual_updates(gt, VisionConfig(rate_hz=20.0, rot_sigma_deg=0.35, trans_sigma_m=0.05, seed=0))
         R_rel, t_rel = vision.R_rel.copy(), vision.t_rel.copy()
         t_rel[200:220] += np.array([0.0, 0.0, 10.0])
         stepped = VisionUpdate(
@@ -492,9 +491,9 @@ class TestInflationLimits:
             rot_cov=None if vision.rot_cov is None else vision.rot_cov.copy(),
             trans_cov=None if vision.trans_cov is None else vision.trans_cov.copy(),
         )
-        result = _filter(
-            vision_enabled=True, vision_keyframe_interval=1, fdir_config=FdirConfig()
-        ).run(imu, vision=stepped)
+        result = _filter(vision_enabled=True, vision_keyframe_interval=1, fdir_config=FdirConfig()).run(
+            imu, vision=stepped
+        )
         stats = result.stats
         assert stats["fdir_vision_trans_rejected"] > 0.0
         assert stats["fdir_inflations"] == 0.0
@@ -521,12 +520,20 @@ class TestFdirManagerWiring:
         m = FdirManager()
         for _ in range(3):
             m.evaluate_and_adapt(
-                "gnss", np.array([20.0, 0.0, 0.0]), np.eye(3) * 0.01,
-                P=np.eye(21) * 0.01, H=np.zeros((3, 21)), block=(),
+                "gnss",
+                np.array([20.0, 0.0, 0.0]),
+                np.eye(3) * 0.01,
+                P=np.eye(21) * 0.01,
+                H=np.zeros((3, 21)),
+                block=(),
             )
         d = m.evaluate_and_adapt(
-            "gnss", np.array([20.0, 0.0, 0.0]), np.eye(3) * 0.01,
-            P=np.eye(21) * 0.01, H=np.zeros((3, 21)), block=(),
+            "gnss",
+            np.array([20.0, 0.0, 0.0]),
+            np.eye(3) * 0.01,
+            P=np.eye(21) * 0.01,
+            H=np.zeros((3, 21)),
+            block=(),
         )
         assert not d.inflated
         assert d.inflation_block == ()
@@ -545,8 +552,13 @@ class TestFdirManagerWiring:
         far = np.array([40.0, 0.0, 0.0])
         for i in range(2):
             d = m.evaluate_and_adapt(
-                "gnss", far, H @ P @ H.T + np.eye(3) * 0.01, t_s=i * 0.2,
-                P=P, H=H, block=(3, 4, 5),
+                "gnss",
+                far,
+                H @ P @ H.T + np.eye(3) * 0.01,
+                t_s=i * 0.2,
+                P=P,
+                H=H,
+                block=(3, 4, 5),
             )
         assert d.status == STATUS_SENSOR_FAULT
         assert d.sensor_fault
@@ -566,13 +578,23 @@ class TestFdirManagerWiring:
         # A long silence earns a large budget; a 3 m innovation then passes.
         for i in range(3):
             m.evaluate_and_adapt(
-                "gnss", np.array([3.0, 0.0, 0.0]), S, t_s=100.0 + i * 0.2,
-                P=P, H=H, block=(3, 4, 5),
+                "gnss",
+                np.array([3.0, 0.0, 0.0]),
+                S,
+                t_s=100.0 + i * 0.2,
+                P=P,
+                H=H,
+                block=(3, 4, 5),
             )
         assert m.state("gnss").longest_silence_s == pytest.approx(0.2)
         d = m.evaluate_and_adapt(
-            "gnss", np.array([3.0, 0.0, 0.0]), S, t_s=100.6,
-            P=P, H=H, block=(3, 4, 5),
+            "gnss",
+            np.array([3.0, 0.0, 0.0]),
+            S,
+            t_s=100.6,
+            P=P,
+            H=H,
+            block=(3, 4, 5),
         )
         # A 0.2 s silence earns 0.1 m of sigma, which cannot explain 3 m, so the
         # mechanism correctly declines even though the divergence is persistent.
@@ -635,7 +657,10 @@ class TestFdirManagerWiring:
     def test_disabled_fdir_touches_nothing(self):
         m = FdirManager(FdirConfig(enabled=False))
         d = m.evaluate_and_adapt(
-            "gnss", np.array([50.0, 0.0, 0.0]), np.eye(3) * 0.01, t_s=0.0,
+            "gnss",
+            np.array([50.0, 0.0, 0.0]),
+            np.eye(3) * 0.01,
+            t_s=0.0,
         )
         assert d.accepted
         assert d.status == STATUS_ACCEPTED
@@ -647,9 +672,17 @@ class TestFdirManagerWiring:
         again = FdirConfig(**cfg.as_dict())
         assert again.nis_config() == cfg.nis_config()
 
-    @pytest.mark.parametrize("field", ["reacq_consecutive_rejections", "reacq_window",
-                                       "max_inflation_factor", "reacq_sigma_m",
-                                       "max_drift_sigma_mps", "reaccept_margin"])
+    @pytest.mark.parametrize(
+        "field",
+        [
+            "reacq_consecutive_rejections",
+            "reacq_window",
+            "max_inflation_factor",
+            "reacq_sigma_m",
+            "max_drift_sigma_mps",
+            "reaccept_margin",
+        ],
+    )
     def test_nonsense_fault_configuration_is_refused(self, field):
         with pytest.raises(ValueError):
             FdirConfig(**{field: -1.0})
@@ -682,9 +715,15 @@ def _denial_then_spoof(offset_m: float, **fdir_kwargs):
         else:
             fdir_extra[k] = v
     syn = SyntheticConfig(
-        duration_s=30.0, rate_hz=100.0, radius_m=4.0, circles=1.5,
-        sway_amplitude_m=0.6, sway_cycles=3.0, yaw_amplitude_deg=35.0,
-        yaw_cycles=1.0, start_position=(1.0, 0.0, 1.6),
+        duration_s=30.0,
+        rate_hz=100.0,
+        radius_m=4.0,
+        circles=1.5,
+        sway_amplitude_m=0.6,
+        sway_cycles=3.0,
+        yaw_amplitude_deg=35.0,
+        yaw_cycles=1.0,
+        start_position=(1.0, 0.0, 1.6),
     )
     gt = synthetic_trajectory(syn)
     gt = gt.transformed(la.inv(gt.poses[0]))
@@ -702,9 +741,7 @@ def _denial_then_spoof(offset_m: float, **fdir_kwargs):
     )
     returning = spoofed.t >= 20.0
     spoofed.positions[returning, 0] += offset_m
-    vision = visual_updates(
-        gt, VisionConfig(rate_hz=20.0, rot_sigma_deg=0.35, trans_sigma_m=0.05, seed=0)
-    )
+    vision = visual_updates(gt, VisionConfig(rate_hz=20.0, rot_sigma_deg=0.35, trans_sigma_m=0.05, seed=0))
     base_eskf = {
         "imu_noise": ImuNoiseModel(2e-4, 2e-3, 2e-6, 1e-4, 1e-5, 2e-3),
         "gnss_position_sigma_m": 0.8,
@@ -739,9 +776,7 @@ def _blind_gnss_manager(offset_m: float, n_updates: int = 24, **fdir_kwargs):
         t += 0.2
     t = 20.0  # 15 s of silence: what earns the drift budget in the first place
     for _ in range(n_updates):
-        m.evaluate_and_adapt(
-            "gnss", np.array([offset_m, 0.0, 0.0]), S, t_s=t, P=P, H=H, block=(0, 1, 2)
-        )
+        m.evaluate_and_adapt("gnss", np.array([offset_m, 0.0, 0.0]), S, t_s=t, P=P, H=H, block=(0, 1, 2))
         t += 0.2
     return m
 
@@ -786,8 +821,7 @@ class TestSpoofLockoutEscalates:
         before = m.state("gnss").grants_this_episode
         m = _blind_gnss_manager(15.0, n_updates=48)
         assert m.state("gnss").grants_this_episode == before, (
-            "grants kept accruing after escalation, so the cooldown bounds "
-            "nothing"
+            "grants kept accruing after escalation, so the cooldown bounds nothing"
         )
 
     def test_the_lockout_expires_but_the_fault_does_not(self):
@@ -795,18 +829,13 @@ class TestSpoofLockoutEscalates:
         m = _blind_gnss_manager(15.0, spoof_lockout_s=60.0)
         assert m.is_locked_out("gnss")
         P, H, S = np.eye(3), np.eye(3), np.eye(3)
-        d = m.evaluate_and_adapt(
-            "gnss", np.zeros(3), S, t_s=30.0, P=P, H=H, block=(0, 1, 2)
-        )
+        d = m.evaluate_and_adapt("gnss", np.zeros(3), S, t_s=30.0, P=P, H=H, block=(0, 1, 2))
         assert m.is_locked_out("gnss"), "lockout released early"
         assert not d.accepted, "a locked-out channel accepted a measurement"
-        m.evaluate_and_adapt(
-            "gnss", np.zeros(3), S, t_s=100.0, P=P, H=H, block=(0, 1, 2)
-        )
+        m.evaluate_and_adapt("gnss", np.zeros(3), S, t_s=100.0, P=P, H=H, block=(0, 1, 2))
         assert not m.is_locked_out("gnss"), "lockout outlived its cooldown"
         assert m.is_faulted("gnss"), (
-            "the lockout expiry granted trust outright instead of leaving the "
-            "fault to the normal recovery hysteresis"
+            "the lockout expiry granted trust outright instead of leaving the fault to the normal recovery hysteresis"
         )
 
     def test_a_genuine_post_outage_recovery_is_not_locked_out(self):
@@ -817,11 +846,7 @@ class TestSpoofLockoutEscalates:
         every working receiver coming back from a real outage.
         """
         _, result = _denial_then_spoof(0.0)
-        lockouts = [
-            e
-            for e in result.trajectory.metadata["fdir_events"]
-            if e["status"] == STATUS_REJECTED_SPOOF
-        ]
+        lockouts = [e for e in result.trajectory.metadata["fdir_events"] if e["status"] == STATUS_REJECTED_SPOOF]
         assert not lockouts, "a truthful return from a denial was judged a spoof"
         assert result.stats["fdir_gnss_reaccepted"] == 1.0
 
@@ -853,16 +878,10 @@ class TestPermanenceIsStillUndetected:
     see the open question in ADR-0007.
     """
 
-    @pytest.mark.xfail(
-        strict=False, reason="one grant, then permanent adoption; no second grant to count"
-    )
+    @pytest.mark.xfail(strict=False, reason="one grant, then permanent adoption; no second grant to count")
     def test_a_permanently_adopted_offset_is_locked_out(self):
         _, result = _denial_then_spoof(22.0)
-        lockouts = [
-            e
-            for e in result.trajectory.metadata["fdir_events"]
-            if e["status"] == STATUS_REJECTED_SPOOF
-        ]
+        lockouts = [e for e in result.trajectory.metadata["fdir_events"] if e["status"] == STATUS_REJECTED_SPOOF]
         assert lockouts, "audit finding H5: 22 m admitted with no escalation"
 
     @pytest.mark.xfail(strict=False, reason="same cause as the lockout test above")
@@ -948,17 +967,28 @@ class TestFrozenAnchorCrossCheck:
         # thing in the file that can refuse, and the test measures it.
         eskf = _filter(vision_enabled=True, gate_sigma=0.0, **cfg_kwargs)
         x = {
-            "R": np.eye(3), "p": np.zeros(3), "v": np.zeros(3),
-            "b_a": np.zeros(3), "b_g": np.zeros(3), "P": np.eye(21) * 0.01,
-            "R_vk": np.eye(3), "p_vk": np.zeros(3),
-            "P_theta_vk": np.eye(3) * 0.01, "P_p_vk": np.eye(3) * 0.01,
-            "c_p": np.zeros(3), "c_t": np.zeros(3),
-            "vision_keyframe_set": True, "vision_updates": 0,
+            "R": np.eye(3),
+            "p": np.zeros(3),
+            "v": np.zeros(3),
+            "b_a": np.zeros(3),
+            "b_g": np.zeros(3),
+            "P": np.eye(21) * 0.01,
+            "R_vk": np.eye(3),
+            "p_vk": np.zeros(3),
+            "P_theta_vk": np.eye(3) * 0.01,
+            "P_p_vk": np.eye(3) * 0.01,
+            "c_p": np.zeros(3),
+            "c_t": np.zeros(3),
+            "vision_keyframe_set": True,
+            "vision_updates": 0,
             "gnss_grants_since_verified": 1,  # the state a run cannot reach
             "anchor_snapshot": {
-                "R_vk": np.eye(3), "p_vk": np.zeros(3),
-                "c_p": np.zeros(3), "c_t": np.zeros(3),
-                "P_p_vk": np.eye(3) * 0.01, "P_cp": np.eye(3) * 0.01,
+                "R_vk": np.eye(3),
+                "p_vk": np.zeros(3),
+                "c_p": np.zeros(3),
+                "c_t": np.zeros(3),
+                "P_p_vk": np.eye(3) * 0.01,
+                "P_cp": np.eye(3) * 0.01,
             },
         }
         return eskf, x
@@ -985,9 +1015,7 @@ class TestFrozenAnchorCrossCheck:
         )
         eskf.fdir.evaluate_and_adapt = lambda *a, **k: decision
         try:
-            return eskf._gnss_update(
-                x, np.array([offset_m, 0.0, 0.0]), 0.8, t_s=t_s
-            )
+            return eskf._gnss_update(x, np.array([offset_m, 0.0, 0.0]), 0.8, t_s=t_s)
         finally:
             del eskf.fdir.evaluate_and_adapt
 
@@ -1028,8 +1056,7 @@ class TestFrozenAnchorCrossCheck:
         assert spoofed > 15.0 * honest, (honest, spoofed)
         modest = self._forced_grant_update(*self._granted_state(), 10.0)[1]
         assert modest < self.THRESHOLD_SQ, (
-            f"a 10 m spoof now clears the threshold (d2={modest:.1f}); the "
-            "measured reach of this check has changed"
+            f"a 10 m spoof now clears the threshold (d2={modest:.1f}); the measured reach of this check has changed"
         )
 
     def test_the_threshold_sits_between_the_honest_and_spoof_bands(self):
@@ -1072,9 +1099,7 @@ class TestFrozenAnchorCrossCheck:
         orig_update = eskf_mod.ErrorStateKalmanFilter._update
 
         def spy_eea(self, sensor, innovation, S, t_s=0.0, P=None, H=None, block=None):
-            d = orig_eea(
-                self, sensor, innovation, S, t_s=t_s, P=P, H=H, block=block
-            )
+            d = orig_eea(self, sensor, innovation, S, t_s=t_s, P=P, H=H, block=block)
             by_time[(round(float(t_s), 4), sensor)] = d
             return d
 

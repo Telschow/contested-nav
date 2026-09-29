@@ -81,9 +81,7 @@ def _read_rows(path: str) -> tuple[np.ndarray, list[str]]:
                 if not rows:
                     header.extend(t.strip() for t in tokens if t.strip())
                     continue
-                raise TrajectoryParseError(
-                    f"{path}:{lineno}: unexpected non-numeric field {tokens[0]!r}"
-                )
+                raise TrajectoryParseError(f"{path}:{lineno}: unexpected non-numeric field {tokens[0]!r}")
             try:
                 rows.append([float(t) for t in tokens])
             except ValueError as exc:  # pragma: no cover - defensive
@@ -143,9 +141,7 @@ def _read_tum(path: str, name: str | None = None) -> Trajectory:
     a, hdr = _read_rows(path)
     if a.shape[1] < 8:
         raise TrajectoryParseError(f"{path}: expected 8 columns, got {a.shape[1]}")
-    return _build(
-        a[:, 0], a[:, 1:4], xyzw_to_wxyz(a[:, 4:8]), name or os.path.basename(path), path, hdr
-    )
+    return _build(a[:, 0], a[:, 1:4], xyzw_to_wxyz(a[:, 4:8]), name or os.path.basename(path), path, hdr)
 
 
 def _read_euroc(path: str, name: str | None = None) -> Trajectory:
@@ -170,9 +166,7 @@ def _read_plotly(path: str, name: str | None = None) -> Trajectory:
     a, hdr = _read_rows(path)
     if a.shape[1] < 8:
         raise TrajectoryParseError(f"{path}: expected 8 columns, got {a.shape[1]}")
-    return _build(
-        a[:, 0], a[:, 1:4], xyzw_to_wxyz(a[:, 4:8]), name or os.path.basename(path), path, hdr
-    )
+    return _build(a[:, 0], a[:, 1:4], xyzw_to_wxyz(a[:, 4:8]), name or os.path.basename(path), path, hdr)
 
 
 def _read_euroc_txt(path: str, name: str | None = None) -> Trajectory:
@@ -256,8 +250,7 @@ def write_euroc(path: str, traj: Trajectory, nanoseconds: bool = True) -> None:
     t = traj.t * 1e9 if nanoseconds else traj.t
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(
-            "#timestamp [ns], p_RS_R_x [m], p_RS_R_y [m], p_RS_R_z [m], "
-            "q_RS_w [], q_RS_x [], q_RS_y [], q_RS_z []\n"
+            "#timestamp [ns], p_RS_R_x [m], p_RS_R_y [m], p_RS_R_z [m], q_RS_w [], q_RS_x [], q_RS_y [], q_RS_z []\n"
         )
         for i in range(len(traj)):
             fh.write(

@@ -364,9 +364,7 @@ def test_fdir_isolates_a_channel_whose_covariance_has_collapsed() -> None:
     untouched. What FDIR adds is that the collapse is now *reported* rather than
     only inferable from a rejection count.
     """
-    result, final_error, claimed = _vision_benchmark_fixture(
-        use_gnss=True, interval=1, anchor_modelled=False
-    )
+    result, final_error, claimed = _vision_benchmark_fixture(use_gnss=True, interval=1, anchor_modelled=False)
     assert float(result.stats["fdir_gnss_faulted"]) == 1.0
     assert float(result.stats["fdir_gnss_rejected"]) > float(result.stats["gnss_fixes_seen"]) / 2
     statuses = {e["status"] for e in result.trajectory.metadata["fdir_events"]}
@@ -391,20 +389,12 @@ def test_modelled_anchor_restores_calibration_and_gnss_availability() -> None:
 
     def mean_nees(result):
         reference = interpolate_trajectory(gt, result.trajectory.t)
-        series = normalized_error_squared(
-            result.trajectory.positions, reference.positions, result.position_cov
-        )
+        series = normalized_error_squared(result.trajectory.positions, reference.positions, result.position_cov)
         return summarise("eskf", "aided+vision", series).coverage.mean_normalised_error
 
-    modelled, modelled_err, modelled_sigma = _vision_benchmark_fixture(
-        use_gnss=True, interval=1, anchor_modelled=True
-    )
-    unmodelled, _, _ = _vision_benchmark_fixture(
-        use_gnss=True, interval=1, anchor_modelled=False
-    )
-    _control, control_err, control_sigma = _vision_benchmark_fixture(
-        use_gnss=True, interval=1, vision_enabled=False
-    )
+    modelled, modelled_err, modelled_sigma = _vision_benchmark_fixture(use_gnss=True, interval=1, anchor_modelled=True)
+    unmodelled, _, _ = _vision_benchmark_fixture(use_gnss=True, interval=1, anchor_modelled=False)
+    _control, control_err, control_sigma = _vision_benchmark_fixture(use_gnss=True, interval=1, vision_enabled=False)
 
     # A calibrated 3D filter reports 3.0. The un-modelled path reports ~5e4.
     nees = mean_nees(modelled)
@@ -436,12 +426,8 @@ def test_covariance_stays_positive_semidefinite_across_a_visual_run() -> None:
     answer, it is an unusable one, and the calibration code decomposes it, so
     this is a hard requirement rather than a numerical nicety.
     """
-    result, _, _ = _vision_benchmark_fixture(
-        use_gnss=True, interval=1, anchor_modelled=True
-    )
-    smallest = float(
-        la.eigvalsh(0.5 * (result.position_cov + result.position_cov.transpose(0, 2, 1))).min()
-    )
+    result, _, _ = _vision_benchmark_fixture(use_gnss=True, interval=1, anchor_modelled=True)
+    smallest = float(la.eigvalsh(0.5 * (result.position_cov + result.position_cov.transpose(0, 2, 1))).min())
     assert smallest > -1e-9, f"position covariance eigenvalue {smallest:.3g}"
 
 
@@ -454,9 +440,7 @@ def test_visual_only_uncertainty_tracks_its_error_instead_of_denying_it() -> Non
     that the failure mode is gone.
     """
     for noisy in (True, False):
-        _, final_error, claimed = _vision_benchmark_fixture(
-            interval=1, anchor_modelled=True, noisy=noisy
-        )
+        _, final_error, claimed = _vision_benchmark_fixture(interval=1, anchor_modelled=True, noisy=noisy)
         ratio = claimed / final_error
         assert 0.01 < ratio < 2.0, f"claimed/actual = {ratio:.3g} (noisy={noisy})"
 
@@ -472,16 +456,12 @@ def test_vision_only_normalised_error_is_not_orders_of_magnitude_out() -> None:
     from navkit.eval.calibration import normalized_error_squared, summarise
 
     for noisy in (True, False):
-        result, _, _ = _vision_benchmark_fixture(
-            interval=1, anchor_modelled=True, noisy=noisy
-        )
+        result, _, _ = _vision_benchmark_fixture(interval=1, anchor_modelled=True, noisy=noisy)
         cfg = SyntheticConfig(duration_s=20.0, rate_hz=100.0)
         gt = synthetic_trajectory(cfg)
         gt = gt.transformed(la.inv(gt.poses[0]))
         reference = interpolate_trajectory(gt, result.trajectory.t)
-        series = normalized_error_squared(
-            result.trajectory.positions, reference.positions, result.position_cov
-        )
+        series = normalized_error_squared(result.trajectory.positions, reference.positions, result.position_cov)
         nees = summarise("eskf", "vision-only", series).coverage.mean_normalised_error
         assert nees < 1000.0, f"mean NEES {nees:.3g} (noisy={noisy})"
 
@@ -494,9 +474,7 @@ def test_gnss_aided_filter_keeps_its_absolute_fixes() -> None:
     away, and the run silently degrades to open-loop drift. Counting rejected
     fixes needs no ground truth, so it is the cheapest health check available.
     """
-    result, _, _ = _vision_benchmark_fixture(
-        use_gnss=True, anchor_modelled=True, vision_enabled=False
-    )
+    result, _, _ = _vision_benchmark_fixture(use_gnss=True, anchor_modelled=True, vision_enabled=False)
     used = float(result.stats["gnss_updates_used"])
     rejected = float(result.stats["gnss_updates_rejected"])
     assert used > 0.0
@@ -528,9 +506,7 @@ def test_gnss_denial_still_over_trusts_vision_and_that_is_pinned() -> None:
     cfg = SyntheticConfig(duration_s=20.0, rate_hz=100.0)
     gt = synthetic_trajectory(cfg).transformed(la.inv(synthetic_trajectory(cfg).poses[0]))
     reference = interpolate_trajectory(gt, result.trajectory.t)
-    series = normalized_error_squared(
-        result.trajectory.positions, reference.positions, result.position_cov
-    )
+    series = normalized_error_squared(result.trajectory.positions, reference.positions, result.position_cov)
     nees = summarise("eskf", "denial+vision", series).coverage.mean_normalised_error
 
     # Documented band: clearly overconfident, and not yet catastrophic.
@@ -605,9 +581,12 @@ def _eskf_with_vision(anchor_modelled: bool = True) -> ErrorStateKalmanFilter:
 def _frozen_state(R_vk, p_vk, R, p, c_p, c_t) -> dict:
     """A state as run() would hold it, mid-episode and before a re-commit."""
     return {
-        "R": R.copy(), "p": p.copy(),
-        "R_vk": R_vk.copy(), "p_vk": p_vk.copy(),
-        "c_p": c_p.copy(), "c_t": c_t.copy(),
+        "R": R.copy(),
+        "p": p.copy(),
+        "R_vk": R_vk.copy(),
+        "p_vk": p_vk.copy(),
+        "c_p": c_p.copy(),
+        "c_t": c_t.copy(),
         "P": np.eye(_N_STATES) * 0.01,
         "vision_keyframe_set": True,
         "vision_updates": 0,
@@ -670,8 +649,9 @@ def _numeric(eskf, x, R_rel_meas, t_rel_meas, perturb) -> np.ndarray:
     cols = []
     for k in range(3):
         xp, xm = perturb(k, +_EPS), perturb(k, -_EPS)
-        cols.append((_residual(eskf, xp, R_rel_meas, t_rel_meas)
-                     - _residual(eskf, xm, R_rel_meas, t_rel_meas)) / (2 * _EPS))
+        cols.append(
+            (_residual(eskf, xp, R_rel_meas, t_rel_meas) - _residual(eskf, xm, R_rel_meas, t_rel_meas)) / (2 * _EPS)
+        )
     return np.column_stack(cols)
 
 

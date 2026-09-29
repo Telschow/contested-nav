@@ -82,9 +82,7 @@ class VisionConfig:
         }
 
 
-def gauss_markov(
-    n: int, dt: float, sigma: float, tau: float, rng: np.random.Generator
-) -> np.ndarray:
+def gauss_markov(n: int, dt: float, sigma: float, tau: float, rng: np.random.Generator) -> np.ndarray:
     """First-order Gauss-Markov sequence with stationary std ``sigma``.
 
     ``tau`` is the correlation time. ``sigma == 0`` gives an all-zero sequence.

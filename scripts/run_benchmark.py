@@ -160,8 +160,7 @@ def run_case(
         result = ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, vision=vision)
     else:
         raise ValueError(
-            f"case {name!r} requests unknown estimator {estimator_name!r}; "
-            "known: ErrorStateKalmanFilter, DeadReckoning"
+            f"case {name!r} requests unknown estimator {estimator_name!r}; known: ErrorStateKalmanFilter, DeadReckoning"
         )
 
     est = result.trajectory
@@ -221,9 +220,7 @@ def run_case(
         claimed = np.sqrt(np.trace(result.position_cov, axis1=1, axis2=2) / 3.0)
         record["headline"]["claimed_sigma_p_m"] = float(np.median(claimed))
         record["headline"]["claimed_sigma_p95_m"] = float(np.percentile(claimed, 95))
-        record["headline"]["coverage"] = {
-            f"{p.sigma_per_axis:g}sigma": p.observed for p in cal.coverage.points
-        }
+        record["headline"]["coverage"] = {f"{p.sigma_per_axis:g}sigma": p.observed for p in cal.coverage.points}
         record["headline"]["calibration_verdict"] = cal.verdict
         # Bulk and tail are reported separately, because they detect different
         # failure modes and can disagree for a filter that is only slightly

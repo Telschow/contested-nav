@@ -23,9 +23,7 @@ def clean_imu():
 
 def test_apply_imu_noise_returns_diagonal_covariance_of_the_right_shape(clean_imu) -> None:
     model = ImuNoiseModel(1e-3, 1e-2, 1e-5, 1e-4, 1e-4, 1e-3)
-    noisy, gyro_bias, accel_bias = apply_imu_noise(
-        clean_imu, model, np.random.default_rng(0)
-    )
+    noisy, gyro_bias, accel_bias = apply_imu_noise(clean_imu, model, np.random.default_rng(0))
     n = len(clean_imu)
     assert len(noisy) == n
     assert noisy.accel_cov.shape == (n, 3)

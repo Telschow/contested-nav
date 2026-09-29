@@ -47,7 +47,6 @@ def thr(sustained: float = 0.5, peak: float | None = None, **kw) -> ThresholdSet
 # --- _runs / ThresholdSet ----------------------------------------------------
 
 
-
 def _only_event(report, kind):
     """Return the single event of ``kind``, asserting exactly one exists.
 
@@ -86,9 +85,7 @@ def test_peak_below_sustained_is_a_violation():
 def test_invalid_thresholds_are_refused_rather_than_silently_clamped():
     """A detector given incoherent thresholds must fail, not guess."""
     with pytest.raises(ValueError, match="invalid thresholds"):
-        detect_failures(
-            np.array([0.0, 1.0]), np.array([0.1, 0.2]), ThresholdSet(min_duration_s=-1.0)
-        )
+        detect_failures(np.array([0.0, 1.0]), np.array([0.1, 0.2]), ThresholdSet(min_duration_s=-1.0))
 
 
 # --- clean signals -----------------------------------------------------------
@@ -174,9 +171,7 @@ def test_event_records_the_threshold_that_fired_it():
 def test_monotonic_growth_is_flagged_as_divergence():
     t = np.linspace(0, 30, 600)
     e = np.linspace(0.0, 5.0, 600)
-    rep = detect_failures(
-        t, e, thr(99.0, 99.0, divergence_window_s=5.0, divergence_growth_m=0.5)
-    )
+    rep = detect_failures(t, e, thr(99.0, 99.0, divergence_window_s=5.0, divergence_growth_m=0.5))
     assert [x.kind for x in rep.events] == ["divergence"]
 
 
@@ -190,9 +185,7 @@ def test_growth_with_a_recovery_is_not_divergence():
     """
     t = np.linspace(0, 30, 600)
     e = np.abs(((t * 4.0) % 2.0) - 1.0) * 4.0
-    rep = detect_failures(
-        t, e, thr(sustained=99.0, peak=99.0, divergence_window_s=5.0, divergence_growth_m=0.5)
-    )
+    rep = detect_failures(t, e, thr(sustained=99.0, peak=99.0, divergence_window_s=5.0, divergence_growth_m=0.5))
     assert not [x for x in rep.events if x.kind == "divergence"]
 
 
@@ -200,9 +193,7 @@ def test_a_monotonic_rising_edge_inside_a_recovery_is_still_divergence():
     """The counterpart: the detector looks at windows, not the whole curve."""
     t = np.linspace(0, 30, 600)
     e = np.concatenate([np.linspace(0, 5, 300), np.linspace(5, 0, 300)])
-    rep = detect_failures(
-        t, e, thr(sustained=99.0, peak=99.0, divergence_window_s=5.0, divergence_growth_m=0.5)
-    )
+    rep = detect_failures(t, e, thr(sustained=99.0, peak=99.0, divergence_window_s=5.0, divergence_growth_m=0.5))
     assert [x.kind for x in rep.events] == ["divergence"]
 
 
@@ -278,9 +269,7 @@ def test_report_as_dict_is_json_shaped():
     d = detect_failures(t, np.where(t > 5, 2.0, 0.05), thr(0.5)).as_dict()
     assert set(d) == {"passed", "count", "events", "thresholds", "reasons"}
     assert d["count"] == len(d["events"])
-    assert set(d["events"][0]) == {
-        "kind", "start_s", "end_s", "peak_m", "duration_s", "threshold_m", "detail"
-    }
+    assert set(d["events"][0]) == {"kind", "start_s", "end_s", "peak_m", "duration_s", "threshold_m", "detail"}
 
 
 # --- outage primitives -------------------------------------------------------
@@ -559,9 +548,7 @@ def test_inject_with_zero_noise_scale_is_a_passthrough():
 def test_inject_applies_camera_drops():
 
     gt, imu, gnss, vis = _streams()
-    scen = Scenario(
-        name="camera_drop", camera_drop=CameraDropConfig(drop_fraction=0.4, burst_period_s=1.0, seed=4)
-    )
+    scen = Scenario(name="camera_drop", camera_drop=CameraDropConfig(drop_fraction=0.4, burst_period_s=1.0, seed=4))
     out = inject(scen, imu, gnss, vis, gt)
     assert out.manifest["vision"]["dropped_frames"] > 0
     assert out.manifest["vision"]["usable_frames"] < out.manifest["vision"]["emitted_frames"]

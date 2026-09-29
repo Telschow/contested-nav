@@ -69,11 +69,14 @@ def test_nanosecond_timestamps_are_converted_to_seconds(tmp_path):
 def test_a_nanosecond_stream_starting_near_zero_is_still_detected(tmp_path):
     """Regression: the decision must not depend on the first sample.
 
-    A recording that begins at t=0 and is long enough to cross 1e12 nanoseconds
-    (about 17 minutes at 1e12 ns = 1000 s, so a stream crossing 1e13 is unambiguous) was previously read as seconds, because the old check
-    only looked at element 0. Real EuRoC logs start from the host clock rather
-    than zero, but a relative-timestamp export is a natural thing to hand this
+    A recording that begins at t=0 but runs long enough for the raw timestamps
+    to cross 1e12 was previously read as seconds, because the old check only
+    looked at element 0. Real EuRoC logs start from the host clock rather than
+    zero, but a relative-timestamp export is a natural thing to hand this
     loader, and the failure is silent.
+
+    For scale: 1e12 ns is 1000 s, so any recording over about 17 minutes has
+    raw nanosecond values above the threshold even when it starts at zero.
     """
     path = _write(
         tmp_path,

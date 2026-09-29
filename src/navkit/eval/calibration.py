@@ -149,9 +149,7 @@ def normalized_error_squared(
     ref = np.asarray(reference_positions, float).reshape(-1, 3)
     cov = np.asarray(position_cov, float).reshape(-1, 3, 3)
     if not (len(est) == len(ref) == len(cov)):
-        raise ValueError(
-            f"length mismatch: estimate {len(est)}, reference {len(ref)}, covariance {len(cov)}"
-        )
+        raise ValueError(f"length mismatch: estimate {len(est)}, reference {len(ref)}, covariance {len(cov)}")
     dof = 3
     if len(est) == 0:
         return MahalanobisSeries(squared=np.zeros(0), radius=np.zeros(0), dof=dof)
@@ -274,14 +272,10 @@ def coverage_report(
         )
         for k in sigmas
     )
-    return CoverageReport(
-        points=points, mean_normalised_error=series.mean_squared(), dof=series.dof
-    )
+    return CoverageReport(points=points, mean_normalised_error=series.mean_squared(), dof=series.dof)
 
 
-def inflation_factor(
-    series: MahalanobisSeries, target_coverage: float = 0.95
-) -> float:
+def inflation_factor(series: MahalanobisSeries, target_coverage: float = 0.95) -> float:
     """Scalar covariance inflation that reaches ``target_coverage``.
 
     Returns ``inf`` when the target is unreachable at any inflation, which
@@ -301,9 +295,7 @@ def inflation_factor(
     return float(q / radius_at_target)
 
 
-def conformal_radius(
-    calibration: MahalanobisSeries, confidence: float = 0.95
-) -> dict[str, float]:
+def conformal_radius(calibration: MahalanobisSeries, confidence: float = 0.95) -> dict[str, float]:
     """Finite-sample bound on the normalised error under exchangeability.
 
     The bound is the order statistic at index ``ceil((n + 1) * confidence) / n``
@@ -417,9 +409,7 @@ class CalibrationReport:
     @property
     def tail_verdict(self) -> str:
         """Verdict from the tail, i.e. from coverage at 2 sigma per axis."""
-        point = self.coverage.at(2.0) or (
-            self.coverage.points[-1] if self.coverage.points else None
-        )
+        point = self.coverage.at(2.0) or (self.coverage.points[-1] if self.coverage.points else None)
         return point.verdict if point else "insufficient_data"
 
     @property

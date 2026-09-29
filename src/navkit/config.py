@@ -162,7 +162,7 @@ def load_config(path: str) -> Config:
     """Load and validate a YAML experiment configuration."""
     if not os.path.isfile(path):
         raise ConfigError([f"config file not found: {path}"])
-    with open(path, "r", encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         data = yaml.safe_load(fh)
     if data is None:
         raise ConfigError([f"{path}: file is empty"])
@@ -216,9 +216,7 @@ def load_config(path: str) -> Config:
         initial_rot_sigma_deg=float(est_raw.get("initial_rot_sigma_deg", 2.0)),
     )
     if estimator.kind not in ("eskf", "dead_reckoning"):
-        problems.append(
-            f"estimator.kind must be 'eskf' or 'dead_reckoning', got {estimator.kind!r}"
-        )
+        problems.append(f"estimator.kind must be 'eskf' or 'dead_reckoning', got {estimator.kind!r}")
     for key in (
         "gnss_position_sigma_m",
         "vision_rot_sigma_deg",

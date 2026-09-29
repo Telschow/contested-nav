@@ -71,9 +71,7 @@ METRICS = {
     "failures": {
         "count": 1,
         "passed": False,
-        "events": [
-            {"kind": "divergence", "start_s": 5.0, "end_s": 20.0, "detail": "error rose", "peak_m": 0.9}
-        ],
+        "events": [{"kind": "divergence", "start_s": 5.0, "end_s": 20.0, "detail": "error rose", "peak_m": 0.9}],
     },
 }
 
@@ -119,9 +117,7 @@ def test_interpretation_rejects_confidence_outside_the_vocabulary(confidence):
 
 @pytest.mark.parametrize("confidence", ["low", "medium", "high"])
 def test_interpretation_accepts_the_documented_confidence_levels(confidence):
-    c = Claim(
-        type=ClaimType.INTERPRETATION, text="t", confidence=confidence, falsification_test="f"
-    )
+    c = Claim(type=ClaimType.INTERPRETATION, text="t", confidence=confidence, falsification_test="f")
     assert c.confidence == confidence
 
 

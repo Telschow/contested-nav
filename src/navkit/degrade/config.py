@@ -183,6 +183,18 @@ def _outage_list(value: Any, where: str, problems: list[str]) -> list[Outage]:
     return out
 
 
+def _reject_unknown(raw: dict[str, Any], known: dict[str, Any], where: str, problems: list[str]) -> None:
+    """Record any key in ``raw`` that is not a field of the target dataclass.
+
+    ``dict.get(key, default)`` is the wrong tool for a config parser: a
+    misspelled key is indistinguishable from an absent one, and the caller gets
+    a default they did not ask for with no indication anything was wrong.
+    """
+    unknown = set(raw) - set(known)
+    if unknown:
+        problems.append(f"{where}: unknown keys {sorted(unknown)}; expected {sorted(known)}")
+
+
 def scenario_from_dict(d: dict[str, Any], problems: list[str] | None = None) -> Scenario:
     """Build a :class:`Scenario` from a plain mapping, collecting problems."""
     problems = [] if problems is None else problems
@@ -195,6 +207,7 @@ def scenario_from_dict(d: dict[str, Any], problems: list[str] | None = None) -> 
         problems.append("scenario.name must be a non-empty string")
 
     g_raw = d.get("gnss") or {}
+    _reject_unknown(g_raw, GnssConfig().as_dict(), "scenario.gnss", problems)
     g = GnssConfig(
         enabled=bool(g_raw.get("enabled", True)),
         rate_hz=float(g_raw.get("rate_hz", 5.0)),
@@ -204,6 +217,7 @@ def scenario_from_dict(d: dict[str, Any], problems: list[str] | None = None) -> 
         seed=int(g_raw.get("seed", 0)),
     )
     v_raw = d.get("vision") or {}
+    _reject_unknown(v_raw, VisionConfig().as_dict(), "scenario.vision", problems)
     v = VisionConfig(
         enabled=bool(v_raw.get("enabled", True)),
         rate_hz=float(v_raw.get("rate_hz", 20.0)),
@@ -222,6 +236,14 @@ def scenario_from_dict(d: dict[str, Any], problems: list[str] | None = None) -> 
     cd_raw = d.get("camera_drop")
     camera_drop = None
     if cd_raw:
+        # This block validated nothing until now. `configs/benchmark.yaml` asked
+        # for `fraction: 0.3`, the field is `drop_fraction`, and the unknown key
+        # was discarded without complaint, so the degraded-camera case ran at
+        # the 0.2 default while five documents described a 30% burst and tagged
+        # it measured. A typo that silently selects a different experiment is
+        # the worst failure mode a config parser can have, so every nested
+        # mapping is now checked against its dataclass fields.
+        _reject_unknown(cd_raw, CameraDropConfig().as_dict(), "scenario.camera_drop", problems)
         camera_drop = CameraDropConfig(
             drop_fraction=float(cd_raw.get("drop_fraction", 0.2)),
             burst_period_s=float(cd_raw.get("burst_period_s", 2.0)),
@@ -264,9 +286,7 @@ def _validate_scenario(s: Scenario, problems: list[str]) -> None:
     if s.vision.trans_sigma_m <= 0.0:
         problems.append(f"scenario.vision.trans_sigma_m must be > 0, got {s.vision.trans_sigma_m}")
     if s.vision.noise_multiplier < 0.0:
-        problems.append(
-            f"scenario.vision.noise_multiplier must be >= 0, got {s.vision.noise_multiplier}"
-        )
+        problems.append(f"scenario.vision.noise_multiplier must be >= 0, got {s.vision.noise_multiplier}")
     if s.imu_noise_scale < 0.0:
         problems.append(f"scenario.imu_noise_scale must be >= 0, got {s.imu_noise_scale}")
     for key, value in s.imu_noise.as_dict().items():
@@ -274,10 +294,7 @@ def _validate_scenario(s: Scenario, problems: list[str]) -> None:
             problems.append(f"scenario.imu_noise.{key} must be >= 0, got {value}")
     if s.camera_drop is not None:
         if not 0.0 <= s.camera_drop.drop_fraction < 1.0:
-            problems.append(
-                "scenario.camera_drop.drop_fraction must be in [0, 1), got "
-                f"{s.camera_drop.drop_fraction}"
-            )
+            problems.append(f"scenario.camera_drop.drop_fraction must be in [0, 1), got {s.camera_drop.drop_fraction}")
         if s.camera_drop.burst_period_s <= 0.0:
             problems.append("scenario.camera_drop.burst_period_s must be > 0")
     # Offsets larger than a few sensor periods stop being a "clock offset
@@ -291,8 +308,7 @@ def _validate_scenario(s: Scenario, problems: list[str]) -> None:
         )
     if abs(s.imu_time_offset_s) > 0.5:
         problems.append(
-            f"scenario.imu_time_offset_s={s.imu_time_offset_s} is implausibly large for an "
-            "IMU clock offset"
+            f"scenario.imu_time_offset_s={s.imu_time_offset_s} is implausibly large for an IMU clock offset"
         )
     if not s.gnss.enabled and s.gnss_outages:
         problems.append("scenario.gnss is disabled but gnss_outages were given; the outages are dead config")
