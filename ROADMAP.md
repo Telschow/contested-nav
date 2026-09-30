@@ -5,7 +5,7 @@ Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
 Measured baseline: 601 tests collected, 597 passing, 2 skipped, 2 xfail; 91.61%
-line coverage (`python scripts/coverage_report.py`). Every
+line coverage on CPython 3.13 (`python scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
 ---

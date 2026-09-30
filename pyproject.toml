@@ -128,5 +128,5 @@ warn_unused_configs = true
 # only `pytest`. This also keeps the suite independent of build-backend state.
 pythonpath = ["src"]
 testpaths = ["tests"]
-addopts = "-q --strict-markers"
+addopts = "--strict-markers"
 filterwarnings = ["error::RuntimeWarning"]
