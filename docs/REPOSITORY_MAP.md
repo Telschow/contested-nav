@@ -88,46 +88,58 @@ contested-nav/
 
 ---
 
-## 3. Scripts — all five verified runnable **[R]**
+## 3. Scripts — all six verified runnable **[R]**
 
-| Script | LOC | Command | Result |
-|---|---:|---|---|
-| `run_benchmark.py` | 373 | `python scripts/run_benchmark.py` | 7 cases; **bit-reproducible** across two runs (only `runtime_s`/`wall_s`/`realtime_factor` differ) |
-| `seed_sweep.py` *(untracked)* | 217 | `python scripts/seed_sweep.py --seeds 10` | 10 seeds × 7 cases |
-| `check_doc_tables.py` | 177 | `python scripts/check_doc_tables.py` | README + `index.html` tables match `benchmark.json` |
-| `coverage_report.py` | 152 | `python scripts/coverage_report.py --ratchet` | 86.58% total, ratchet OK |
-| `make_figures.py` | 200 | `python scripts/make_figures.py` | 4 PNGs; **deterministic run-to-run** but differ from committed (matplotlib version metadata) |
+| Script | Command | Verified result |
+|---|---|---|
+| `run_benchmark.py` | `python scripts/run_benchmark.py` | 7 cases; **bit-reproducible** across two runs (only `runtime_s`/`wall_s`/`realtime_factor` differ) |
+| `seed_sweep.py` | `python scripts/seed_sweep.py --seeds 10` | 10 seeds × 7 cases |
+| `scene_sweep.py` | `python scripts/scene_sweep.py --seeds 10` | 10 scenes; run twice and compared in CI |
+| `check_doc_tables.py` | `python scripts/check_doc_tables.py` | README + `index.html` tables match `benchmark.json` |
+| `coverage_report.py` | `python scripts/coverage_report.py --ratchet` | 91.61% total on CPython 3.13, ratchet OK; the report prints its own interpreter |
+| `make_figures.py` | `python scripts/make_figures.py` | 4 PNGs, **byte-identical to the committed images** — regenerated and checksummed |
 
-`run_benchmark.py` gained a `--seed` override in the working tree; the default
-path is **bit-identical** to the committed `results/benchmark.json`.
+There is deliberately no LOC column. A hand-maintained line count was in this
+table and every one of its five values was wrong, because nothing checks them and
+every code edit invalidates them. Use `wc -l scripts/*.py`; a number that cannot
+be verified without re-running something should not be printed as if it had been.
+
+`run_benchmark.py` carries a `--seed` override, committed rather than left in a
+working tree. `results/` is gitignored, so there is no committed `benchmark.json`
+to compare against: regeneration is checked by running the benchmark twice and
+diffing the two outputs, which is what CI does.
 
 ---
 
 ## 4. Test suite **[R]**
 
-567 collected · **563 passed** · 2 skipped · 2 xfailed · ~87 s.
+601 collected · **597 passed** · 2 skipped · 2 xfailed · ~105 s on CPython 3.13.
 
-| File | LOC | Focus |
-|---|---:|---|
-| `test_nis_monitor.py` | 1,110 | NIS window, adaptive inflation, ADR-0007 permanence (**2 deliberate xfails**), ADR-0008 cross-check (5 tests) |
-| `test_fdir.py` | 964 | Gating, isolation, recovery, spoof hysteresis |
-| `test_estimators.py` | 894 | ESKF convergence, Jacobians, frame conventions, Joseph PSD |
-| `test_thresholds_and_injection.py` | 596 | Verdict thresholds, outage/camera-drop injection |
-| `test_metrics.py` | 544 | ATE/RPE against known values |
-| `test_findings.py` | 446 | Claim typing and falsification records |
-| `test_config.py` | 438 | Config round-trips, hashing |
-| `test_trajectory_io.py` | 337 | TUM/EuRoC/Plotly round-trips (**2 skips** — TUM VI absent) |
-| `test_calibration.py` | 334 | NEES, Wilson intervals |
-| `test_seed_sweep.py` *(untracked)* | 199 | Sweep invariants: override reaches every stream, `n=1` refused, missing NEES stays `None` |
-| `test_geometry.py` | 154 | SE(3), quaternions, alignment |
-| `test_doc_tables.py` | 164 | The doc-table checker itself |
-| `test_imu_noise.py` | 91 | IMU noise models |
+| File | Focus |
+|---|---|
+| `test_nis_monitor.py` | NIS window, adaptive inflation, ADR-0007 permanence (**2 deliberate xfails**), ADR-0008 cross-check (5 tests) |
+| `test_fdir.py` | Gating, isolation, recovery, spoof hysteresis |
+| `test_scene_sweep_harness.py` | Multi-scene sweep harness: scene selection, aggregation, failure reporting |
+| `test_estimators.py` | ESKF convergence, Jacobians, frame conventions, Joseph PSD |
+| `test_thresholds_and_injection.py` | Verdict thresholds, outage/camera-drop injection |
+| `test_metrics.py` | ATE/RPE against known values |
+| `test_findings.py` | Claim typing and falsification records |
+| `test_config.py` | Config round-trips, hashing |
+| `test_trajectory_io.py` | TUM/EuRoC/Plotly round-trips (**2 skips** — TUM VI absent) |
+| `test_calibration.py` | NEES, Wilson intervals |
+| `test_seed_sweep.py` | Sweep invariants: override reaches every stream, `n=1` refused, missing NEES stays `None` |
+| `test_imu_io.py` | EuRoC/TUM-VI ASCII IMU loader, including nanosecond timestamp handling |
+| `test_geometry.py` | SE(3), quaternions, alignment |
+| `test_doc_tables.py` | The doc-table checker itself |
+| `test_imu_noise.py` | IMU noise models |
+| `test_scene_sweep.py` | `seeded_scene`: the trajectory-variation axis |
 
-The 2 skips are honest: `test_trajectory_io.py:317,335` require TUM VI reference
+The 2 skips are honest: `test_trajectory_io.py:310,328` require TUM VI reference
 files that are deliberately not vendored. The 2 xfails are `strict=False` by
-design — ADR-0007 spoof permanence stays red until a second detection modality
-works. A `strict=True` test in `TestFrozenAnchorCrossCheck` pins the ADR-0008
-unreachable guard so it fails loudly when fixed.
+design (`test_nis_monitor.py:881,887`) — ADR-0007 spoof permanence stays red until
+a second detection modality works. A `strict=True` test in
+`TestFrozenAnchorCrossCheck` pins the ADR-0008 unreachable guard so it fails
+loudly when fixed.
 
 ---
 
