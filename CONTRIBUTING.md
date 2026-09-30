@@ -15,6 +15,27 @@ checkout.
 No install step is strictly required to run the tests: `pyproject.toml` puts
 `src` on `pythonpath` for pytest, so a fresh clone needs only `pytest`.
 
+### Local agent configuration
+
+`opencode.json` in the repository root configures the coding agent used on this
+project. It carries a provider API key, so it is listed in `.gitignore` and must
+stay there: `git add opencode.json` is refused, which is the intended behaviour,
+not a mistake to work around with `git add -f`.
+
+`opencode.example.json` is the committed, credential-free template. Copy it and
+supply the key through the environment:
+
+```bash
+cp opencode.example.json opencode.json
+export FREELLMAPI_API_KEY=...        # never written to the config file
+```
+
+OpenCode substitutes `{env:FREELLMAPI_API_KEY}` at load time. If the variable is
+unset the substitution yields an empty string, so the config parses and the
+provider fails to authenticate rather than the file failing to load. Rotating
+the key is a manual step for the key's owner; ignore rules keep it out of Git but
+do not invalidate it anywhere it has already been exposed.
+
 ## Before opening a pull request
 
 All five must pass locally. These are the same five CI runs.
