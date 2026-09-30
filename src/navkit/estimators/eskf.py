@@ -164,7 +164,7 @@ from ..fdir.fdir_manager import (
     FdirConfig,
     FdirManager,
 )
-from ..geometry.rigid import rot_exp, rot_log
+from ..geometry.rigid import rot_exp, rot_log, rot_right_jacobian
 from ..geometry.rigid import skew as _skew
 from ..io.imu import ImuNoiseModel
 from ..types import GRAVITY, GnssFix, ImuSample, Trajectory, VisionUpdate
@@ -657,6 +657,32 @@ class ErrorStateKalmanFilter:
         x["v"] = x["v"] + dx[_IDX_V]
         x["b_g"] = x["b_g"] + dx[_IDX_BG]
         x["b_a"] = x["b_a"] + dx[_IDX_BA]
+        # The anchor nuisance corrections dx[_IDX_CP] and dx[_IDX_CT] are
+        # computed above and deliberately NOT applied. This is not an oversight;
+        # it is a recorded limitation, and the audit that established it is
+        # CN-003 in .audit/findings.md.
+        #
+        # Applying them was implemented and measured. It is inert at the shipped
+        # configuration, where vision_keyframe_interval == 1 re-commits the anchor
+        # immediately after every update and resets both states to zero. Where the
+        # anchor is *not* re-committed, applying them makes the filter markedly
+        # worse, because c_p and c_t carry no process noise by default: with a
+        # persistent anchor they are not identifiable, so a corrected anchor error
+        # latches onto whatever persistent discrepancy exists and absorbs the
+        # real navigation drift instead of letting the filter correct for it.
+        # Measured on outage_visual with the anchor held fixed, ATE went from
+        # 35.9 m to 217.5 m and mean NEES from 28.4 to 7118.5. Adding drift noise
+        # does not rescue it across the range that matters: drift sigma
+        # 0.01 and 0.05 m/s are still far worse post-fix, and only an implausibly
+        # large 0.2 m/s turns it marginally positive.
+        #
+        # So the defect is real but it is not a one-line omission. Closing it
+        # needs an identifiability decision -- constrain the anchor error to a
+        # bounded window, re-commit on a schedule, or give it process noise and
+        # accept the corresponding loss of relative-measurement power -- not a
+        # patch. Until that decision is made, the correction stays unapplied and
+        # vision_anchor_modelled must not be described as estimating an anchor
+        # error. Tracked in CN-003; do not "fix" this line without reading it.
         return True, innov
 
     def _gnss_update(
@@ -754,10 +780,14 @@ class ErrorStateKalmanFilter:
             # At the consistent point R_rel_meas == R_rel_pred Exp(-c_t) the
             # residual vanishes, and perturbing c_t gives
             #   z_rot = Log(R_rel_pred Exp(c_t + d) R_rel_pred^T)
-            #         = R_rel_pred d,
-            # so d z_rot / d c_t == +R_rel_pred and H is its negative, in the
-            # same previous body frame as the attitude block.
-            H_rot[:, _IDX_CT] = -R_rel_pred
+            #         = R_rel_pred Log(Exp(c_t + d) Exp(-c_t))
+            #         = R_rel_pred J_r(c_t) d,
+            # because the perturbation enters on the *right* of Exp(c_t). The
+            # right Jacobian is the transpose of the left one; using R_rel_pred
+            # alone is exact only at c_t == 0 and misstates the derivative by
+            # O(|c_t|/2) otherwise. Sign: H is the negative of this, in the same
+            # previous body frame as the attitude block.
+            H_rot[:, _IDX_CT] = -R_rel_pred @ rot_right_jacobian(x["c_t"])
         else:
             z_rot = rot_log(R_rel_meas @ R_rel_pred.T)
             Rcov_rot = Rcov_rot + x["P_theta_vk"]
