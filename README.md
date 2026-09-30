@@ -1,6 +1,10 @@
 # contested-nav
 
-Replay, evaluation and uncertainty calibration for GNSS-denied navigation.
+A 21-state error-state Kalman filter for GNSS-denied navigation, built to answer
+one question honestly: **is the filter right about how wrong it is?** A filter
+that silently reports confident nonsense is worse than one that fails, so this
+repository measures that failure, publishes it, and ships the configuration that
+avoids it.
 
 [![CI](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml)
 [![Pages](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml)
@@ -8,50 +12,77 @@ Replay, evaluation and uncertainty calibration for GNSS-denied navigation.
 [![Tests](https://img.shields.io/badge/tests-597%20pass%20%2B%202%20skip%20%2B%202%20xfail-informational.svg)](tests)
 [![Line coverage (CPython 3.13)](https://img.shields.io/badge/line%20coverage-91.61%25%20%28py3.13%29-informational.svg)](CONSTRAINTS.md)
 
-A 21-state error-state Kalman filter for fused GNSS and visual navigation, built
-around one commitment: **a filter that reports its uncertainty should be
-correct about that uncertainty.** Where it is not, this repository says so with
-a measurement rather than a caveat.
-
 > **All results in this repository are synthetic.** They come from a
 > known-answer fixture: an analytic trajectory with the filter initialised
 > exactly at the truth. No real sensor capture is vendored or evaluated, and no
-> number here is a field measurement. See [Status](#status-and-limits).
+> number here is a field measurement. See [Status and limits](#status-and-limits).
 
-## The result that motivated this
+## The one result that matters
 
 With GNSS denied for 15 s and visual odometry enabled, the filter reports
-**0.161 m** of position uncertainty while being **2.54 m** wrong. Mean NEES is
-**419.4** against an expected 3, and only 20.0% of epochs fall inside the
-2σ ellipsoid where 99.2% should.
+**0.161 m** of position uncertainty while being **2.54 m** wrong.
 
-Those are one draw, and the draw is not the point. Two sweeps test whether the
-finding is an artefact of that particular fixture.
+| | ATE RMSE | Claimed 1σ | Mean NEES (exp. 3) | Coverage @ 2σ (exp. 99.3%) |
+|---|---:|---:|---:|---:|
+| GNSS denied, vision **off** | 3.782 m | 0.567 m | 4.1 | 100.0% |
+| GNSS denied, vision **on** | **2.541 m** | **0.161 m** | **419.4** | **20.0%** |
 
-**10 independent noise realisations** of the same trajectory, holding geometry
-fixed (`scripts/seed_sweep.py --seeds 10`): `outage_visual` is overconfident at
-**every** seed, mean NEES 844, range 211.7 to 2103.4, coverage 6.8% to 34.8%.
+Turning visual odometry on makes the filter **32.8% more accurate and 103× less
+honest**. It cuts the error from 3.78 m to 2.54 m, and simultaneously shrinks its
+own claimed uncertainty by 3.5× while the truth moves the other way. Six
+thousand epochs later the 2σ ellipsoid — which should contain 99.3% of the error
+and does contain 100% of it when vision is off — contains 20%.
 
-**8 scenes** with the trajectory geometry varied — path length spans 17.3 m to
-80.6 m, a 4.65x range — holding duration, sample rate and the exact `t=0`
-initial state fixed (`scripts/scene_sweep.py`): **all seven case verdicts are
-identical in all eight scenes**, and `outage_visual` gives mean NEES
-**419.7 [414.4, 424.9]** at **20.0%** coverage. Every case reports a stable
-verdict, so the ordering in the results table is not an accident of one path.
+Ranked by error, the dishonest filter is on top. That is the point: **error alone
+cannot detect a miscalibrated filter**, and a benchmark sorted by ATE would have
+recommended the filter that lies about its precision.
 
-So the failure is a property of the design rather than of a lucky fixture. The
-exact digits are not, and are quoted here as one sample of a wide distribution.
-Confident intervals are deterministic percentile bootstrap, 10 000 resamples,
-fixed RNG seed, so two runs of a sweep cannot disagree.
+Both rows are generated, not typed. `scripts/run_benchmark.py` emits this table,
+CI regenerates it and fails the build if any cell disagrees with the code.
 
-This is not a tuning problem and it is not a crash. The filter runs, converges,
-and produces confident nonsense. It is therefore shipped with
-`vision_enabled=False` by default, and the failure is documented rather than
-hidden. [Why it happens](#the-one-thing-this-cannot-do) is below.
+## Why it is not a tuning problem
 
-Adaptive covariance inflation (ADR-0006) has since recovered part of this case —
-ATE 5.059 m to 2.541 m, rejections 51 to 5 — but the remaining NEES gap is
-unresolved, so the honesty requirement above stands.
+The filter runs, converges, and produces confident nonsense. No crash, no NaN, no
+divergence — just a bounded, well-behaved, wrong answer. So the response was
+measurement and a shipping decision, not a tuning pass:
+
+- **It is a design property, not a bad seed.** Over **10 noise realisations** of
+  the same trajectory, `outage_visual` is overconfident at **every** seed: mean
+  NEES **844**, range **211.7 to 2103.4**, coverage **6.8% to 34.8%**. Over **8
+  scenes** with trajectory geometry varied — path length **17.3 m to 80.6 m**, a
+  **4.65×** range — **all seven case verdicts are identical in all eight scenes**,
+  and `outage_visual` holds mean NEES **419.7 [414.4, 424.9]** at 20.0% coverage.
+- **Sweeps cannot disagree with themselves.** Intervals are deterministic
+  percentile bootstrap, 10 000 resamples, fixed RNG seed. CI runs the benchmark
+  and both sweeps twice and fails if any two runs differ.
+- **The fix is partly shipped, and is still not enough.** Adaptive covariance
+  inflation ([ADR-0006](docs/adr/0006-nis-window-monitor.md)) took this case from
+  ATE **5.059 m to 2.541 m** and rejections **51 to 5** — and in doing so made
+  the filter *more* accurate and therefore *harder* to catch by ranking on error.
+- **So the mitigation is to refuse the feature.** Visual fusion ships
+  `vision_enabled=False`, and the residual NEES gap is an open blocker recorded in
+  [CONSTRAINTS.md](CONSTRAINTS.md), not a caveat in a footnote.
+  [Why it cannot be fixed by more filtering](#the-one-thing-this-cannot-do).
+
+The underlying cause is that the visual anchor is a pose the filter itself
+produced, so its error is not independent evidence. The 21-state filter carries
+the anchor error as two 3-D nuisance parameters (`c_p`, `c_t`) rather than
+assuming it away — which fixes the *bulk* miscalibration and not the *tail*, and
+the table above is the tail. Full mechanism in
+[Reading the calibration numbers](docs/calibration.md).
+
+## Start here — 5 minutes
+
+| If you want | Read |
+|---|---|
+| The argument, condensed for a defence or review | [Defense relevance](docs/defense/DEFENSE_RELEVANCE.md) |
+| Where the project actually stands today | [Project state](docs/PROJECT_STATE.md) |
+| Requirements, acceptance criteria, and which ones fail | [System Requirements Specification](docs/product_management/01_system_requirements_spec.md) |
+| Why these sensors, and what was traded away | [SWaP-C and Sensor Selection Trade-off Matrix](docs/product_management/02_swapc_tradeoff_matrix.md) |
+| The decision to ship visual fusion disabled | [ADR-0003](docs/adr/0003-ship-visual-disabled.md) |
+
+Or scan the code: [Repository map](docs/REPOSITORY_MAP.md) has every module, its
+focus, and the command that exercises it.
 
 ## Install
 

@@ -133,7 +133,7 @@ def ellipsoid_coverage(sigma_per_axis: float, dof: int) -> float:
     a squared Mahalanobis radius of ``3 * 3**2 = 27``, and a coverage of
     ``P(chi2_3 <= 27)`` -- a little over 0.999, not 0.997. Worse, the habit
     usually applied is "2 sigma means 95% per axis", which for three axes means
-    ``P(chi2_3 <= 12) = 0.9841`` of samples fall inside, while a reader who
+    ``P(chi2_3 <= 12) = 0.9926`` of samples fall inside, while a reader who
     expects 95% is being told something twice as strict as they think.
 
     Quoting the coverage instead of the per-axis sigma removes the ambiguity.

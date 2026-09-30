@@ -97,7 +97,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 - **B1 — Visual fusion is overconfident under GNSS denial.** Mean NEES 419.4
   over a 15 s outage (`outage_visual`), with 20.0% of epochs inside 2 sigma
-  against 99.2% expected. A single anchor cannot represent correlated visual
+  against 99.3% expected. A single anchor cannot represent correlated visual
   drift. Requires a pose graph. Pinned by
   `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`. B2 did not
   change this number, and neither did ADR-0006: correcting a frame is not the
