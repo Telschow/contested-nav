@@ -50,10 +50,11 @@ FLOORS: dict[str, float] = {
 # two must agree: a gate lower than the documented floor is not the documented
 # gate, and CONSTRAINTS.md claims every ratchet here is enforced.
 # The total floor is 75% because that is what CONSTRAINTS.md declares. Note the
-# consequence, which is deliberate: this is a floor, not a ratchet. At 85.29%
-# actual, roughly 10 points of `eskf.py` coverage can be deleted before this
-# fails. Tightening it is a judgement call about how much slack a refactor should
-# be allowed, and it is tracked in ROADMAP.md rather than changed silently.
+# consequence, which is deliberate: this is a floor, not a ratchet. On the CI
+# matrix's newest interpreter (CPython 3.13) the total measures 91.61%, so
+# roughly 16 points of coverage can be deleted before this fails. Tightening it
+# is a judgement call about how much slack a refactor should be allowed, and it
+# is tracked in ROADMAP.md rather than changed silently.
 TOTAL_FLOOR = 75.0
 
 
@@ -99,6 +100,22 @@ def main() -> int:
     ap.add_argument("--json", action="store_true", help="emit JSON")
     args = ap.parse_args()
 
+    # Executable lines are enumerated with `dis`, so the denominator is a
+    # function of the interpreter's bytecode and not only of the source.
+    # Measured totals for this tree: CPython 3.11 -> 3674/4022 (91.35%),
+    # 3.13 -> 3799/4147 (91.61%), 3.14 -> 3662/4181 (87.59%). Same tree, same
+    # tests, four points apart. A quoted figure is therefore only meaningful
+    # next to the interpreter that produced it, so it is recorded here in both
+    # output modes. Floors are unaffected: all three totals clear 75%, and every
+    # per-module floor sits far enough below its measured figure that the
+    # interpreter swing cannot flip the ratchet.
+    interp = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro} ({sys.implementation.name})"
+    # Printed before the suite runs, not after: `instrumented()` drives pytest
+    # in-process, so anything emitted afterwards sits below a screenful of
+    # progress dots and is effectively invisible.
+    if not args.json:
+        print(f"interpreter: {interp}")
+
     modules = {str(p.resolve()): executable_lines(p) for p in sorted(SRC.rglob("*.py"))}
     seen = instrumented(modules)
 
@@ -114,7 +131,7 @@ def main() -> int:
     total_exec = sum(r["exec"] for r in rows)
     total_pct = round(100.0 * total_hit / total_exec, 2) if total_exec else 0.0
 
-    COV.write_text(json.dumps({"modules": rows, "total_pct": total_pct}, indent=1))
+    COV.write_text(json.dumps({"modules": rows, "total_pct": total_pct, "python": interp}, indent=1))
 
     failures = []
     if args.ratchet:
@@ -126,7 +143,17 @@ def main() -> int:
             failures.append(f"TOTAL: {total_pct}% < floor {TOTAL_FLOOR}%")
 
     if args.json:
-        print(json.dumps({"modules": rows, "total_pct": total_pct, "failures": failures}, indent=1))
+        print(
+            json.dumps(
+                {
+                    "modules": rows,
+                    "total_pct": total_pct,
+                    "python": interp,
+                    "failures": failures,
+                },
+                indent=1,
+            )
+        )
     else:
         gated = set(FLOORS)
         print(f"{'module':<40}{'hit':>7}{'exec':>7}{'  %':>7}  floor")

@@ -44,7 +44,7 @@ Supporting layers:
 | 9:12 | `db_g` | gyroscope bias | rad/s |
 | 12:15 | `db_a` | accelerometer bias | m/s^2 |
 | 15:18 | `c_p` | visual anchor position offset | m |
-| 18:21 | `c_t` | visual anchor translation offset | m |
+| 18:21 | `c_t` | visual anchor attitude offset | rad |
 
 The first 15 are the conventional error-state IMU/GNSS ESKF. The last six
 are the visual anchor from ADR-0001.
@@ -66,13 +66,15 @@ R_rel = R_prev^T R_cur
 t_rel = R_prev^T (p_cur - p_prev)
 ```
 
-This is not a measurement of world position. It constrains the constant
-body-frame offset `c_t`. The Jacobians encode that distinction:
+This is not a measurement of world position. The translation half constrains the
+constant body-frame position offset `c_p`, and the rotation half constrains the
+constant body-frame attitude offset `c_t`. The Jacobians encode that
+distinction:
 
 | Block | Jacobian | Rationale |
 |---|---|---|
 | rotation | `H_theta = R_rel_pred` | the increment is conjugated into the previous body frame |
-| anchor rotation | `H_ct = -R_rel_pred` | the anchor error enters with the opposite sense, same frame |
+| anchor rotation | `H_ct = -R_rel_pred @ J_r(c_t)` | the anchor error enters with the opposite sense, same frame; `J_r` is the right Jacobian of SO(3), since the perturbation enters on the right of `Exp(c_t)` and `J_r(0) = I` |
 | translation | `H_p = R_prev^T`, `H_cp = -R_prev^T` | the same relative quantity constrains position and the anchor in opposite senses |
 
 The asymmetry in signs is the whole point. `-R_rel_pred` with `+R_rel_pred` is

@@ -106,6 +106,24 @@ def rot_left_jacobian(phi: np.ndarray) -> np.ndarray:
     return np.eye(3) + ((1.0 - np.cos(theta)) / t2) * k + ((theta - np.sin(theta)) / (t2 * theta)) * (k @ k)
 
 
+def rot_right_jacobian(phi: np.ndarray) -> np.ndarray:
+    """Right Jacobian of ``SO(3)``.
+
+    The right Jacobian satisfies ``Exp(phi + d) ~= Exp(phi) Exp(J_r(phi) d)``
+    for small ``d``, so it is the correct linearisation whenever a rotation error
+    is expressed on the *right* of an existing rotation. It is the transpose of
+    the left Jacobian: ``J_r(phi) == J_l(phi).T``, and also
+    ``J_r(phi) == J_l(-phi)``.
+    """
+    phi = np.asarray(phi, dtype=float).reshape(3)
+    theta = float(np.linalg.norm(phi))
+    k = skew(phi)
+    if theta < 1e-8:
+        return np.eye(3) - 0.5 * k + (1.0 / 6.0) * (k @ k)
+    t2 = theta * theta
+    return np.eye(3) - ((1.0 - np.cos(theta)) / t2) * k + ((theta - np.sin(theta)) / (t2 * theta)) * (k @ k)
+
+
 def rot_log_batch(R: np.ndarray) -> np.ndarray:
     """Vectorised :func:`rot_log` over a stack of rotations.
 

@@ -25,8 +25,14 @@ the current tree and a public repository. Neither requires code changes to fix.
 It contains a real-looking provider key:
 
 ```json
-"apiKey": "freellmapi-e4a9ca01ebacb47eb8bb070e6558a8d156c35d3173ea29c9"
+"apiKey": "<REDACTED 2026-09-29 — the value was live and was committed here; see Status update at end of document>"
 ```
+
+> **The literal value was removed on 2026-09-29.** It was quoted here as audit
+> evidence and was therefore itself an exposure: this document is tracked and was
+> published, so the evidence became the leak. The finding below is unchanged and
+> still correct — only the quoted secret is gone. Removing the value does not
+> invalidate the key; only rotation does.
 
 It points at `http://localhost:3001/v1`, so the value is a local-development
 token rather than a production cloud secret. That lowers the severity; it does
@@ -212,3 +218,45 @@ advertising a "measured, reproducible" discipline will reasonably doubt the rest
 
 **Nothing in this audit was published, pushed, or committed. No Git history was
 altered. No file was deleted.**
+
+---
+
+## Status update — 2026-09-29 (portfolio hardening pass)
+
+Appended after publication. Nothing above this line has been edited except the one
+redaction noted here; the findings are a point-in-time record and are left as
+written.
+
+### The audit's own evidence became the leak
+
+Item 1 was correct that `opencode.json` held a live key and that the file was not
+gitignored. Both were fixed, in commit `df68ab1` and later hardening. What the
+audit did not anticipate is that §1 quoted the key verbatim as evidence, at line
+28. This document is tracked, so quoting the secret in it committed the secret.
+The value was therefore published on `main`, and it is byte-identical to the key
+still configured locally.
+
+The quoted value has been replaced with `<REDACTED>`. The finding is unchanged:
+the file held a credential, and the ignore rule was missing.
+
+### Why the automated scanners did not catch it
+
+`gitleaks` 8.28.0 reports "no leaks found" for the working tree and for all
+published commits, and it is correct on its own terms. Its rules key on known
+provider prefixes — `sk-`, `ghp_`, `AKIA` and similar. `freellmapi-` is a
+self-hosted provider's token format and matches no rule, so a clean scan here
+means "no *recognised* provider token", not "no credentials". Any conclusion of
+the form "we scanned and it is clean" needs that qualifier.
+
+### What remains, and it is manual
+
+1. **Rotate the key.** This is the only action that actually closes the exposure.
+   Redacting a published value limits who can find it by browsing; it does not
+   invalidate it. Two commits contain the literal and will keep containing it for
+   as long as history is intact: `fbeb429` and `d83e9ea`.
+2. **Removing it from history** would need a rewrite, which this pass is
+   instructed not to do, and which invalidates every published commit hash. It is
+   worth doing only if the key is not rotated, and rotation makes it unnecessary.
+3. **Close the scanner gap** by giving the secret scanner a rule for this token
+   format, so the next self-hosted provider key is caught rather than waved
+   through.
