@@ -19,7 +19,7 @@ from navkit.degrade.inject import apply_gnss_outage
 from navkit.estimators.dead_reckoning import DeadReckoning
 from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig
 from navkit.fdir import FdirConfig
-from navkit.geometry.rigid import rot_exp, rot_log_batch
+from navkit.geometry.rigid import rot_exp, rot_log_batch, rot_right_jacobian
 from navkit.io.imu import ImuNoiseModel, apply_imu_noise
 from navkit.sensors.models import GnssConfig, VisionConfig, gnss_fixes, visual_updates
 from navkit.synthetic import SyntheticConfig, synthetic_imu, synthetic_trajectory
@@ -417,6 +417,103 @@ def test_anchor_error_is_modelled_as_a_state_by_default() -> None:
     assert cfg.vision_anchor_modelled is True
 
 
+def test_the_anchor_nuisance_correction_is_computed_but_not_applied() -> None:
+    """Pins a recorded limitation, so it cannot be changed silently.
+
+    `_update` forms the gain over all 21 states and therefore computes dx[_IDX_CP]
+    and dx[_IDX_CT], but the write-back does not apply them. That is CN-003.
+
+    Applying them was implemented and measured, and it is *not* a safe isolated
+    fix. It is inert at the shipped configuration, where vision_keyframe_interval
+    == 1 re-commits the anchor immediately after each update. Where the anchor is
+    held fixed, c_p and c_t carry no process noise by default, so they are not
+    identifiable: the corrected anchor error latches onto any persistent
+    discrepancy and absorbs real navigation drift. Measured on outage_visual with
+    the anchor held fixed, applying the correction moved ATE from 35.9 m to
+    217.5 m and mean NEES from 28.4 to 7118.5.
+
+    This test asserts the current behaviour for two reasons. It stops the line
+    being "fixed" without the identifiability decision that CN-003 actually
+    needs, and it makes the limitation visible in the suite rather than only in
+    an audit document.
+    """
+    from navkit.estimators.eskf import _IDX_CP, _IDX_CT
+
+    produced: list[np.ndarray] = []
+    applied: list[np.ndarray] = []
+    original = ErrorStateKalmanFilter._update
+
+    def instrumented(self, x, z, H, Rcov, **kwargs):
+        P = x["P"].copy()
+        S = H @ P @ H.T + Rcov
+        K = np.linalg.solve(S, (P @ H.T).T).T
+        dx = K @ np.asarray(z, float)
+        before = {"c_p": x["c_p"].copy(), "c_t": x["c_t"].copy()}
+        out = original(self, x, z, H, Rcov, **kwargs)
+        if not out[0]:
+            return out
+        for block, key in ((_IDX_CP, "c_p"), (_IDX_CT, "c_t")):
+            if np.any(np.abs(H[:, block]) > 0.0):
+                produced.append(dx[block].copy())
+                applied.append(x[key] - before[key])
+        return out
+
+    ErrorStateKalmanFilter._update = instrumented
+    try:
+        _vision_benchmark_fixture(use_gnss=True, interval=1, anchor_modelled=True)
+    finally:
+        ErrorStateKalmanFilter._update = original
+
+    assert produced, "no accepted visual update coupled to the anchor blocks"
+    # The gain does produce a correction: this is not a case of the anchor states
+    # simply being unobservable.
+    assert np.abs(np.concatenate(produced)).max() > 1e-12
+    # And it is dropped, deliberately. If this ever fails, CN-003 has been closed
+    # and the identifiability decision it requires has been made and recorded.
+    assert np.allclose(np.concatenate(applied), 0.0, atol=0.0)
+
+
+def test_the_anchor_error_covariance_shrinks_while_the_state_stays_at_zero() -> None:
+    """The consequence of the limitation above, stated as a fact.
+
+    The Joseph update reduces P[_IDX_CP, _IDX_CP] and P[_IDX_CT, _IDX_CT] on
+    every visual update even though the corresponding states never move. That is
+    the specific dishonesty in CN-003: the filter reports a smaller anchor-error
+    uncertainty than it has earned.
+
+    If CN-003 is ever closed properly this test should be revisited in the same
+    commit, because the two facts are two sides of the same coin.
+    """
+    from navkit.estimators.eskf import _IDX_CP, _IDX_CT
+
+    observed: list[tuple[np.ndarray, np.ndarray]] = []
+    original = ErrorStateKalmanFilter._update
+
+    def instrumented(self, x, z, H, Rcov, **kwargs):
+        before_p = float(np.trace(x["P"][_IDX_CP, _IDX_CP]))
+        before_t = float(np.trace(x["P"][_IDX_CT, _IDX_CT]))
+        out = original(self, x, z, H, Rcov, **kwargs)
+        if out[0] and np.any(np.abs(H[:, _IDX_CP]) > 0.0):
+            observed.append(
+                (
+                    np.array([before_p, before_t]),
+                    np.array([float(np.trace(x["P"][_IDX_CP, _IDX_CP])), float(np.trace(x["P"][_IDX_CT, _IDX_CT]))]),
+                )
+            )
+        return out
+
+    ErrorStateKalmanFilter._update = instrumented
+    try:
+        _vision_benchmark_fixture(use_gnss=True, interval=1, anchor_modelled=True)
+    finally:
+        ErrorStateKalmanFilter._update = original
+
+    assert observed, "no accepted visual update coupled to the anchor blocks"
+    before = np.array([b for b, _ in observed])
+    after = np.array([a for _, a in observed])
+    assert after.min() < before.max(), "anchor covariance never shrank; the premise of CN-003 no longer holds"
+
+
 def test_covariance_stays_positive_semidefinite_across_a_visual_run() -> None:
     """The (I - K H) P shortcut produced negative eigenvalues here.
 
@@ -734,35 +831,41 @@ def test_attitude_jacobian_is_the_exact_derivative() -> None:
 
 
 def test_anchor_attitude_jacobian_is_the_exact_derivative() -> None:
-    """H_ct = -R_rel_pred, differenced where the linearisation is exact.
+    """H_ct = -R_rel_pred @ J_r(c_t), differenced at a non-zero operating point.
 
-    The operating point is c_t = 0 with a consistent measurement
-    (R_rel_meas == R_rel_pred), which makes the rotation residual vanish and
-    gives z_rot = Log(R_rel_pred Exp(d) R_rel_pred^T) == R_rel_pred d exactly,
-    by the conjugation identity.
+    The operating point uses a non-zero c_t with a measurement made consistent
+    with it (R_rel_meas == R_rel_pred Exp(-c_t)), so the rotation residual
+    vanishes and the numerical derivative is the Jacobian rather than an
+    arbitrary point on the curve.
 
-    Differencing at a *nonzero* c_t instead would be measuring BCH cross terms
-    rather than the Jacobian: Exp(-c0) Exp(c0 + d) != Exp(d) unless c0 and d
-    are parallel, so the derivative picks up an O(1) term that has nothing to do
-    with H. That mistake produces a plausible-looking ~1% discrepancy.
+    The non-zero c_t is the whole point. Differencing at c_t = 0 is easy to pass
+    and constrains almost nothing, because J_r(0) == I: the plain -R_rel_pred
+    form is exact there. At a non-zero c_t, BCH contributes
+    Log(Exp(-c_t) Exp(c_t + d)) ~ (I - 0.5 [c_t]_x) d = J_r(c_t) d, so the
+    analytic block must carry the factor. Measured against this test, dropping
+    it is wrong by 4.5e-3 at |c_t| = 0.012 rad and 3.3e-2 at |c_t| = 0.092 rad --
+    a discrepancy small enough to look like a rounding artifact and large enough
+    to bias the anchor estimate.
     """
     R_vk, p_vk, R, p, c_p, _c_t, t_rel_meas = _setup()
     R_rel_pred = R_vk.T @ R
-    R_rel_meas = R_rel_pred
-    eskf = _eskf_with_vision(anchor_modelled=True)
-    x = _frozen_state(R_vk, p_vk, R, p, c_p, np.zeros(3))
+    for scale in (0.0, 0.05, 0.25, 0.5):
+        c_t = np.array([0.3, -0.5, 0.2]) * scale
+        R_rel_meas = R_rel_pred @ rot_exp(-c_t)
+        eskf = _eskf_with_vision(anchor_modelled=True)
+        x = _frozen_state(R_vk, p_vk, R, p, c_p, c_t)
 
-    def perturb(k, h):
-        y = _frozen_state(R_vk, p_vk, R, p, c_p, np.zeros(3))
-        y["c_t"][k] += h
-        return y
+        def perturb(k, h, _c_t=c_t):
+            y = _frozen_state(R_vk, p_vk, R, p, c_p, _c_t.copy())
+            y["c_t"][k] += h
+            return y
 
-    # Sanity: the fixture really is at the zero-residual operating point.
-    assert la.norm(_residual(eskf, x, R_rel_meas, t_rel_meas)[:3]) < 1e-12
+        # Sanity: the fixture really is at the zero-residual operating point.
+        assert la.norm(_residual(eskf, x, R_rel_meas, t_rel_meas)[:3]) < 1e-12
 
-    numeric = _numeric(eskf, x, R_rel_meas, t_rel_meas, perturb)
-    analytic = _analytic(eskf, x, R_rel_meas, t_rel_meas, _IDX_CT)
-    assert -numeric == pytest.approx(analytic, abs=1e-7)
+        numeric = _numeric(eskf, x, R_rel_meas, t_rel_meas, perturb)
+        analytic = _analytic(eskf, x, R_rel_meas, t_rel_meas, _IDX_CT)
+        assert -numeric == pytest.approx(analytic, abs=1e-7)
 
 
 def test_anchor_blocks_carry_a_negative_sign() -> None:
@@ -771,14 +874,23 @@ def test_anchor_blocks_carry_a_negative_sign() -> None:
     The residual is z = z_meas - h(x) and h depends on the anchor error through
     Exp(-c_t) and -c_p, so d h / d c is negative. A plus sign here is the defect
     this whole project documents.
+
+    The rotation block is negative *and* carries the right Jacobian of SO(3):
+    -R_rel_pred @ J_r(c_t). The fixture uses a non-zero c_t precisely because
+    J_r(c_t) == I only at c_t == 0, and pinning the value at zero would let the
+    J_r factor be dropped without this test noticing.
     """
     R_vk, p_vk, R, p, c_p, c_t, t_rel_meas = _setup()
     R_rel_meas = rot_exp(np.array([-0.11, 0.19, 0.06]))
     eskf = _eskf_with_vision(anchor_modelled=True)
     x = _frozen_state(R_vk, p_vk, R, p, c_p, c_t)
     (_, Hr), (_, Ht) = _capture_blocks(eskf, x, R_rel_meas, t_rel_meas)
-    assert np.allclose(Hr[:, _IDX_CT], -(R_vk.T @ R), atol=1e-12)
+    expected_ct = -(R_vk.T @ R) @ rot_right_jacobian(c_t)
+    assert np.allclose(Hr[:, _IDX_CT], expected_ct, atol=1e-12)
     assert np.allclose(Ht[:, _IDX_CP], -R_vk.T, atol=1e-12)
+    # The sign is the part that is easy to get backwards and that a refactor is
+    # most likely to break, so assert it independently of the J_r factor.
+    assert np.allclose(np.sign(np.diag(expected_ct)), np.sign(np.diag(Hr[:, _IDX_CT])))
 
 
 def test_measurement_blocks_are_positive() -> None:

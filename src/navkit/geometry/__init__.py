@@ -17,6 +17,7 @@ from .rigid import (
     rot_exp,
     rot_left_jacobian,
     rot_log,
+    rot_right_jacobian,
     skew,
     transform_points,
     unskew,
@@ -42,6 +43,7 @@ __all__ = [
     "rot_exp",
     "rot_log",
     "rot_left_jacobian",
+    "rot_right_jacobian",
     "transform_points",
     "unskew",
 ]

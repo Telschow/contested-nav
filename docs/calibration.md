@@ -51,7 +51,7 @@ A 10-seed sweep changes the reading of the digits, not the verdict. `outage_visu
 gives mean NEES 844 across noise realisations (range 211.7 to 2103.4) and
 `vision_only` 331 to 2660, so 419.4 and 331.0 are individual draws. The
 conclusion is unaffected: the minimum over 10 seeds is still 211.7 against a
-nominal 3, and coverage never exceeds 34.8% where 99.2% is required. Two orders
+nominal 3, and coverage never exceeds 34.8% where 99.3% is required. Two orders
 of magnitude is the right order to write down, but not two orders of magnitude
 *specifically*.
 
@@ -70,7 +70,7 @@ coverage = mean(||e||^2 <= 2^2 * lambda_max-ish)
 ```
 
 evaluated over the scored window. For a 3-D position error at 2 sigma, a
-calibrated filter covers approximately **99.2%** of the time
+calibrated filter covers approximately **99.3%** of the time
 (`1 - (2 * erf(2/sqrt(2)) - 1)^3`). The 95% figure belongs to a single axis, and
 using it here would make a well-calibrated filter look like it is missing a
 quarter of its epochs.
@@ -113,7 +113,7 @@ coverage is complete.
 
 Row 2 is the defect. Note the combination: the claimed 1-sigma is an order of
 magnitude below the error it is attached to, the mean NEES is 355 against a
-nominal 3, and coverage is 16.0% where 99.2% is expected. Any one of these would
+nominal 3, and coverage is 16.0% where 99.3% is expected. Any one of these would
 warrant investigation. Together they say the filter is confidently wrong, and
 the *direction* of the error matters -- it is overconfident, not merely
 inaccurate.

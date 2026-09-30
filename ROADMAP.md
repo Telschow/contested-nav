@@ -5,7 +5,7 @@ Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
 Measured baseline: 601 tests collected, 597 passing, 2 skipped, 2 xfail; 91.61%
-line coverage (`python scripts/coverage_report.py`). Every
+line coverage on CPython 3.13 (`python scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
 ---
@@ -127,7 +127,7 @@ previously produced by ad-hoc scripts that were not in the repository.
 - [x] `docs/architecture.md`, `docs/calibration.md`, `docs/index.html`.
 - [x] GNSS-denial overconfidence framed explicitly as the headline *negative*
       result rather than a caveat: mean NEES 419.4 against an expected 3, 20.0%
-      coverage against 99.2% expected, `vision_enabled = False` shipped as the
+      coverage against 99.3% expected, `vision_enabled = False` shipped as the
       default, and the failure pinned by
       `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`.
 - [x] Zero-dependency runtime: NumPy, PyYAML, Matplotlib, pytest. No SciPy, no
@@ -220,7 +220,7 @@ this removes it.
 
 - [!] Blocker, unchanged: a single-anchor ESKF cannot represent correlated
       visual drift. Mean NEES 419.4 on `outage_visual`, 20.0% coverage against
-      99.2% expected. Not attempted yet, because a pose graph is a piece of
+      99.3% expected. Not attempted yet, because a pose graph is a piece of
       engineering rather than a patch. (The figure was 1996.5 before ADR-0006;
       the number fell because the filter began taking its own uncertainty more
       seriously, not because the anchor is now modelled correctly. See

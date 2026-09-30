@@ -5,11 +5,18 @@ or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
 Last measured: 601 tests collected — 597 passing, 2 skipped, 2 expected failures —
-and 91.61% line coverage (3799/4147 executable lines), measured with
-`python scripts/coverage_report.py`. Coverage is quoted from that script alone:
+and 91.61% line coverage (3799/4147 executable lines) on **CPython 3.13**, measured
+with `python scripts/coverage_report.py`. Coverage is quoted from that script alone:
 it is the project's dependency-free tracer (S1 forbids adding `pytest-cov`), and
 a number taken from a different tool is not comparable with the module figures
-below. The two skips are the TUM VI reference checks in
+below. The interpreter is named because it is part of the measurement, not a
+detail: `dis` decides what counts as an executable line, and the denominator
+moves with the bytecode. The same tree and the same 597 passing tests measure
+3674/4022 (91.35%) on 3.11 and 3662/4181 (87.59%) on 3.14. `coverage_report.py`
+prints the interpreter it ran on, so a figure is never quoted without the one
+thing needed to interpret it. Floors are unaffected by that spread — every total
+clears 75% and every module floor sits well below its measured figure.
+The two skips are the TUM VI reference checks in
 `tests/test_trajectory_io.py`, which need ground truth that is deliberately not
 vendored (S2); they are skips, not passes, and are counted separately here so the
 number cannot read higher than it measures.
@@ -66,7 +73,7 @@ number cannot read higher than it measures.
 
 These are floors, not goals. Each must not regress; raising one is welcome.
 
-| Ratchet | Floor | Current | Re-measure with |
+| Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
 | Tests collected | 405 | 601 | `pytest` |
 | Tests passing | 300 | 597 (2 skipped, 2 xfail, see below) | `pytest -rs` |
@@ -90,7 +97,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 - **B1 — Visual fusion is overconfident under GNSS denial.** Mean NEES 419.4
   over a 15 s outage (`outage_visual`), with 20.0% of epochs inside 2 sigma
-  against 99.2% expected. A single anchor cannot represent correlated visual
+  against 99.3% expected. A single anchor cannot represent correlated visual
   drift. Requires a pose graph. Pinned by
   `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`. B2 did not
   change this number, and neither did ADR-0006: correcting a frame is not the

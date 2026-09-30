@@ -18,8 +18,11 @@ from navkit.geometry.rigid import (
     quat_normalize,
     quat_to_matrix,
     rot_exp,
+    rot_left_jacobian,
     rot_log,
     rot_log_batch,
+    rot_right_jacobian,
+    skew,
 )
 
 
@@ -152,3 +155,69 @@ def test_quaternion_normalises_its_input() -> None:
     R = rotation_about([0.0, 1.0, 0.0], -2.0)
     q = matrix_to_quat(R)
     assert np.isclose(np.linalg.norm(quat_normalize(q)), 1.0, atol=1e-14)
+
+
+def test_the_right_jacobian_is_the_transpose_of_the_left_one() -> None:
+    """J_r(phi) == J_l(phi).T == J_l(-phi).
+
+    The two relations are algebraically equivalent but they fail differently: a
+    sign slip in the skew term shows up in one and not the other, so both are
+    asserted rather than one being derived from the other.
+    """
+    rng = np.random.default_rng(20260930)
+    for scale in (0.0, 1e-9, 0.01, 0.5, 2.0, 3.0):
+        phi = rng.normal(scale=scale, size=3)
+        jr = rot_right_jacobian(phi)
+        assert np.allclose(jr, rot_left_jacobian(phi).T, atol=1e-12)
+        assert np.allclose(jr, rot_left_jacobian(-phi), atol=1e-12)
+
+
+def test_the_right_jacobian_is_the_exact_derivative_on_the_right() -> None:
+    """Exp(phi + d) ~= Exp(phi) Exp(J_r(phi) d), differentiated on the right.
+
+    The derivative is taken of Log(Exp(-phi) Exp(phi + d)). Differencing the
+    other composition, Log(Exp(phi + d) Exp(-phi)), gives the *left* Jacobian
+    instead: that product is exactly Exp(d), so its log is d and the derivative
+    is the identity. Both orderings are asserted here so the side cannot be got
+    wrong silently -- and because J_l and J_r disagree by O(|phi|), swapping
+    them still looks plausible at phi = 0 and only diverges once the anchor
+    error is nonzero, which is precisely the regime this fixes.
+    """
+    rng = np.random.default_rng(20260931)
+    eps = 1e-6
+    for scale in (0.0, 0.02, 0.09, 0.4):
+        phi = rng.normal(scale=scale, size=3)
+        R_inv = rot_exp(-phi)
+        R_phi = rot_exp(phi)
+        jr = rot_right_jacobian(phi)
+        jl = rot_left_jacobian(phi)
+        for k in range(3):
+            d = np.zeros(3)
+            d[k] = eps
+            numeric_right = (rot_log(R_inv @ rot_exp(phi + d)) - rot_log(R_inv @ rot_exp(phi - d))) / (2 * eps)
+            assert numeric_right == pytest.approx(jr[:, k], abs=1e-7)
+
+            numeric_left = (rot_log(rot_exp(phi + d) @ R_inv) - rot_log(rot_exp(phi - d) @ R_inv)) / (2 * eps)
+            assert numeric_left == pytest.approx(jl[:, k], abs=1e-7)
+
+            # The composition identity itself, to first order in d.
+            assert rot_exp(phi + d) == pytest.approx(R_phi @ rot_exp(jr @ d), abs=1e-6)
+
+
+def test_the_right_and_left_jacobians_differ_by_the_leading_term() -> None:
+    """J_l(phi) - J_r(phi) == skew(phi) + O(|phi|^3).
+
+    Pins the size of the mistake behind CN-004: writing H_ct as -R_rel_pred
+    instead of -R_rel_pred @ J_r(c_t) drops a term of exactly this size. It
+    vanishes at the shipped c_t = 0 and grows with the anchor error the block
+    exists to absorb, so a benchmark at c_t = 0 alone cannot see the bug.
+    """
+    rng = np.random.default_rng(20260932)
+    for scale in (0.02, 0.3, 1.0):
+        phi = rng.normal(scale=scale, size=3)
+        difference = rot_left_jacobian(phi) - rot_right_jacobian(phi)
+        theta = float(np.linalg.norm(phi))
+        # J_l - J_r = 2(1 - cos t)/t^2 * skew(phi), and
+        # 2(1 - cos t)/t^2 = 1 - t^2/12 + t^4/360 + O(t^6).
+        tol = theta**3 / 12.0 + theta**5 / 360.0 + 1e-12
+        assert np.allclose(difference, skew(phi), atol=tol)
