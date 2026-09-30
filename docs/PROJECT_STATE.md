@@ -49,7 +49,7 @@ The repository's own headline result, verified reproducible:
 
 With GNSS denied for 15 s and visual odometry enabled, the filter reports
 **0.161 m** of position uncertainty while being **2.54 m** wrong. Mean NEES
-**419.4** against an expected 3; 2σ coverage **20.0%** where 99.2% is required.
+**419.4** against an expected 3; 2σ coverage **20.0%** where 99.3% is required.
 
 **Verified across 10 seeds (2026-09-29, `scripts/seed_sweep.py --seeds 10`):**
 the *direction* is a property of the design, not of one fixture. `outage_visual`

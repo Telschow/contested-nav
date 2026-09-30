@@ -103,7 +103,7 @@ repository's own headline claims:
 
 | Claim | Status | Evidence |
 |---|---|---|
-| The filter is overconfident under visual aiding during GNSS denial | **Experimentally demonstrated** | 10/10 seeds; min NEES 211.7 vs expected 3; max coverage 34.8% vs 99.2%. Robust. |
+| The filter is overconfident under visual aiding during GNSS denial | **Experimentally demonstrated** | 10/10 seeds; min NEES 211.7 vs expected 3; max coverage 34.8% vs 99.3%. Robust. |
 | The specific figures (NEES 419.4, ATE 2.541 m) | **Implemented (measurable) but single-draw** | Seed-0 only. Range across seeds 211.7–2103.4. Now caveated in all docs. |
 | Root cause is the unmodelled anchor error | **Hypothesis with a stated falsification test** | `MECHANISM_LIBRARY` pairs it with an experiment that would refute it. Not yet run. |
 | Closing B1 requires a pose graph | **Interpretation** | Design judgement, reasoned in ROADMAP Track B. Not demonstrated. |
