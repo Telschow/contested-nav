@@ -9,7 +9,7 @@ avoids it.
 [![CI](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml)
 [![Pages](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-597%20pass%20%2B%202%20skip%20%2B%202%20xfail-informational.svg)](tests)
+[![Tests](https://img.shields.io/badge/tests-602%20pass%20%2B%202%20skip%20%2B%202%20xfail-informational.svg)](tests)
 [![Line coverage (CPython 3.13)](https://img.shields.io/badge/line%20coverage-91.61%25%20%28py3.13%29-informational.svg)](CONSTRAINTS.md)
 
 > **All results in this repository are synthetic.** They come from a
@@ -318,7 +318,7 @@ scripts/          run_benchmark.py, seed_sweep.py, scene_sweep.py,
 docs/             architecture, calibration, ADRs, figures, site,
                   defense/ (public dual-use assessment),
                   product_management/ (SRS, SWaP-C matrix, FDIR strategy)
-tests/            601 tests (597 pass, 2 skip without TUM VI data, 2 xfail by
+tests/            606 tests (602 pass, 2 skip without TUM VI data, 2 xfail by
                   design pending ADR-0007 Track B)
 ```
 
