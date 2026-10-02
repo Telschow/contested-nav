@@ -190,7 +190,10 @@ def run_case(
         "description": case.get("description", scenario.description),
         "claim_type": MEASUREMENT,
         "data_class": "synthetic",
-        "config_hash": config_hash(scenario),
+        # The estimator block goes into the hash as well as the record: it
+        # changes the filter without changing the scenario, so a scenario-only
+        # hash would let two different filters claim the same provenance.
+        "config_hash": config_hash(scenario, estimator={"class": estimator_name, **cfg.as_dict()}),
         "seed": scenario.gnss.seed,
         "scene_seed": scene_seed,
         "synthetic": syn.as_dict(),

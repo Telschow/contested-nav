@@ -4,15 +4,15 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: 601 tests collected — 597 passing, 2 skipped, 2 expected failures —
-and 91.61% line coverage (3799/4147 executable lines) on **CPython 3.13**, measured
+Last measured: 613 tests collected — 609 passing, 2 skipped, 2 expected failures —
+and 91.66% line coverage (3815/4162 executable lines) on **CPython 3.13**, measured
 with `python scripts/coverage_report.py`. Coverage is quoted from that script alone:
 it is the project's dependency-free tracer (S1 forbids adding `pytest-cov`), and
 a number taken from a different tool is not comparable with the module figures
 below. The interpreter is named because it is part of the measurement, not a
 detail: `dis` decides what counts as an executable line, and the denominator
-moves with the bytecode. The same tree and the same 597 passing tests measure
-3674/4022 (91.35%) on 3.11 and 3662/4181 (87.59%) on 3.14. `coverage_report.py`
+moves with the bytecode. The same tree and the same 609 passing tests measure
+3690/4037 (91.40%) on 3.11 and 3678/4196 (87.65%) on 3.14. `coverage_report.py`
 prints the interpreter it ran on, so a figure is never quoted without the one
 thing needed to interpret it. Floors are unaffected by that spread — every total
 clears 75% and every module floor sits well below its measured figure.
@@ -75,9 +75,9 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | 601 | `pytest` |
-| Tests passing | 300 | 597 (2 skipped, 2 xfail, see below) | `pytest -rs` |
-| Line coverage | 75% | 91.61% | `scripts/coverage_report.py` |
+| Tests collected | 405 | 613 | `pytest` |
+| Tests passing | 300 | 609 (2 skipped, 2 xfail, see below) | `pytest -rs` |
+| Line coverage | 75% | 91.66% | `scripts/coverage_report.py` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
 | `analysis/findings.py` coverage | 80% | 99.7% | as above |
 | `config.py` coverage | 80% | 98.4% | as above |
