@@ -234,6 +234,9 @@ class FdirConfig:
             "reacq_sigma_m": self.reacq_sigma_m,
             "max_drift_sigma_mps": self.max_drift_sigma_mps,
             "reaccept_margin": self.reaccept_margin,
+            "spoof_grant_threshold": self.spoof_grant_threshold,
+            "spoof_lockout_s": self.spoof_lockout_s,
+            "spoof_reexpansion_factor": self.spoof_reexpansion_factor,
         }
 
 

@@ -357,6 +357,10 @@ class EskfConfig:
             # enter the filter, so a config hash that omits it describes a
             # different filter. Same reasoning as the anchor blocks above.
             "fdir_config": self.fdir_config.as_dict(),
+            # Runtime-read (see __init__): a non-None gravity replaces GRAVITY,
+            # so leaving it out makes two different filters serialise and hash
+            # identically while integrating differently.
+            "gravity": None if self.gravity is None else np.asarray(self.gravity, float).tolist(),
             "initial_pos_sigma_m": self.initial_pos_sigma_m,
             "initial_vel_sigma_m_s": self.initial_vel_sigma_m_s,
             "initial_rot_sigma_deg": self.initial_rot_sigma_deg,

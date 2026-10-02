@@ -1,6 +1,6 @@
 # ADR-0007: Mitigating Spoof Permanence via Hysteresis and NIS Recovery Window
 
-- Status: proposed
+- Status: accepted (implementation partial; detection trigger still open)
 - Date: 2026-09
 - Builds on: ADR-0006 (adaptive inflation), ADR-0005 (chi-square gating)
 
