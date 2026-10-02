@@ -982,3 +982,51 @@ def test_eskf_config_dict_ships_visual_disabled() -> None:
     assert d["vision_enabled"] is False
     assert d["vision_anchor_modelled"] is True
     assert d["vision_keyframe_interval"] == 1
+
+
+def test_fdir_config_as_dict_includes_spoof_params() -> None:
+    cfg = FdirConfig(spoof_grant_threshold=3, spoof_lockout_s=120.0, spoof_reexpansion_factor=3.5)
+    d = cfg.as_dict()
+    assert d["spoof_grant_threshold"] == 3
+    assert d["spoof_lockout_s"] == 120.0
+    assert d["spoof_reexpansion_factor"] == 3.5
+
+
+def test_eskf_config_as_dict_spoof_params_change_hash() -> None:
+    base = EskfConfig(imu_noise=ImuNoiseModel(), fdir_config=FdirConfig(spoof_grant_threshold=2))
+    a = base.as_dict()
+    b = EskfConfig(imu_noise=ImuNoiseModel(), fdir_config=FdirConfig(spoof_grant_threshold=3)).as_dict()
+    assert a["fdir_config"]["spoof_grant_threshold"] != b["fdir_config"]["spoof_grant_threshold"]
+    assert a != b
+
+
+def test_config_hash_changes_with_spoof_lockout() -> None:
+    # Compare esk fconfig dicts
+    c1 = EskfConfig(imu_noise=ImuNoiseModel(), fdir_config=FdirConfig(spoof_lockout_s=60.0))
+    c2 = EskfConfig(imu_noise=ImuNoiseModel(), fdir_config=FdirConfig(spoof_lockout_s=90.0))
+    assert c1.as_dict() != c2.as_dict()
+
+
+def test_eskf_config_as_dict_covers_every_field() -> None:
+    """No EskfConfig field may be absent from as_dict().
+
+    A field the runtime reads but as_dict() omits makes two different filters
+    serialise and hash identically, so a provenance record claims they were the
+    same run. `gravity` was the instance here: __init__ uses it to replace the
+    gravity vector, and it was absent from the serialised form.
+    """
+    import dataclasses
+
+    cfg = EskfConfig(imu_noise=ImuNoiseModel())
+    declared = {f.name for f in dataclasses.fields(EskfConfig)}
+    assert declared - set(cfg.as_dict()) == set()
+
+
+def test_eskf_config_gravity_changes_serialised_config() -> None:
+    """A non-default gravity must be visible in as_dict()."""
+    base = EskfConfig(imu_noise=ImuNoiseModel())
+    tilted = EskfConfig(imu_noise=ImuNoiseModel(), gravity=np.array([0.0, 0.0, -9.81]))
+    assert base.as_dict() != tilted.as_dict()
+    assert base.as_dict()["gravity"] is None
+    assert tilted.as_dict()["gravity"] == [0.0, 0.0, -9.81]
+    assert EskfConfig(imu_noise=ImuNoiseModel()).as_dict()["gravity"] is None

@@ -87,18 +87,18 @@ repository did before any edit; these are the same gates after.
 | Gate | Before | After |
 |---|---|---|
 | `pytest` | 563 passed, 2 skipped, 2 xfailed | 597 passed, 2 skipped, 2 xfailed |
-| coverage | 86.58% | 87.59% |
+| coverage | 86.58% | 87.65% |
 | `ruff check` | 131 errors | clean |
 | `ruff format --check` | 35 files would reformat | clean |
 | `mypy` | 15 errors in 3 files | clean, no codes suppressed |
 | `build` | blocked behind failing `lint` | sdist + wheel, imports in a clean venv |
 | benchmark | bit-reproducible | bit-reproducible, unchanged |
 
-The coverage row above was measured on CPython 3.14 and reads 87.59%, not the
-91.61% published in `CONSTRAINTS.md` and the README badge. That is not a
+The coverage row above was measured on CPython 3.14 and reads 87.65%, not the
+91.66% published in `CONSTRAINTS.md` and the README badge. That is not a
 discrepancy to reconcile: `dis` decides what counts as an executable line, so the
 denominator moves with the interpreter. On the CI matrix's newest interpreter
-(3.13) this same tree measures 91.61%. The test counts are interpreter-independent
+(3.13) this same tree measures 91.66%. The test counts are interpreter-independent
 and identical on both. See the "Last measured" note in `CONSTRAINTS.md`.
 
 ### Delivered

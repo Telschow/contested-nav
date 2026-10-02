@@ -51,9 +51,24 @@ class InjectedStreams:
     manifest: dict[str, Any] = field(default_factory=dict)
 
 
-def config_hash(scenario: Scenario) -> str:
-    """Stable short hash of a scenario, for reproducibility records."""
-    payload = json.dumps(scenario.as_dict(), sort_keys=True, default=float)
+def config_hash(scenario: Scenario, *, estimator: dict[str, Any] | None = None) -> str:
+    """Stable short hash of a scenario, for reproducibility records.
+
+    ``estimator`` is folded in when supplied. A benchmark record's hash is a
+    provenance label: it is what lets a reader tell that two runs used the same
+    setup. Hashing the scenario alone cannot do that, because the estimator is
+    configured separately and several of its settings (``vision_fuse``,
+    ``vision_anchor_modelled``, ``vision_keyframe_interval``, the anchor
+    sigmas) change the filter without touching the scenario at all. Three
+    structurally different filters then record one indistinguishable hash.
+
+    Pass the resolved estimator config -- ``{"class": ..., **cfg.as_dict()}`` --
+    not the raw override keys, so a record hashes the filter that actually ran.
+    """
+    payload_dict: dict[str, Any] = {"scenario": scenario.as_dict()}
+    if estimator is not None:
+        payload_dict["estimator"] = estimator
+    payload = json.dumps(payload_dict, sort_keys=True, default=float)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 

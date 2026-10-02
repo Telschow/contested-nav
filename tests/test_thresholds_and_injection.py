@@ -481,6 +481,30 @@ def test_config_hash_is_short_and_hex():
     int(h, 16)
 
 
+def test_config_hash_folds_in_the_estimator():
+    """The estimator must change the provenance hash even when the scenario matches.
+
+    The estimator is configured separately from the scenario, and several of its
+    settings change the filter without touching the scenario at all. Hashing the
+    scenario alone let three structurally different filters share one hash, so a
+    record could not be told apart from another by its provenance.
+    """
+    sc = Scenario(name="x")
+    base = config_hash(sc, estimator={"class": "ErrorStateKalmanFilter", "vision_enabled": True})
+    off = config_hash(sc, estimator={"class": "ErrorStateKalmanFilter", "vision_enabled": False})
+    assert base != off
+    # Same inputs must stay reproducible, and the scenario-only form must still
+    # be usable for the injection manifest, which has no estimator to report.
+    assert base == config_hash(sc, estimator={"class": "ErrorStateKalmanFilter", "vision_enabled": True})
+    assert config_hash(sc) != base
+
+
+def test_config_hash_estimator_key_is_namespaced():
+    """An estimator block must not collide with a scenario that hashes the same."""
+    sc = Scenario(name="x")
+    assert config_hash(sc, estimator={"a": 1}) != config_hash(sc, estimator={"a": 2})
+
+
 # --- end-to-end inject -------------------------------------------------------
 
 
