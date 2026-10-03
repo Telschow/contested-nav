@@ -4,14 +4,14 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: 613 tests collected — 609 passing, 2 skipped, 2 expected failures —
+Last measured: 617 tests collected — 613 passing, 2 skipped, 2 expected failures —
 and 91.66% line coverage (3815/4162 executable lines) on **CPython 3.13**, measured
 with `python scripts/coverage_report.py`. Coverage is quoted from that script alone:
 it is the project's dependency-free tracer (S1 forbids adding `pytest-cov`), and
 a number taken from a different tool is not comparable with the module figures
 below. The interpreter is named because it is part of the measurement, not a
 detail: `dis` decides what counts as an executable line, and the denominator
-moves with the bytecode. The same tree and the same 609 passing tests measure
+moves with the bytecode. The same tree and the same 613 passing tests measure
 3690/4037 (91.40%) on 3.11 and 3678/4196 (87.65%) on 3.14. `coverage_report.py`
 prints the interpreter it ran on, so a figure is never quoted without the one
 thing needed to interpret it. Floors are unaffected by that spread — every total

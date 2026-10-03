@@ -1,15 +1,32 @@
 # contested-nav
 
-A 21-state error-state Kalman filter for GNSS-denied navigation, built to answer
-one question honestly: **is the filter right about how wrong it is?** A filter
-that silently reports confident nonsense is worse than one that fails, so this
-repository measures that failure, publishes it, and ships the configuration that
-avoids it.
+Reproducible autonomous navigation / state estimation for GNSS-denied scenarios.
+
+> **Is the filter right about how wrong it is?**
+
+`contested-nav` is a 21-state error-state Kalman filter (ESKF) and evaluation
+harness for GNSS-denied navigation. It fuses inertial, GNSS and visual-odometry
+measurements and evaluates not only trajectory accuracy, but whether the
+uncertainty reported by the filter is calibrated.
+
+The central result is intentionally uncomfortable:
+
+**with GNSS denied and visual odometry enabled, the filter becomes substantially
+more accurate by ATE while becoming severely overconfident in its uncertainty.**
+
+The repository makes that failure reproducible, quantifies it with NEES and
+ellipsoidal coverage, and ships visual fusion disabled by default rather than
+presenting the uncalibrated configuration as trustworthy.
+
+> **Synthetic evidence only.**
+> Every headline result comes from a deterministic known-answer fixture.
+> No real sensor capture is evaluated and no number in this repository is a
+> field measurement.
 
 [![CI](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml)
 [![Pages](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-609%20pass%20%2B%202%20skip%20%2B%202%20xfail-informational.svg)](tests)
+[![Tests](https://img.shields.io/badge/tests-613%20pass%20%2B%202%20skip%20%2B%202%20xfail-informational.svg)](tests)
 [![Line coverage (CPython 3.13)](https://img.shields.io/badge/line%20coverage-91.66%25%20%28py3.13%29-informational.svg)](CONSTRAINTS.md)
 
 > **All results in this repository are synthetic.** They come from a
@@ -17,34 +34,32 @@ avoids it.
 > exactly at the truth. No real sensor capture is vendored or evaluated, and no
 > number here is a field measurement. See [Status and limits](#status-and-limits).
 
-## The one result that matters
+## The result
 
-With GNSS denied for 15 s and visual odometry enabled, the filter reports
-**0.161 m** of position uncertainty while being **2.54 m** wrong.
-
-| | ATE RMSE | Claimed 1σ | Mean NEES (exp. 3) | Coverage @ 2σ (exp. 99.3%) |
+| Configuration | ATE RMSE | Claimed 1σ | Mean NEES | 2σ-per-axis coverage |
 |---|---:|---:|---:|---:|
-| GNSS denied, vision **off** | 3.782 m | 0.567 m | 4.1 | 100.0% |
-| GNSS denied, vision **on** | **2.541 m** | **0.161 m** | **419.4** | **20.0%** |
+| GNSS denied, vision off | 3.782 m | 0.567 m | 4.1 | 100.0% |
+| GNSS denied, vision on | **2.541 m** | **0.161 m** | **419.4** | **20.0%** |
 
-Turning visual odometry on makes the filter **32.8% more accurate and 103× less
-honest**. It cuts the error from 3.78 m to 2.54 m, and simultaneously shrinks its
-own claimed uncertainty by 3.5× while the truth moves the other way. Six
-thousand epochs later the 2σ ellipsoid — which should contain 99.3% of the error
-and does contain 100% of it when vision is off — contains 20%.
+The vision-enabled configuration reduces ATE RMSE by 32.8%, but mean NEES
+increases from 4.1 to 419.4 and observed 2σ-per-axis ellipsoid coverage falls
+from 100.0% to 20.0%.
 
-Ranked by error, the dishonest filter is on top. That is the point: **error alone
-cannot detect a miscalibrated filter**, and a benchmark sorted by ATE would have
-recommended the filter that lies about its precision.
+Under the repository's 3-D calibration definition, the expected coverage of a
+2σ-per-axis ellipsoid is approximately 99.3%.
+
+**Accuracy improved. Calibration failed.**
+
+That distinction is the central finding of the project.
 
 Both rows are generated, not typed. `scripts/run_benchmark.py` emits this table,
 CI regenerates it and fails the build if any cell disagrees with the code.
 
 ## Why it is not a tuning problem
 
-The filter runs, converges, and produces confident nonsense. No crash, no NaN, no
-divergence — just a bounded, well-behaved, wrong answer. So the response was
-measurement and a shipping decision, not a tuning pass:
+The filter runs, converges, and produces a bounded, well-behaved, wrong answer. No
+crash, no NaN, no divergence. So the response was measurement and a shipping
+decision, not a tuning pass:
 
 - **It is a design property, not a bad seed.** Over **10 noise realisations** of
   the same trajectory, `outage_visual` is overconfident at **every** seed: mean
@@ -93,7 +108,7 @@ against the source tree.
 python -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 
-.venv/bin/python -m pytest           # 609 passed, 2 skipped, 2 xfailed, ~110 s
+.venv/bin/python -m pytest           # 613 passed, 2 skipped, 2 xfailed, ~110 s
 ```
 
 Runtime dependencies are NumPy, Matplotlib and PyYAML. There is no SciPy, no
@@ -145,14 +160,14 @@ error into the measurement covariance, rather than treating it as filter state,
 drops coverage to 16%. Both variants are in the benchmark so the comparison is
 reproducible, and the broken one is kept in the default run on purpose.
 
-**Turning vision on makes the filter much less honest, though not much less
+**Turning vision on makes the filter much less calibrated, though not much less
 accurate.** The outage control with vision off ends at 3.78 m with its
 uncertainty grown to match, so coverage stays at 100%. The aided case claims
 0.16 m while being 2.54 m wrong. Note what adaptive inflation did to this
 comparison: before it, the FDIR gate made the aided case *worse* on ATE (5.06 m),
-so a reader sorting by ATE at least got sent to the honest filter. Recovering
-the error put the dishonest filter back on top, and the ATE column no longer
-flags it at all. Ranking by error is not a calibration check, and this table is
+so a reader sorting by ATE at least got sent to the more honest filter. Recovering
+the error put the less-calibrated configuration back on top, and the ATE column no
+longer flags it at all. Ranking by error is not a calibration check, and this table is
 a demonstration of that rather than an argument against the fix.
 
 **Dead reckoning has no claimed-σ or NEES value.** An integrator with no
@@ -249,9 +264,9 @@ The reasoning is recorded in
 
 Twenty-one states in error-state form: attitude error, velocity error, position
 error, gyro and accel bias error, plus six anchor-error states. Covariance is
-propagated in 21×21 form and updated with the Joseph formulation, so it stays
-symmetric positive definite through a run rather than drifting until something
-breaks.
+propagated in 21×21 form and updated with the Joseph formulation, which preserves
+covariance symmetry and positive-semidefinite structure under finite precision
+rather than drifting until something breaks.
 
 The measurement Jacobians are where the original defect lived, and the frame
 matters as much as the sign. For a relative visual transform with
@@ -318,7 +333,7 @@ scripts/          run_benchmark.py, seed_sweep.py, scene_sweep.py,
 docs/             architecture, calibration, ADRs, figures, site,
                   defense/ (public dual-use assessment),
                   product_management/ (SRS, SWaP-C matrix, FDIR strategy)
-tests/            613 tests (609 pass, 2 skip without TUM VI data, 2 xfail by
+tests/            617 tests (613 pass, 2 skip without TUM VI data, 2 xfail by
                   design: the spoof-permanence case ADR-0007 leaves open)
 ```
 
@@ -378,6 +393,9 @@ and refuses to ship the broken configuration.
   no threshold in the FDIR subsystem will move. Robust across 10 noise seeds
   (worst case NEES 211.7, 6.8% coverage) and across all 8 scenes
   (419.7 [414.4, 424.9], 20.0%).
+
+- **ADR-0008 frozen-anchor cross-check — implemented but unreachable under the
+  current state-transition logic; the security gap remains documented as open.**
 - **The published numbers are single draws.** A 10-seed sweep shows NEES varying
   by 4.4x to 45x between cases, and the two controls the tables call calibrated
   (`gnss_only`, `outage_control`) flip verdict across seeds — `outage_control` is
@@ -427,6 +445,52 @@ short. See [CONSTRAINTS.md](CONSTRAINTS.md).
 | What is planned, and what is not | [ROADMAP.md](ROADMAP.md) |
 | Defense and dual-use assessment | [docs/defense/](docs/defense/README.md) |
 | Design decisions of record | [docs/adr/](docs/adr/0001-anchor-as-filter-state.md) — eight ADRs, each with its alternatives and consequences |
+
+## Documentation Map
+
+| Topic | Documentation |
+|-------|---------------|
+| Architecture | `docs/architecture.md` |
+| State estimation | `src/navkit/estimators/`, `docs/architecture.md` |
+| Calibration | `docs/calibration.md` |
+| FDIR | ADR-0005, ADR-0006, ADR-0008 |
+| Security assumptions | `docs/defense/DEFENSE_RELEVANCE.md`, ADRs |
+| Evaluation | `src/navkit/eval/`, `docs/calibration.md` |
+| Reproducibility | `scripts/run_benchmark.py`, `scripts/seed_sweep.py`, `scripts/scene_sweep.py` |
+| Limitations | `docs/defense/LIMITATIONS.md`, `CONSTRAINTS.md` |
+| Demo | `docs/demo.md`, `scripts/generate_demo.py`, `docs/architecture/demo-snapshot.png`, `docs/architecture/demo.html`, `docs/architecture/demo.workflow.json` |
+
+## See it in action
+
+This repository ships a deterministic, end‑to‑end visualisation of the headline scientific result. The static architecture diagram below is the immediate preview; the interactive HTML version provides an explorable view of the eight‑stage pipeline. Both are generated from the actual navkit estimator/FDIR pipeline, not from hand‑typed numbers, and reproduce the same computation that produces every number in the documentation.
+
+**Static preview (architecture diagram):**
+![Architecture diagram](docs/architecture/demo-snapshot.png)
+
+The diagram visualises the eight‑stage deterministic demo: normal navigation → GNSS denial → visual aiding → calibration problem → FDIR response → final quantitative result.
+
+**Interactive version:** [`docs/architecture/demo.html`](docs/architecture/demo.html)
+
+Run the demo locally:
+
+```bash
+python scripts/generate_demo.py --out artifacts/demo
+```
+
+The script creates (in `artifacts/demo`, which is gitignored):
+
+* ``artifacts/demo/frames/*.png`` – 25 frames (15–25 s) showing GNSS denial, visual aiding, the overconfidence divergence, and the FDIR response.
+* ``artifacts/demo/results.json`` – the full per‑epoch state from the navkit run (timestamps, position error, covariance, NEES, coverage).
+* ``artifacts/demo/metadata.json`` – reproducibility metadata (seed, scenario, estimator, etc.).
+
+The canonical GitHub-visible presentation assets are under `docs/architecture/`:
+
+* ``docs/architecture/demo-snapshot.png`` – 1920×1080 static thumbnail
+* ``docs/architecture/demo.html`` – interactive explorable version
+
+All numbers displayed in the animation are computed from the deterministic navkit execution; no constants such as 2.541 m, 0.161 m, 419.4 or 20.0 % are hard‑coded. If the implementation changes, the visualisation updates automatically.
+
+The animation follows the storyboard documented in the repository’s implementation plan and preserves the existing scientific interpretation. It is intended as an engineering aid, not a replacement for the rigorous analysis in the documentation.
 
 ## License
 
