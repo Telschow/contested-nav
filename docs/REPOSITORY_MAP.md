@@ -113,7 +113,7 @@ diffing the two outputs, which is what CI does.
 
 ## 4. Test suite **[R]**
 
-601 collected · **597 passed** · 2 skipped · 2 xfailed · ~105 s on CPython 3.13.
+617 collected · **613 passed** · 2 skipped · 2 xfailed · ~110 s on CPython 3.13.
 
 | File | Focus |
 |---|---|

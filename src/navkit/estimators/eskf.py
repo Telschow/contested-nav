@@ -109,8 +109,8 @@ anchor model is doing real work rather than only muting the symptom.
 
 The limit that remains
 ----------------------
-Under a 15 s GNSS denial the same filter still over-trusts vision by roughly
-three orders of magnitude (mean NEES 3.5e3, 31 m error against a claimed 0.30 m).
+Under a 15 s GNSS denial the same filter still over-trusts vision
+(mean NEES 419.4, 2.541 m error against a claimed 0.161 m),
 and the cause is structural rather than a matter of tuning. The information a
 visual measurement carries about *absolute* position is the Schur complement
 
@@ -128,7 +128,7 @@ single-anchor ESKF, and it is the change this project has not made.
 
 So the visual channel ships disabled by default. The failure above is not a
 reason to hide it, and the numbers stay in this docstring; it is a reason not to
-hand a caller a filter that silently reports 0.3 m while being 31 m wrong.
+hand a caller a filter that silently reports 0.161 m while being 2.54 m wrong.
 ``vision_anchor_modelled`` is exposed only so the regression tests can reproduce
 the middle row.
 
