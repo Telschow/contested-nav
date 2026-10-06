@@ -4,22 +4,25 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: 617 tests collected — 613 passing, 2 skipped, 2 expected failures —
-and 91.66% line coverage (3815/4162 executable lines) on **CPython 3.13**, measured
+Last measured (2026-10-06): 617 tests collected, 612 passing, 3 skipped, 2 expected
+failures on a fresh clone (613, 2, 2 once `results/benchmark.json` exists), and 91.69%
+line coverage (3816/4162 executable lines) on **CPython 3.13**, measured
 with `python scripts/coverage_report.py`. Coverage is quoted from that script alone:
 it is the project's dependency-free tracer (S1 forbids adding `pytest-cov`), and
 a number taken from a different tool is not comparable with the module figures
 below. The interpreter is named because it is part of the measurement, not a
 detail: `dis` decides what counts as an executable line, and the denominator
-moves with the bytecode. The same tree and the same 613 passing tests measure
-3690/4037 (91.40%) on 3.11 and 3678/4196 (87.65%) on 3.14. `coverage_report.py`
+moves with the bytecode. An earlier revision of this tree measured
+3690/4037 (91.40%) on 3.11 and 3678/4196 (87.65%) on 3.14 (not re-measured since). `coverage_report.py`
 prints the interpreter it ran on, so a figure is never quoted without the one
 thing needed to interpret it. Floors are unaffected by that spread — every total
 clears 75% and every module floor sits well below its measured figure.
-The two skips are the TUM VI reference checks in
+Two skips are the TUM VI reference checks in
 `tests/test_trajectory_io.py`, which need ground truth that is deliberately not
-vendored (S2); they are skips, not passes, and are counted separately here so the
-number cannot read higher than it measures.
+vendored (S2). The third is `tests/test_doc_tables.py`, which needs the generated,
+gitignored `results/benchmark.json`; the CI `benchmark` job runs the same check with
+`scripts/check_doc_tables.py`. They are skips, not passes, and are counted separately
+here so the number cannot read higher than it measures.
 
 ## Correctness
 
@@ -75,9 +78,9 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | 613 | `pytest` |
-| Tests passing | 300 | 609 (2 skipped, 2 xfail, see below) | `pytest -rs` |
-| Line coverage | 75% | 91.66% | `scripts/coverage_report.py` |
+| Tests collected | 405 | 617 | `pytest` |
+| Tests passing | 300 | 612 (3 skipped, 2 xfail, see above) | `pytest -rs` |
+| Line coverage | 75% | 91.69% | `scripts/coverage_report.py` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
 | `analysis/findings.py` coverage | 80% | 99.7% | as above |
 | `config.py` coverage | 80% | 98.4% | as above |
@@ -106,15 +109,6 @@ These are floors, not goals. Each must not regress; raising one is welcome.
   `P` wrong. The number fell from 1996.5 to 419.4 as a side effect of taking the
   filter's own uncertainty more seriously, not because the anchor is now
   modelled correctly.
-
-- **B2 — No lint or typecheck gate has ever run locally.** `ruff` and `mypy`
-  are not installed in the working environment, so no style or type error is
-  caught outside the test run. CI installs them and runs both; see ROADMAP.
-
-- **B3 — Package build is unverified locally.** `pip` and `setuptools` are
-  absent here, so `pyproject.toml` metadata and the Hatchling build path have
-  never been executed, only reasoned about. CI builds an sdist and a wheel and
-  imports the wheel in a clean environment; see ROADMAP.
 
 - **B4 — Full TUM VI room1 ground truth is unavailable.** The published
   mocap trajectory was not obtained, so the ATE comparison uses a subsampled
@@ -220,6 +214,18 @@ residual numerically.
 >   Track A. It is deliberately not implemented here: a consistency monitor that
 >   also responds to a genuine spoof has to be told the two apart, and that
 >   distinction is a larger design question than the gate itself.
+
+- **R3 (was an open "B2", not R1's B2): no lint or typecheck gate had run
+  locally.** `ruff` and `mypy` are now pinned in the `dev` extra
+  (`pyproject.toml`), so `pip install -e ".[dev]"` provides both. Verified
+  2026-10-06 in a clean virtual environment: `mypy src --ignore-missing-imports`
+  reports no issues in 29 source files, and `ruff check` and `ruff format --check`
+  pass once the findings in `scripts/generate_demo.py` are cleared.
+
+- **R4 (was the open B3): package build was unverified locally.** Verified
+  2026-10-06: `python -m build` produced an sdist and a wheel, and the wheel
+  installed and imported in a second clean virtual environment. CI repeats this in
+  the `build` job.
 
 ## Adding a constraint
 
