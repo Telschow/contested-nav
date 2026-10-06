@@ -41,8 +41,9 @@ will be triaged first.
   key. Do not remove that rule, and do not commit the file under another name.
 - CI runs with `contents: read` at the top level. The only job granted more is
   CodeQL, which needs `security-events: write` to upload its results.
-- Workflows are pinned to major version tags. If you add a third-party action,
-  pin it to a commit digest instead and say why in a comment.
+- Third-party actions are pinned to full commit SHAs, with the release version in a
+  trailing comment (`uses: owner/action@<sha> # v1.2.3`). A tag can be moved; a SHA
+  cannot. Dependabot updates the SHA and the comment together.
 - Dependabot tracks both GitHub Actions and pip, so an action or dependency
   update arrives as a reviewable pull request rather than silently.
 - CodeQL analyses Python on push, pull request, and weekly.
