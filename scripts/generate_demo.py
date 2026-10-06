@@ -2,18 +2,18 @@
 """Generate a deterministic technical visualisation of the GNSS-denied / visual-aiding case.
 
 This script runs the actual navkit estimator for the ``outage_visual`` scenario,
-records the per‑epoch state, and produces a simple 1920x1080 figure that illustrates
+records the per-epoch state, and produces a simple 1920x1080 figure that illustrates
 the central scientific result: the filter can become highly confident while being
 materially wrong.
 
-The script is a minimal, reproducible demo – all numbers are derived from the
-navkit execution, not hand‑typed. It satisfies the repository’s requirement for an
+The script is a minimal, reproducible demo - all numbers are derived from the
+navkit execution, not hand-typed. It satisfies the repository's requirement for an
 engineering visualisation that is generated from the implementation.
 
 Outputs:
-  * ``artifacts/demo/results.json`` – full per‑epoch data (t, position error, etc.)
-  * ``artifacts/demo/metadata.json`` – reproducibility metadata
-  * ``artifacts/demo/snapshot.png`` – static 1920x1080 visualisation (full‑duration view)
+  * ``artifacts/demo/results.json`` - full per-epoch data (t, position error, etc.)
+  * ``artifacts/demo/metadata.json`` - reproducibility metadata
+  * ``artifacts/demo/snapshot.png`` - static 1920x1080 visualisation (full-duration view)
 
 Run with:
   python scripts/generate_demo.py
@@ -83,6 +83,7 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
     )
     if cfg.fdir_config is None:
         from navkit.fdir.fdir_manager import FdirConfig
+
         cfg.fdir_config = FdirConfig()
     fdir_fields = ["spoof_grant_threshold", "spoof_lockout_s", "spoof_reexpansion_factor"]
     for fn in fdir_fields:
@@ -134,6 +135,7 @@ def run_scenario(config_path: Path) -> dict[str, Any]:
     headline = ate["none"]
 
     from navkit.types import interpolate_trajectory
+
     ref_on_est = interpolate_trajectory(reference, est.t)
 
     if result.position_cov is not None:
@@ -224,17 +226,18 @@ def run_scenario(config_path: Path) -> dict[str, Any]:
 def create_visualisation(record: dict[str, Any], out_dir: Path) -> None:
     """Create a deterministic animation sequence showing the scientific result.
 
-    Generates a 25‑frame sequence (1920x1080) that covers the storyboard:
-      0‑4 s  normal GNSS‑aided navigation
-      4‑8 s  GNSS denial marked
-      8‑14 s visual aiding and divergence
-      14‑19 s calibration problem highlighted
-      19‑23 s FDIR response
-      23‑25 s final quantitative freeze
+    Generates a 25-frame sequence (1920x1080) that covers the storyboard:
+      0-4 s  normal GNSS-aided navigation
+      4-8 s  GNSS denial marked
+      8-14 s visual aiding and divergence
+      14-19 s calibration problem highlighted
+      19-23 s FDIR response
+      23-25 s final quantitative freeze
 
-    All values are derived from ``record``; no headline metrics are hard‑coded.
+    All values are derived from ``record``; no headline metrics are hard-coded.
     """
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
@@ -314,15 +317,23 @@ def create_visualisation(record: dict[str, Any], out_dir: Path) -> None:
             f"MEAN NEES        {nees_mean:.1f}",
             f"2σ-per-axis COVERAGE      {cov_2sigma:.1%}",
         ]
-        ax_status.text(0.03, 0.98, "\n".join(status_lines), transform=ax_status.transAxes,
-                       verticalalignment="top", fontsize=10, color=TEXT_COLOR, family="monospace")
+        ax_status.text(
+            0.03,
+            0.98,
+            "\n".join(status_lines),
+            transform=ax_status.transAxes,
+            verticalalignment="top",
+            fontsize=10,
+            color=TEXT_COLOR,
+            family="monospace",
+        )
         ax_status.set_xticks([])
         ax_status.set_yticks([])
         for s in ax_status.spines.values():
             s.set_visible(False)
         ax_status.set_facecolor(BG_COLOR)
 
-        # Metrics panel – headline values from the run
+        # Metrics panel - headline values from the run
         metrics_text = [
             "HEADLINE RESULT",
             "──────────────",
@@ -334,8 +345,16 @@ def create_visualisation(record: dict[str, Any], out_dir: Path) -> None:
             f"Bulk verdict:     {headline.get('bulk_verdict', 'N/A')}",
             f"Tail verdict:     {headline.get('tail_verdict', 'N/A')}",
         ]
-        ax_metrics.text(0.1, 0.9, "\n".join(metrics_text), transform=ax_metrics.transAxes,
-                       verticalalignment="top", fontsize=10, color=TEXT_COLOR, family="monospace")
+        ax_metrics.text(
+            0.1,
+            0.9,
+            "\n".join(metrics_text),
+            transform=ax_metrics.transAxes,
+            verticalalignment="top",
+            fontsize=10,
+            color=TEXT_COLOR,
+            family="monospace",
+        )
         ax_metrics.set_xticks([])
         ax_metrics.set_yticks([])
         for s in ax_metrics.spines.values():
@@ -346,14 +365,13 @@ def create_visualisation(record: dict[str, Any], out_dir: Path) -> None:
         ax_traj.set_xlabel("Easting (m)", color=TEXT_COLOR)
         ax_traj.set_ylabel("Northing (m)", color=TEXT_COLOR)
         ax_traj.tick_params(axis="both", colors=TEXT_COLOR)
-        ax_traj.set_title(f"t = {cur_t:.1f} s",
-                          color=TEXT_COLOR, fontsize=12)
+        ax_traj.set_title(f"t = {cur_t:.1f} s", color=TEXT_COLOR, fontsize=12)
         ax_traj.legend(loc="upper right", facecolor=BG_COLOR, edgecolor=TEXT_COLOR, fontsize=9)
         ax_traj.grid(color="#333333", linestyle=":", linewidth=0.3)
         ax_traj.set_facecolor(BG_COLOR)
 
         fig.patch.set_facecolor(BG_COLOR)
-        frame_path = frame_dir / f"frame_{i+1:05d}.png"
+        frame_path = frame_dir / f"frame_{i + 1:05d}.png"
         fig.savefig(frame_path, dpi=dpi)
         plt.close(fig)
 
@@ -361,6 +379,7 @@ def create_visualisation(record: dict[str, Any], out_dir: Path) -> None:
     snapshot_path = out_dir / "snapshot.png"
     # Copy the last frame as snapshot
     import shutil
+
     shutil.copy2(frame_dir / f"frame_{n_frames:05d}.png", snapshot_path)
     print(f"Saved {n_frames} frames to {frame_dir} and snapshot to {snapshot_path}")
 
@@ -397,7 +416,7 @@ def main() -> int:
     print("Running deterministic outage_visual scenario …")
     record = run_scenario(args.config)
 
-    print("Saving machine‑readable results …")
+    print("Saving machine-readable results …")
     results_path = out_dir / "results.json"
     with results_path.open("w") as f:
         json.dump(_jsonable(record), f, indent=2)
