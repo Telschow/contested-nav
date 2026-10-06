@@ -413,7 +413,7 @@ tier.
 | AC-07 | exact | holds | **PASS** |
 | AC-08 | 0 | 0 of 1212 | **PASS**, but see note |
 | AC-09 | exit 0 | matches `results/benchmark.json` | **PASS** |
-| AC-10 | 0 failures | 612 passed, 3 skipped, 2 xfailed (fresh clone); 613, 2, 2 once `results/benchmark.json` exists | **PASS** |
+| AC-10 | 0 failures | 624 passed, 3 skipped, 2 xfailed (fresh clone); 625, 2, 2 once `results/benchmark.json` exists | **PASS** |
 | AC-11 | ≥ 75% (script floor) | 91.69% (CPython 3.13) | **PASS** |
 
 **AC-03 and AC-04 are not seed artefacts.** Both were re-measured after this table
