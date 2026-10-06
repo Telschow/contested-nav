@@ -4,8 +4,8 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: 617 tests collected, 613 passing, 2 skipped, 2 xfail; 91.66%
-line coverage on CPython 3.13 (`python scripts/coverage_report.py`). Every
+Measured baseline (2026-10-06): 617 tests collected, 612 passing, 3 skipped, 2 xfail on
+a fresh clone; 91.69% line coverage on CPython 3.13 (`python scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
 ---
@@ -242,27 +242,29 @@ this removes it.
 **Exit test:** NEES below 10 with vision enabled and GNSS denied, coverage above
 90%, `vision_enabled = True` as the shipped default. Current value 419.4.
 
-### Track C — TPM / PM deliverables `[ ]`
+### Track C — TPM / PM deliverables `[~]`
 
 The engineering is ahead of the paperwork, which is a schedule risk rather than
 a technical one.
 
-- [ ] SWaP-C trade-off matrix: size, weight, power, cost against accuracy, for
+- [x] SWaP-C trade-off matrix (`docs/product_management/02_swapc_tradeoff_matrix.md`): size, weight, power, cost against accuracy, for
       the estimator configurations actually benchmarked. Computed from
       `EskfConfig` and the runtime measurements `run_benchmark.py` already
       records, not estimated.
-- [ ] System Requirements Specification (SRS): the interface, the failure
+- [x] System Requirements Specification (SRS) (`docs/product_management/01_system_requirements_spec.md`): the interface, the failure
       modes, the detection requirements from Track A, and the acceptance
       thresholds from Track B, written as testable requirements.
 - [ ] Sensor synchronisation and calibration specification: the timing model
       between IMU, GNSS and camera streams; the time-offset handling; the
       intrinsic and extrinsic calibration assumptions; what is measured on the
       bench versus what is assumed in simulation.
-- [ ] All of the above live in `/docs/product_management/`, which does not
-      exist yet. Created with the first document, not before.
+- [x] The documents above live in `docs/product_management/`, together with the FDIR
+      and spoofing strategy (`03_fdir_and_spoofing_strategy.md`). Still missing: the
+      sensor synchronisation specification above, a risk log, and a work breakdown.
 
 **Exit test:** a reviewer can trace every requirement in the SRS to a test, a
-configuration, or an explicitly declared gap.
+configuration, or an explicitly declared gap. The SRS has a traceability matrix
+(section 2); it is not yet checked by a script, so it can drift.
 
 ---
 
@@ -271,9 +273,6 @@ configuration, or an explicitly declared gap.
 `CONSTRAINTS.md` holds the authoritative list. In short:
 
 - **B1** — visual fusion is overconfident under GNSS denial. Needs Track B.
-- **B2** — no lint or typecheck gate has ever run locally; CI runs both.
-- **B3** — package build unverified locally (`pip` absent); CI builds an sdist
-      and a wheel and imports the wheel in a clean environment.
 - **B4** — full TUM VI room1 ground truth unavailable, so two tests skip and
       the ATE figure is not a verified reproduction of the published 0.069 m.
 

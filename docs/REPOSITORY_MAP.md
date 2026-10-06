@@ -96,7 +96,7 @@ contested-nav/
 | `seed_sweep.py` | `python scripts/seed_sweep.py --seeds 10` | 10 seeds × 7 cases |
 | `scene_sweep.py` | `python scripts/scene_sweep.py --seeds 10` | 10 scenes; run twice and compared in CI |
 | `check_doc_tables.py` | `python scripts/check_doc_tables.py` | README + `index.html` tables match `benchmark.json` |
-| `coverage_report.py` | `python scripts/coverage_report.py --ratchet` | 91.66% total on CPython 3.13, ratchet OK; the report prints its own interpreter |
+| `coverage_report.py` | `python scripts/coverage_report.py --ratchet` | 91.69% total on CPython 3.13, ratchet OK; the report prints its own interpreter |
 | `make_figures.py` | `python scripts/make_figures.py` | 4 PNGs, **byte-identical to the committed images** — regenerated and checksummed |
 
 There is deliberately no LOC column. A hand-maintained line count was in this
@@ -113,7 +113,9 @@ diffing the two outputs, which is what CI does.
 
 ## 4. Test suite **[R]**
 
-617 collected · **613 passed** · 2 skipped · 2 xfailed · ~110 s on CPython 3.13.
+617 collected · **612 passed** · 3 skipped · 2 xfailed · ~100 s on CPython 3.13, fresh clone.
+After `python scripts/run_benchmark.py` writes `results/benchmark.json`, the third skip
+(`test_doc_tables.py`) runs: 613 passed · 2 skipped · 2 xfailed.
 
 | File | Focus |
 |---|---|
@@ -134,8 +136,10 @@ diffing the two outputs, which is what CI does.
 | `test_imu_noise.py` | IMU noise models |
 | `test_scene_sweep.py` | `seeded_scene`: the trajectory-variation axis |
 
-The 2 skips are honest: `test_trajectory_io.py:310,328` require TUM VI reference
-files that are deliberately not vendored. The 2 xfails are `strict=False` by
+Two skips are honest: `test_trajectory_io.py:310,328` require TUM VI reference
+files that are deliberately not vendored. The third, in `test_doc_tables.py`, needs
+`results/benchmark.json`, which is generated and gitignored; the CI `benchmark` job
+checks the same tables with `scripts/check_doc_tables.py`. The 2 xfails are `strict=False` by
 design (`test_nis_monitor.py:881,887`) — ADR-0007 spoof permanence stays red until
 a second detection modality works. A `strict=True` test in
 `TestFrozenAnchorCrossCheck` pins the ADR-0008 unreachable guard so it fails

@@ -26,8 +26,6 @@ presenting the uncalibrated configuration as trustworthy.
 [![CI](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml)
 [![Pages](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-613%20pass%20%2B%202%20skip%20%2B%202%20xfail-informational.svg)](tests)
-[![Line coverage (CPython 3.13)](https://img.shields.io/badge/line%20coverage-91.66%25%20%28py3.13%29-informational.svg)](CONSTRAINTS.md)
 
 > **All results in this repository are synthetic.** They come from a
 > known-answer fixture: an analytic trajectory with the filter initialised
@@ -108,7 +106,7 @@ against the source tree.
 python -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 
-.venv/bin/python -m pytest           # 613 passed, 2 skipped, 2 xfailed, ~110 s
+.venv/bin/python -m pytest           # 612 passed, 3 skipped, 2 xfailed, ~100 s on a fresh clone
 ```
 
 Runtime dependencies are NumPy, Matplotlib and PyYAML. There is no SciPy, no
@@ -304,7 +302,7 @@ definitions, with no SciPy:
 - **Coverage** — the exact ellipsoid coverage for the stated degrees of
   freedom. The familiar "3σ means 99.7%" is the one-dimensional figure and does
   not hold for a 3-D position error; the real expectation at 2σ per axis in 3-D
-  is 99.2%, and the code uses that.
+  is 99.3%, and the code uses that.
 - **Conformal radius** — a finite-sample, distribution-free bound, used to check
   whether a confidence claim still holds under shift.
 - **Inflation factor** — the scalar covariance inflation that reaches a target
@@ -333,8 +331,10 @@ scripts/          run_benchmark.py, seed_sweep.py, scene_sweep.py,
 docs/             architecture, calibration, ADRs, figures, site,
                   defense/ (public dual-use assessment),
                   product_management/ (SRS, SWaP-C matrix, FDIR strategy)
-tests/            617 tests (613 pass, 2 skip without TUM VI data, 2 xfail by
-                  design: the spoof-permanence case ADR-0007 leaves open)
+tests/            617 tests (fresh clone: 612 pass, 3 skip, 2 xfail; the skips are
+                  2 TUM VI checks plus the doc-table check, which runs once
+                  results/benchmark.json exists; the xfails are by design: the
+                  spoof-permanence case ADR-0007 leaves open)
 ```
 
 ## Product management and systems engineering
