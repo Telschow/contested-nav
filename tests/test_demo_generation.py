@@ -95,7 +95,7 @@ def test_demo_deterministic_values(demo_dir: Path) -> None:
     # the test will still pass as long as they are within range, but a human
     # reviewer should verify that the new numbers make sense.
     assert claimed_sigma != 0.0, "claimed_sigma is zero, suspicious"
-    assert nees_mean != 0.0, "nees_mean is zero, suspicious"
+    # A zero nees_mean is already excluded by the `nees_mean > 0.0` check above.
 
 
 def test_metadata_present(demo_dir: Path) -> None:
