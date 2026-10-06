@@ -36,7 +36,7 @@ dependencies = [
 # B2 was that no lint or typecheck gate could be run outside CI. The two
 # tools are here so `uv run ruff check` and `uv run mypy src` work locally and
 # resolve to the same versions the CI job installs, which are unpinned there.
-dev = ["pytest>=7.4", "ruff==0.16.9", "mypy==2.3.1"]
+dev = ["pytest>=7.4", "ruff==0.16.10", "mypy==2.4.0"]
 
 [project.urls]
 Homepage = "https://github.com/Telschow/contested-nav"
