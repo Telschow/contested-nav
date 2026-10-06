@@ -270,6 +270,12 @@ _FDIR_INFLATION_BLOCK = {
     "gnss": (3, 4, 5),
 }
 
+#: Mahalanobis radius, in standard deviations, beyond which a second GNSS grant in
+#: one outage is refused because the fix disagrees with the anchor frozen when the
+#: outage began (ADR-0008). The test is on the squared distance, so the threshold
+#: compared against is ``_SPOOF_CROSS_CHECK_SIGMA ** 2`` (225.0 at 15 sigma).
+_SPOOF_CROSS_CHECK_SIGMA = 15.0
+
 
 @dataclass
 class EskfConfig:
@@ -599,8 +605,7 @@ class ErrorStateKalmanFilter:
                     d2 = float(z.T @ np.linalg.solve(P_anchor, z))
                 except np.linalg.LinAlgError:
                     d2 = float("inf")
-                # Threshold N^2 where N ~ 15 (spoof margin from measurements)
-                if d2 > 225.0:  # 15^2
+                if d2 > _SPOOF_CROSS_CHECK_SIGMA**2:
                     return False, d2
 
             # Honour the request before forming the gain, and recompute S from
@@ -663,8 +668,8 @@ class ErrorStateKalmanFilter:
         x["b_a"] = x["b_a"] + dx[_IDX_BA]
         # The anchor nuisance corrections dx[_IDX_CP] and dx[_IDX_CT] are
         # computed above and deliberately NOT applied. This is not an oversight;
-        # it is a recorded limitation, and the audit that established it is
-        # CN-003 in .audit/findings.md.
+        # it is a recorded limitation, tracked as CN-003 and described in ADR-0001.
+        # The independent audit file that first recorded it is not in this repository.
         #
         # Applying them was implemented and measured. It is inert at the shipped
         # configuration, where vision_keyframe_interval == 1 re-commits the anchor
