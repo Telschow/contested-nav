@@ -106,7 +106,7 @@ against the source tree.
 python -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 
-.venv/bin/python -m pytest           # 612 passed, 3 skipped, 2 xfailed, ~100 s on a fresh clone
+.venv/bin/python -m pytest           # 624 passed, 3 skipped, 2 xfailed, ~120 s on a fresh clone
 ```
 
 Runtime dependencies are NumPy, Matplotlib and PyYAML. There is no SciPy, no
@@ -331,7 +331,7 @@ scripts/          run_benchmark.py, seed_sweep.py, scene_sweep.py,
 docs/             architecture, calibration, ADRs, figures, site,
                   defense/ (public dual-use assessment),
                   product_management/ (SRS, SWaP-C matrix, FDIR strategy)
-tests/            617 tests (fresh clone: 612 pass, 3 skip, 2 xfail; the skips are
+tests/            629 tests (fresh clone: 624 pass, 3 skip, 2 xfail; the skips are
                   2 TUM VI checks plus the doc-table check, which runs once
                   results/benchmark.json exists; the xfails are by design: the
                   spoof-permanence case ADR-0007 leaves open)

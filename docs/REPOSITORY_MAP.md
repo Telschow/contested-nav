@@ -113,9 +113,9 @@ diffing the two outputs, which is what CI does.
 
 ## 4. Test suite **[R]**
 
-617 collected · **612 passed** · 3 skipped · 2 xfailed · ~100 s on CPython 3.13, fresh clone.
+629 collected · **624 passed** · 3 skipped · 2 xfailed · ~120 s on CPython 3.13, fresh clone.
 After `python scripts/run_benchmark.py` writes `results/benchmark.json`, the third skip
-(`test_doc_tables.py`) runs: 613 passed · 2 skipped · 2 xfailed.
+(`test_doc_tables.py`) runs: 625 passed · 2 skipped · 2 xfailed.
 
 | File | Focus |
 |---|---|
@@ -133,6 +133,7 @@ After `python scripts/run_benchmark.py` writes `results/benchmark.json`, the thi
 | `test_imu_io.py` | EuRoC/TUM-VI ASCII IMU loader, including nanosecond timestamp handling |
 | `test_geometry.py` | SE(3), quaternions, alignment |
 | `test_doc_tables.py` | The doc-table checker itself |
+| `test_golden_benchmark.py` | Locks the seeded benchmark output against `tests/golden/benchmark.json` (regenerate with `--update`) |
 | `test_imu_noise.py` | IMU noise models |
 | `test_scene_sweep.py` | `seeded_scene`: the trajectory-variation axis |
 
