@@ -36,7 +36,8 @@ Provenance is marked on every number, because the distinction decides what a
 reader may do with it:
 
 - **[M] Measured** — produced by `scripts/run_benchmark.py` from a
-  known-answer synthetic fixture and committed to `results/benchmark.json`.
+  known-answer synthetic fixture and written to `results/benchmark.json`
+  (generated and gitignored, not committed).
 - **[D] Derived** — computed from measured or configured values in this
   repository, with the arithmetic shown.
 - **[C] Configured** — a default in the source, i.e. a choice, not a result.
@@ -412,8 +413,8 @@ tier.
 | AC-07 | exact | holds | **PASS** |
 | AC-08 | 0 | 0 of 1212 | **PASS**, but see note |
 | AC-09 | exit 0 | matches `results/benchmark.json` | **PASS** |
-| AC-10 | 0 failures | 613 passed, 2 skipped, 2 xfailed | **PASS** |
-| AC-11 | ≥ 75% (script floor) | 91.66% | **PASS** |
+| AC-10 | 0 failures | 612 passed, 3 skipped, 2 xfailed (fresh clone); 613, 2, 2 once `results/benchmark.json` exists | **PASS** |
+| AC-11 | ≥ 75% (script floor) | 91.69% (CPython 3.13) | **PASS** |
 
 **AC-03 and AC-04 are not seed artefacts.** Both were re-measured after this table
 was first written, under two independent sweeps: 10 noise realisations of the

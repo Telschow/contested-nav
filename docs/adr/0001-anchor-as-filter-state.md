@@ -19,7 +19,7 @@ available throughout, noisy IMU (`python scripts/run_benchmark.py`):
 
 The folded path drives the error an order of magnitude above the uncertainty it
 claims, and the coverage says the claimed ellipsoid contains the truth one time
-in six where 99.2% of the time is expected.
+in six where 99.3% of the time is expected.
 
 The first observation of the defect was a *sensor* symptom rather than a
 covariance one: the folded path shrank the position covariance so aggressively
