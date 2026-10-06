@@ -155,8 +155,9 @@ def test_the_real_documents_match_the_committed_benchmark() -> None:
     """Guard the shipped documents against the shipped results.
 
     Skipped when results/benchmark.json is absent, which is the normal state of
-    a fresh clone because generated results are not committed; CI generates the
-    benchmark before running this.
+    a fresh clone because generated results are not committed. CI does not skip
+    the check: the benchmark job regenerates the benchmark and runs
+    ``scripts/check_doc_tables.py`` against it.
     """
     results = ROOT / "results" / "benchmark.json"
     if not results.exists():

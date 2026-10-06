@@ -72,6 +72,9 @@ select = [
     "SIM",  # simplifications that are not merely taste
     "RUF",  # ruff-specific correctness and modernisation
 ]
+# Sigma is the notation of this project's subject (NEES, "2σ coverage") and
+# appears in plot labels, so it is allowed rather than rewritten as "o".
+allowed-confusables = ["σ"]
 ignore = [
     # Implicit string concatenation inside a collection literal is how long
     # prose messages are wrapped in this codebase, and it is readable.
