@@ -44,7 +44,7 @@ will do if you do not answer.
 | 1 | TST-01, TST-02, CI-02: demo tests generate into `tmp_path`; add `artifacts/` to `.gitignore`; fix 33 ruff findings; format | S | A fresh clone passes `pytest` with 0 failures; `ruff check`, `ruff format --check`, `mypy` clean; all 7 CI jobs green on the PR |
 | 2 | DOC-01, 03, 04, 05, 06: correct false and stale statements (test counts, 99.3%, ROADMAP Track C, CONSTRAINTS B2 and B3, SRS wording) | S | `check_doc_tables.py` passes; every number quoted has a command beside it |
 | 3 | SEC-02, SEC-04: pin actions to SHAs with version comments; fix two contradictory comments | S | CI green; Dependabot still proposes updates |
-| 4 | SEC-05, SEC-06, REPO-05, CODE-02, PM-02: neutral platform wording, S4 amendment (Q2), author metadata (Q1), name the `225.0` constant, archive old audit snapshots | S | No weapon-class platform named; `docs/audit/archive/README.md` explains the snapshots |
+| 4 | SEC-05, SEC-06, REPO-05, CODE-02, PM-02: neutral platform wording, S4 amendment (Q2), author metadata (Q1), name the `225.0` constant, index the old audit snapshots in `docs/audit/README.md` (not moved, to keep inbound links valid). Delivered as three PRs, plus the index in this PR | S | No weapon-class platform named; the index explains the snapshots |
 
 After PR 1 is merged and `main` is green, merge Dependabot PR 5 (ruff 0.16.10, mypy 2.4.0)
 if CI passes with it.

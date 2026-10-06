@@ -130,7 +130,7 @@ L (3 days or more). Showcase impact: H, M, L.
 | SHOW-01 | Showcase | First screen has no visual and two banners. The best figure is at line 191. | `README.md` | High | M | Phase 4 rewrite, with the 4-panel result figure above the fold. |
 | SHOW-02 | Showcase | No release, no tag, `[Unreleased]` only in the changelog. | `git tag`: empty; `CHANGELOG.md:10` | Medium | S | Tag `v0.2.0` after Phase 5, not `v1.0.0`. |
 | PM-01 | Program | 0 issues, no board, roadmap not linked to issues. No RAID log, WBS or readiness table. | GitHub query; grep | High | M | Phase 5. Ask before creating more than 15 issues. |
-| PM-02 | Program | `docs/audit/` already holds six snapshot files from an earlier audit with stale counts (for example 567 tests). | `docs/audit/01-executive-summary.md` | Low | S | Move to `docs/audit/archive/` with a README note, in the docs PR. |
+| PM-02 | Program | `docs/audit/` already holds six snapshot files from an earlier audit with stale counts (for example 567 tests). | `docs/audit/01-executive-summary.md` | Low | S | Index them in `docs/audit/README.md` as history. Moving them would break links in ADR-0006, ADR-0008 and five other documents. |
 
 ## B1 feasibility assessment
 
