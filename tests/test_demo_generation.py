@@ -1,37 +1,50 @@
 """Test the deterministic demo generation.
 
-Verifies that the demo runs reproducibly and that the headline metrics in the
-output JSON correspond to the values embedded in the visual snapshot (which is
-not verified automatically, but the existence of a machine‑readable result is
-checked).
+Runs ``scripts/generate_demo.py`` once into a temporary directory and checks the
+artefacts it writes. The demo is generated here, not read from a checked-out
+``artifacts/`` directory, because generated output is gitignored and a fresh
+clone must pass the suite without a manual step first.
+
+The visual snapshot itself is not verified automatically; the checks cover the
+existence of the machine-readable result and that its headline values come from
+the run rather than from hand-typed constants.
 """
 
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-DEMO_DIR = ROOT / "artifacts" / "demo"
+SCRIPT = ROOT / "scripts" / "generate_demo.py"
 
 
-def test_demo_results_exist() -> None:
+@pytest.fixture(scope="module")
+def demo_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Generate the demo once for the module and return its output directory."""
+    out = tmp_path_factory.mktemp("demo")
+    subprocess.run(
+        [sys.executable, str(SCRIPT), "--out", str(out)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return out
+
+
+def test_demo_results_exist(demo_dir: Path) -> None:
     """Check that the demo artefacts have been generated."""
-    assert DEMO_DIR.exists(), f"Demo directory not found at {DEMO_DIR}"
-    results_path = DEMO_DIR / "results.json"
-    assert results_path.exists(), f"results.json not found at {results_path}"
-    snapshot_path = DEMO_DIR / "snapshot.png"
-    assert snapshot_path.exists(), f"snapshot.png not found at {snapshot_path}"
-    metadata_path = DEMO_DIR / "metadata.json"
-    assert metadata_path.exists(), f"metadata.json not found at {metadata_path}"
+    for name in ("results.json", "snapshot.png", "metadata.json"):
+        assert (demo_dir / name).exists(), f"{name} not found in {demo_dir}"
 
 
-def test_demo_json_schema() -> None:
-    """Validate that the generated JSON contains the expected top‑level keys."""
-    results_path = DEMO_DIR / "results.json"
-    with results_path.open() as f:
+def test_demo_json_schema(demo_dir: Path) -> None:
+    """Validate that the generated JSON contains the expected top-level keys."""
+    with (demo_dir / "results.json").open() as f:
         data = json.load(f)
 
     required_keys = {
@@ -52,15 +65,14 @@ def test_demo_json_schema() -> None:
     assert headline.get("coverage", {}).get("2sigma") is not None, "Headline missing 2σ coverage"
 
 
-def test_demo_deterministic_values() -> None:
+def test_demo_deterministic_values(demo_dir: Path) -> None:
     """Ensure that the headline values in results.json are derived from the run.
 
     This test checks that the values exist and are within reasonable bounds,
     confirming that they come from the navkit execution rather than being
-    hand‑typed constants.
+    hand-typed constants.
     """
-    results_path = DEMO_DIR / "results.json"
-    with results_path.open() as f:
+    with (demo_dir / "results.json").open() as f:
         data = json.load(f)
 
     headline = data.get("headline", {})
@@ -73,23 +85,22 @@ def test_demo_deterministic_values() -> None:
     assert 0.0 <= claimed_sigma <= 10.0, f"claimed_sigma out of range: {claimed_sigma}"
 
     assert nees_mean is not None, "nees_mean missing"
-    assert nees_mean > 0.0, f"nees_mean non‑positive: {nees_mean}"
+    assert nees_mean > 0.0, f"nees_mean non-positive: {nees_mean}"
 
     assert cov_2sigma is not None, "coverage 2sigma missing"
     assert 0.0 <= cov_2sigma <= 1.0, f"coverage out of range: {cov_2sigma}"
 
-    # Additional sanity: ensure they are not obvious hard‑coded constants.
+    # Additional sanity: ensure they are not obvious hard-coded constants.
     # If the implementation ever changes and these values become e.g. 0.0 or 100.0,
     # the test will still pass as long as they are within range, but a human
     # reviewer should verify that the new numbers make sense.
-    assert claimed_sigma != 0.0, "claimed_sigma is zero – suspicious"
-    assert nees_mean != 0.0, "nees_mean is zero – suspicious"
+    assert claimed_sigma != 0.0, "claimed_sigma is zero, suspicious"
+    # A zero nees_mean is already excluded by the `nees_mean > 0.0` check above.
 
 
-def test_metadata_present() -> None:
+def test_metadata_present(demo_dir: Path) -> None:
     """Verify that metadata.json exists and contains a seed."""
-    metadata_path = DEMO_DIR / "metadata.json"
-    with metadata_path.open() as f:
+    with (demo_dir / "metadata.json").open() as f:
         meta = json.load(f)
     assert "seed" in meta, "Metadata missing seed"
     assert meta["seed"] == 0, f"Unexpected seed {meta['seed']}"
