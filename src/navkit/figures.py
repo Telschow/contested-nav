@@ -24,6 +24,8 @@ matplotlib.use("Agg")  # headless: required for CI and for a server without a di
 import matplotlib.pyplot as plt
 import numpy as np
 
+from .hero import animate_hero, fig_hero
+
 FIGDIR = Path("docs") / "figures"
 
 # Colourblind-safe, and distinguishable in greyscale, because these get pasted
@@ -170,6 +172,7 @@ def fig_nees(cases: list[dict]) -> Path | None:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--results", type=Path, default=Path("results") / "benchmark.json")
+    ap.add_argument("--animate", action="store_true", help="also write docs/figures/hero.gif (a few seconds more)")
     args = ap.parse_args(argv)
 
     if not args.results.exists():
@@ -184,6 +187,13 @@ def main(argv: list[str] | None = None) -> int:
         p = fn(cases)
         if p:
             made.append(p)
+    hero = fig_hero(cases, FIGDIR / "hero.png")
+    if hero:
+        made.append(hero)
+    if args.animate:
+        gif = animate_hero(cases, FIGDIR / "hero.gif")
+        if gif:
+            made.append(gif)
 
     for p in made:
         print(f"wrote {p}", file=sys.stderr)

@@ -271,6 +271,9 @@ def run_case(
         record["error_time_series"] = {
             "t": est.t.tolist(),
             "position_error_m": headline.per_pose_position_m.tolist(),
+            # The filter's own per-axis 1-sigma, next to the error it claims to bound. The
+            # hero figure is this series against the error.
+            "claimed_sigma_p_m": claimed.tolist(),
         }
         if scenario.gnss_outages:
             baseline = float(np.median(headline.per_pose_position_m[: max(1, len(est) // 10)]))
