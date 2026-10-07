@@ -62,7 +62,7 @@ deliberate decision to live with it). A risk's status changes only with evidence
 
 ### R4. A secret reaches the repository history
 - **What happened.** A provider API key was committed in an early commit. It was rotated by
-  the maintainer; the value is still readable in history ([SECURITY.md](SECURITY.md)).
+  the maintainer; the value is still readable in history (`SECURITY.md`, section "Known incident").
 - **In place.** `scripts/scan_secrets.py` runs in CI including history; the one known value is
   listed as accepted by commit and rule name, never printed.
 - **Residual.** History was not rewritten. The key is rotated, so the exposure is closed, but
@@ -81,7 +81,7 @@ deliberate decision to live with it). A risk's status changes only with evidence
   behind ([#38](https://github.com/Telschow/contested-nav/pull/38)).
 - **In place.** Generated tables are checked against a fresh benchmark in CI and on every Pages
   deploy; the golden file has a regeneration procedure in
-  [CONTRIBUTING](CONTRIBUTING.md).
+  `CONTRIBUTING.md`.
 - **Residual.** Hand-typed counts in prose still go stale until someone re-measures them.
 
 ### R7. Tooling drift changes a gate without a code change
@@ -96,7 +96,7 @@ deliberate decision to live with it). A risk's status changes only with evidence
 - **What happened.** The `github-advanced-security` check failed on every pull request with a
   402 monthly-quota error from GitHub's own code-scanning job.
 - **In place.** It is excluded from the recommended required checks in
-  [CONTRIBUTING](CONTRIBUTING.md#branch-protection-recommended-settings).
+  `CONTRIBUTING.md`, section "Branch protection".
 
 ### R9. Documentation claims drift from the code
 - **In place.** `scripts/check_doc_tables.py`, `tests/test_model_doc.py`,
@@ -118,7 +118,7 @@ deliberate decision to live with it). A risk's status changes only with evidence
 - **Next.** P5-04 and P5-05, each with a deliberate regeneration and a review of the diff.
 
 ### R12. Single maintainer
-- **Cause and effect.** One person owns every path ([CODEOWNERS](.github/CODEOWNERS)). GitHub
+- **Cause and effect.** One person owns every path (`.github/CODEOWNERS`). GitHub
   does not let an author approve their own pull request, so review is by CI only.
 - **Status reason.** Accepted for a portfolio project. The mitigation is that the gates, not a
   person, are the reviewer, and that decisions are written down as ADRs.
