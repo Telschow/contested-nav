@@ -43,7 +43,9 @@ macOS and Windows agreed with each other to every printed digit. Two things were
   and verdicts did not change, and every documented table still matches.
 - A future change that makes the fixture sensitive to the math library again will fail on macOS
   or Windows, not only on a developer's machine.
-- Anything else that differentiates numerically at a small step has the same hazard. The only
-  other finite differences in `src/` are in the real-data path (`io/imu.py`), where the input
-  already carries sensor noise.
+- Anything else that differentiates numerically at a small step has the same hazard. The other
+  finite differences in `src/` are the generic `Trajectory` velocity and acceleration helpers
+  in `types.py` and the IMU-from-trajectory path in `io/imu.py`. They use the sample spacing of
+  their input, so they are only exposed if given dense, noise-free input; none of them feeds the
+  benchmark.
 - Floating-point results on other architectures (for example 32-bit) are not tested.
