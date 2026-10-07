@@ -383,28 +383,56 @@ def interpolate_trajectory(traj: Trajectory, t_query: np.ndarray) -> Trajectory:
     alpha = np.clip((tq - t0) / np.maximum(t1 - t0, 1e-12), 0.0, 1.0)
 
     q = traj.quaternions
-    out = np.empty((len(tq), 4, 4))
-    for i in range(len(tq)):
-        out[i, :3, :3] = quat_to_matrix(_slerp(q[idx[i]], q[idx[i] + 1], float(alpha[i])))
-        out[i, :3, 3] = pos[i]
-        out[i, 3, :3] = 0.0
-        out[i, 3, 3] = 1.0
+    out = np.zeros((len(tq), 4, 4))
+    out[:, :3, :3] = _quats_to_matrices(_slerp_batch(q[idx], q[idx + 1], alpha))
+    out[:, :3, 3] = pos
+    out[:, 3, 3] = 1.0
     return Trajectory(t=tq, poses=out, name=f"{traj.name}@query", metadata={"inside": inside})
 
 
-def _slerp(q0: np.ndarray, q1: np.ndarray, a: float) -> np.ndarray:
-    q0 = np.asarray(q0, float)
-    q1 = np.asarray(q1, float)
-    d = float(q0 @ q1)
-    if d < 0.0:
-        q1 = -q1
-        d = -d
-    if d > 0.9995:  # nearly parallel: lerp + renormalise is stable
-        q = q0 + a * (q1 - q0)
-        return q / np.linalg.norm(q)
-    th0 = np.arccos(np.clip(d, -1.0, 1.0))
-    s = np.sin(th0)
-    return (np.sin((1.0 - a) * th0) / s) * q0 + (np.sin(a * th0) / s) * q1
+def _slerp_batch(q0: np.ndarray, q1: np.ndarray, a: np.ndarray) -> np.ndarray:
+    """SLERP between ``(N, 4)`` quaternion pairs at fractions ``a`` of shape ``(N,)``.
+
+    Takes the short way round (a negative dot product flips ``q1``), and for nearly
+    parallel pairs, where the sine in the denominator vanishes, falls back to a
+    normalised linear interpolation. The slerp coefficients are computed only for the
+    pairs that need them, so no division by a vanishing sine is ever evaluated.
+    """
+    d = np.einsum("ij,ij->i", q0, q1)
+    flip = d < 0.0
+    q1 = np.where(flip[:, None], -q1, q1)
+    d = np.where(flip, -d, d)
+    out = np.empty_like(q0)
+    near = d > 0.9995  # nearly parallel: lerp + renormalise is stable
+    if near.any():
+        q = q0[near] + a[near][:, None] * (q1[near] - q0[near])
+        out[near] = q / np.linalg.norm(q, axis=1, keepdims=True)
+    far = ~near
+    if far.any():
+        th0 = np.arccos(np.clip(d[far], -1.0, 1.0))
+        s = np.sin(th0)
+        af = a[far]
+        out[far] = (np.sin((1.0 - af) * th0) / s)[:, None] * q0[far] + (np.sin(af * th0) / s)[:, None] * q1[far]
+    return out
+
+
+def _quats_to_matrices(q: np.ndarray) -> np.ndarray:
+    """Rotation matrices for ``(N, 4)`` ``(w, x, y, z)`` quaternions; normalises each first."""
+    norm = np.linalg.norm(q, axis=1, keepdims=True)
+    if np.any(norm < 1e-12):
+        raise ValueError("zero-norm quaternion")
+    w, x, y, z = (q / norm).T
+    R = np.empty((q.shape[0], 3, 3))
+    R[:, 0, 0] = 1 - 2 * (y * y + z * z)
+    R[:, 0, 1] = 2 * (x * y - w * z)
+    R[:, 0, 2] = 2 * (x * z + w * y)
+    R[:, 1, 0] = 2 * (x * y + w * z)
+    R[:, 1, 1] = 1 - 2 * (x * x + z * z)
+    R[:, 1, 2] = 2 * (y * z - w * x)
+    R[:, 2, 0] = 2 * (x * z - w * y)
+    R[:, 2, 1] = 2 * (y * z + w * x)
+    R[:, 2, 2] = 1 - 2 * (x * x + y * y)
+    return R
 
 
 def residual_errors(estimate: Trajectory, reference: Trajectory) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
