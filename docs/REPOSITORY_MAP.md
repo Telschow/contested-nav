@@ -50,7 +50,7 @@ contested-nav/
 
 | File | LOC | Contents **[V]** |
 |---|---:|---|
-| `fdir_manager.py` | 1,107 | Per-channel state machine. `max_consecutive_rejections` (5) before declaring a fault; faulted channels rejected outright, never noise-inflated (the ADR-0003 anti-pattern); recovery by `auto_recovery_count` consecutive accepts. **Working-tree additions:** ADR-0007 `spoof_grant_threshold`, `STATUS_REJECTED_SPOOF`, 60 s lockout. **Defect:** `STATUS_REJECTED_PERSISTENT` imported and exported twice (`:29/:31`, `:55/:57`): `__all__` has 22 entries, 21 unique. |
+| `fdir_manager.py` | 680 | Per-channel state machine. `max_consecutive_rejections` (5) before declaring a fault; faulted channels rejected outright, never noise-inflated (the ADR-0003 anti-pattern); recovery by `auto_recovery_count` consecutive accepts. **Working-tree additions:** ADR-0007 `spoof_grant_threshold`, `STATUS_REJECTED_SPOOF`, 60 s lockout. **Defect:** `STATUS_REJECTED_PERSISTENT` imported and exported twice (`:29/:31`, `:55/:57`): `__all__` has 22 entries, 21 unique. |
 | `gating.py` | 336 | `mahalanobis_sq`, chi-square quantiles from a hardcoded table, Wilson–Hilferty for other dof. No SciPy. `MAX_CONDITION_NUMBER` guard. |
 | `nis_monitor.py` | 307 | Bounded per-channel window of gate outcomes; `inflation_factor`. Separates an isolated impulse (no relief) from a sustained run (evidence the *filter* is wrong). |
 
@@ -96,7 +96,7 @@ contested-nav/
 | `seed_sweep.py` | `python scripts/seed_sweep.py --seeds 10` | 10 seeds × 7 cases |
 | `scene_sweep.py` | `python scripts/scene_sweep.py --seeds 10` | 10 scenes; run twice and compared in CI |
 | `check_doc_tables.py` | `python scripts/check_doc_tables.py` | README + `index.html` tables match `benchmark.json` |
-| `coverage_report.py` | `python scripts/coverage_report.py --ratchet` | 91.74% total on CPython 3.13, ratchet OK; the report prints its own interpreter |
+| `coverage_report.py` | `python scripts/coverage_report.py --ratchet` | 91.83% total on CPython 3.13, ratchet OK; the report prints its own interpreter |
 | `make_figures.py` | `python scripts/make_figures.py` | 4 PNGs, **byte-identical to the committed images**, regenerated and checksummed |
 
 There is deliberately no LOC column. A hand-maintained line count was in this
@@ -113,9 +113,9 @@ diffing the two outputs, which is what CI does.
 
 ## 4. Test suite **[R]**
 
-629 collected · **624 passed** · 3 skipped · 2 xfailed · ~120 s on CPython 3.13, fresh clone.
+648 collected · **643 passed** · 3 skipped · 2 xfailed · ~100 s on CPython 3.13, fresh clone.
 After `python scripts/run_benchmark.py` writes `results/benchmark.json`, the third skip
-(`test_doc_tables.py`) runs: 625 passed · 2 skipped · 2 xfailed.
+(`test_doc_tables.py`) runs: 644 passed · 2 skipped · 2 xfailed.
 
 | File | Focus |
 |---|---|
