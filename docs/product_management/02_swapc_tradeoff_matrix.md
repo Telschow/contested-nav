@@ -1,7 +1,7 @@
-# 02 — SWaP-C and Sensor Selection Trade-off Matrix
+# 02: SWaP-C and Sensor Selection Trade-off Matrix
 
 **Document ID:** PM-SWAPC-002
-**Status:** Planning estimate — **not procurement data**
+**Status:** Planning estimate, **not procurement data**
 **Applies to:** platform integration of `navkit` across three assumed deployment profiles
 **Date:** 2026-09
 
@@ -17,13 +17,13 @@ present reasoning as measurement.
 |---|---|
 | **[M] Measured** | From `results/benchmark.json`, synthetic known-answer fixture |
 | **[D] Derived** | Computed from [M] or [C] values, arithmetic shown |
-| **[C] Configured** | A default in the `navkit` source — a choice, not a result |
+| **[C] Configured** | A default in the `navkit` source: a choice, not a result |
 | **[E] Estimate** | **External planning judgement. Not from this repository.** |
 | **[P] Proposed** | Target for a future revision |
 
 **Every unit cost, every watt, and every mass in §2–§3 is [E].** None of it is
 measured, quoted, or sourced from a vendor datasheet. Ranges are deliberately
-wide — often a factor of three — because a factor-of-three range is honest
+wide (often a factor of three) because a factor-of-three range is honest
 about what is not known, where a precise-looking number is not. Before any of
 this reaches a budget, every [E] cell must be replaced with a dated quote or a
 datasheet citation, and the cells marked accordingly.
@@ -116,8 +116,8 @@ ARW 0.688 °/√hr and VRW 0.120 m/s/√hr [M, derived in SRS §2.2]. It fails S
 TR-01 by 13.8× and TR-02 by 1.2×. That is recorded in the matrix rather than
 buried because it has a direct consequence: **no performance claim in
 `navkit` has been produced on hardware that meets the programme's own IMU
-requirement.** The results are encouraging — the filter works on hardware 14×
-worse than specified — but an accredited system needs the run repeated on
+requirement.** The results are encouraging: the filter works on hardware 14×
+worse than specified, but an accredited system needs the run repeated on
 compliant hardware, and that is open item 5 in the SRS.
 
 Note also the FOG warm-up column. A 30–300 s thermal soak is longer than a
@@ -176,10 +176,10 @@ and the estimator is available on all three tiers.
 Two different quantities get called "drift", and conflating them produces
 nonsense procurement arguments. They are separated here.
 
-**(a) Platform capability — how far the solution actually moves.** Dominated
+**(a) Platform capability: how far the solution actually moves.** Dominated
 by accelerometer bias double-integration, `σ_p ≈ ½ · a_bias · t²`, because at
 these durations the white-noise term is negligible (with the validated VRW,
-the white-noise contribution at 60 s is 0.15 mm [D] — four orders below the
+the white-noise contribution at 60 s is 0.15 mm [D], four orders below the
 bias term). [D] throughout, from representative `a_bias` per grade:
 
 | Grade | `a_bias` [m/s²] | σ_p at 15 s | σ_p at 60 s |
@@ -190,7 +190,7 @@ bias term). [D] throughout, from representative `a_bias` per grade:
 | Tactical MEMS, high end | 2.0e-5 [E] | 0.002 m | 0.036 m |
 | FOG | 1.0e-5 [E] | 0.001 m | 0.018 m |
 
-**(b) FDIR admission budget — how far the filter is willing to be wrong.** A
+**(b) FDIR admission budget: how far the filter is willing to be wrong.** A
 *configured* trust decision, not a capability, at
 `max_drift_sigma_mps = 0.5` [C]:
 
@@ -210,7 +210,7 @@ A single `max_drift_sigma_mps = 0.5` default is simultaneously 33× too loose
 for the consumer MEMS it was tuned against and 7 500× too loose for a FOG. It
 is one constant serving three orders of magnitude of hardware.
 
-This is not a bug in the constant — ADR-0006 is explicit that it is
+This is not a bug in the constant: ADR-0006 is explicit that it is
 "deliberately generous", because the cost of setting it too low is refusing a
 genuine re-acquisition, which is the failure the mechanism exists to remove.
 Generosity is the right default when the hardware is unknown. It **is** a bug
@@ -221,7 +221,7 @@ in shipping one value across three platforms, and the corrective is named in
 a 15 s outage, a Class 1 platform using the default bound would admit a
 spoofed offset of up to 7.5 m. SRS OUN-02's zero-grant table does **not** cover
 that case, because that probe ran on a *streaming* channel where the budget is
-0.1 m. The untested attack is *jam for 15 s, then inject 7 m* — and on the
+0.1 m. The untested attack is *jam for 15 s, then inject 7 m*, and on the
 arithmetic above, a consumer MEMS platform physically cannot have drifted 7 m
 in 15 s, so the offset would be provably fake and the filter would have no way
 to know that. On a FOG it would be provably fake by a factor of 7 500.
@@ -296,7 +296,7 @@ What is actually known [M]:
 | Outage length | ESKF behaviour, measured | Pose graph needed? |
 |---|---|---|
 | ≤ 15 s | ATE 2.541 m, and the healthy fixes are re-admitted (ADR-0006). Works. | **No** |
-| 15–60 s | **No data.** No benchmark case exceeds 15 s. | **Yes** — the ESKF is extrapolating a linearising approximation well outside its validated domain |
+| 15–60 s | **No data.** No benchmark case exceeds 15 s. | **Yes**: the ESKF is extrapolating a linearising approximation well outside its validated domain |
 | > 60 s | **No data.** | **Yes**, unconditionally |
 
 The 15 s boundary is not a physical limit; it is the length of the outage the
@@ -324,7 +324,7 @@ because it is a model error rather than a hardware limit.
 
 No sensor selection in §2 fixes it. A Class 3 platform with a FOG and a LiDAR
 will still over-trust a single visual anchor, because the error is correlated
-across frames and a single anchor cannot represent it — no matter how good the
+across frames and a single anchor cannot represent it, no matter how good the
 hardware is. It will be *harder* to notice on good hardware, which is the worse
 outcome. **Do not let a platform upgrade be read as closing B1.**
 
