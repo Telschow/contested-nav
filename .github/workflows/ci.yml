@@ -271,6 +271,10 @@ jobs:
           for n in 1 2; do
             python scripts/mismatch_sweep.py --cases gnss_only --scales 0.5 1 --seeds 2 --out /tmp/mismatch_sweep_$n.json
           done
+          # And the fault matrix: two faults, two seeds.
+          for n in 1 2; do
+            python scripts/fault_matrix.py --faults gnss_spoof_sustained imu_sample_loss --seeds 2 --out /tmp/fault_matrix_$n.json
+          done
           python - <<'PY'
           import json, sys
 
@@ -288,14 +292,14 @@ jobs:
               return json.dumps(strip(json.load(open(path))), sort_keys=True)
 
           failed = []
-          for name in ("seed_sweep", "scene_sweep", "outage_sweep", "mismatch_sweep"):
+          for name in ("seed_sweep", "scene_sweep", "outage_sweep", "mismatch_sweep", "fault_matrix"):
               a, b = f"/tmp/{name}_1.json", f"/tmp/{name}_2.json"
               if norm(a) != norm(b):
                   failed.append(name)
           if failed:
               print("NOT reproducible across runs: " + ", ".join(failed))
               sys.exit(1)
-          print("all four sweeps are reproducible")
+          print("all five sweeps are reproducible")
           PY
 
       - name: The committed mismatch result matches a fresh run
@@ -304,3 +308,7 @@ jobs:
         # longer matches, so a change that moves the result cannot leave the page describing
         # the old one. Numbers are compared to 1e-6 relative, as in ADR-0009.
         run: python scripts/mismatch_sweep.py --out /tmp/mismatch_full.json --compare docs/data/mismatch_sweep.csv
+
+      - name: The committed fault matrix matches a fresh run
+        # Same idea for docs/faults.md and docs/data/fault_matrix.csv.
+        run: python scripts/fault_matrix.py --out /tmp/fault_full.json --compare docs/data/fault_matrix.csv
