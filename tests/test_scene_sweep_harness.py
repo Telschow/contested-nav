@@ -1,6 +1,6 @@
 """Tests for the multi-scene sweep harness.
 
-`scripts/scene_sweep.py` exists to answer a question the noise sweep cannot:
+`navkit.scene_sweep` exists to answer a question the noise sweep cannot:
 whether a published verdict is a property of the estimator or an artefact of
 the single trajectory in `configs/benchmark.yaml`. A harness that cannot
 distinguish those two is worse than no harness, so these tests pin the
@@ -37,10 +37,7 @@ def _load(name: str, path: Path):
 
 @pytest.fixture(scope="module")
 def sweep(bench):
-    # `scene_sweep` imports `run_benchmark` as a top-level module, so that one
-    # has to be in `sys.modules` first. Depending on `bench` here both enforces
-    # the order and removes the ordering from the reader's side.
-    return _load("scene_sweep", ROOT / "scripts" / "scene_sweep.py")
+    return importlib.import_module("navkit.scene_sweep")
 
 
 @pytest.fixture(scope="module")

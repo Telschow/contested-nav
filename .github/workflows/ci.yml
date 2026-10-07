@@ -111,6 +111,9 @@ jobs:
           /tmp/verify/bin/navkit --version
           /tmp/verify/bin/navkit run --list
           /tmp/verify/bin/navkit run --only gnss_only --out /tmp/verify_gnss.json
+          /tmp/verify/bin/navkit sweep seeds --seeds 2 --only gnss_only --out /tmp/verify_seeds.json
+          /tmp/verify/bin/navkit sweep scenes --seeds 2 --only gnss_only --out /tmp/verify_scenes.json
+          /tmp/verify/bin/navkit figures --results /tmp/verify_gnss.json
 
   benchmark:
     name: benchmark reproducibility
