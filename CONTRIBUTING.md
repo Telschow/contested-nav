@@ -15,6 +15,22 @@ checkout.
 No install step is strictly required to run the tests: `pyproject.toml` puts
 `src` on `pythonpath` for pytest, so a fresh clone needs only `pytest`.
 
+### Make targets, hooks and the container
+
+`make help` lists them. The ones you will use:
+
+```bash
+make install     # editable install with the pinned dev tools
+make hooks       # install the pre-commit hooks (ruff, ruff format, mypy, file hygiene)
+make check       # lint + test + coverage ratchet: the same gates a pull request faces
+make repro       # regenerate every figure and table from scratch (about 10 minutes)
+make docker      # build the container image and run the CLI inside it
+```
+
+The `Dockerfile` builds a clean environment, and `.devcontainer/devcontainer.json` reuses
+it for VS Code and Codespaces. CI builds the image on every pull request, but the image is
+not published anywhere.
+
 ### Local agent configuration
 
 `opencode.json` in the repository root configures the coding agent used on this
