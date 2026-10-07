@@ -15,7 +15,7 @@ detail: `dis` decides what counts as an executable line, and the denominator
 moves with the bytecode. An earlier revision of this tree measured
 3690/4037 (91.40%) on 3.11 and 3678/4196 (87.65%) on 3.14 (not re-measured since). `coverage_report.py`
 prints the interpreter it ran on, so a figure is never quoted without the one
-thing needed to interpret it. Floors are unaffected by that spread — every total
+thing needed to interpret it. Floors are unaffected by that spread: every total
 clears 75% and every module floor sits well below its measured figure.
 Two skips are the TUM VI reference checks in
 `tests/test_trajectory_io.py`, which need ground truth that is deliberately not
@@ -26,50 +26,50 @@ here so the number cannot read higher than it measures.
 
 ## Correctness
 
-- **C1 — Quaternions are `(w, x, y, z)` internally.** TUM and Plotly files
+- **C1: Quaternions are `(w, x, y, z)` internally.** TUM and Plotly files
   store `(x, y, z, w)`. Conversion happens only in `io/trajectory.py`, via
   `xyzw_to_wxyz` / `wxyz_to_xyzw`. A bare `[3, 0, 1, 2]` slice at a call site
   is a bug: the result is still unit-norm and still orthonormal.
   *Enforced by* `tests/test_trajectory_io.py`, which round-trips every format
   and checks specific known rotations.
 
-- **C2 — A wrong-order rotation must fail loudly.** Orthonormality and
+- **C2: A wrong-order rotation must fail loudly.** Orthonormality and
   `det == 1` are not sufficient: a permuted quaternion satisfies both. Tests
   assert known matrices, and assert ATE against published TUM VI numbers.
 
-- **C3 — Poses are `T_wb`.** Body frame in world frame, everywhere. No
+- **C3: Poses are `T_wb`.** Body frame in world frame, everywhere. No
   inverted convention anywhere in the codebase.
 
-- **C4 — Covariance updates must preserve positive semidefiniteness.** The
+- **C4: Covariance updates must preserve positive semidefiniteness.** The
   ESKF uses the Joseph form
   `G @ (I-KH) P (I-KH)^T + K R K^T` followed by reset, never the
   `(I-KH) P` shortcut. *Enforced by*
   `test_covariance_stays_positive_semidefinite_across_a_visual_run`.
 
-- **C5 — No fabricated or extrapolated results.** Every number in README.md
+- **C5: No fabricated or extrapolated results.** Every number in README.md
   and `docs/` is reproducible from a committed config and a fixed seed via
   `scripts/run_benchmark.py`. Claims are labelled `FACT`, `MEASUREMENT`,
   `INTERPRETATION`, or `HYPOTHESIS` (`analysis/findings.py`).
 
-- **C6 — Synthetic results are never presented as real-sensor performance.**
+- **C6: Synthetic results are never presented as real-sensor performance.**
   The synthetic suite isolates estimator structure; it says nothing about a
   real IMU, a real camera, or a real outage.
 
 ## Scope
 
-- **S1 — Pure Python + NumPy is the runtime.** Matplotlib for figures, PyYAML
+- **S1: Pure Python + NumPy is the runtime.** Matplotlib for figures, PyYAML
   for configs. No SciPy, GTSAM, `evo`, C++/CMake, neural networks, or cloud
   services. Chi-square quantiles are implemented in `eval/statistics.py`
   because the alternative is an unverifiable dependency.
 
-- **S2 — No third-party data is vendored.** Fetch locally; commit seeded
+- **S2: No third-party data is vendored.** Fetch locally; commit seeded
   configs and frozen figures instead.
 
-- **S3 — `vision_enabled` stays `False` by default** until the
+- **S3: `vision_enabled` stays `False` by default** until the
   GNSS-denial limitation below is resolved. Shipping a confidently-wrong
   filter is worse than shipping no visual fusion.
 
-- **S4 — MIT.** No CLA. No employer framing in any public artefact. Defense
+- **S4: MIT.** No CLA. No employer framing in any public artefact. Defense
   relevance is discussed only in `docs/defense/`, which is unclassified,
   source-cited and generic: no real platform, weapon, operational tactic or
   export-controlled detail. The README links to it rather than restating it.
@@ -100,7 +100,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 ## Known blockers
 
-- **B1 — Visual fusion is overconfident under GNSS denial.** Mean NEES 419.4
+- **B1: Visual fusion is overconfident under GNSS denial.** Mean NEES 419.4
   over a 15 s outage (`outage_visual`), with 20.0% of epochs inside 2 sigma
   against 99.3% expected. A single anchor cannot represent correlated visual
   drift. Requires a pose graph. Pinned by
@@ -112,7 +112,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
   filter's own uncertainty more seriously, not because the anchor is now
   modelled correctly.
 
-- **B4 — Full TUM VI room1 ground truth is unavailable.** The published
+- **B4: Full TUM VI room1 ground truth is unavailable.** The published
   mocap trajectory was not obtained, so the ATE comparison uses a subsampled
   Plotly ground truth and the ATE figure is not a verified reproduction of the
   published 0.069 m. The claim is typed accordingly. This is also why two tests
@@ -125,14 +125,14 @@ the useful part. A defect that runs, fuses, and is wrong without raising is not
 found by review; it is found by a test that differentiates the filter's own
 residual numerically.
 
-- **R1 (was B2) — Rotation Jacobians were in the wrong frame.** `H_theta` and
+- **R1 (was B2): Rotation Jacobians were in the wrong frame.** `H_theta` and
   `H_ct` were `+I` and `-I` rather than `R_rel_pred` and `-R_rel_pred`.
 
   The residual is `rot_log(R_rel_meas · Exp(dtheta) · R_rel_predᵀ)`. By the
   conjugation identity `rot_log(Q Exp(v) Qᵀ) = Q v`, that equals
   `R_rel_pred · dtheta`, not `dtheta`. The increment is conjugated into the
   previous body frame, so the identity is correct only when the inter-frame
-  rotation is zero — which it is not in general, only in the trivial case. The
+  rotation is zero, which it is not in general, only in the trivial case. The
   translational pair was wrong in the same way for the same reason:
   `h(x) = R_prevᵀ (p_cur − p_prev)` so `∂h/∂p = +R_prevᵀ`, not `−R_prevᵀ`.
 
@@ -154,7 +154,7 @@ residual numerically.
   `test_translation_anchor_jacobian_is_the_exact_derivative`). B1 is unchanged
   by this fix.
 
-- **R2 (was B5) — The FDIR gate's premise did not hold in the configurations
+- **R2 (was B5): The FDIR gate's premise did not hold in the configurations
   this project exists to study.** A chi-square test on the innovation assumes a
   calibrated `S = H P Hᵀ + R`. When the position covariance has collapsed
   (ADR-0001) `S` is far too small, so the gate rejected *healthy* measurements
@@ -166,7 +166,7 @@ residual numerically.
   Fixed by ADR-0006: a per-channel NIS window monitor and a bounded adaptive
   covariance inflation, applied only when the channel was actually silent. The
   distinction that makes it decidable is the silence, not the size of the
-  innovation — silence comes from the filter's own state and needs no
+  innovation: silence comes from the filter's own state and needs no
   assumption about the threat model, and a channel streaming at 5 Hz earns no
   drift budget however long the attack runs.
 
@@ -194,7 +194,7 @@ residual numerically.
 
   Original text, kept for the record:
 
-> - **B5 — The FDIR gate's premise does not hold in the configurations this
+> - **B5: The FDIR gate's premise does not hold in the configurations this
 >   project exists to study.** A chi-square test on the innovation assumes a
 >   calibrated `S = H P Hᵀ + R`. When the position covariance has collapsed
 >   (ADR-0001) `S` is far too small, so the gate rejects *healthy* measurements

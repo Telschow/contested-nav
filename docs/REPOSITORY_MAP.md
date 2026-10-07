@@ -20,7 +20,7 @@ it · **[G]** read from Git/config only.
 ```
 contested-nav/
 ├── pyproject.toml          [G] hatchling build, 3 runtime deps, pytest config
-├── uv.lock                 [G] 293 KB, UNTRACKED — dependency lock
+├── uv.lock                 [G] 293 KB, UNTRACKED; dependency lock
 ├── README.md               [G] 18 KB, primary portfolio surface
 ├── ROADMAP.md              [G] 16 KB, staged plan, blockers B1–B5
 ├── CONSTRAINTS.md          [G] 12 KB, project invariants + ratchets (C1–C6)
@@ -39,31 +39,31 @@ contested-nav/
 
 ## 2. Source modules
 
-### `navkit.estimators` — the filter under test
+### `navkit.estimators`: the filter under test
 
 | File | LOC | Contents **[V]** |
 |---|---:|---|
 | `eskf.py` | 914 | 21-state ESKF. State order `[dθ(0:3), dp(3:6), dv(6:9), db_g(9:12), db_a(12:15), c_p(15:18), c_t(18:21)]`. First-order (not invariant) formulation. Joseph-form covariance. GNSS position, visual relative rotation `Log(R_meas R_predᵀ)`, visual relative translation. Rejection counting, not silent gating. **Working-tree additions:** ADR-0007 lockout + re-expansion (`:507-517`), frozen-anchor cross-check (`:521-548`), outage-start anchor snapshot (`:817-834`), grant counter (`:559-565`). |
 | `dead_reckoning.py` | 105 | No-aiding control case. Reports no covariance, so NEES is deliberately absent for it. |
 
-### `navkit.fdir` — detect, isolate, recover
+### `navkit.fdir`: detect, isolate, recover
 
 | File | LOC | Contents **[V]** |
 |---|---:|---|
-| `fdir_manager.py` | 1,107 | Per-channel state machine. `max_consecutive_rejections` (5) before declaring a fault; faulted channels rejected outright, never noise-inflated (the ADR-0003 anti-pattern); recovery by `auto_recovery_count` consecutive accepts. **Working-tree additions:** ADR-0007 `spoof_grant_threshold`, `STATUS_REJECTED_SPOOF`, 60 s lockout. **Defect:** `STATUS_REJECTED_PERSISTENT` imported and exported twice (`:29/:31`, `:55/:57`) — `__all__` has 22 entries, 21 unique. |
+| `fdir_manager.py` | 1,107 | Per-channel state machine. `max_consecutive_rejections` (5) before declaring a fault; faulted channels rejected outright, never noise-inflated (the ADR-0003 anti-pattern); recovery by `auto_recovery_count` consecutive accepts. **Working-tree additions:** ADR-0007 `spoof_grant_threshold`, `STATUS_REJECTED_SPOOF`, 60 s lockout. **Defect:** `STATUS_REJECTED_PERSISTENT` imported and exported twice (`:29/:31`, `:55/:57`): `__all__` has 22 entries, 21 unique. |
 | `gating.py` | 336 | `mahalanobis_sq`, chi-square quantiles from a hardcoded table, Wilson–Hilferty for other dof. No SciPy. `MAX_CONDITION_NUMBER` guard. |
 | `nis_monitor.py` | 307 | Bounded per-channel window of gate outcomes; `inflation_factor`. Separates an isolated impulse (no relief) from a sustained run (evidence the *filter* is wrong). |
 
-### `navkit.eval` — does the uncertainty hold up
+### `navkit.eval`: does the uncertainty hold up
 
 | File | LOC | Contents **[V]** |
 |---|---:|---|
-| `metrics.py` | 586 | ATE under four alignments (`none`/`rigid`/`rigid_start`/`similarity`) — deliberately never a single number; RPE; drift slope. |
+| `metrics.py` | 586 | ATE under four alignments (`none`/`rigid`/`rigid_start`/`similarity`), deliberately never a single number; RPE; drift slope. |
 | `calibration.py` | 482 | NEES, 2σ coverage with Wilson intervals, bulk/tail verdicts. Reports disagreement rather than resolving it. |
 | `thresholds.py` | 244 | Verdict thresholds. |
 | `statistics.py` | 152 | Wilson interval, quantiles. |
 
-### `navkit.analysis` — typed claims
+### `navkit.analysis`: typed claims
 
 | File | LOC | Contents **[V]** |
 |---|---:|---|
@@ -73,7 +73,7 @@ contested-nav/
 
 | File | LOC | Contents **[V]** |
 |---|---:|---|
-| `types.py` | 449 | `Trajectory`, `ImuSample`, `GnssFix`, `VisionUpdate`. Each has a `time_offset` method — a uniform interface, not duplication. |
+| `types.py` | 449 | `Trajectory`, `ImuSample`, `GnssFix`, `VisionUpdate`. Each has a `time_offset` method: a uniform interface, not duplication. |
 | `synthetic.py` | 171 | Analytic trajectory (deterministic, **takes no seed**), analytic IMU by differentiation (removes discretisation error). |
 | `sensors/models.py` | 225 | GNSS/vision measurement models; both generators seeded. |
 | `degrade/inject.py` | 366 | Outage windows, camera-drop bursts, timestamp offsets. |
@@ -84,11 +84,11 @@ contested-nav/
 | `io/trajectory.py` | 270 | TUM/EuRoC/Plotly. **The only** quaternion-order conversion point (C1). |
 | `io/imu.py` | 280 | Bias random walk, scale factor, axis misalignment, white noise. **Lowest coverage at 63.6%.** |
 | `geometry/__init__.py` | 47 | Re-exports. |
-| `*/__init__.py` | — | Package docstrings double as architecture documentation. |
+| `*/__init__.py` | n/a | Package docstrings double as architecture documentation. |
 
 ---
 
-## 3. Scripts — all six verified runnable **[R]**
+## 3. Scripts: all six verified runnable **[R]**
 
 | Script | Command | Verified result |
 |---|---|---|
@@ -97,7 +97,7 @@ contested-nav/
 | `scene_sweep.py` | `python scripts/scene_sweep.py --seeds 10` | 10 scenes; run twice and compared in CI |
 | `check_doc_tables.py` | `python scripts/check_doc_tables.py` | README + `index.html` tables match `benchmark.json` |
 | `coverage_report.py` | `python scripts/coverage_report.py --ratchet` | 91.69% total on CPython 3.13, ratchet OK; the report prints its own interpreter |
-| `make_figures.py` | `python scripts/make_figures.py` | 4 PNGs, **byte-identical to the committed images** — regenerated and checksummed |
+| `make_figures.py` | `python scripts/make_figures.py` | 4 PNGs, **byte-identical to the committed images**, regenerated and checksummed |
 
 There is deliberately no LOC column. A hand-maintained line count was in this
 table and every one of its five values was wrong, because nothing checks them and
@@ -127,7 +127,7 @@ After `python scripts/run_benchmark.py` writes `results/benchmark.json`, the thi
 | `test_metrics.py` | ATE/RPE against known values |
 | `test_findings.py` | Claim typing and falsification records |
 | `test_config.py` | Config round-trips, hashing |
-| `test_trajectory_io.py` | TUM/EuRoC/Plotly round-trips (**2 skips** — TUM VI absent) |
+| `test_trajectory_io.py` | TUM/EuRoC/Plotly round-trips (**2 skips**: TUM VI absent) |
 | `test_calibration.py` | NEES, Wilson intervals |
 | `test_seed_sweep.py` | Sweep invariants: override reaches every stream, `n=1` refused, missing NEES stays `None` |
 | `test_imu_io.py` | EuRoC/TUM-VI ASCII IMU loader, including nanosecond timestamp handling |
@@ -141,19 +141,19 @@ Two skips are honest: `test_trajectory_io.py:310,328` require TUM VI reference
 files that are deliberately not vendored. The third, in `test_doc_tables.py`, needs
 `results/benchmark.json`, which is generated and gitignored; the CI `benchmark` job
 checks the same tables with `scripts/check_doc_tables.py`. The 2 xfails are `strict=False` by
-design (`test_nis_monitor.py:881,887`) — ADR-0007 spoof permanence stays red until
+design (`test_nis_monitor.py:881,887`): ADR-0007 spoof permanence stays red until
 a second detection modality works. A `strict=True` test in
 `TestFrozenAnchorCrossCheck` pins the ADR-0008 unreachable guard so it fails
 loudly when fixed.
 
 ---
 
-## 5. CI/CD **[G]** — `ci.yml`, 4 jobs
+## 5. CI/CD **[G]**: `ci.yml`, 4 jobs
 
 | Job | Needs | Steps | Status |
 |---|---|---|---|
-| `test` | — | pytest on **3.11, 3.12, 3.13**; coverage ratchet | pass locally |
-| `lint` | — | `ruff check`, `ruff format --check`, `mypy src` | **FAIL: 131 / 35 files / 15** |
+| `test` | n/a | pytest on **3.11, 3.12, 3.13**; coverage ratchet | pass locally |
+| `lint` | n/a | `ruff check`, `ruff format --check`, `mypy src` | **FAIL: 131 / 35 files / 15** |
 | `build` | `test`, `lint` | sdist+wheel, install in clean venv, import | builds locally; **never runs in CI while lint is red** |
 | `benchmark` | `test` | run twice, diff; check doc tables | reproducible locally |
 
@@ -165,7 +165,7 @@ releases. See `ENGINEERING_BASELINE.md` F2.
 
 ---
 
-## 6. Benchmark configuration **[V]** — `configs/benchmark.yaml`
+## 6. Benchmark configuration **[V]**: `configs/benchmark.yaml`
 
 7 cases, each `seed: 0` except `camera_drop: seed: 3`:
 
@@ -175,7 +175,7 @@ releases. See `ENGINEERING_BASELINE.md` F2.
 | `dead_reckoning` | DeadReckoning | How much is the filter vs the motion model |
 | `vision_anchor_in_measurement_noise` | ESKF, `vision_anchor_modelled: false` | **Regression control** for the pre-ADR-0001 defect; intentionally wrong config |
 | `vision_only` | ESKF | Visual, no GNSS; calibrated but freezes position uncertainty |
-| `outage_control` | ESKF, no vision | 15 s denial, vision off — honest baseline |
+| `outage_control` | ESKF, no vision | 15 s denial, vision off, honest baseline |
 | `outage_visual` | ESKF, vision on | **The case this project is about** |
 | `outage_visual_degraded_camera` | ESKF, 30% burst drop | Anchor model under intermittent visual |
 
@@ -185,7 +185,7 @@ benchmark run.
 
 ---
 
-## 7. Documentation **[G]** — 25 files
+## 7. Documentation **[G]**: 25 files
 
 | Group | Count | Notes |
 |---|---:|---|

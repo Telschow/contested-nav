@@ -1,4 +1,4 @@
-# 01 — System Requirements Specification
+# 01: System Requirements Specification
 
 **Document ID:** PM-SRS-001
 **Status:** Baseline for review
@@ -20,7 +20,7 @@ This document is one of three in `docs/product_management/`:
 
 | Document | ID | Contents |
 |---|---|---|
-| `01_system_requirements_spec.md` | PM-SRS-001 | this document — OUNs, requirements, verdicts |
+| `01_system_requirements_spec.md` | PM-SRS-001 | this document: OUNs, requirements, verdicts |
 | `02_swapc_tradeoff_matrix.md` | PM-SWAPC-002 | platform cost study and the ESKF/pose-graph decision rule |
 | `03_fdir_and_spoofing_strategy.md` | PM-FDIR-003 | threat taxonomy, two-stage architecture, operator telemetry |
 
@@ -35,14 +35,14 @@ This document is one of three in `docs/product_management/`:
 Provenance is marked on every number, because the distinction decides what a
 reader may do with it:
 
-- **[M] Measured** — produced by `scripts/run_benchmark.py` from a
+- **[M] Measured**: produced by `scripts/run_benchmark.py` from a
   known-answer synthetic fixture and written to `results/benchmark.json`
   (generated and gitignored, not committed).
-- **[D] Derived** — computed from measured or configured values in this
+- **[D] Derived**: computed from measured or configured values in this
   repository, with the arithmetic shown.
-- **[C] Configured** — a default in the source, i.e. a choice, not a result.
-- **[P] Proposed** — a target for a future revision. Not a claim about today.
-- **[E] Estimate** — external planning judgement, not from this repository.
+- **[C] Configured**: a default in the source, i.e. a choice, not a result.
+- **[P] Proposed**: a target for a future revision. Not a claim about today.
+- **[E] Estimate**: external planning judgement, not from this repository.
 
 > The benchmark artifact carries its own disclaimer, reproduced here because it
 > governs every **[M]** number in this document:
@@ -58,7 +58,7 @@ reader may do with it:
 
 ## 1. Operational User Needs
 
-### OUN-01 — GNSS Denial Tolerance
+### OUN-01: GNSS Denial Tolerance
 
 > Maintain continuous tactical position estimation during a 15 s total GNSS
 > outage with maximum ATE < 3.0 m.
@@ -86,7 +86,7 @@ A range of ±3.0 m that the system can hit only while understating its own error
 by 16× is not a satisfied requirement. It is a half-satisfied one, and the
 half that is missing is the half a tactical user depends on.
 
-### OUN-02 — Spoofing Resilience
+### OUN-02: Spoofing Resilience
 
 > Detect and reject step-bias and subtle drift spoofing attacks (1–100 m)
 > without corrupting state estimates.
@@ -117,8 +117,8 @@ exists because the first version of this code was **inverted** over 1–3 m (see
 
 **The cost, stated plainly.** At 1 m and 2 m the system refuses the sensor and
 declares a fault, then coasts on the inertial solution, reaching 3.430 m and
-5.441 m of error. That is a large transient. It is the correct trade — refusing
-a plausible-looking receiver beats following it — but a user who expected a
+5.441 m of error. That is a large transient. It is the correct trade (refusing
+a plausible-looking receiver beats following it), but a user who expected a
 1 m spoof to cost 1 m of error is wrong, and the operator interface in
 PM-FDIR-003 must say so.
 
@@ -131,7 +131,7 @@ Two further honest limits on this verdict:
   genuine signal for enough seconds to earn a large drift budget, and only then
   injects, is a different attack and is not covered by this table.
 
-### OUN-03 — Embedded SWaP-C Execution
+### OUN-03: Embedded SWaP-C Execution
 
 > Execute deterministically on embedded ARM Cortex-A53 / micro-controllers
 > without third-party C++/compiled libraries or neural network dependencies.
@@ -142,11 +142,11 @@ Two further honest limits on this verdict:
 |---|---|---|---|---|
 | No neural networks | TR-11 | none in dependency graph | `pyproject.toml` [C] | MET |
 | No SciPy | TR-11 | chi-square and quantiles hand-rolled | `fdir/gating.py`, `eval/statistics.py` [M] | MET |
-| No third-party **compiled** libraries | TR-11 | — | `numpy` is a compiled C extension and a hard runtime dependency [C] | **CONTRADICTED** |
-| Flight image excludes eval tooling | TR-12 | — | `matplotlib` and `pyyaml` are unconditional runtime deps [C] | NOT MET |
-| Runs on Cortex-A53 | TR-32 | — | no ARM build exists | NOT VERIFIED |
-| Deterministic execution | TR-32 | — | no timing, WCET or jitter measurement exists | NOT VERIFIED |
-| Fits the stated power envelope | TR-32 | — | no power measurement exists | NOT VERIFIED |
+| No third-party **compiled** libraries | TR-11 | n/a | `numpy` is a compiled C extension and a hard runtime dependency [C] | **CONTRADICTED** |
+| Flight image excludes eval tooling | TR-12 | n/a | `matplotlib` and `pyyaml` are unconditional runtime deps [C] | NOT MET |
+| Runs on Cortex-A53 | TR-32 | n/a | no ARM build exists | NOT VERIFIED |
+| Deterministic execution | TR-32 | n/a | no timing, WCET or jitter measurement exists | NOT VERIFIED |
+| Fits the stated power envelope | TR-32 | n/a | no power measurement exists | NOT VERIFIED |
 
 The design intent is genuinely met in the ways that mattered to the authors:
 the chi-square thresholds are **tabulated** specifically so the filter's inner
@@ -173,8 +173,8 @@ and the OUN roll-up in §2.1 does not average them away.
 
 ### 2.1 Roll-up
 
-`TR-nn` IDs are grouped **by discipline** — IMU, optical, dependency, gating,
-compute — not by operational user need. An OUN is therefore supported by a
+`TR-nn` IDs are grouped **by discipline** (IMU, optical, dependency, gating,
+compute), not by operational user need. An OUN is therefore supported by a
 *non-contiguous* set of requirements, and the mapping is given explicitly
 rather than as an ID range.
 
@@ -186,7 +186,7 @@ rather than as an ID range.
 
 Three of the thirty-two requirements are not verified and one is contradicted,
 and the distribution matters more than the count. **None of the OUN-01 gaps are
-detection gaps** — the mechanism that carries OUN-01 (TR-23) is verified and
+detection gaps**: the mechanism that carries OUN-01 (TR-23) is verified and
 working. The OUN-01 failure is calibration, which is carried by the OUN
 statement itself and measured by AC-03/AC-04 rather than by any `TR-nn` row.
 That asymmetry is the finding: this subsystem is better at refusing bad data
@@ -227,15 +227,15 @@ VRW [m/s/√hr] = accel_noise_density [m/s²/√Hz] × √3600
 failure of the filter.** The published results are achieved on a *consumer-grade*
 MEMS IMU that is 13.8× worse on angular random walk than the budget in the
 requirement. Read one way that is good news about the algorithm: it works with
-hardware 14× worse than specified. Read the other way — and this is the reading
-that governs a requirements document — **the requirement-to-hardware mapping has
+hardware 14× worse than specified. Read the other way (and this is the reading
+that governs a requirements document): **the requirement-to-hardware mapping has
 never been exercised.** No result in this repository was produced on hardware
 that meets TR-01, so the accredited performance of a compliant system is
 unknown. A tactical MEMS IMU meeting 0.05 °/√hr will drift far less over 15 s,
 which should make OUN-01 easier, but "should" is not a verification and this
 document does not record it as one.
 
-TR-03…TR-05 budgets are [P] — this repository proposes them, it does not
+TR-03…TR-05 budgets are [P]: this repository proposes them, it does not
 inherit them from a customer requirement, and they should be treated as
 placeholders pending a real sensor datasheet.
 
@@ -251,7 +251,7 @@ requirements; everything about the physical sensor is [P].
 | TR-07 | Rotation noise, per frame | ≤ 0.35 ° 1σ [P] | 0.35 ° 1σ [C] | MET (at budget) |
 | TR-08 | Translation noise, per frame | ≤ 0.05 m 1σ [P] | 0.05 m 1σ [C] | MET (at budget) |
 | TR-09 | Inter-frame drop rate | tolerates 30% burst loss [P] | 30%, 1 s burst [C] | MET |
-| TR-10 | Resolution, optical distortion, hardware sync | — | **no hardware exists** | NOT VERIFIED |
+| TR-10 | Resolution, optical distortion, hardware sync | n/a | **no hardware exists** | NOT VERIFIED |
 
 TR-07 and TR-08 sit exactly at budget, which means the configuration has no
 margin at all. Any front end worse than the synthetic one degrades OUN-01
@@ -297,7 +297,7 @@ PM-FDIR-003 §1.3.
 
 ### 2.6 Gating and re-acquisition requirements
 
-All values are `[C]` — defaults in `FdirConfig` — and are choices, not results.
+All values are `[C]` (defaults in `FdirConfig`) and are choices, not results.
 Their justification is ADR-0005 and ADR-0006.
 
 | ID | Parameter | Value | Basis | Verdict |
@@ -327,7 +327,7 @@ admitted 1σ ≤ max_drift_sigma_mps × (longest single gap on that channel)
 ```
 
 At 5 Hz a healthy channel has T = 0.2 s and a 0.1 m granted σ. After the 15 s
-denial that validated OUN-01, T = 15 s and a 7.5 m granted σ — enough to admit
+denial that validated OUN-01, T = 15 s and a 7.5 m granted σ, enough to admit
 the 3.4 m displacement the case actually produced, and nowhere near a 60 m
 offset. A constant budget cannot draw that line, because the correct limit
 depends on how long the filter was blind. That dependence is the requirement.
@@ -340,7 +340,7 @@ covariance and accepts anything up to `reaccept_margin × χ²₃(0.001)` =
 granted σ of reach beyond the drift bound. In the `S → 0` limit the admitted
 offset is therefore `7.5 × (1 + 2.02)` ≈ **22.6 m**, not 7.5 m.
 
-Measured directly [M] — constant-x offset applied to every fix returning after
+Measured directly [M]: constant-x offset applied to every fix returning after
 the validated 15 s denial, `outage_visual` geometry:
 
 | Offset | Verdict | Offset | Verdict |
@@ -351,8 +351,8 @@ the validated 15 s denial, `outage_visual` geometry:
 | 18.0 m | admitted | 25.0 m | refused |
 
 The measured envelope (~21 m) is 2.8× the granted σ (7.5 m). The code is
-correct and self-aware — `nis_monitor.py` says the drift bound "is the
-difference between bounding the increment and bounding the total" — so this is a
+correct and self-aware: `nis_monitor.py` says the drift bound "is the
+difference between bounding the increment and bounding the total", so this is a
 specification error, not an implementation error: TR-23 as written is true about
 the increment and misleading as a security envelope. AC-05 and AC-06 are scored
 against offsets of 1–100 m, which straddle this boundary rather than probing it,
@@ -364,16 +364,16 @@ so their PASS verdicts survive; but the OUN-02 "0 grants" claim should be read a
 | ID | Parameter | Budget | Evidence | Verdict |
 |---|---|---:|---|---|
 | TR-28 | State dimension | 21 | `_N_STATES = 21` [C] | MET |
-| TR-29 | Filter update rate | — | 200 Hz over 30 s = 6001 IMU epochs [M] | MET |
-| TR-30 | Per-run compute | — | 0.897 s estimator runtime / 2.811 s wall, heaviest case, x86 CPython [M] | NOT VERIFIED |
-| TR-31 | Rejected-update cost | — | returns before gain formation; `P⁺ = P⁻` [M] | MET |
-| TR-32 | Target-port determinism | — | — | NOT VERIFIED |
+| TR-29 | Filter update rate | n/a | 200 Hz over 30 s = 6001 IMU epochs [M] | MET |
+| TR-30 | Per-run compute | n/a | 0.897 s estimator runtime / 2.811 s wall, heaviest case, x86 CPython [M] | NOT VERIFIED |
+| TR-31 | Rejected-update cost | n/a | returns before gain formation; `P⁺ = P⁻` [M] | MET |
+| TR-32 | Target-port determinism | n/a | n/a | NOT VERIFIED |
 
 TR-30 is the number most likely to be quoted out of context, so: 0.897 s of
 **estimator runtime** (2.811 s wall, the difference being fixture setup and
 metrics) for a 30 s scenario is **not** a Cortex-A53 budget. It tells you the
-algorithm is not pathologically expensive — 300 µs of x86 per epoch of dense
-21×21 algebra — and nothing else. An A53 figure requires a native build, and
+algorithm is not pathologically expensive (300 µs of x86 per epoch of dense
+21×21 algebra) and nothing else. An A53 figure requires a native build, and
 TR-32 cannot be written at all until one exists. The compute/FR requirements
 are costed per profile in PM-SWAPC-002 §1, which reaches the opposite
 conclusion from the obvious one: at these sizes the filter is under 2% of the
@@ -422,7 +422,7 @@ benchmark scene (`scripts/seed_sweep.py`) and 8 scenes with the trajectory
 geometry varied over a 4.65x path-length range (`scripts/scene_sweep.py`). All 7
 case verdicts are identical in all 8 scenes, and `outage_visual` is overconfident
 at every noise seed. The *verdicts* are therefore robust; only the magnitudes are
-single draws. This strengthens the FAILs — it does not soften them.
+single draws. This strengthens the FAILs; it does not soften them.
 
 **AC-08 is the one PASS here that no test enforces.** The 0-of-1212 result is
 recorded in the `fdir/gating.py` module comment, which also documents the
@@ -432,15 +432,15 @@ fixes produce 13 rejections (1.07%, matching the nominal rate), and at
 rejects 68 of 101 and trips a fault. The measurement is sound and the reasoning
 is sound, but it is a comment, and a comment does not fail a build.
 
-By this document's own argument in §3.3 — *a number in a document is a claim
+By this document's own argument in §3.3, *a number in a document is a claim
 about a measurement, and the check keeps the claim attached to the
-measurement* — AC-08 is the one acceptance criterion that should be promoted to
+measurement*, AC-08 is the one acceptance criterion that should be promoted to
 an enforced test. It is the criterion that protects the false-alarm rate the
 entire FDIR subsystem depends on, and a future refactor of `gating.py` could
 raise the nuisance rate without turning anything red.
 
-**9 pass, 2 fail.** The two acceptance criteria that define "safe to fly" —
-AC-03 and AC-04 — both fail, and they fail for one root cause: the visual
+**9 pass, 2 fail.** The two acceptance criteria that define "safe to fly",
+AC-03 and AC-04, both fail, and they fail for one root cause: the visual
 anchor error is folded into filter state but is not a state the filter models
 completely. A single anchor cannot represent correlated visual drift. The fix is
 a pose graph over visual keyframes, which is `CONSTRAINTS.md` B1 and the top
@@ -462,7 +462,7 @@ test failing rather than a benchmark test.
 
 A number in a document is a claim about a measurement, and this is the check
 that keeps the claim attached to the measurement. Any product document that
-quotes a benchmark figure must sit behind the same gate — which is why the
+quotes a benchmark figure must sit behind the same gate, which is why the
 figures in this SRS are **[M]**-tagged with the case name, so a future reader
 can find the source row.
 
@@ -482,8 +482,8 @@ can find the source row.
 | TR-28…TR-32 | `estimators/eskf.py` | this document, PM-SWAPC-002 §1 | no target-port build |
 | OUN-01 accuracy | `estimators/eskf.py` | ADR-0006 | AC-03/AC-04 still fail |
 | OUN-02 | `fdir/` | ADR-0006, PM-FDIR-003 | small offsets cost a fault and a coast |
-| OUN-03 | `pyproject.toml` | — | **unstarted** |
-| AC-04 | — | B1, ROADMAP stage 3 | pose graph, not a filter change |
+| OUN-03 | `pyproject.toml` | n/a | **unstarted** |
+| AC-04 | n/a | B1, ROADMAP stage 3 | pose graph, not a filter change |
 
 ### The inversion, recorded because specs should carry their own postmortems
 
@@ -497,8 +497,8 @@ The cause was a genuine ambiguity in the design, not a typo. A channel is
 excluded for one of two reasons, and both return `accepted = False`: the
 innovation was an outlier, or the numbers were fine and a declared fault is
 holding the channel out anyway. The second pass could not tell them apart, so a
-1 m spoof — which the filter is pulled toward until the residual falls *inside*
-the threshold — was "relieved" by spending the drift budget on a fault it
+1 m spoof (which the filter is pulled toward until the residual falls *inside*
+the threshold) was "relieved" by spending the drift budget on a fault it
 should have respected.
 
 The fix is `GatingDecision.outlier`, and the requirement it encodes is TR-26.
@@ -529,7 +529,7 @@ health.
 | 10 | Add a 60 s benchmark case; 15 s is a data limit, not a physical one | TR-29, OUN-01 | Estimation |
 | 11 | **Promote the 0-of-1212 false-alarm result to an enforced test** | AC-08, TR-14 | FDIR |
 | 12 | **Probe AC-05/AC-06 inside the 7.5–22 m admitted envelope**; the current offsets straddle the boundary rather than testing it | TR-23, OUN-02 | FDIR |
-| 13 | **Bound admitted offset, not just granted increment** — either cap the re-gate reach in metres or add cross-modal validation | TR-23, OUN-02 | FDIR |
+| 13 | **Bound admitted offset, not just granted increment**: either cap the re-gate reach in metres or add cross-modal validation | TR-23, OUN-02 | FDIR |
 
 Items 2, 5 and 6 are the ones that decide whether this is a research artifact
 or a flight-candidate baseline. Items 7–10 are cheap, are unblocked by any

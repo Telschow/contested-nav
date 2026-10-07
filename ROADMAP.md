@@ -10,9 +10,9 @@ number below re-measures against that, not against a remembered value.
 
 ---
 
-## Milestone 1 — Honest foundation `[x]`
+## Milestone 1: Honest foundation `[x]`
 
-### Stage 0 — The project could build and read data `[x]`
+### Stage 0: The project could build and read data `[x]`
 
 - [x] Fix 6 quaternion-order defects across 4 readers and 1 writer
       (`io/trajectory.py`). TUM, Plotly and EuRoC readers all returned
@@ -30,11 +30,11 @@ number below re-measures against that, not against a remembered value.
 - [x] Add `.gitignore`; correct the repository URLs in `pyproject.toml`.
 - [x] Record invariants and measured ratchets in `CONSTRAINTS.md`.
 
-### Stage 1 — 21-state ESKF, and the zero-coverage gaps `[x]`
+### Stage 1: 21-state ESKF, and the zero-coverage gaps `[x]`
 
 The error state is 21: `dtheta` (3), `dp` (3), `dv` (3), `db_g` (3), `db_a` (3),
-`c_p` (3), `c_t` (3). The last two are the visual anchor — translation and
-rotation offset between the last visual frame and the current body frame —
+`c_p` (3), `c_t` (3). The last two are the visual anchor (translation and
+rotation offset between the last visual frame and the current body frame),
 carried as filter state rather than as measurement noise, because the anchor
 drifts and a fixed measurement covariance cannot say so.
 
@@ -60,7 +60,7 @@ drifts and a fixed measurement covariance cannot say so.
       in `CONSTRAINTS.md`; it had been set to 44%, which made the gate weaker
       than the claim.
 
-### Stage 2 — Visual observation Jacobians, corrected `[x]`
+### Stage 2: Visual observation Jacobians, corrected `[x]`
 
 This is the defect worth reading the rest of the repository for.
 
@@ -91,7 +91,7 @@ regression rather than by a numerical derivative, because the reset is a
 covariance assignment rather than a differentiable map. Stated rather than
 left looking finished.
 
-### Stage 3 — Reproducible experiment pipeline `[x]`
+### Stage 3: Reproducible experiment pipeline `[x]`
 
 Numbers that cannot be regenerated are anecdotes. The benchmark tables were
 previously produced by ad-hoc scripts that were not in the repository.
@@ -115,7 +115,7 @@ previously produced by ad-hoc scripts that were not in the repository.
       reproducibility (run twice, diff), documented-table check. Pages deploy
       workflow.
 
-### Stage 4 — Documentation and epistemic framing `[x]`
+### Stage 4: Documentation and epistemic framing `[x]`
 
 - [x] `README.md` with the motivating result and the limitation stated up front.
 - [x] `CONSTRAINTS.md`, `ROADMAP.md`.
@@ -143,12 +143,12 @@ headline number, and understand the limitation without asking a question.
 
 ---
 
-## Milestone 2 — Phase 2 roadmap `[~]`
+## Milestone 2: Phase 2 roadmap `[~]`
 
 Three tracks. The first two are engineering against the measured defect; the
 third is the documentation a programme needs and does not currently have.
 
-### Track A — FDIR module `[~]`
+### Track A: FDIR module `[~]`
 
 Today a degraded measurement is only visible after the fact, as a NEES number
 that has already been wrong. This track moves detection forward.
@@ -164,7 +164,7 @@ that has already been wrong. This track moves detection forward.
       not. The two blocks of a relative-pose fix are gated separately, so a
       broken translation cannot be vouched for by a healthy rotation.
 - [x] Explicit false-alarm trade. `alpha = 0.001`, because 0.99 confidence
-      means 1% of healthy updates are rejected by definition — measured here
+      means 1% of healthy updates are rejected by definition, measured here
       at 13 of 1212. At 0.001 the same 1212 healthy fixes produce zero
       rejections and the broken configuration is still detected. Pinned by
       `test_a_clean_run_produces_zero_false_rejections` and its visual
@@ -177,13 +177,13 @@ that has already been wrong. This track moves detection forward.
       `fdir/nis_monitor.py` holds a bounded per-channel window and reads a
       *trailing run* of rejections, not a count. `outage_visual` 5.059 m to
       2.541 m with rejections 51 to 5; `outage_visual_degraded_camera`
-      3.339 m to 2.005 m (20% drop, key misspelled — corrected 30% measures
+      3.339 m to 2.005 m (20% drop, key misspelled; corrected 30% measures
       1.872 m; see ADR-0006). Pinned by
       `test_adaptive_inflation_recovers_the_fixes_that_the_plain_gate_threw_away`,
       which asserts the old value as well so the regression fails on its own.
 - [x] The gate widened *conditionally*, not globally. The premise is tested
       rather than assumed: relief is available only when the channel was
-      actually silent, and is bounded three ways — a factor cap, a drift rate
+      actually silent, and is bounded three ways: a factor cap, a drift rate
       per second of the channel's longest single silence, and a re-gate that
       must pass with headroom. One grant per divergence episode. The sustained
       offset earns no silence, so it earns no budget: verified at 40 m and
@@ -212,7 +212,7 @@ tables. Currently one fault type (a sustained position step, on either GNSS or
 visual translation) is detected and isolated; the three causes behind it are
 not yet separated.
 
-### Track B — Back-end optimisation: sliding-window pose graph `[ ]`
+### Track B: Back-end optimisation: sliding-window pose graph `[ ]`
 
 This is the structural fix for B1, the only genuine unknown in the project.
 Everything in Milestone 1 makes the limitation reproducible and documented;
@@ -227,7 +227,7 @@ this removes it.
       `CONSTRAINTS.md:B1`.)
 - [ ] Decide the formulation: a factor graph over visual keyframes, a
       multi-anchor ESKF, or a loosely-coupled inertial/visual filter.
-- [ ] NumPy-only implementation — S1 holds. A sliding window of keyframes with
+- [ ] NumPy-only implementation. S1 holds. A sliding window of keyframes with
       a periodic marginalisation is the intended shape: it bounds the growth of
       the cross-correlation terms that currently make the filter overconfident
       the longer the outage runs.
@@ -242,7 +242,7 @@ this removes it.
 **Exit test:** NEES below 10 with vision enabled and GNSS denied, coverage above
 90%, `vision_enabled = True` as the shipped default. Current value 419.4.
 
-### Track C — TPM / PM deliverables `[~]`
+### Track C: TPM / PM deliverables `[~]`
 
 The engineering is ahead of the paperwork, which is a schedule risk rather than
 a technical one.
@@ -272,8 +272,8 @@ configuration, or an explicitly declared gap. The SRS has a traceability matrix
 
 `CONSTRAINTS.md` holds the authoritative list. In short:
 
-- **B1** — visual fusion is overconfident under GNSS denial. Needs Track B.
-- **B4** — full TUM VI room1 ground truth unavailable, so two tests skip and
+- **B1**: visual fusion is overconfident under GNSS denial. Needs Track B.
+- **B4**: full TUM VI room1 ground truth unavailable, so two tests skip and
       the ATE figure is not a verified reproduction of the published 0.069 m.
 
 ## Deliberately not planned
