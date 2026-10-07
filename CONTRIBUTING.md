@@ -146,3 +146,51 @@ fix(io): repair the EuRoC IMU loader, which raised on every call
 A commit that reformats most of the tree is a separate commit, even when it
 belongs to the same piece of work -- otherwise the behavioural change cannot be
 reviewed on its own.
+
+## Coverage
+
+Coverage is measured by `scripts/coverage_report.py`, the project's own tracer, because
+constraint S1 keeps `pytest-cov` out. `--ratchet` fails a pull request if the total falls
+below 75% or any module falls below its floor, and it runs in CI on Linux. There is **no
+coverage badge**: a badge needs either a third-party service or a committed file that goes
+stale, and neither is a live source of this project's number. The figure that counts is the
+one `scripts/coverage_report.py` prints, and the quoted copies in `CONSTRAINTS.md` are
+re-measured when they drift.
+
+## Branch protection (recommended settings)
+
+These are settings for the repository owner to apply, in Settings, Branches, Branch
+protection rules, for `main`. Nothing here is changed by a pull request.
+
+| Setting | Value | Why |
+|---|---|---|
+| Require a pull request before merging | on | `main` never receives a direct push |
+| Required approvals | 0 while there is one maintainer, 1 when there are two | GitHub does not let an author approve their own pull request |
+| Require status checks to pass | on, and "require branches to be up to date" on | the checks below |
+| Require conversation resolution | on | a review thread is answered before merge |
+| Restrict force pushes and deletions | on (the default) | history on `main` is not rewritten |
+| Include administrators | on | the owner is bound by the same gates |
+| Require linear history | **off** | pull requests are merged with merge commits here |
+| Require signed commits | off | not part of this project's workflow |
+
+Required checks, by the names GitHub shows (they come from the `name:` of each job):
+
+- `lint`, `build`
+- `test (py3.11)`, `test (py3.12)`, `test (py3.13)`
+- `test (py3.13, macos-latest)`, `test (py3.13, windows-latest)`
+- `benchmark reproducibility`, `sweep reproducibility`
+- `analyze (python)` (CodeQL)
+- once those workflows are merged: `container`, `secret scan`, `pip-audit`, `dependency review`,
+  `relative links`
+
+Do **not** require `github-advanced-security`: it is an automated review service, not a gate
+(it failed on every pull request for a month on a quota error that has nothing to do with the
+code). `SBOM` and `external links` are informational.
+
+## Pull requests and issues
+
+Pull requests start from `.github/pull_request_template.md`, issues from the templates in
+`.github/ISSUE_TEMPLATE/` (bug report, feature request, roadmap item). `CODEOWNERS` routes
+review to the maintainer. The issue forms apply the labels `bug`, `enhancement` and `roadmap`;
+create them once under Issues, Labels, or GitHub drops the label silently. Conduct is covered
+by `CODE_OF_CONDUCT.md`; security reports go through `SECURITY.md`.

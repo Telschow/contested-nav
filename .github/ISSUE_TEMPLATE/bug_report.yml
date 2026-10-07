@@ -1,0 +1,42 @@
+name: Bug report
+description: Something the code does that it should not, or a number that disagrees with the docs
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Overconfidence of visual aiding under GNSS denial is the **measured subject** of this project, not a bug.
+        A number that disagrees with the documentation, a crash, or a silent numerical fault is.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran and what it printed or wrote.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or version
+      description: Output of `git rev-parse --short HEAD` or `navkit --version`.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform and Python
+      placeholder: "Ubuntu 24.04, Python 3.12.3"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: Prefer a seeded benchmark case or a failing test.
+      render: shell

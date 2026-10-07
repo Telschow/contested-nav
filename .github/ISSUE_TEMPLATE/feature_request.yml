@@ -1,0 +1,29 @@
+name: Feature request
+description: Propose a capability or a change in behaviour
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What can you not do today, or what is wrong with the current behaviour? Who is affected?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: How would we know it worked?
+      description: A measurement, a test, or a scenario that goes from failing to passing.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope check
+      description: Constraints S1 to S4 in CONSTRAINTS.md rule some things out (no real-sensor drivers, no vendored datasets, `vision_enabled` stays off by default). Say which you checked.
