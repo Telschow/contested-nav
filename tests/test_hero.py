@@ -42,7 +42,9 @@ def test_hero_cases_are_empty_when_a_case_or_the_claimed_series_is_missing() -> 
 def test_fig_hero_writes_a_png_and_returns_none_without_the_cases(tmp_path: Path) -> None:
     out = hero.fig_hero(_cases(), tmp_path / "sub" / "hero.png")
     assert out is not None
-    assert Image.open(out).format == "PNG"
+    with Image.open(out) as image:
+        fmt = image.format
+    assert fmt == "PNG"
     assert hero.fig_hero([], tmp_path / "none.png") is None
     assert not (tmp_path / "none.png").exists()
 
@@ -50,8 +52,9 @@ def test_fig_hero_writes_a_png_and_returns_none_without_the_cases(tmp_path: Path
 def test_animate_hero_writes_a_multi_frame_gif_under_the_size_budget(tmp_path: Path) -> None:
     out = hero.animate_hero(_cases(), tmp_path / "hero.gif", frames=6, fps=5)
     assert out is not None
-    im = Image.open(out)
-    assert im.format == "GIF"
-    assert im.n_frames > 1
+    with Image.open(out) as im:
+        fmt, frames = im.format, im.n_frames
+    assert fmt == "GIF"
+    assert frames > 1
     assert out.stat().st_size < 5 * 1024 * 1024
     assert hero.animate_hero([], tmp_path / "none.gif") is None
