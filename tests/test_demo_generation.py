@@ -104,3 +104,23 @@ def test_metadata_present(demo_dir: Path) -> None:
         meta = json.load(f)
     assert "seed" in meta, "Metadata missing seed"
     assert meta["seed"] == 0, f"Unexpected seed {meta['seed']}"
+
+
+def test_demo_headline_is_the_benchmark_headline(demo_dir: Path) -> None:
+    """The demo must show the numbers the documentation quotes, not a lookalike.
+
+    An earlier demo carried its own copy of the filter configuration and reported mean NEES
+    1.4e10 and a claimed sigma of 7 mm while the README said 419.4 and 0.161 m. Every check
+    above passed, because they only asked for plausible values. This one compares with the
+    committed benchmark snapshot.
+    """
+    with (demo_dir / "results.json").open() as f:
+        demo = json.load(f)["headline"]
+    golden_path = Path(__file__).resolve().parent / "golden" / "benchmark.json"
+    with golden_path.open() as f:
+        want = json.load(f)["cases"]["outage_visual"]["headline"]
+
+    for key in ("ate_rmse_m", "nees_mean", "claimed_sigma_p_m"):
+        assert demo[key] == pytest.approx(want[key], rel=1e-6, abs=1e-9), key
+    assert demo["coverage"]["2sigma"] == pytest.approx(want["coverage"]["2sigma"], abs=1e-9)
+    assert demo["calibration_verdict"] == want["calibration_verdict"]
