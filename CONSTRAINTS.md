@@ -69,8 +69,10 @@ here so the number cannot read higher than it measures.
   GNSS-denial limitation below is resolved. Shipping a confidently-wrong
   filter is worse than shipping no visual fusion.
 
-- **S4 — MIT.** No CLA. No employer or defence-sector framing in any public
-  artefact.
+- **S4 — MIT.** No CLA. No employer framing in any public artefact. Defense
+  relevance is discussed only in `docs/defense/`, which is unclassified,
+  source-cited and generic: no real platform, weapon, operational tactic or
+  export-controlled detail. The README links to it rather than restating it.
 
 ## Quality ratchets
 

@@ -2,7 +2,7 @@
 
 **Document ID:** PM-SWAPC-002
 **Status:** Planning estimate — **not procurement data**
-**Applies to:** platform integration of `navkit` across three tactical deployment profiles
+**Applies to:** platform integration of `navkit` across three assumed deployment profiles
 **Date:** 2026-09
 
 ---
@@ -76,9 +76,9 @@ algorithmic one, and it should be scoped as such.
 
 ### 2.1 Profile definitions
 
-| | **Class 1 — Tactical UAS** | **Class 2 — Medium Recon UAS** | **Class 3 — UGV** |
+| | **Class 1: Small UAS** | **Class 2: Medium UAS** | **Class 3: UGV** |
 |---|---|---|---|
-| Representative | Loitering munition, small multirotor | Vector-class fixed-wing | Autonomous tactical vehicle |
+| Representative | Small multirotor | Small fixed-wing aircraft | Autonomous ground vehicle |
 | Payload budget | < 250 g | 1–3 kg | > 10 kg |
 | Compute power budget | < 5 W | 15–30 W | > 100 W |
 | IMU grade | Consumer MEMS | Tactical MEMS | FOG / high-end tactical |
@@ -86,13 +86,14 @@ algorithmic one, and it should be scoped as such.
 | GNSS denial of interest | 15 s | 60 s | 60 s+ |
 | Compute module class | Cortex-A53 quad, 1–2 GB | Cortex-A72 or A53 octa | x86-64 or equivalent |
 
-Mass, power and cost ceilings for Class 1 and 3 are as given in the programme
-brief. **Class 2 is the one to watch:** the brief gives its payload as 1–3 kg
-and its power as 15–30 W, but the Vector-class airframe it names has a total
-gross mass near 2 kg *with the airframe*. A 1–3 kg budget for the full sensor
-suite plus compute on that class is tight to the point of being the binding
-constraint on the whole profile, and it is worth confirming that the 1 kg end is
-available rather than assumed.
+Mass, power and cost ceilings for all three classes are planning assumptions
+(tagged [E]), not taken from a specific programme, platform or datasheet; no
+requirements brief is part of this repository. **Class 2 is the one to watch:**
+the assumed payload of 1–3 kg and power of 15–30 W may be tight for a small
+fixed-wing airframe whose own gross mass could be near 2 kg (also an
+assumption, to be confirmed). If so, the full sensor suite plus compute becomes
+the binding constraint on the whole profile, and it is worth confirming that the
+1 kg end is available rather than assumed.
 
 ### 2.2 IMU grade comparison
 
@@ -144,7 +145,7 @@ usually disqualified by warm-up and cost simultaneously, not by performance.
 | Sensor power [W] | 0.5–1.5 [E] | 2–5 [E] | 10–30 [E] |
 | Sensor mass [g] | 10–30 [E] | 80–250 [E] | 500–2000 [E] |
 | Sensor unit cost [k$] | 0.5–3 [E] | 3–12 [E] | 15–60 [E] |
-| **Net payload** | **< 0.25 kg** [brief] | **1–3 kg** [brief] | **> 10 kg** [brief] |
+| **Net payload** | **< 0.25 kg** [E] | **1–3 kg** [E] | **> 10 kg** [E] |
 
 The 20 Hz / 0.35° / 0.05 m figures are the validated operating point from
 `configs/benchmark.yaml` [C], and SRS TR-07/TR-08 record them as sitting
@@ -162,7 +163,7 @@ a number. That is an optical problem and no filter tuning addresses it.
 | Sustained compute [W] | 2–5 [E] | 10–25 [E] | 40–100 [E] |
 | Filter share of budget | < 2% [D] | < 2% [D] | < 2% [D] |
 | Unit cost [k$] | 15–45 [E] | 40–120 [E] | 150–500 [E] |
-| **Total compute + sensor power** | **< 5 W** [brief] | **15–30 W** [brief] | **> 100 W** [brief] |
+| **Total compute + sensor power** | **< 5 W** [E] | **15–30 W** [E] | **> 100 W** [E] |
 
 The "< 2% share" rows are [D] and follow from §1: the filter's arithmetic is a
 small fraction of a module that is mostly running an OS, a front end, and a
@@ -231,8 +232,8 @@ to know that. On a FOG it would be provably fake by a factor of 7 500.
 
 | Attribute | Class 1 UAS | Class 2 Recon UAS | Class 3 UGV |
 |---|---|---|---|
-| Payload | < 250 g [brief] | 1–3 kg [brief] | > 10 kg [brief] |
-| Compute power | < 5 W [brief] | 15–30 W [brief] | > 100 W [brief] |
+| Payload | < 250 g [E] | 1–3 kg [E] | > 10 kg [E] |
+| Compute power | < 5 W [E] | 15–30 W [E] | > 100 W [E] |
 | IMU grade | Consumer MEMS | Tactical MEMS | FOG / high-end tactical |
 | IMU cost [k$] | 0.2–2 [E] | 3–15 [E] | 25–120 [E] |
 | Sensor suite cost [k$] | 0.5–3 [E] | 3–12 [E] | 15–60 [E] |

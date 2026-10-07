@@ -9,7 +9,7 @@ description = "Replay, evaluation and uncertainty calibration for GNSS-denied na
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [{ name = "contested-nav contributors" }]
+authors = [{ name = "Daniel Telschow" }]
 keywords = [
     "navigation",
     "kalman-filter",
