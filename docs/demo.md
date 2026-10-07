@@ -1,86 +1,58 @@
-# Demo – GNSS‑Denied Navigation with Visual Aiding
+# Demo
 
-## Overview
+A 25-frame visualisation of the headline case, generated from the benchmark.
 
-This repository ships a deterministic, end‑to‑end visualisation of the headline scientific result:
+## What it does
 
-> **The filter can become highly confident while being materially wrong under GNSS denial / visual aiding.**
+`scripts/generate_demo.py` calls `navkit.benchmark.run_case` for the `outage_visual` case of
+`configs/benchmark.yaml`. That is the function behind every number in the documentation, so
+the demo cannot disagree with the benchmark. It then draws 25 frames at evenly spaced times
+across the 30 s run.
 
-The animation is generated from the actual navkit estimator/FDIR pipeline – no numbers are hand‑typed into the source code. It reproduces the same computation that produces every number in the documentation, so the rendered sequence is an exact, machine‑readable slice of the repository’s CI output.
+Each frame shows:
 
-## What the Demo Shows
+| Element | Source |
+|---|---|
+| Ground truth (green) and estimate (red), north against east, up to the frame time | `trajectory_ref` and `trajectory_est` in the record |
+| Orange underlay on the part of the path flown with GNSS denied | the scenario's `gnss_outages` |
+| GNSS available or denied at the frame time | the same outage windows |
+| Vision fused or off | the estimator configuration |
+| Gate counters, whole run | `summary.fdir_gnss_accepted` and `fdir_gnss_rejected` |
+| Position error at the frame time | `error_time_series` |
+| Claimed 1-sigma, mean NEES, 2-sigma-per-axis coverage, verdicts | the headline of the run |
 
-The visual follows the storyboard described in the implementation plan:
+The claimed sigma, NEES and coverage are whole-run values, not values up to the frame time.
 
-| Phase | Time (s) | What happens |
-|-------|----------|--------------|
-| **Normal** | 0‑4 | GNSS‑aided navigation; filter follows ground truth. |
-| **GNSS denial** | 4‑8 | GNSS measurements stop; outage marker appears. |
-| **Visual aiding** | 8‑14 | Visual odometry continues; estimated trajectory begins to diverge from truth. |
-| **Calibration problem** | 14‑19 | Actual position error exceeds the filter’s claimed uncertainty; NEES and coverage shown. |
-| **FDIR response** | 19‑23 | Fault‑isolation detector monitors the situation. |
-| **Freeze** | 23‑25 | Final quantitative result displayed.
-
-The key distinction is **CONFIDENT ≠ CORRECT** – the filter reports tiny uncertainty while being tens of metres wrong.
-
-## How to Run the Demo
+## Run it
 
 ```bash
-# From the repository root:
-cd /mnt/immich/projects/contested-nav
 python scripts/generate_demo.py --out artifacts/demo
 ```
 
-This command runs the deterministic ``outage_visual`` scenario through navkit and creates three artefacts:
+Outputs: `frames/frame_00001.png` to `frame_00025.png`, `snapshot.png` (a copy of the last
+frame), `results.json` (the benchmark record plus `trajectory_est` and `trajectory_ref`) and
+`metadata.json`. The committed preview is `docs/architecture/demo-snapshot.png`.
 
-* ``artifacts/demo/results.json`` – full per‑epoch data (timestamps, position error, covariance, NEES, coverage, etc.)
-* ``artifacts/demo/metadata.json`` – reproducibility metadata (seed, scenario, estimator version, etc.)
-* ``artifacts/demo/snapshot.png`` – a static 1920×1080 thumbnail of the final frame (also stored as the 25th animation frame)
+## What the final frame must show
 
-All numbers in the output are derived from the navkit execution; no constants such as ``2.541``, ``0.161``, ``419.4`` or ``20.0%`` are hard‑coded.
+ATE RMSE 2.541 m, claimed 1-sigma 0.161 m, mean NEES 419.4, coverage 20.0%, verdict
+overconfident. `tests/test_demo_generation.py` compares the demo's headline with the
+committed benchmark snapshot and fails on any difference.
 
-If the implementation changes (e.g., a new estimator version or a fix to the covariance model), the demo will automatically update and reflect the new values.
+For the same result as a figure, see `docs/figures/`.
 
-## Visual Design
+## History
 
-* **Aesthetic** – dark neutral background, restrained technical typography, monospace numbers.
-* **Composition** – ground‑truth trajectory (green), estimated trajectory (red), uncertainty ellipse where available, GNSS outage marker, status panel.
-* **Animation** – 25 frames, one per logical second, showing the progression from normal navigation through the divergence phase.
-* **Metrics panel** – live display of position error, claimed ``1σ``, mean NEES and ``2σ`` coverage.
-* **Headline panel** – the final quantitative result (ATE RMSE, claimed 1σ, NEES, coverage, verdict).
-
-The animation is intended as an engineering aid – it makes the mismatch between claimed and actual error visible without sensationalism.
-
-## Data Integrity
-
-All visualised numbers are taken from:
-
-1. **navkit execution** – the `ErrorStateKalmanFilter` run for ``outage_visual``.
-2. **results.json** – machine‑readable record of the per‑epoch state.
-3. **metadata.json** – provenance information (seed, scenario, etc.).
-
-No manual copying or hard‑coding of metrics occurs. The demo therefore satisfies the repository’s requirement that “no figure or table in this README is typed in by hand”.
-
-## Reuse and Extension
-
-* The script ``scripts/generate_demo.py`` can be adapted for other scenarios (e.g., ``vision_only``, ``gnss_only``).
-* The JSON output can be consumed by downstream analysis tools or documentation generators.
-* The animation frames can be assembled into a video (MP4/GIF) if a codec is available, though the repository currently ships the PNG sequence as the primary artefact.
+An earlier version of this demo had its own copy of the filter configuration and drifted from
+the benchmark: it reported mean NEES 1.4e10 and a claimed sigma of 7 mm while the README said
+419.4 and 0.161 m, and its tests only checked that the values were plausible. It also showed
+"VISION DISABLED" until 8 s and "FDIR MONITORING" after 19 s, which the run does not do, and
+shaded the GNSS outage on the position axis as if it were time. An interactive page,
+`docs/architecture/demo.html` (11 MB), embedded a raw pixel buffer labelled as a PNG that a
+browser cannot render, and typed the headline numbers by hand. All of that was removed.
 
 ## Limitations
 
-* The animation is a single‑run demonstration; it does not include statistical sweeps (seed sweep, scene sweep).
-* The visual representation of uncertainty is limited to the position covariance reported by the filter – attitude uncertainty and higher‑dimensional ellipsoids are not shown.
-* The demo does not reproduce the ``vision_anchor_modelled = False`` defect row, which is kept only as a regression control in the benchmark suite.
-
-## License
-
-The demo is released under the same MIT licence as the rest of the repository. Use, modification and distribution are permitted provided the licensing terms are preserved.
-
-## References
-
-* Project README – the demo implements the scenario described in the ``README.md`` ``Results`` section.
-* `CONTRIBUTING.md` – guidelines for running local quality gates (pytest, ruff, mypy, coverage).
-* `docs/product_management/01_system_requirements_spec.md` – acceptance criteria for the GNSS‑denied case.
-* `scripts/run_benchmark.py` – the underlying benchmark driver that powers the demo.
-* `docs/adr/` – design decisions (e.g., ADR‑0001, ADR‑0003, ADR‑0006) that shape the visualised scenario.
+* One run of one case. There is no seed sweep, scene sweep or outage sweep in the demo.
+* The uncertainty drawn is the position sigma only; attitude and the full ellipsoid are not shown.
+* There is no animation file. The frames are PNGs.
