@@ -9,16 +9,6 @@ this project uses [semantic versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Fixed
-
-- Every benchmark scenario now goes through the injection layer. The runner skipped it for a scenario
-  with no outage or camera drop, which ran `gnss_only`, `dead_reckoning`,
-  `vision_anchor_in_measurement_noise` and `vision_only` with a noiseless IMU and ignored a scenario
-  that set only a timestamp offset. Those four cases move slightly (ATE by 0.003 m to 0.371 m) and no
-  verdict changes; the three outage cases and the headline result are bit-identical.
-  [ADR-0012](docs/adr/0012-every-scenario-is-injected.md), golden snapshot regenerated.
-  ([#56](https://github.com/Telschow/contested-nav/issues/56))
-
 ### Added
 
 - `navkit` command line: `navkit run`, `navkit sweep seeds|scenes|outages`, `navkit figures`
@@ -38,6 +28,15 @@ this project uses [semantic versioning](https://semver.org/).
   requirement and acceptance criterion has a test, a checked configuration value or a declared gap, and
   the roll-up counts follow from the verdicts. It found two wrong roll-up counts and stale prose, now
   fixed. ([#49](https://github.com/Telschow/contested-nav/issues/49))
+- Project tooling: a `Makefile`, pre-commit hooks, a `Dockerfile` and a devcontainer, a secret scanner that also reads
+  history, a security workflow (dependency review, `pip-audit`, a CycloneDX SBOM), a relative-link checker, CODEOWNERS and
+  issue and pull request templates. ([#29](https://github.com/Telschow/contested-nav/pull/29))
+- MkDocs Material site with an API reference, a strict build in CI and a Pages deployment that checks the documented tables
+  first; the README is rewritten from 516 to 129 lines and gains a "Scope and responsible use" section; ADR-0010 (determinism)
+  and ADR-0011 (CI and supply chain). `docs/index.html` is removed. ([#36](https://github.com/Telschow/contested-nav/pull/36))
+- A social preview image and its generator. ([#37](https://github.com/Telschow/contested-nav/pull/37))
+- A RICE-ordered roadmap with a stability check ([#40](https://github.com/Telschow/contested-nav/pull/40)) and a risk register
+  ([#41](https://github.com/Telschow/contested-nav/pull/41)).
 - Golden snapshot test of the seeded benchmark ([#12](https://github.com/Telschow/contested-nav/pull/12)); Hypothesis property tests for
   rotations, the filter's covariance and attitude, NEES and the chi-square functions ([#21](https://github.com/Telschow/contested-nav/pull/21)).
 - macOS and Windows test legs, and ADR-0009 on cross-platform numerics. ([#24](https://github.com/Telschow/contested-nav/pull/24))
@@ -64,6 +63,13 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Fixed
 
+- Every benchmark scenario now goes through the injection layer. The runner skipped it for a scenario
+  with no outage or camera drop, which ran `gnss_only`, `dead_reckoning`,
+  `vision_anchor_in_measurement_noise` and `vision_only` with a noiseless IMU and ignored a scenario
+  that set only a timestamp offset. Those four cases move slightly (ATE by 0.003 m to 0.371 m) and no
+  verdict changes; the three outage cases and the headline result are bit-identical.
+  [ADR-0012](docs/adr/0012-every-scenario-is-injected.md), golden snapshot regenerated.
+  ([#56](https://github.com/Telschow/contested-nav/issues/56))
 - Five scenario descriptions in `configs/benchmark.yaml` contradicted the measured results and
   were copied into every result record: `vision_only` was "calibrated, and much better than
   dead reckoning" (it is overconfident and less accurate), `outage_visual` was "tens of metres
