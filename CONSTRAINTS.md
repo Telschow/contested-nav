@@ -61,6 +61,9 @@ here so the number cannot read higher than it measures.
   for configs. No SciPy, GTSAM, `evo`, C++/CMake, neural networks, or cloud
   services. Chi-square quantiles are implemented in `eval/statistics.py`
   because the alternative is an unverifiable dependency.
+  S1 constrains the runtime (`[project] dependencies`). Test-only tools in
+  `[project.optional-dependencies] dev` are allowed when they add no runtime
+  import: pytest, Hypothesis for property tests, ruff and mypy.
 
 - **S2: No third-party data is vendored.** Fetch locally; commit seeded
   configs and frozen figures instead.
