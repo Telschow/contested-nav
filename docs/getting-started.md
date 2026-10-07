@@ -43,6 +43,7 @@ default scenario file ships inside the package; output paths such as `results/` 
 | `navkit sweep scenes --seeds N` | Repeat it over N synthetic trajectories |
 | `navkit sweep outages [--starts ...] [--durations ...]` | Sweep the GNSS outage start and length, with a CSV and a figure |
 | `navkit sweep mismatch [--scales ...] [--channel ...]` | Tell the filter the wrong sensor noise, with a CSV, a figure and a table |
+| `navkit sweep faults [--faults ...] [--list]` | Inject each fault mode and compare with a clean control, with a CSV and a table |
 | `navkit figures [--animate]` | Render the committed figures (and the hero GIF) from a result JSON |
 | `navkit --version` | Print the package version |
 
