@@ -91,7 +91,9 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 | `geometry/align.py` coverage | 60% | 92.2% | as above |
 | `estimators/eskf.py` coverage | 80% | 97.2% | as above |
 | `fdir/gating.py` coverage | 70% | 89.5% | as above |
-| `fdir/fdir_manager.py` coverage | 70% | 98.8% | as above |
+| `fdir/fdir_manager.py` coverage | 70% | 98.5% | as above |
+| `fdir/config.py` coverage | 70% | 100.0% | as above |
+| `fdir/records.py` coverage | 70% | 99.2% | as above |
 | `fdir/nis_monitor.py` coverage | 80% | 98.8% | as above |
 | `degrade/` coverage | 50% | 78.0% (`config.py`) / 84.2% (`inject.py`) | as above |
 | Docs | README + architecture + calibration + ADR-0001..0008 | 8 of 8 docs | manual |
