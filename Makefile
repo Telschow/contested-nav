@@ -3,7 +3,7 @@
 #
 #   make install   # editable install with the pinned dev tools
 #   make check     # lint + test + coverage ratchet (about 3 minutes)
-#   make repro     # regenerate every figure and table from scratch (about 10 minutes)
+#   make repro     # regenerate every figure and table from scratch (measured 321 s, about 5 minutes)
 
 PYTHON ?= python
 RESULTS ?= results/benchmark.json
