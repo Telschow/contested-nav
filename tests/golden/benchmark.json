@@ -1,0 +1,3528 @@
+{
+ "cases": {
+  "dead_reckoning": {
+   "ate": {
+    "none": {
+     "alignment": "none",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 1.886800718696381,
+      "mean": 1.8769608394586337,
+      "median": 1.8754973560797144,
+      "min": 1.8662736319618616,
+      "rmse": 1.8769701417562947,
+      "std": 0.00590933019776149
+     },
+     "position_percentiles_m": {
+      "p50": 1.8754973560797144,
+      "p95": 1.8867353498887522,
+      "p99": 1.8867973130856186
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.021745192468213628,
+      "mean": 0.014949700207494018,
+      "median": 0.0160467309576454,
+      "min": 0.0,
+      "rmse": 0.015711060828923453,
+      "std": 0.004831552139446107
+     },
+     "scale": 1.0
+    },
+    "rigid": {
+     "alignment": "rigid",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 0.021934618436628445,
+      "mean": 0.010667575812837633,
+      "median": 0.008549962414322144,
+      "min": 0.0029155012941352258,
+      "rmse": 0.01204337011436656,
+      "std": 0.005589775486455535
+     },
+     "position_percentiles_m": {
+      "p50": 0.008549962414322144,
+      "p95": 0.020851149881700694,
+      "p99": 0.02122212559224057
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.021745192468213628,
+      "mean": 0.014949700207494018,
+      "median": 0.0160467309576454,
+      "min": 0.0,
+      "rmse": 0.015711060828923453,
+      "std": 0.004831552139446107
+     },
+     "scale": 1.0
+    },
+    "rigid_start": {
+     "alignment": "rigid_start",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      0.2
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 0.040147880440582026,
+      "mean": 0.018508118042735604,
+      "median": 0.02124328379969647,
+      "min": 0.0004529302587366341,
+      "rmse": 0.0219465680592131,
+      "std": 0.011794126338726304
+     },
+     "position_percentiles_m": {
+      "p50": 0.02124328379969647,
+      "p95": 0.03847896342964472,
+      "p99": 0.03978482554851532
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.021745192468213628,
+      "mean": 0.014949700207494018,
+      "median": 0.0160467309576454,
+      "min": 0.0,
+      "rmse": 0.015711060828923453,
+      "std": 0.004831552139446107
+     },
+     "scale": 1.0
+    },
+    "similarity": {
+     "alignment": "similarity",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 0.020566827240171504,
+      "mean": 0.010904387223558267,
+      "median": 0.01000999575690499,
+      "min": 0.002507896914590857,
+      "rmse": 0.011970099902345266,
+      "std": 0.004937370854090809
+     },
+     "position_percentiles_m": {
+      "p50": 0.01000999575690499,
+      "p95": 0.01935464989123965,
+      "p99": 0.019861033076132708
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.021745192468213628,
+      "mean": 0.014949700207494018,
+      "median": 0.0160467309576454,
+      "min": 0.0,
+      "rmse": 0.015711060828923453,
+      "std": 0.004831552139446107
+     },
+     "scale": 0.9996010155521352
+    }
+   },
+   "claim_type": "MEASUREMENT",
+   "config_hash": "b52087d84396360a",
+   "data_class": "synthetic",
+   "description": "Inertial integration with no aiding at all. Reported as the control for \"how much of the result is the filter and how much is the motion model\".",
+   "drift": {
+    "duration_s": 30.0,
+    "final_drift_pct_path_length": 5.450060954717479,
+    "final_drift_pct_time": 6.220912106539539,
+    "growth": {
+     "intercept_m": 1.8853781356612733,
+     "r_squared": 0.8603712661318887,
+     "slope_m_per_s": -0.0005922158273466208,
+     "window_s": [
+      15.0,
+      30.0
+     ]
+    },
+    "max_drift_pct_path_length": 9126380.951411465,
+    "max_drift_pct_time": 37736.014373927625,
+    "total_path_length_m": 34.243169892374276
+   },
+   "estimator": {
+    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_sigma_m": 1.0,
+    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_sigma_deg": 5.0,
+    "class": "DeadReckoning",
+    "fdir_config": {
+     "auto_recovery_count": 10,
+     "confidence_level": 0.999,
+     "enabled": true,
+     "max_consecutive_rejections": 5,
+     "max_drift_sigma_mps": 0.5,
+     "max_inflation_factor": 100.0,
+     "reaccept_margin": 0.25,
+     "reacq_consecutive_rejections": 3,
+     "reacq_sigma_m": 3.0,
+     "reacq_window": 5,
+     "spoof_grant_threshold": 2,
+     "spoof_lockout_s": 60.0,
+     "spoof_reexpansion_factor": 2.0
+    },
+    "gate_sigma": 5.0,
+    "gnss_enabled": false,
+    "gnss_position_sigma_m": 0.8,
+    "gravity": null,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "initial_bias_sigma": 0.0,
+    "initial_pos_sigma_m": 1.0,
+    "initial_rot_sigma_deg": 2.0,
+    "initial_vel_sigma_m_s": 0.5,
+    "vision_anchor_modelled": true,
+    "vision_enabled": false,
+    "vision_keyframe_interval": 1,
+    "vision_rot_sigma_deg": 0.35,
+    "vision_trans_sigma_m": 0.05
+   },
+   "headline": {
+    "alignment": "none",
+    "ate_median_m": 1.8754973560797144,
+    "ate_p95_m": 1.8867353498887522,
+    "ate_rmse_m": 1.8769701417562947,
+    "rotation_rmse_deg": 0.015711060828923453
+   },
+   "manifest": {},
+   "name": "dead_reckoning",
+   "rpe_1s": {
+    "delta": "1s",
+    "delta_s": 1.0,
+    "rotation_deg": {
+     "count": 5801.0,
+     "max": 0.01526155071561044,
+     "mean": 0.009832989227096526,
+     "median": 0.01053522365257129,
+     "min": 0.0015978216043276742,
+     "rmse": 0.010657634699300362,
+     "std": 0.004110656911435785
+    },
+    "translation_m": {
+     "count": 5801.0,
+     "max": 0.0038736226342109543,
+     "mean": 0.002061054615021912,
+     "median": 0.002017653980971563,
+     "min": 0.00037603708337174995,
+     "rmse": 0.0022065048249221174,
+     "std": 0.0007878562154996701
+    }
+   },
+   "scenario": {
+    "camera_drop": null,
+    "description": "No aiding whatsoever.",
+    "gnss": {
+     "enabled": false,
+     "multipath_sigma_m": 0.0,
+     "multipath_tau_s": 30.0,
+     "rate_hz": 5.0,
+     "seed": 0,
+     "sigma_m": 0.8
+    },
+    "gnss_outages": [],
+    "gnss_time_offset_s": 0.0,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "imu_noise_scale": 1.0,
+    "imu_outages": [],
+    "imu_time_offset_s": 0.0,
+    "name": "dead_reckoning",
+    "notes": "",
+    "vision": {
+     "enabled": true,
+     "noise_multiplier": 1.0,
+     "rate_hz": 20.0,
+     "rot_sigma_deg": 0.35,
+     "seed": 0,
+     "trans_sigma_m": 0.05
+    },
+    "vision_outages": [],
+    "vision_time_offset_s": 0.0
+   },
+   "scene_seed": null,
+   "seed": 0,
+   "stats": {
+    "final_speed_m_s": 1.1338656220713634
+   },
+   "summary": {
+    "final_speed_m_s": 1.1338656220713634,
+    "name": "dead_reckoning",
+    "path_length_m": 34.251740257058756,
+    "poses": 6001,
+    "reports_covariance": false,
+    "trajectory_duration_s": 30.0
+   },
+   "synthetic": {
+    "circles": 1.5,
+    "duration_s": 30.0,
+    "height_amplitude_m": 0.15,
+    "radius_m": 4.0,
+    "rate_hz": 100.0,
+    "roll_amplitude_deg": 4.0,
+    "roll_cycles": 6.0,
+    "start_position": [
+     1.0,
+     0.0,
+     1.6
+    ],
+    "sway_amplitude_m": 0.6,
+    "sway_cycles": 3.0,
+    "yaw_amplitude_deg": 35.0,
+    "yaw_cycles": 1.0
+   }
+  },
+  "gnss_only": {
+   "ate": {
+    "none": {
+     "alignment": "none",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 1.3309895776746044,
+      "mean": 0.45030906154982275,
+      "median": 0.3773977579920763,
+      "min": 0.06457087568875941,
+      "rmse": 0.5030724061418897,
+      "std": 0.22428462922703477
+     },
+     "position_percentiles_m": {
+      "p50": 0.3773977579920763,
+      "p95": 0.8920377661583406,
+      "p99": 1.0834144370863399
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 2.1454897503051664,
+      "mean": 0.869306732020475,
+      "median": 0.8153339772632172,
+      "min": 0.0,
+      "rmse": 1.0107901641218298,
+      "std": 0.5157543616386752
+     },
+     "scale": 1.0
+    },
+    "rigid": {
+     "alignment": "rigid",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 1.4389949061637237,
+      "mean": 0.3827177405453214,
+      "median": 0.35449031096088623,
+      "min": 0.09663609116983216,
+      "rmse": 0.4306805062025093,
+      "std": 0.19751665624633724
+     },
+     "position_percentiles_m": {
+      "p50": 0.35449031096088623,
+      "p95": 0.7093643692601111,
+      "p99": 1.0868441616966684
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 2.1454897503051664,
+      "mean": 0.869306732020475,
+      "median": 0.8153339772632172,
+      "min": 0.0,
+      "rmse": 1.0107901641218298,
+      "std": 0.5157543616386752
+     },
+     "scale": 1.0
+    },
+    "rigid_start": {
+     "alignment": "rigid_start",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      0.2
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 7.568176849198005,
+      "mean": 3.654541793886386,
+      "median": 3.833406309462461,
+      "min": 0.08220689219085847,
+      "rmse": 4.457825205329021,
+      "std": 2.5527494663606163
+     },
+     "position_percentiles_m": {
+      "p50": 3.833406309462461,
+      "p95": 7.247118380122749,
+      "p99": 7.460819927332942
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 2.1454897503051664,
+      "mean": 0.869306732020475,
+      "median": 0.8153339772632172,
+      "min": 0.0,
+      "rmse": 1.0107901641218298,
+      "std": 0.5157543616386752
+     },
+     "scale": 1.0
+    },
+    "similarity": {
+     "alignment": "similarity",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 1.4364956134060878,
+      "mean": 0.38307479519137166,
+      "median": 0.3516039507262833,
+      "min": 0.09237137567365503,
+      "rmse": 0.43021648021474074,
+      "std": 0.19580582508559102
+     },
+     "position_percentiles_m": {
+      "p50": 0.3516039507262833,
+      "p95": 0.6994354916092305,
+      "p99": 1.0845516051621464
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 2.1454897503051664,
+      "mean": 0.869306732020475,
+      "median": 0.8153339772632172,
+      "min": 0.0,
+      "rmse": 1.0107901641218298,
+      "std": 0.5157543616386752
+     },
+     "scale": 0.9939712699928659
+    }
+   },
+   "calibration": {
+    "bulk_verdict": "overconfident",
+    "calibrated": false,
+    "conformal": {
+     "certified": 1.0,
+     "confidence": 0.95,
+     "index": 5702.0,
+     "n": 6001.0,
+     "nominal_radius": 2.795483482915107,
+     "radius": 2.795067977006385
+    },
+    "coverage": {
+     "dof": 3,
+     "epochs": 6001,
+     "expected_mean_normalised_error": 3.0,
+     "mean_normalised_error": 3.74290510162105,
+     "points": [
+      {
+       "covered": 2267,
+       "epochs": 6001,
+       "expected_coverage": 0.6083748237289112,
+       "gap": -0.23060445212417863,
+       "observed_coverage": 0.37777037160473254,
+       "sigma_per_axis": 1.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.39011152874102234,
+       "wilson_low": 0.36558560163948434
+      },
+      {
+       "covered": 6001,
+       "epochs": 6001,
+       "expected_coverage": 0.9926168394946402,
+       "gap": 0.007383160505359809,
+       "observed_coverage": 1.0,
+       "sigma_per_axis": 2.0,
+       "verdict": "underconfident",
+       "wilson_high": 1.0,
+       "wilson_low": 0.999360273065153
+      },
+      {
+       "covered": 6001,
+       "epochs": 6001,
+       "expected_coverage": 0.9999941126444164,
+       "gap": 5.887355583600318e-06,
+       "observed_coverage": 1.0,
+       "sigma_per_axis": 3.0,
+       "verdict": "calibrated",
+       "wilson_high": 1.0,
+       "wilson_low": 0.999360273065153
+      }
+     ]
+    },
+    "estimator": "eskf",
+    "expected_nees": 3,
+    "inflation_to_95": 0.9997764519708876,
+    "mean_nees": 3.74290510162105,
+    "notes": [
+     "synthetic fixture; not field performance"
+    ],
+    "scenario": "gnss_only",
+    "tail_verdict": "underconfident",
+    "verdict": "mixed(bulk=overconfident, tail=underconfident)"
+   },
+   "claim_type": "MEASUREMENT",
+   "config_hash": "c327078a657d81a3",
+   "data_class": "synthetic",
+   "description": "GNSS at 5 Hz, no outage, no vision. This is the reference point every other case is read against; it establishes that the filter is calibrated when a satellite solution is available.",
+   "drift": {
+    "duration_s": 30.0,
+    "final_drift_pct_path_length": 1.1482691705580206,
+    "final_drift_pct_time": 1.3106792096531332,
+    "growth": {
+     "intercept_m": 0.32923042509425604,
+     "r_squared": 0.0007130487023586651,
+     "slope_m_per_s": 0.0004915884552639625,
+     "window_s": [
+      15.0,
+      30.0
+     ]
+    },
+    "max_drift_pct_path_length": 2214880.380805723,
+    "max_drift_pct_time": 9158.149142753968,
+    "total_path_length_m": 34.243169892374276
+   },
+   "error_time_series": {
+    "position_error_m": [
+     0.4579006009098664,
+     0.7218442792358389,
+     0.2844529983016116,
+     0.8454998589836142,
+     0.7081184760289259,
+     0.8815656350278371,
+     0.7582891289716586,
+     0.8666090056370688,
+     0.6111569241096548,
+     0.5681328129346629,
+     0.41448903781336666,
+     0.45315163978250395,
+     0.16464200228814238,
+     0.4553799793463579,
+     0.25757328453907585,
+     0.5155613469155005,
+     0.4955746045420688,
+     0.23543935520082954,
+     0.32969605147893627,
+     0.48251787173649857,
+     0.35062797565566584,
+     0.3446538459148227,
+     0.3264569856425133,
+     0.3257145004334483,
+     0.2822533626571733,
+     0.3852672535002942,
+     0.2811983581910168,
+     0.2541833619115574,
+     0.3282299466515681,
+     0.36978769780745047,
+     0.39320376289593995
+    ],
+    "t": [
+     0.0,
+     1.0,
+     2.0,
+     3.0,
+     4.0,
+     5.0,
+     6.0,
+     7.0,
+     8.0,
+     9.0,
+     10.0,
+     11.0,
+     12.0,
+     13.0,
+     14.0,
+     15.0,
+     16.0,
+     17.0,
+     18.0,
+     19.0,
+     20.0,
+     21.0,
+     22.0,
+     23.0,
+     24.0,
+     25.0,
+     26.0,
+     27.0,
+     28.0,
+     29.0,
+     30.0
+    ]
+   },
+   "estimator": {
+    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_sigma_m": 1.0,
+    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_sigma_deg": 5.0,
+    "class": "ErrorStateKalmanFilter",
+    "fdir_config": {
+     "auto_recovery_count": 10,
+     "confidence_level": 0.999,
+     "enabled": true,
+     "max_consecutive_rejections": 5,
+     "max_drift_sigma_mps": 0.5,
+     "max_inflation_factor": 100.0,
+     "reaccept_margin": 0.25,
+     "reacq_consecutive_rejections": 3,
+     "reacq_sigma_m": 3.0,
+     "reacq_window": 5,
+     "spoof_grant_threshold": 2,
+     "spoof_lockout_s": 60.0,
+     "spoof_reexpansion_factor": 2.0
+    },
+    "gate_sigma": 5.0,
+    "gnss_enabled": true,
+    "gnss_position_sigma_m": 0.8,
+    "gravity": null,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "initial_bias_sigma": 0.0,
+    "initial_pos_sigma_m": 1.0,
+    "initial_rot_sigma_deg": 2.0,
+    "initial_vel_sigma_m_s": 0.5,
+    "vision_anchor_modelled": true,
+    "vision_enabled": false,
+    "vision_keyframe_interval": 1,
+    "vision_rot_sigma_deg": 0.35,
+    "vision_trans_sigma_m": 0.05
+   },
+   "headline": {
+    "alignment": "none",
+    "ate_median_m": 0.3773977579920763,
+    "ate_p95_m": 0.8920377661583406,
+    "ate_rmse_m": 0.5030724061418897,
+    "bulk_verdict": "overconfident",
+    "calibrated": false,
+    "calibration_verdict": "mixed(bulk=overconfident, tail=underconfident)",
+    "claimed_sigma_p95_m": 0.4507663979691115,
+    "claimed_sigma_p_m": 0.2522110541563603,
+    "coverage": {
+     "1sigma": 0.37777037160473254,
+     "2sigma": 1.0,
+     "3sigma": 1.0
+    },
+    "nees_expected": 3.0,
+    "nees_mean": 3.74290510162105,
+    "rotation_rmse_deg": 1.0107901641218298,
+    "tail_verdict": "underconfident"
+   },
+   "manifest": {},
+   "name": "gnss_only",
+   "rpe_1s": {
+    "delta": "1s",
+    "delta_s": 1.0,
+    "rotation_deg": {
+     "count": 5801.0,
+     "max": 2.083413794199238,
+     "mean": 0.3578722340523534,
+     "median": 0.2619929870137914,
+     "min": 0.012483389385004413,
+     "rmse": 0.4910413311116936,
+     "std": 0.33622768023219246
+    },
+    "translation_m": {
+     "count": 5801.0,
+     "max": 1.3505216980162043,
+     "mean": 0.3183996354372462,
+     "median": 0.2633247528764491,
+     "min": 0.0392418245086153,
+     "rmse": 0.38765499469686465,
+     "std": 0.2211290733188534
+    }
+   },
+   "scenario": {
+    "camera_drop": null,
+    "description": "GNSS only, nominal noise.",
+    "gnss": {
+     "enabled": true,
+     "multipath_sigma_m": 0.0,
+     "multipath_tau_s": 30.0,
+     "rate_hz": 5.0,
+     "seed": 0,
+     "sigma_m": 0.8
+    },
+    "gnss_outages": [],
+    "gnss_time_offset_s": 0.0,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "imu_noise_scale": 1.0,
+    "imu_outages": [],
+    "imu_time_offset_s": 0.0,
+    "name": "gnss_only",
+    "notes": "",
+    "vision": {
+     "enabled": true,
+     "noise_multiplier": 1.0,
+     "rate_hz": 20.0,
+     "rot_sigma_deg": 0.35,
+     "seed": 0,
+     "trans_sigma_m": 0.05
+    },
+    "vision_outages": [],
+    "vision_time_offset_s": 0.0
+   },
+   "scene_seed": null,
+   "seed": 0,
+   "stats": {
+    "accel_bias_final_m_s2": 0.00015574429031645152,
+    "fdir_channels": 1,
+    "fdir_events": 0.0,
+    "fdir_gnss_accepted": 151.0,
+    "fdir_gnss_consecutive_rejections": 0.0,
+    "fdir_gnss_faulted": 0.0,
+    "fdir_gnss_inflation_variance": 0.0,
+    "fdir_gnss_mean_nis": 2.2195733879243558,
+    "fdir_gnss_reaccepted": 0.0,
+    "fdir_gnss_rejected": 0.0,
+    "fdir_inflations": 0.0,
+    "final_pos_sigma_m": 0.17816428060054842,
+    "gnss_fixes_seen": 151.0,
+    "gnss_updates_rejected": 0.0,
+    "gnss_updates_used": 151.0,
+    "gyro_bias_final_rad_s": 4.000312388677664e-07,
+    "max_measurement_latency_s": 0.0,
+    "max_pos_sigma_m": 0.6322792051981196,
+    "vision_keyframe_initialisations": 0.0,
+    "vision_updates_rejected": 0.0,
+    "vision_updates_used": 0.0
+   },
+   "summary": {
+    "accel_bias_final_m_s2": 0.00015574429031645152,
+    "fdir_channels": 1,
+    "fdir_events": 0.0,
+    "fdir_gnss_accepted": 151.0,
+    "fdir_gnss_consecutive_rejections": 0.0,
+    "fdir_gnss_faulted": 0.0,
+    "fdir_gnss_inflation_variance": 0.0,
+    "fdir_gnss_mean_nis": 2.2195733879243558,
+    "fdir_gnss_reaccepted": 0.0,
+    "fdir_gnss_rejected": 0.0,
+    "fdir_inflations": 0.0,
+    "final_pos_sigma_m": 0.17816428060054842,
+    "gnss_fixes_seen": 151.0,
+    "gnss_updates_rejected": 0.0,
+    "gnss_updates_used": 151.0,
+    "gyro_bias_final_rad_s": 4.000312388677664e-07,
+    "max_measurement_latency_s": 0.0,
+    "max_pos_sigma_m": 0.6322792051981196,
+    "name": "eskf",
+    "path_length_m": 60.07767759003921,
+    "poses": 6001,
+    "reports_covariance": true,
+    "trajectory_duration_s": 30.0,
+    "vision_keyframe_initialisations": 0.0,
+    "vision_updates_rejected": 0.0,
+    "vision_updates_used": 0.0
+   },
+   "synthetic": {
+    "circles": 1.5,
+    "duration_s": 30.0,
+    "height_amplitude_m": 0.15,
+    "radius_m": 4.0,
+    "rate_hz": 100.0,
+    "roll_amplitude_deg": 4.0,
+    "roll_cycles": 6.0,
+    "start_position": [
+     1.0,
+     0.0,
+     1.6
+    ],
+    "sway_amplitude_m": 0.6,
+    "sway_cycles": 3.0,
+    "yaw_amplitude_deg": 35.0,
+    "yaw_cycles": 1.0
+   }
+  },
+  "outage_control": {
+   "ate": {
+    "none": {
+     "alignment": "none",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 10.55601301644335,
+      "mean": 2.475183287434385,
+      "median": 0.9940756781290572,
+      "min": 0.06418328547796025,
+      "rmse": 3.7821700511938485,
+      "std": 2.859768869988131
+     },
+     "position_percentiles_m": {
+      "p50": 0.9940756781290572,
+      "p95": 8.921631769970402,
+      "p99": 10.217012918662848
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 1.543545293452251,
+      "mean": 0.3988459875741503,
+      "median": 0.3965683482284954,
+      "min": 0.0,
+      "rmse": 0.4565111608709608,
+      "std": 0.22209078818301517
+     },
+     "scale": 1.0
+    },
+    "rigid": {
+     "alignment": "rigid",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 7.87264425949878,
+      "mean": 2.5998329871587957,
+      "median": 2.1155366122865438,
+      "min": 0.6840851081513207,
+      "rmse": 3.0113601472023115,
+      "std": 1.5195915158486826
+     },
+     "position_percentiles_m": {
+      "p50": 2.1155366122865438,
+      "p95": 6.320181193619007,
+      "p99": 7.53277501159729
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 1.543545293452251,
+      "mean": 0.3988459875741503,
+      "median": 0.3965683482284954,
+      "min": 0.0,
+      "rmse": 0.4565111608709608,
+      "std": 0.22209078818301517
+     },
+     "scale": 1.0
+    },
+    "rigid_start": {
+     "alignment": "rigid_start",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      0.2
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 9.712271693792813,
+      "mean": 3.0488872572622867,
+      "median": 2.1059545721191393,
+      "min": 0.012684983701244516,
+      "rmse": 4.095247111935176,
+      "std": 2.7341059599651683
+     },
+     "position_percentiles_m": {
+      "p50": 2.1059545721191393,
+      "p95": 8.125299338073411,
+      "p99": 9.36624483195136
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 1.543545293452251,
+      "mean": 0.3988459875741503,
+      "median": 0.3965683482284954,
+      "min": 0.0,
+      "rmse": 0.4565111608709608,
+      "std": 0.22209078818301517
+     },
+     "scale": 1.0
+    },
+    "similarity": {
+     "alignment": "similarity",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 3.858129875405952,
+      "mean": 1.9095862635593117,
+      "median": 1.9947458980154855,
+      "min": 0.9394178497466579,
+      "rmse": 2.0227048990181413,
+      "std": 0.6669448332040487
+     },
+     "position_percentiles_m": {
+      "p50": 1.9947458980154855,
+      "p95": 3.1040764815323336,
+      "p99": 3.347028972076676
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 1.543545293452251,
+      "mean": 0.3988459875741503,
+      "median": 0.3965683482284954,
+      "min": 0.0,
+      "rmse": 0.4565111608709608,
+      "std": 0.22209078818301517
+     },
+     "scale": 0.5416927070501405
+    }
+   },
+   "calibration": {
+    "bulk_verdict": "overconfident",
+    "calibrated": false,
+    "conformal": {
+     "certified": 1.0,
+     "confidence": 0.95,
+     "index": 5702.0,
+     "n": 6001.0,
+     "nominal_radius": 2.795483482915107,
+     "radius": 2.5755535432172874
+    },
+    "coverage": {
+     "dof": 3,
+     "epochs": 6001,
+     "expected_mean_normalised_error": 3.0,
+     "mean_normalised_error": 4.084478109130818,
+     "points": [
+      {
+       "covered": 2154,
+       "epochs": 6001,
+       "expected_coverage": 0.6083748237289112,
+       "gap": -0.24943464709168406,
+       "observed_coverage": 0.3589401766372271,
+       "sigma_per_axis": 1.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.37116345687919683,
+       "wilson_low": 0.3468973759321172
+      },
+      {
+       "covered": 6001,
+       "epochs": 6001,
+       "expected_coverage": 0.9926168394946402,
+       "gap": 0.007383160505359809,
+       "observed_coverage": 1.0,
+       "sigma_per_axis": 2.0,
+       "verdict": "underconfident",
+       "wilson_high": 1.0,
+       "wilson_low": 0.999360273065153
+      },
+      {
+       "covered": 6001,
+       "epochs": 6001,
+       "expected_coverage": 0.9999941126444164,
+       "gap": 5.887355583600318e-06,
+       "observed_coverage": 1.0,
+       "sigma_per_axis": 3.0,
+       "verdict": "calibrated",
+       "wilson_high": 1.0,
+       "wilson_low": 0.999360273065153
+      }
+     ]
+    },
+    "estimator": "eskf",
+    "expected_nees": 3,
+    "inflation_to_95": 0.9213028719978632,
+    "mean_nees": 4.084478109130818,
+    "notes": [
+     "synthetic fixture; not field performance"
+    ],
+    "scenario": "outage_control",
+    "tail_verdict": "underconfident",
+    "verdict": "mixed(bulk=overconfident, tail=underconfident)"
+   },
+   "claim_type": "MEASUREMENT",
+   "config_hash": "197860468d3e6789",
+   "data_class": "synthetic",
+   "description": "15 s GNSS outage, 5 s to 20 s, with vision OFF. This is the honest baseline for a contested receiver: the error grows, the filter knows it grows, and the coverage stays at nominal throughout.",
+   "drift": {
+    "duration_s": 30.0,
+    "final_drift_pct_path_length": 1.4768696603723954,
+    "final_drift_pct_time": 1.685756622967501,
+    "growth": {
+     "intercept_m": 17.51987614684402,
+     "r_squared": 0.5833161230551196,
+     "slope_m_per_s": -0.6489011426765324,
+     "window_s": [
+      15.0,
+      30.0
+     ]
+    },
+    "max_drift_pct_path_length": 2214882.1991933193,
+    "max_drift_pct_time": 9158.156661473691,
+    "total_path_length_m": 34.243169892374276
+   },
+   "error_time_series": {
+    "position_error_m": [
+     0.4579006009098664,
+     0.720603985745562,
+     0.2845764866208122,
+     0.8467243809486265,
+     0.7083986517965504,
+     0.8376471414709709,
+     1.0799431034490574,
+     1.3571824710420963,
+     1.682881050918142,
+     2.0634547777131735,
+     2.5036061846048017,
+     3.0089505397987533,
+     3.5798479051926075,
+     4.21798317446517,
+     4.924616592223109,
+     5.697941304586817,
+     6.538786943445484,
+     7.444413314422585,
+     8.41597869000884,
+     9.45499551013721,
+     1.495902591391769,
+     0.3924775640707091,
+     0.4347027062480779,
+     0.448215713688593,
+     0.19660194838016143,
+     0.31641309256425093,
+     0.14932252260291576,
+     0.12830174943820064,
+     0.3243184014278863,
+     0.43051273638657017,
+     0.5057269868902503
+    ],
+    "t": [
+     0.0,
+     1.0,
+     2.0,
+     3.0,
+     4.0,
+     5.0,
+     6.0,
+     7.0,
+     8.0,
+     9.0,
+     10.0,
+     11.0,
+     12.0,
+     13.0,
+     14.0,
+     15.0,
+     16.0,
+     17.0,
+     18.0,
+     19.0,
+     20.0,
+     21.0,
+     22.0,
+     23.0,
+     24.0,
+     25.0,
+     26.0,
+     27.0,
+     28.0,
+     29.0,
+     30.0
+    ]
+   },
+   "estimator": {
+    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_sigma_m": 1.0,
+    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_sigma_deg": 5.0,
+    "class": "ErrorStateKalmanFilter",
+    "fdir_config": {
+     "auto_recovery_count": 10,
+     "confidence_level": 0.999,
+     "enabled": true,
+     "max_consecutive_rejections": 5,
+     "max_drift_sigma_mps": 0.5,
+     "max_inflation_factor": 100.0,
+     "reaccept_margin": 0.25,
+     "reacq_consecutive_rejections": 3,
+     "reacq_sigma_m": 3.0,
+     "reacq_window": 5,
+     "spoof_grant_threshold": 2,
+     "spoof_lockout_s": 60.0,
+     "spoof_reexpansion_factor": 2.0
+    },
+    "gate_sigma": 5.0,
+    "gnss_enabled": true,
+    "gnss_position_sigma_m": 0.8,
+    "gravity": null,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "initial_bias_sigma": 0.0,
+    "initial_pos_sigma_m": 1.0,
+    "initial_rot_sigma_deg": 2.0,
+    "initial_vel_sigma_m_s": 0.5,
+    "vision_anchor_modelled": true,
+    "vision_enabled": false,
+    "vision_keyframe_interval": 1,
+    "vision_rot_sigma_deg": 0.35,
+    "vision_trans_sigma_m": 0.05
+   },
+   "headline": {
+    "alignment": "none",
+    "ate_median_m": 0.9940756781290572,
+    "ate_p95_m": 8.921631769970402,
+    "ate_rmse_m": 3.7821700511938485,
+    "bulk_verdict": "overconfident",
+    "calibrated": false,
+    "calibration_verdict": "mixed(bulk=overconfident, tail=underconfident)",
+    "claimed_sigma_p95_m": 13.324372885098473,
+    "claimed_sigma_p_m": 0.5667319163019692,
+    "coverage": {
+     "1sigma": 0.3589401766372271,
+     "2sigma": 1.0,
+     "3sigma": 1.0
+    },
+    "nees_expected": 3.0,
+    "nees_mean": 4.084478109130818,
+    "rotation_rmse_deg": 0.4565111608709608,
+    "tail_verdict": "underconfident"
+   },
+   "manifest": {
+    "config_hash": "cf152ee610bd1205",
+    "gnss": {
+     "configured_rate_hz": 5.0,
+     "emitted_fixes": 151,
+     "enabled": true,
+     "multipath_sigma_m": 0.0,
+     "outages": [
+      {
+       "duration_s": 15.0,
+       "end_s": 20.0,
+       "start_s": 5.0
+      }
+     ],
+     "position_sigma_m": 0.8,
+     "unavailable_fixes": 75,
+     "unavailable_intervals_s": [
+      [
+       4.9,
+       19.9
+      ]
+     ],
+     "usable_fixes": 76
+    },
+    "imu": {
+     "applied_bias_accel_m_s2": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "applied_bias_gyro_rad_s": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "noise_scale": 1.0,
+     "outages": [],
+     "rate_hz": 200.0,
+     "samples": 6001,
+     "time_offset_s": 0.0
+    },
+    "scenario": "outage_control",
+    "vision": {
+     "configured_rate_hz": 20.0,
+     "drop_fraction_measured": 0.0016638935108153079,
+     "dropped_frames": 1,
+     "effective_rate_hz": 20.0,
+     "emitted_frames": 601,
+     "enabled": true,
+     "longest_gap_s": 0.05000000000000071,
+     "noise_multiplier": 1.0,
+     "outages": [],
+     "time_offset_s": 0.0,
+     "usable_frames": 600
+    }
+   },
+   "name": "outage_control",
+   "outages": [
+    {
+     "duration_s": 15.0,
+     "end_s": 20.0,
+     "error_after_m": 1.495902591391769,
+     "error_before_m": 0.8364936560033311,
+     "error_peak_m": 10.55601301644335,
+     "growth_m": 9.71951936044002,
+     "samples_inside": 3000,
+     "start_s": 5.0
+    }
+   ],
+   "rpe_1s": {
+    "delta": "1s",
+    "delta_s": 1.0,
+    "rotation_deg": {
+     "count": 5801.0,
+     "max": 2.1015232258757823,
+     "mean": 0.23675728549037395,
+     "median": 0.046334656759938656,
+     "min": 0.0016401923520676857,
+     "rmse": 0.4237434654982577,
+     "std": 0.35143208777757146
+    },
+    "translation_m": {
+     "count": 5801.0,
+     "max": 10.278118771377237,
+     "mean": 0.8626173593305404,
+     "median": 0.4975838309838437,
+     "min": 0.05390708590243899,
+     "rmse": 1.8861250831749647,
+     "std": 1.6773071038910474
+    }
+   },
+   "scenario": {
+    "camera_drop": null,
+    "description": "GNSS outage with no visual aiding.",
+    "gnss": {
+     "enabled": true,
+     "multipath_sigma_m": 0.0,
+     "multipath_tau_s": 30.0,
+     "rate_hz": 5.0,
+     "seed": 0,
+     "sigma_m": 0.8
+    },
+    "gnss_outages": [
+     {
+      "duration_s": 15.0,
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ],
+    "gnss_time_offset_s": 0.0,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "imu_noise_scale": 1.0,
+    "imu_outages": [],
+    "imu_time_offset_s": 0.0,
+    "name": "outage_control",
+    "notes": "",
+    "vision": {
+     "enabled": true,
+     "noise_multiplier": 1.0,
+     "rate_hz": 20.0,
+     "rot_sigma_deg": 0.35,
+     "seed": 0,
+     "trans_sigma_m": 0.05
+    },
+    "vision_outages": [],
+    "vision_time_offset_s": 0.0
+   },
+   "scene_seed": null,
+   "seed": 0,
+   "stats": {
+    "accel_bias_final_m_s2": 2.7219100518143767e-05,
+    "fdir_channels": 1,
+    "fdir_events": 0.0,
+    "fdir_gnss_accepted": 76.0,
+    "fdir_gnss_consecutive_rejections": 0.0,
+    "fdir_gnss_faulted": 0.0,
+    "fdir_gnss_inflation_variance": 0.0,
+    "fdir_gnss_mean_nis": 2.0547923831036075,
+    "fdir_gnss_reaccepted": 0.0,
+    "fdir_gnss_rejected": 0.0,
+    "fdir_inflations": 0.0,
+    "final_pos_sigma_m": 0.21327406367376348,
+    "gnss_fixes_seen": 76.0,
+    "gnss_updates_rejected": 0.0,
+    "gnss_updates_used": 76.0,
+    "gyro_bias_final_rad_s": 3.6060554790404837e-07,
+    "max_measurement_latency_s": 0.0,
+    "max_pos_sigma_m": 15.892551042227621,
+    "vision_keyframe_initialisations": 0.0,
+    "vision_updates_rejected": 0.0,
+    "vision_updates_used": 0.0
+   },
+   "summary": {
+    "accel_bias_final_m_s2": 2.7219100518143767e-05,
+    "fdir_channels": 1,
+    "fdir_events": 0.0,
+    "fdir_gnss_accepted": 76.0,
+    "fdir_gnss_consecutive_rejections": 0.0,
+    "fdir_gnss_faulted": 0.0,
+    "fdir_gnss_inflation_variance": 0.0,
+    "fdir_gnss_mean_nis": 2.0547923831036075,
+    "fdir_gnss_reaccepted": 0.0,
+    "fdir_gnss_rejected": 0.0,
+    "fdir_inflations": 0.0,
+    "final_pos_sigma_m": 0.21327406367376348,
+    "gnss_fixes_seen": 76.0,
+    "gnss_updates_rejected": 0.0,
+    "gnss_updates_used": 76.0,
+    "gyro_bias_final_rad_s": 3.6060554790404837e-07,
+    "max_measurement_latency_s": 0.0,
+    "max_pos_sigma_m": 15.892551042227621,
+    "name": "eskf",
+    "path_length_m": 70.01648906440512,
+    "poses": 6001,
+    "reports_covariance": true,
+    "trajectory_duration_s": 30.0,
+    "vision_keyframe_initialisations": 0.0,
+    "vision_updates_rejected": 0.0,
+    "vision_updates_used": 0.0
+   },
+   "synthetic": {
+    "circles": 1.5,
+    "duration_s": 30.0,
+    "height_amplitude_m": 0.15,
+    "radius_m": 4.0,
+    "rate_hz": 100.0,
+    "roll_amplitude_deg": 4.0,
+    "roll_cycles": 6.0,
+    "start_position": [
+     1.0,
+     0.0,
+     1.6
+    ],
+    "sway_amplitude_m": 0.6,
+    "sway_cycles": 3.0,
+    "yaw_amplitude_deg": 35.0,
+    "yaw_cycles": 1.0
+   }
+  },
+  "outage_visual": {
+   "ate": {
+    "none": {
+     "alignment": "none",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 5.6675942788097515,
+      "mean": 2.0646596918434277,
+      "median": 1.793062164291898,
+      "min": 0.12373353317617411,
+      "rmse": 2.540698089660063,
+      "std": 1.48065091756271
+     },
+     "position_percentiles_m": {
+      "p50": 1.793062164291898,
+      "p95": 5.064473598340173,
+      "p99": 5.544186731697884
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.42879114705683846,
+      "mean": 0.1544646555207974,
+      "median": 0.14320924996083004,
+      "min": 0.0,
+      "rmse": 0.1604638328380773,
+      "std": 0.04346621497126026
+     },
+     "scale": 1.0
+    },
+    "rigid": {
+     "alignment": "rigid",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 3.7169572177232286,
+      "mean": 1.3251575975685461,
+      "median": 1.2439200282344633,
+      "min": 0.16219358136284484,
+      "rmse": 1.5897217660296783,
+      "std": 0.8781643553429388
+     },
+     "position_percentiles_m": {
+      "p50": 1.2439200282344633,
+      "p95": 3.1089921744494147,
+      "p99": 3.5913482433004758
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.42879114705683846,
+      "mean": 0.1544646555207974,
+      "median": 0.14320924996083004,
+      "min": 0.0,
+      "rmse": 0.1604638328380773,
+      "std": 0.04346621497126026
+     },
+     "scale": 1.0
+    },
+    "rigid_start": {
+     "alignment": "rigid_start",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      0.2
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 5.927410670008558,
+      "mean": 1.836324508048672,
+      "median": 1.487624681363299,
+      "min": 0.09314932601785504,
+      "rmse": 2.378818889877652,
+      "std": 1.5121810777742688
+     },
+     "position_percentiles_m": {
+      "p50": 1.487624681363299,
+      "p95": 5.279623881927371,
+      "p99": 5.813192984755225
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.42879114705683846,
+      "mean": 0.1544646555207974,
+      "median": 0.14320924996083004,
+      "min": 0.0,
+      "rmse": 0.1604638328380773,
+      "std": 0.04346621497126026
+     },
+     "scale": 1.0
+    },
+    "similarity": {
+     "alignment": "similarity",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 3.5796251097865346,
+      "mean": 1.2430438451229175,
+      "median": 1.1427356963768152,
+      "min": 0.41326598742385545,
+      "rmse": 1.4420102513307556,
+      "std": 0.7309141974575548
+     },
+     "position_percentiles_m": {
+      "p50": 1.1427356963768152,
+      "p95": 3.051727895554499,
+      "p99": 3.485424518118089
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.42879114705683846,
+      "mean": 0.1544646555207974,
+      "median": 0.14320924996083004,
+      "min": 0.0,
+      "rmse": 0.1604638328380773,
+      "std": 0.04346621497126026
+     },
+     "scale": 0.8173247399918497
+    }
+   },
+   "calibration": {
+    "bulk_verdict": "overconfident",
+    "calibrated": false,
+    "conformal": {
+     "certified": 1.0,
+     "confidence": 0.95,
+     "index": 5702.0,
+     "n": 6001.0,
+     "nominal_radius": 2.795483482915107,
+     "radius": 41.87429236327886
+    },
+    "coverage": {
+     "dof": 3,
+     "epochs": 6001,
+     "expected_mean_normalised_error": 3.0,
+     "mean_normalised_error": 419.4309868039187,
+     "points": [
+      {
+       "covered": 689,
+       "epochs": 6001,
+       "expected_coverage": 0.6083748237289112,
+       "gap": -0.4935606260951835,
+       "observed_coverage": 0.11481419763372772,
+       "sigma_per_axis": 1.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.12312766672122635,
+       "wilson_low": 0.10699355601161786
+      },
+      {
+       "covered": 1200,
+       "epochs": 6001,
+       "expected_coverage": 0.9926168394946402,
+       "gap": -0.7926501672733437,
+       "observed_coverage": 0.19996667222129644,
+       "sigma_per_axis": 2.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.21027692952571844,
+       "wilson_low": 0.19004029371913814
+      },
+      {
+       "covered": 1575,
+       "epochs": 6001,
+       "expected_coverage": 0.9999941126444164,
+       "gap": -0.7375378553539649,
+       "observed_coverage": 0.2624562572904516,
+       "sigma_per_axis": 3.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.2737373235182412,
+       "wilson_low": 0.2514791173234934
+      }
+     ]
+    },
+    "estimator": "eskf",
+    "expected_nees": 3,
+    "inflation_to_95": 14.940266397266852,
+    "mean_nees": 419.4309868039187,
+    "notes": [
+     "synthetic fixture; not field performance"
+    ],
+    "scenario": "outage_visual",
+    "tail_verdict": "overconfident",
+    "verdict": "overconfident"
+   },
+   "claim_type": "MEASUREMENT",
+   "config_hash": "f8853c18d7b73e02",
+   "data_class": "synthetic",
+   "description": "The same 15 s outage with vision ON. This is the case the 21-state refactor was supposed to fix, and the numbers say it did not: the filter reports roughly 0.3 m of uncertainty while being tens of metres wrong, and coverage collapses. That is why vision_enabled defaults to false, and why closing the gap needs a pose graph rather than a better filter.",
+   "drift": {
+    "duration_s": 30.0,
+    "final_drift_pct_path_length": 7.231214688347529,
+    "final_drift_pct_time": 8.253990436710557,
+    "growth": {
+     "intercept_m": 7.276106614101973,
+     "r_squared": 0.30540381801661387,
+     "slope_m_per_s": -0.20676112911485686,
+     "window_s": [
+      15.0,
+      30.0
+     ]
+    },
+    "max_drift_pct_path_length": 2214880.2574990112,
+    "max_drift_pct_time": 9158.148632901939,
+    "total_path_length_m": 34.243169892374276
+   },
+   "error_time_series": {
+    "position_error_m": [
+     0.4579006009098664,
+     0.5110053821982778,
+     0.30613707919460137,
+     0.20547688708153022,
+     0.451215926480725,
+     0.6822337360426838,
+     0.9288943105060856,
+     1.1961293902618662,
+     1.4788253010981012,
+     1.7525284569124955,
+     2.0401357854797926,
+     2.3345889772835906,
+     2.6374357141724727,
+     2.955518726259399,
+     3.2811290540415925,
+     3.6167302902288525,
+     3.9693234301280986,
+     4.334323350534113,
+     4.7152176875840786,
+     5.104533119775573,
+     5.504802063956025,
+     0.542350919710514,
+     0.6751854951550768,
+     0.9120002441483431,
+     1.257068276346971,
+     1.5317411554977511,
+     1.7255221533310587,
+     1.9859785484755803,
+     2.1590198007244767,
+     2.3346607416610827,
+     2.4761971310131674
+    ],
+    "t": [
+     0.0,
+     1.0,
+     2.0,
+     3.0,
+     4.0,
+     5.0,
+     6.0,
+     7.0,
+     8.0,
+     9.0,
+     10.0,
+     11.0,
+     12.0,
+     13.0,
+     14.0,
+     15.0,
+     16.0,
+     17.0,
+     18.0,
+     19.0,
+     20.0,
+     21.0,
+     22.0,
+     23.0,
+     24.0,
+     25.0,
+     26.0,
+     27.0,
+     28.0,
+     29.0,
+     30.0
+    ]
+   },
+   "estimator": {
+    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_sigma_m": 1.0,
+    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_sigma_deg": 5.0,
+    "class": "ErrorStateKalmanFilter",
+    "fdir_config": {
+     "auto_recovery_count": 10,
+     "confidence_level": 0.999,
+     "enabled": true,
+     "max_consecutive_rejections": 5,
+     "max_drift_sigma_mps": 0.5,
+     "max_inflation_factor": 100.0,
+     "reaccept_margin": 0.25,
+     "reacq_consecutive_rejections": 3,
+     "reacq_sigma_m": 3.0,
+     "reacq_window": 5,
+     "spoof_grant_threshold": 2,
+     "spoof_lockout_s": 60.0,
+     "spoof_reexpansion_factor": 2.0
+    },
+    "gate_sigma": 5.0,
+    "gnss_enabled": true,
+    "gnss_position_sigma_m": 0.8,
+    "gravity": null,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "initial_bias_sigma": 0.0,
+    "initial_pos_sigma_m": 1.0,
+    "initial_rot_sigma_deg": 2.0,
+    "initial_vel_sigma_m_s": 0.5,
+    "vision_anchor_modelled": true,
+    "vision_enabled": true,
+    "vision_keyframe_interval": 1,
+    "vision_rot_sigma_deg": 0.35,
+    "vision_trans_sigma_m": 0.05
+   },
+   "headline": {
+    "alignment": "none",
+    "ate_median_m": 1.793062164291898,
+    "ate_p95_m": 5.064473598340173,
+    "ate_rmse_m": 2.540698089660063,
+    "bulk_verdict": "overconfident",
+    "calibrated": false,
+    "calibration_verdict": "overconfident",
+    "claimed_sigma_p95_m": 0.275694060304128,
+    "claimed_sigma_p_m": 0.16065650143590798,
+    "coverage": {
+     "1sigma": 0.11481419763372772,
+     "2sigma": 0.19996667222129644,
+     "3sigma": 0.2624562572904516
+    },
+    "nees_expected": 3.0,
+    "nees_mean": 419.4309868039187,
+    "rotation_rmse_deg": 0.1604638328380773,
+    "tail_verdict": "overconfident"
+   },
+   "manifest": {
+    "config_hash": "1fdc84eb42147198",
+    "gnss": {
+     "configured_rate_hz": 5.0,
+     "emitted_fixes": 151,
+     "enabled": true,
+     "multipath_sigma_m": 0.0,
+     "outages": [
+      {
+       "duration_s": 15.0,
+       "end_s": 20.0,
+       "start_s": 5.0
+      }
+     ],
+     "position_sigma_m": 0.8,
+     "unavailable_fixes": 75,
+     "unavailable_intervals_s": [
+      [
+       4.9,
+       19.9
+      ]
+     ],
+     "usable_fixes": 76
+    },
+    "imu": {
+     "applied_bias_accel_m_s2": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "applied_bias_gyro_rad_s": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "noise_scale": 1.0,
+     "outages": [],
+     "rate_hz": 200.0,
+     "samples": 6001,
+     "time_offset_s": 0.0
+    },
+    "scenario": "outage_visual",
+    "vision": {
+     "configured_rate_hz": 20.0,
+     "drop_fraction_measured": 0.0016638935108153079,
+     "dropped_frames": 1,
+     "effective_rate_hz": 20.0,
+     "emitted_frames": 601,
+     "enabled": true,
+     "longest_gap_s": 0.05000000000000071,
+     "noise_multiplier": 1.0,
+     "outages": [],
+     "time_offset_s": 0.0,
+     "usable_frames": 600
+    }
+   },
+   "name": "outage_visual",
+   "outages": [
+    {
+     "duration_s": 15.0,
+     "end_s": 20.0,
+     "error_after_m": 5.504802063956025,
+     "error_before_m": 0.6812478908145652,
+     "error_peak_m": 5.503040822106973,
+     "growth_m": 4.821792931292408,
+     "samples_inside": 3000,
+     "start_s": 5.0
+    }
+   ],
+   "rpe_1s": {
+    "delta": "1s",
+    "delta_s": 1.0,
+    "rotation_deg": {
+     "count": 5801.0,
+     "max": 0.30727093194664606,
+     "mean": 0.04448349757578327,
+     "median": 0.025088725226744334,
+     "min": 0.0024596889427201457,
+     "rmse": 0.06994070586255154,
+     "std": 0.053971481172719674
+    },
+    "translation_m": {
+     "count": 5801.0,
+     "max": 5.346797399453027,
+     "mean": 0.47956222099951445,
+     "median": 0.307988846715727,
+     "min": 0.08180815861489299,
+     "rmse": 1.0338427410828395,
+     "std": 0.9158880332659072
+    }
+   },
+   "scenario": {
+    "camera_drop": null,
+    "description": "GNSS outage with visual aiding, 21-state anchor.",
+    "gnss": {
+     "enabled": true,
+     "multipath_sigma_m": 0.0,
+     "multipath_tau_s": 30.0,
+     "rate_hz": 5.0,
+     "seed": 0,
+     "sigma_m": 0.8
+    },
+    "gnss_outages": [
+     {
+      "duration_s": 15.0,
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ],
+    "gnss_time_offset_s": 0.0,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "imu_noise_scale": 1.0,
+    "imu_outages": [],
+    "imu_time_offset_s": 0.0,
+    "name": "outage_visual",
+    "notes": "",
+    "vision": {
+     "enabled": true,
+     "noise_multiplier": 1.0,
+     "rate_hz": 20.0,
+     "rot_sigma_deg": 0.35,
+     "seed": 0,
+     "trans_sigma_m": 0.05
+    },
+    "vision_outages": [],
+    "vision_time_offset_s": 0.0
+   },
+   "scene_seed": null,
+   "seed": 0,
+   "stats": {
+    "accel_bias_final_m_s2": 0.00040513381219483744,
+    "fdir_channels": 3,
+    "fdir_events": 1.0,
+    "fdir_gnss_accepted": 71.0,
+    "fdir_gnss_consecutive_rejections": 0.0,
+    "fdir_gnss_faulted": 0.0,
+    "fdir_gnss_inflation_variance": 29.135868151940468,
+    "fdir_gnss_mean_nis": 5.995078699872953,
+    "fdir_gnss_reaccepted": 1.0,
+    "fdir_gnss_rejected": 5.0,
+    "fdir_inflations": 1.0,
+    "fdir_vision_rot_accepted": 599.0,
+    "fdir_vision_rot_consecutive_rejections": 0.0,
+    "fdir_vision_rot_faulted": 0.0,
+    "fdir_vision_rot_inflation_variance": 0.0,
+    "fdir_vision_rot_mean_nis": 0.01492448121823223,
+    "fdir_vision_rot_reaccepted": 0.0,
+    "fdir_vision_rot_rejected": 0.0,
+    "fdir_vision_trans_accepted": 598.0,
+    "fdir_vision_trans_consecutive_rejections": 0.0,
+    "fdir_vision_trans_faulted": 0.0,
+    "fdir_vision_trans_inflation_variance": 0.0,
+    "fdir_vision_trans_mean_nis": 0.0015177930885456605,
+    "fdir_vision_trans_reaccepted": 0.0,
+    "fdir_vision_trans_rejected": 1.0,
+    "final_pos_sigma_m": 0.10971729807591268,
+    "gnss_fixes_seen": 76.0,
+    "gnss_updates_rejected": 5.0,
+    "gnss_updates_used": 71.0,
+    "gyro_bias_final_rad_s": 6.156471191697039e-06,
+    "max_measurement_latency_s": 0.0,
+    "max_pos_sigma_m": 0.7913656948915103,
+    "vision_keyframe_initialisations": 1.0,
+    "vision_updates_rejected": 1.0,
+    "vision_updates_used": 598.0
+   },
+   "summary": {
+    "accel_bias_final_m_s2": 0.00040513381219483744,
+    "fdir_channels": 3,
+    "fdir_events": 1.0,
+    "fdir_gnss_accepted": 71.0,
+    "fdir_gnss_consecutive_rejections": 0.0,
+    "fdir_gnss_faulted": 0.0,
+    "fdir_gnss_inflation_variance": 29.135868151940468,
+    "fdir_gnss_mean_nis": 5.995078699872953,
+    "fdir_gnss_reaccepted": 1.0,
+    "fdir_gnss_rejected": 5.0,
+    "fdir_inflations": 1.0,
+    "fdir_vision_rot_accepted": 599.0,
+    "fdir_vision_rot_consecutive_rejections": 0.0,
+    "fdir_vision_rot_faulted": 0.0,
+    "fdir_vision_rot_inflation_variance": 0.0,
+    "fdir_vision_rot_mean_nis": 0.01492448121823223,
+    "fdir_vision_rot_reaccepted": 0.0,
+    "fdir_vision_rot_rejected": 0.0,
+    "fdir_vision_trans_accepted": 598.0,
+    "fdir_vision_trans_consecutive_rejections": 0.0,
+    "fdir_vision_trans_faulted": 0.0,
+    "fdir_vision_trans_inflation_variance": 0.0,
+    "fdir_vision_trans_mean_nis": 0.0015177930885456605,
+    "fdir_vision_trans_reaccepted": 0.0,
+    "fdir_vision_trans_rejected": 1.0,
+    "final_pos_sigma_m": 0.10971729807591268,
+    "gnss_fixes_seen": 76.0,
+    "gnss_updates_rejected": 5.0,
+    "gnss_updates_used": 71.0,
+    "gyro_bias_final_rad_s": 6.156471191697039e-06,
+    "max_measurement_latency_s": 0.0,
+    "max_pos_sigma_m": 0.7913656948915103,
+    "name": "eskf",
+    "path_length_m": 46.86841964713592,
+    "poses": 6001,
+    "reports_covariance": true,
+    "trajectory_duration_s": 30.0,
+    "vision_keyframe_initialisations": 1.0,
+    "vision_updates_rejected": 1.0,
+    "vision_updates_used": 598.0
+   },
+   "synthetic": {
+    "circles": 1.5,
+    "duration_s": 30.0,
+    "height_amplitude_m": 0.15,
+    "radius_m": 4.0,
+    "rate_hz": 100.0,
+    "roll_amplitude_deg": 4.0,
+    "roll_cycles": 6.0,
+    "start_position": [
+     1.0,
+     0.0,
+     1.6
+    ],
+    "sway_amplitude_m": 0.6,
+    "sway_cycles": 3.0,
+    "yaw_amplitude_deg": 35.0,
+    "yaw_cycles": 1.0
+   }
+  },
+  "outage_visual_degraded_camera": {
+   "ate": {
+    "none": {
+     "alignment": "none",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 3.827589386569761,
+      "mean": 1.5878068498383067,
+      "median": 1.324003888534705,
+      "min": 0.17593697616131893,
+      "rmse": 1.872093680358879,
+      "std": 0.9917681965289096
+     },
+     "position_percentiles_m": {
+      "p50": 1.324003888534705,
+      "p95": 3.5250402921173936,
+      "p99": 3.7671938390222617
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.4655903104394569,
+      "mean": 0.32939144146302096,
+      "median": 0.3518521845916183,
+      "min": 0.0,
+      "rmse": 0.3353948523550094,
+      "std": 0.06317424536274067
+     },
+     "scale": 1.0
+    },
+    "rigid": {
+     "alignment": "rigid",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 2.2011320632347435,
+      "mean": 0.9706428735688751,
+      "median": 0.8609574701047545,
+      "min": 0.21782296618852307,
+      "rmse": 1.1005582048644886,
+      "std": 0.5187299627788069
+     },
+     "position_percentiles_m": {
+      "p50": 0.8609574701047545,
+      "p95": 1.9145071421385886,
+      "p99": 2.1376562826628978
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.4655903104394569,
+      "mean": 0.32939144146302096,
+      "median": 0.3518521845916183,
+      "min": 0.0,
+      "rmse": 0.3353948523550094,
+      "std": 0.06317424536274067
+     },
+     "scale": 1.0
+    },
+    "rigid_start": {
+     "alignment": "rigid_start",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      0.2
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 4.33968765464101,
+      "mean": 1.1167387123469426,
+      "median": 0.6461799321751974,
+      "min": 0.07909234582114083,
+      "rmse": 1.6024966030943721,
+      "std": 1.149299791731772
+     },
+     "position_percentiles_m": {
+      "p50": 0.6461799321751974,
+      "p95": 3.9498086804078363,
+      "p99": 4.2901968840428895
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.4655903104394569,
+      "mean": 0.32939144146302096,
+      "median": 0.3518521845916183,
+      "min": 0.0,
+      "rmse": 0.3353948523550094,
+      "std": 0.06317424536274067
+     },
+     "scale": 1.0
+    },
+    "similarity": {
+     "alignment": "similarity",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 1.9735601176647888,
+      "mean": 0.9487583373804518,
+      "median": 0.9311151490494733,
+      "min": 0.15281226320216051,
+      "rmse": 1.0437396535213217,
+      "std": 0.43502882845150553
+     },
+     "position_percentiles_m": {
+      "p50": 0.9311151490494733,
+      "p95": 1.7428663911069975,
+      "p99": 1.9230460674610008
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.4655903104394569,
+      "mean": 0.32939144146302096,
+      "median": 0.3518521845916183,
+      "min": 0.0,
+      "rmse": 0.3353948523550094,
+      "std": 0.06317424536274067
+     },
+     "scale": 0.9003896706478448
+    }
+   },
+   "calibration": {
+    "bulk_verdict": "overconfident",
+    "calibrated": false,
+    "conformal": {
+     "certified": 1.0,
+     "confidence": 0.95,
+     "index": 5702.0,
+     "n": 6001.0,
+     "nominal_radius": 2.795483482915107,
+     "radius": 28.8884752173222
+    },
+    "coverage": {
+     "dof": 3,
+     "epochs": 6001,
+     "expected_mean_normalised_error": 3.0,
+     "mean_normalised_error": 216.59834279755583,
+     "points": [
+      {
+       "covered": 642,
+       "epochs": 6001,
+       "expected_coverage": 0.6083748237289112,
+       "gap": -0.5013926540905176,
+       "observed_coverage": 0.1069821696383936,
+       "sigma_per_axis": 1.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.11505540916310213,
+       "wilson_low": 0.09941177829760005
+      },
+      {
+       "covered": 1110,
+       "epochs": 6001,
+       "expected_coverage": 0.9926168394946402,
+       "gap": -0.807647667689941,
+       "observed_coverage": 0.1849691718046992,
+       "sigma_per_axis": 2.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.19499328252517886,
+       "wilson_low": 0.17534812849642703
+      },
+      {
+       "covered": 1612,
+       "epochs": 6001,
+       "expected_coverage": 0.9999941126444164,
+       "gap": -0.7313722162938081,
+       "observed_coverage": 0.26862189635060824,
+       "sigma_per_axis": 3.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.2799817541156118,
+       "wilson_low": 0.25755807619568133
+      }
+     ]
+    },
+    "estimator": "eskf",
+    "expected_nees": 3,
+    "inflation_to_95": 10.277339927147848,
+    "mean_nees": 216.59834279755583,
+    "notes": [
+     "synthetic fixture; not field performance"
+    ],
+    "scenario": "outage_visual_degraded_camera",
+    "tail_verdict": "overconfident",
+    "verdict": "overconfident"
+   },
+   "claim_type": "MEASUREMENT",
+   "config_hash": "743faa6f09841e35",
+   "data_class": "synthetic",
+   "description": "Visual aiding through the outage with 30% of camera frames dropped in bursts. Checks that the anchor model does not collapse when the visual stream is intermittent rather than clean.",
+   "drift": {
+    "duration_s": 30.0,
+    "final_drift_pct_path_length": 4.9302493862700585,
+    "final_drift_pct_time": 5.627578911527321,
+    "growth": {
+     "intercept_m": 5.546310933614561,
+     "r_squared": 0.42831906234449824,
+     "slope_m_per_s": -0.16164213591524806,
+     "window_s": [
+      15.0,
+      30.0
+     ]
+    },
+    "max_drift_pct_path_length": 2214879.4100943166,
+    "max_drift_pct_time": 9158.145129029383,
+    "total_path_length_m": 34.243169892374276
+   },
+   "error_time_series": {
+    "position_error_m": [
+     0.4579006009098664,
+     0.5799688194345132,
+     0.28416032676864444,
+     0.30028735271943946,
+     0.49519590803199576,
+     0.6851530423860318,
+     0.8848637813652739,
+     1.0956824633987499,
+     1.3047981344663848,
+     1.4976734020311602,
+     1.6990652824587207,
+     1.9012166513499762,
+     2.1032625830945673,
+     2.3121355128832524,
+     2.519046589976866,
+     2.726360661136685,
+     2.932792000677776,
+     3.136815796987332,
+     3.343183495166389,
+     3.5456130456968955,
+     3.7479519525369036,
+     0.8517046245848242,
+     0.8334158651568918,
+     0.9069400429503435,
+     0.958983011971839,
+     1.0340015592783467,
+     1.147954271441374,
+     1.2760767077860364,
+     1.4342466842058315,
+     1.564450507454453,
+     1.6882736734581962
+    ],
+    "t": [
+     0.0,
+     1.0,
+     2.0,
+     3.0,
+     4.0,
+     5.0,
+     6.0,
+     7.0,
+     8.0,
+     9.0,
+     10.0,
+     11.0,
+     12.0,
+     13.0,
+     14.0,
+     15.0,
+     16.0,
+     17.0,
+     18.0,
+     19.0,
+     20.0,
+     21.0,
+     22.0,
+     23.0,
+     24.0,
+     25.0,
+     26.0,
+     27.0,
+     28.0,
+     29.0,
+     30.0
+    ]
+   },
+   "estimator": {
+    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_sigma_m": 1.0,
+    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_sigma_deg": 5.0,
+    "class": "ErrorStateKalmanFilter",
+    "fdir_config": {
+     "auto_recovery_count": 10,
+     "confidence_level": 0.999,
+     "enabled": true,
+     "max_consecutive_rejections": 5,
+     "max_drift_sigma_mps": 0.5,
+     "max_inflation_factor": 100.0,
+     "reaccept_margin": 0.25,
+     "reacq_consecutive_rejections": 3,
+     "reacq_sigma_m": 3.0,
+     "reacq_window": 5,
+     "spoof_grant_threshold": 2,
+     "spoof_lockout_s": 60.0,
+     "spoof_reexpansion_factor": 2.0
+    },
+    "gate_sigma": 5.0,
+    "gnss_enabled": true,
+    "gnss_position_sigma_m": 0.8,
+    "gravity": null,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "initial_bias_sigma": 0.0,
+    "initial_pos_sigma_m": 1.0,
+    "initial_rot_sigma_deg": 2.0,
+    "initial_vel_sigma_m_s": 0.5,
+    "vision_anchor_modelled": true,
+    "vision_enabled": true,
+    "vision_keyframe_interval": 1,
+    "vision_rot_sigma_deg": 0.35,
+    "vision_trans_sigma_m": 0.05
+   },
+   "headline": {
+    "alignment": "none",
+    "ate_median_m": 1.324003888534705,
+    "ate_p95_m": 3.5250402921173936,
+    "ate_rmse_m": 1.872093680358879,
+    "bulk_verdict": "overconfident",
+    "calibrated": false,
+    "calibration_verdict": "overconfident",
+    "claimed_sigma_p95_m": 0.3202764809459957,
+    "claimed_sigma_p_m": 0.1904555370108947,
+    "coverage": {
+     "1sigma": 0.1069821696383936,
+     "2sigma": 0.1849691718046992,
+     "3sigma": 0.26862189635060824
+    },
+    "nees_expected": 3.0,
+    "nees_mean": 216.59834279755583,
+    "rotation_rmse_deg": 0.3353948523550094,
+    "tail_verdict": "overconfident"
+   },
+   "manifest": {
+    "config_hash": "d6f698fe3eb1b7c4",
+    "gnss": {
+     "configured_rate_hz": 5.0,
+     "emitted_fixes": 151,
+     "enabled": true,
+     "multipath_sigma_m": 0.0,
+     "outages": [
+      {
+       "duration_s": 15.0,
+       "end_s": 20.0,
+       "start_s": 5.0
+      }
+     ],
+     "position_sigma_m": 0.8,
+     "unavailable_fixes": 75,
+     "unavailable_intervals_s": [
+      [
+       4.9,
+       19.9
+      ]
+     ],
+     "usable_fixes": 76
+    },
+    "imu": {
+     "applied_bias_accel_m_s2": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "applied_bias_gyro_rad_s": [
+      0.0,
+      0.0,
+      0.0
+     ],
+     "noise_scale": 1.0,
+     "outages": [],
+     "rate_hz": 200.0,
+     "samples": 6001,
+     "time_offset_s": 0.0
+    },
+    "scenario": "outage_visual_degraded_camera",
+    "vision": {
+     "configured_rate_hz": 20.0,
+     "drop_fraction_measured": 0.2995008319467554,
+     "dropped_frames": 180,
+     "effective_rate_hz": 14.261460101867572,
+     "emitted_frames": 601,
+     "enabled": true,
+     "longest_gap_s": 0.3500000000000014,
+     "noise_multiplier": 1.0,
+     "outages": [],
+     "time_offset_s": 0.0,
+     "usable_frames": 421
+    }
+   },
+   "name": "outage_visual_degraded_camera",
+   "outages": [
+    {
+     "duration_s": 15.0,
+     "end_s": 20.0,
+     "error_after_m": 3.7479519525369036,
+     "error_before_m": 0.6839835899739842,
+     "error_peak_m": 3.7469595816716614,
+     "growth_m": 3.062975991697677,
+     "samples_inside": 3000,
+     "start_s": 5.0
+    }
+   ],
+   "rpe_1s": {
+    "delta": "1s",
+    "delta_s": 1.0,
+    "rotation_deg": {
+     "count": 5801.0,
+     "max": 0.4484793929729123,
+     "mean": 0.05641399695675277,
+     "median": 0.03008888118835971,
+     "min": 0.0021784649332896255,
+     "rmse": 0.09389570546320011,
+     "std": 0.07505907308111069
+    },
+    "translation_m": {
+     "count": 5801.0,
+     "max": 3.5501340632146765,
+     "mean": 0.31003960623169025,
+     "median": 0.20647898753554875,
+     "min": 0.06409434169327591,
+     "rmse": 0.6158929321040912,
+     "std": 0.5321649616270064
+    }
+   },
+   "scenario": {
+    "camera_drop": {
+     "burst_period_s": 1.0,
+     "drop_fraction": 0.3,
+     "seed": 3
+    },
+    "description": "30% camera drop, burst period 1 s.",
+    "gnss": {
+     "enabled": true,
+     "multipath_sigma_m": 0.0,
+     "multipath_tau_s": 30.0,
+     "rate_hz": 5.0,
+     "seed": 0,
+     "sigma_m": 0.8
+    },
+    "gnss_outages": [
+     {
+      "duration_s": 15.0,
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ],
+    "gnss_time_offset_s": 0.0,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "imu_noise_scale": 1.0,
+    "imu_outages": [],
+    "imu_time_offset_s": 0.0,
+    "name": "outage_visual_degraded_camera",
+    "notes": "",
+    "vision": {
+     "enabled": true,
+     "noise_multiplier": 1.0,
+     "rate_hz": 20.0,
+     "rot_sigma_deg": 0.35,
+     "seed": 0,
+     "trans_sigma_m": 0.05
+    },
+    "vision_outages": [],
+    "vision_time_offset_s": 0.0
+   },
+   "scene_seed": null,
+   "seed": 0,
+   "stats": {
+    "accel_bias_final_m_s2": 0.0004889089250526247,
+    "fdir_channels": 3,
+    "fdir_events": 1.0,
+    "fdir_gnss_accepted": 73.0,
+    "fdir_gnss_consecutive_rejections": 0.0,
+    "fdir_gnss_faulted": 0.0,
+    "fdir_gnss_inflation_variance": 13.050608380370502,
+    "fdir_gnss_mean_nis": 4.255897670961025,
+    "fdir_gnss_reaccepted": 1.0,
+    "fdir_gnss_rejected": 3.0,
+    "fdir_inflations": 1.0,
+    "fdir_vision_rot_accepted": 420.0,
+    "fdir_vision_rot_consecutive_rejections": 0.0,
+    "fdir_vision_rot_faulted": 0.0,
+    "fdir_vision_rot_inflation_variance": 0.0,
+    "fdir_vision_rot_mean_nis": 0.01167790051470835,
+    "fdir_vision_rot_reaccepted": 0.0,
+    "fdir_vision_rot_rejected": 0.0,
+    "fdir_vision_trans_accepted": 420.0,
+    "fdir_vision_trans_consecutive_rejections": 0.0,
+    "fdir_vision_trans_faulted": 0.0,
+    "fdir_vision_trans_inflation_variance": 0.0,
+    "fdir_vision_trans_mean_nis": 0.0032642305031391713,
+    "fdir_vision_trans_reaccepted": 0.0,
+    "fdir_vision_trans_rejected": 0.0,
+    "final_pos_sigma_m": 0.12562066708184974,
+    "gnss_fixes_seen": 76.0,
+    "gnss_updates_rejected": 3.0,
+    "gnss_updates_used": 73.0,
+    "gyro_bias_final_rad_s": 1.4790407710438532e-06,
+    "max_measurement_latency_s": 0.0,
+    "max_pos_sigma_m": 0.7811867372198986,
+    "vision_keyframe_initialisations": 1.0,
+    "vision_updates_rejected": 0.0,
+    "vision_updates_used": 420.0
+   },
+   "summary": {
+    "accel_bias_final_m_s2": 0.0004889089250526247,
+    "fdir_channels": 3,
+    "fdir_events": 1.0,
+    "fdir_gnss_accepted": 73.0,
+    "fdir_gnss_consecutive_rejections": 0.0,
+    "fdir_gnss_faulted": 0.0,
+    "fdir_gnss_inflation_variance": 13.050608380370502,
+    "fdir_gnss_mean_nis": 4.255897670961025,
+    "fdir_gnss_reaccepted": 1.0,
+    "fdir_gnss_rejected": 3.0,
+    "fdir_inflations": 1.0,
+    "fdir_vision_rot_accepted": 420.0,
+    "fdir_vision_rot_consecutive_rejections": 0.0,
+    "fdir_vision_rot_faulted": 0.0,
+    "fdir_vision_rot_inflation_variance": 0.0,
+    "fdir_vision_rot_mean_nis": 0.01167790051470835,
+    "fdir_vision_rot_reaccepted": 0.0,
+    "fdir_vision_rot_rejected": 0.0,
+    "fdir_vision_trans_accepted": 420.0,
+    "fdir_vision_trans_consecutive_rejections": 0.0,
+    "fdir_vision_trans_faulted": 0.0,
+    "fdir_vision_trans_inflation_variance": 0.0,
+    "fdir_vision_trans_mean_nis": 0.0032642305031391713,
+    "fdir_vision_trans_reaccepted": 0.0,
+    "fdir_vision_trans_rejected": 0.0,
+    "final_pos_sigma_m": 0.12562066708184974,
+    "gnss_fixes_seen": 76.0,
+    "gnss_updates_rejected": 3.0,
+    "gnss_updates_used": 73.0,
+    "gyro_bias_final_rad_s": 1.4790407710438532e-06,
+    "max_measurement_latency_s": 0.0,
+    "max_pos_sigma_m": 0.7811867372198986,
+    "name": "eskf",
+    "path_length_m": 44.97130266208687,
+    "poses": 6001,
+    "reports_covariance": true,
+    "trajectory_duration_s": 30.0,
+    "vision_keyframe_initialisations": 1.0,
+    "vision_updates_rejected": 0.0,
+    "vision_updates_used": 420.0
+   },
+   "synthetic": {
+    "circles": 1.5,
+    "duration_s": 30.0,
+    "height_amplitude_m": 0.15,
+    "radius_m": 4.0,
+    "rate_hz": 100.0,
+    "roll_amplitude_deg": 4.0,
+    "roll_cycles": 6.0,
+    "start_position": [
+     1.0,
+     0.0,
+     1.6
+    ],
+    "sway_amplitude_m": 0.6,
+    "sway_cycles": 3.0,
+    "yaw_amplitude_deg": 35.0,
+    "yaw_cycles": 1.0
+   }
+  },
+  "vision_anchor_in_measurement_noise": {
+   "ate": {
+    "none": {
+     "alignment": "none",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 2.420724296519699,
+      "mean": 1.1849522352383786,
+      "median": 1.2116171338560198,
+      "min": 0.049484756888270594,
+      "rmse": 1.3071371491253747,
+      "std": 0.5518113145153716
+     },
+     "position_percentiles_m": {
+      "p50": 1.2116171338560198,
+      "p95": 2.190054048265752,
+      "p99": 2.375794934216747
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.5365063764272576,
+      "mean": 0.2882345993915165,
+      "median": 0.26744139179003273,
+      "min": 0.0,
+      "rmse": 0.29366047865425327,
+      "std": 0.056189789437736275
+     },
+     "scale": 1.0
+    },
+    "rigid": {
+     "alignment": "rigid",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 1.8440541548830358,
+      "mean": 0.877719274912548,
+      "median": 0.8483247716717814,
+      "min": 0.44310113440393445,
+      "rmse": 0.9250877250248558,
+      "std": 0.29222623673902787
+     },
+     "position_percentiles_m": {
+      "p50": 0.8483247716717814,
+      "p95": 1.5398706453534579,
+      "p99": 1.7828243972032265
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.5365063764272576,
+      "mean": 0.2882345993915165,
+      "median": 0.26744139179003273,
+      "min": 0.0,
+      "rmse": 0.29366047865425327,
+      "std": 0.056189789437736275
+     },
+     "scale": 1.0
+    },
+    "rigid_start": {
+     "alignment": "rigid_start",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      0.2
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 2.0727518685358164,
+      "mean": 1.0593503145252694,
+      "median": 0.9393919601475085,
+      "min": 0.02365276993497073,
+      "rmse": 1.2015330776963273,
+      "std": 0.5669732338599605
+     },
+     "position_percentiles_m": {
+      "p50": 0.9393919601475085,
+      "p95": 2.0199100117538347,
+      "p99": 2.0682121917150726
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.5365063764272576,
+      "mean": 0.2882345993915165,
+      "median": 0.26744139179003273,
+      "min": 0.0,
+      "rmse": 0.29366047865425327,
+      "std": 0.056189789437736275
+     },
+     "scale": 1.0
+    },
+    "similarity": {
+     "alignment": "similarity",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 1.942188301433821,
+      "mean": 0.8009842897596656,
+      "median": 0.6979936255528968,
+      "min": 0.46609630393303325,
+      "rmse": 0.8594193428118726,
+      "std": 0.31148960553667737
+     },
+     "position_percentiles_m": {
+      "p50": 0.6979936255528968,
+      "p95": 1.588761411325456,
+      "p99": 1.8708494463932188
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.5365063764272576,
+      "mean": 0.2882345993915165,
+      "median": 0.26744139179003273,
+      "min": 0.0,
+      "rmse": 0.29366047865425327,
+      "std": 0.056189789437736275
+     },
+     "scale": 0.903639614230739
+    }
+   },
+   "calibration": {
+    "bulk_verdict": "overconfident",
+    "calibrated": false,
+    "conformal": {
+     "certified": 1.0,
+     "confidence": 0.95,
+     "index": 5702.0,
+     "n": 6001.0,
+     "nominal_radius": 2.795483482915107,
+     "radius": 34.52827163921816
+    },
+    "coverage": {
+     "dof": 3,
+     "epochs": 6001,
+     "expected_mean_normalised_error": 3.0,
+     "mean_normalised_error": 387.2663143194452,
+     "points": [
+      {
+       "covered": 548,
+       "epochs": 6001,
+       "expected_coverage": 0.6083748237289112,
+       "gap": -0.5170567100811858,
+       "observed_coverage": 0.09131811364772538,
+       "sigma_per_axis": 1.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.09887012282423886,
+       "wilson_low": 0.08428899409217923
+      },
+      {
+       "covered": 960,
+       "epochs": 6001,
+       "expected_coverage": 0.9926168394946402,
+       "gap": -0.832643501717603,
+       "observed_coverage": 0.15997333777703715,
+       "sigma_per_axis": 2.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.16946529016376516,
+       "wilson_low": 0.15091643381908953
+      },
+      {
+       "covered": 1160,
+       "epochs": 6001,
+       "expected_coverage": 0.9999941126444164,
+       "gap": -0.8066929961638298,
+       "observed_coverage": 0.19330111648058657,
+       "sigma_per_axis": 3.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.2034870559446434,
+       "wilson_low": 0.18350758408987955
+      }
+     ]
+    },
+    "estimator": "eskf",
+    "expected_nees": 3,
+    "inflation_to_95": 12.349380594369062,
+    "mean_nees": 387.2663143194452,
+    "notes": [
+     "synthetic fixture; not field performance"
+    ],
+    "scenario": "vision_anchor_in_measurement_noise",
+    "tail_verdict": "overconfident",
+    "verdict": "overconfident"
+   },
+   "claim_type": "MEASUREMENT",
+   "config_hash": "a037b9be8ac0d650",
+   "data_class": "synthetic",
+   "description": "The pre-refactor arrangement, where the visual anchor error is folded into the measurement covariance. Retained as a regression control, not as a supported configuration.",
+   "drift": {
+    "duration_s": 30.0,
+    "final_drift_pct_path_length": 7.020529769750569,
+    "final_drift_pct_time": 8.013506454667999,
+    "growth": {
+     "intercept_m": -0.23883570443931587,
+     "r_squared": 0.9035926048556167,
+     "slope_m_per_s": 0.08106005185385576,
+     "window_s": [
+      15.0,
+      30.0
+     ]
+    },
+    "max_drift_pct_path_length": 2214880.380805723,
+    "max_drift_pct_time": 9158.149142753968,
+    "total_path_length_m": 34.243169892374276
+   },
+   "error_time_series": {
+    "position_error_m": [
+     0.4579006009098664,
+     0.47096476221678457,
+     0.3353370520359175,
+     0.05487925865047361,
+     0.23296770082694035,
+     0.46483811055992064,
+     0.679379006746705,
+     0.8170834614789587,
+     0.9811644715589329,
+     1.0651669056615742,
+     1.1256161318536277,
+     1.14143265312966,
+     1.1863796289566855,
+     1.1940092221626581,
+     1.1978963960007352,
+     1.2143909211195834,
+     1.214622658913292,
+     1.234813609875548,
+     1.2354075059520853,
+     1.240213034909255,
+     1.277228817576723,
+     1.3293912116488749,
+     1.405187071043951,
+     1.4997824671968394,
+     1.599752574511564,
+     1.700365747675494,
+     1.8261776684481688,
+     1.9669154821950825,
+     2.1144783923311485,
+     2.2571266670363284,
+     2.4040519364004
+    ],
+    "t": [
+     0.0,
+     1.0,
+     2.0,
+     3.0,
+     4.0,
+     5.0,
+     6.0,
+     7.0,
+     8.0,
+     9.0,
+     10.0,
+     11.0,
+     12.0,
+     13.0,
+     14.0,
+     15.0,
+     16.0,
+     17.0,
+     18.0,
+     19.0,
+     20.0,
+     21.0,
+     22.0,
+     23.0,
+     24.0,
+     25.0,
+     26.0,
+     27.0,
+     28.0,
+     29.0,
+     30.0
+    ]
+   },
+   "estimator": {
+    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_sigma_m": 1.0,
+    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_sigma_deg": 5.0,
+    "class": "ErrorStateKalmanFilter",
+    "fdir_config": {
+     "auto_recovery_count": 10,
+     "confidence_level": 0.999,
+     "enabled": true,
+     "max_consecutive_rejections": 5,
+     "max_drift_sigma_mps": 0.5,
+     "max_inflation_factor": 100.0,
+     "reaccept_margin": 0.25,
+     "reacq_consecutive_rejections": 3,
+     "reacq_sigma_m": 3.0,
+     "reacq_window": 5,
+     "spoof_grant_threshold": 2,
+     "spoof_lockout_s": 60.0,
+     "spoof_reexpansion_factor": 2.0
+    },
+    "gate_sigma": 5.0,
+    "gnss_enabled": true,
+    "gnss_position_sigma_m": 0.8,
+    "gravity": null,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "initial_bias_sigma": 0.0,
+    "initial_pos_sigma_m": 1.0,
+    "initial_rot_sigma_deg": 2.0,
+    "initial_vel_sigma_m_s": 0.5,
+    "vision_anchor_modelled": false,
+    "vision_enabled": true,
+    "vision_keyframe_interval": 1,
+    "vision_rot_sigma_deg": 0.35,
+    "vision_trans_sigma_m": 0.05
+   },
+   "headline": {
+    "alignment": "none",
+    "ate_median_m": 1.2116171338560198,
+    "ate_p95_m": 2.190054048265752,
+    "ate_rmse_m": 1.3071371491253747,
+    "bulk_verdict": "overconfident",
+    "calibrated": false,
+    "calibration_verdict": "overconfident",
+    "claimed_sigma_p95_m": 0.19790943783495737,
+    "claimed_sigma_p_m": 0.09106116165969683,
+    "coverage": {
+     "1sigma": 0.09131811364772538,
+     "2sigma": 0.15997333777703715,
+     "3sigma": 0.19330111648058657
+    },
+    "nees_expected": 3.0,
+    "nees_mean": 387.2663143194452,
+    "rotation_rmse_deg": 0.29366047865425327,
+    "tail_verdict": "overconfident"
+   },
+   "manifest": {},
+   "name": "vision_anchor_in_measurement_noise",
+   "rpe_1s": {
+    "delta": "1s",
+    "delta_s": 1.0,
+    "rotation_deg": {
+     "count": 5801.0,
+     "max": 0.3966746133276497,
+     "mean": 0.03190189821735671,
+     "median": 0.015579234090143269,
+     "min": 0.001874681715382079,
+     "rmse": 0.05003862991635187,
+     "std": 0.03855040043936039
+    },
+    "translation_m": {
+     "count": 5801.0,
+     "max": 0.3796625295679474,
+     "mean": 0.15508243888921325,
+     "median": 0.1632523584835108,
+     "min": 0.036711921668961325,
+     "rmse": 0.16542164670837464,
+     "std": 0.05756525295596069
+    }
+   },
+   "scenario": {
+    "camera_drop": null,
+    "description": "Anchor error in R rather than in filter state (incorrect).",
+    "gnss": {
+     "enabled": true,
+     "multipath_sigma_m": 0.0,
+     "multipath_tau_s": 30.0,
+     "rate_hz": 5.0,
+     "seed": 0,
+     "sigma_m": 0.8
+    },
+    "gnss_outages": [],
+    "gnss_time_offset_s": 0.0,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "imu_noise_scale": 1.0,
+    "imu_outages": [],
+    "imu_time_offset_s": 0.0,
+    "name": "vision_anchor_in_measurement_noise",
+    "notes": "",
+    "vision": {
+     "enabled": true,
+     "noise_multiplier": 1.0,
+     "rate_hz": 20.0,
+     "rot_sigma_deg": 0.35,
+     "seed": 0,
+     "trans_sigma_m": 0.05
+    },
+    "vision_outages": [],
+    "vision_time_offset_s": 0.0
+   },
+   "scene_seed": null,
+   "seed": 0,
+   "stats": {
+    "accel_bias_final_m_s2": 0.0008295053346713046,
+    "fdir_channels": 3,
+    "fdir_events": 0.0,
+    "fdir_gnss_accepted": 143.0,
+    "fdir_gnss_consecutive_rejections": 0.0,
+    "fdir_gnss_faulted": 0.0,
+    "fdir_gnss_inflation_variance": 0.0,
+    "fdir_gnss_mean_nis": 11.741284635839781,
+    "fdir_gnss_reaccepted": 0.0,
+    "fdir_gnss_rejected": 8.0,
+    "fdir_inflations": 0.0,
+    "fdir_vision_rot_accepted": 599.0,
+    "fdir_vision_rot_consecutive_rejections": 0.0,
+    "fdir_vision_rot_faulted": 0.0,
+    "fdir_vision_rot_inflation_variance": 0.0,
+    "fdir_vision_rot_mean_nis": 0.09176165286530535,
+    "fdir_vision_rot_reaccepted": 0.0,
+    "fdir_vision_rot_rejected": 0.0,
+    "fdir_vision_trans_accepted": 599.0,
+    "fdir_vision_trans_consecutive_rejections": 0.0,
+    "fdir_vision_trans_faulted": 0.0,
+    "fdir_vision_trans_inflation_variance": 0.0,
+    "fdir_vision_trans_mean_nis": 0.002911591060241207,
+    "fdir_vision_trans_reaccepted": 0.0,
+    "fdir_vision_trans_rejected": 0.0,
+    "final_pos_sigma_m": 0.06791426833345082,
+    "gnss_fixes_seen": 151.0,
+    "gnss_updates_rejected": 8.0,
+    "gnss_updates_used": 143.0,
+    "gyro_bias_final_rad_s": 6.554154560730412e-06,
+    "max_measurement_latency_s": 0.0,
+    "max_pos_sigma_m": 0.6264994667549845,
+    "vision_keyframe_initialisations": 1.0,
+    "vision_updates_rejected": 0.0,
+    "vision_updates_used": 599.0
+   },
+   "summary": {
+    "accel_bias_final_m_s2": 0.0008295053346713046,
+    "fdir_channels": 3,
+    "fdir_events": 0.0,
+    "fdir_gnss_accepted": 143.0,
+    "fdir_gnss_consecutive_rejections": 0.0,
+    "fdir_gnss_faulted": 0.0,
+    "fdir_gnss_inflation_variance": 0.0,
+    "fdir_gnss_mean_nis": 11.741284635839781,
+    "fdir_gnss_reaccepted": 0.0,
+    "fdir_gnss_rejected": 8.0,
+    "fdir_inflations": 0.0,
+    "fdir_vision_rot_accepted": 599.0,
+    "fdir_vision_rot_consecutive_rejections": 0.0,
+    "fdir_vision_rot_faulted": 0.0,
+    "fdir_vision_rot_inflation_variance": 0.0,
+    "fdir_vision_rot_mean_nis": 0.09176165286530535,
+    "fdir_vision_rot_reaccepted": 0.0,
+    "fdir_vision_rot_rejected": 0.0,
+    "fdir_vision_trans_accepted": 599.0,
+    "fdir_vision_trans_consecutive_rejections": 0.0,
+    "fdir_vision_trans_faulted": 0.0,
+    "fdir_vision_trans_inflation_variance": 0.0,
+    "fdir_vision_trans_mean_nis": 0.002911591060241207,
+    "fdir_vision_trans_reaccepted": 0.0,
+    "fdir_vision_trans_rejected": 0.0,
+    "final_pos_sigma_m": 0.06791426833345082,
+    "gnss_fixes_seen": 151.0,
+    "gnss_updates_rejected": 8.0,
+    "gnss_updates_used": 143.0,
+    "gyro_bias_final_rad_s": 6.554154560730412e-06,
+    "max_measurement_latency_s": 0.0,
+    "max_pos_sigma_m": 0.6264994667549845,
+    "name": "eskf",
+    "path_length_m": 37.922157135601026,
+    "poses": 6001,
+    "reports_covariance": true,
+    "trajectory_duration_s": 30.0,
+    "vision_keyframe_initialisations": 1.0,
+    "vision_updates_rejected": 0.0,
+    "vision_updates_used": 599.0
+   },
+   "synthetic": {
+    "circles": 1.5,
+    "duration_s": 30.0,
+    "height_amplitude_m": 0.15,
+    "radius_m": 4.0,
+    "rate_hz": 100.0,
+    "roll_amplitude_deg": 4.0,
+    "roll_cycles": 6.0,
+    "start_position": [
+     1.0,
+     0.0,
+     1.6
+    ],
+    "sway_amplitude_m": 0.6,
+    "sway_cycles": 3.0,
+    "yaw_amplitude_deg": 35.0,
+    "yaw_cycles": 1.0
+   }
+  },
+  "vision_only": {
+   "ate": {
+    "none": {
+     "alignment": "none",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 4.352834851198757,
+      "mean": 2.1902173083381453,
+      "median": 1.8693084824122603,
+      "min": 1.5951806376075612,
+      "rmse": 2.3091229997526828,
+      "std": 0.7314350075316589
+     },
+     "position_percentiles_m": {
+      "p50": 1.8693084824122603,
+      "p95": 3.9016777049174296,
+      "p99": 4.260537460311795
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.20823359415580225,
+      "mean": 0.08867291566762253,
+      "median": 0.08251852694198339,
+      "min": 0.0,
+      "rmse": 0.0907921379437327,
+      "std": 0.0195019573221892
+     },
+     "scale": 1.0
+    },
+    "rigid": {
+     "alignment": "rigid",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 3.3605531473951173,
+      "mean": 1.3428928883818803,
+      "median": 1.2926033838983457,
+      "min": 0.14805962415655988,
+      "rmse": 1.5103704655530694,
+      "std": 0.6912724741723535
+     },
+     "position_percentiles_m": {
+      "p50": 1.2926033838983457,
+      "p95": 2.785039093572918,
+      "p99": 3.242231382194891
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.20823359415580225,
+      "mean": 0.08867291566762253,
+      "median": 0.08251852694198339,
+      "min": 0.0,
+      "rmse": 0.0907921379437327,
+      "std": 0.0195019573221892
+     },
+     "scale": 1.0
+    },
+    "rigid_start": {
+     "alignment": "rigid_start",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      0.2
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 5.019529704720715,
+      "mean": 1.6608222784361693,
+      "median": 1.2410385840730564,
+      "min": 0.01084950655674121,
+      "rmse": 2.2443420210275193,
+      "std": 1.5095497563180817
+     },
+     "position_percentiles_m": {
+      "p50": 1.2410385840730564,
+      "p95": 4.531312146863688,
+      "p99": 4.920363713769628
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.20823359415580225,
+      "mean": 0.08867291566762253,
+      "median": 0.08251852694198339,
+      "min": 0.0,
+      "rmse": 0.0907921379437327,
+      "std": 0.0195019573221892
+     },
+     "scale": 1.0
+    },
+    "similarity": {
+     "alignment": "similarity",
+     "associated_poses": 6001,
+     "association": "interpolate",
+     "fractions": [
+      0.0,
+      1.0
+     ],
+     "position_m": {
+      "count": 6001.0,
+      "max": 2.0937511785890397,
+      "mean": 1.2683374565834955,
+      "median": 1.4076479892404086,
+      "min": 0.1270491017421925,
+      "rmse": 1.337831508843199,
+      "std": 0.4255740150443631
+     },
+     "position_percentiles_m": {
+      "p50": 1.4076479892404086,
+      "p95": 1.7115253943972546,
+      "p99": 2.002875678099207
+     },
+     "rotation_deg": {
+      "count": 6001.0,
+      "max": 0.20823359415580225,
+      "mean": 0.08867291566762253,
+      "median": 0.08251852694198339,
+      "min": 0.0,
+      "rmse": 0.0907921379437327,
+      "std": 0.0195019573221892
+     },
+     "scale": 0.8127175111078075
+    }
+   },
+   "calibration": {
+    "bulk_verdict": "overconfident",
+    "calibrated": false,
+    "conformal": {
+     "certified": 1.0,
+     "confidence": 0.95,
+     "index": 5702.0,
+     "n": 6001.0,
+     "nominal_radius": 2.795483482915107,
+     "radius": 33.44153147264673
+    },
+    "coverage": {
+     "dof": 3,
+     "epochs": 6001,
+     "expected_mean_normalised_error": 3.0,
+     "mean_normalised_error": 330.9670025249113,
+     "points": [
+      {
+       "covered": 0,
+       "epochs": 6001,
+       "expected_coverage": 0.6083748237289112,
+       "gap": -0.6083748237289112,
+       "observed_coverage": 0.0,
+       "sigma_per_axis": 1.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.0006397269348470955,
+       "wilson_low": 0.0
+      },
+      {
+       "covered": 40,
+       "epochs": 6001,
+       "expected_coverage": 0.9926168394946402,
+       "gap": -0.9859512837539303,
+       "observed_coverage": 0.0066655557407098815,
+       "sigma_per_axis": 2.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.009063297154243788,
+       "wilson_low": 0.004899012990936957
+      },
+      {
+       "covered": 90,
+       "epochs": 6001,
+       "expected_coverage": 0.9999941126444164,
+       "gap": -0.9849966122278192,
+       "observed_coverage": 0.014997500416597235,
+       "sigma_per_axis": 3.0,
+       "verdict": "overconfident",
+       "wilson_high": 0.018397540012630265,
+       "wilson_low": 0.012217999145467544
+      }
+     ]
+    },
+    "estimator": "eskf",
+    "expected_nees": 3,
+    "inflation_to_95": 11.959253097830182,
+    "mean_nees": 330.9670025249113,
+    "notes": [
+     "synthetic fixture; not field performance"
+    ],
+    "scenario": "vision_only",
+    "tail_verdict": "overconfident",
+    "verdict": "overconfident"
+   },
+   "claim_type": "MEASUREMENT",
+   "config_hash": "94d39ee548927bc5",
+   "data_class": "synthetic",
+   "description": "Visual odometry at 20 Hz with no GNSS. Calibrated, and much better than dead reckoning, but it cannot be trusted for an unbounded outage: a single anchor held for a long run freezes the position uncertainty.",
+   "drift": {
+    "duration_s": 30.0,
+    "final_drift_pct_path_length": 12.71154179031803,
+    "final_drift_pct_time": 14.509449503995858,
+    "growth": {
+     "intercept_m": -1.517848266595494,
+     "r_squared": 0.9620259983875954,
+     "slope_m_per_s": 0.1845060073583845,
+     "window_s": [
+      15.0,
+      30.0
+     ]
+    },
+    "max_drift_pct_path_length": 9126380.951411465,
+    "max_drift_pct_time": 37736.014373927625,
+    "total_path_length_m": 34.243169892374276
+   },
+   "error_time_series": {
+    "position_error_m": [
+     1.886796226411321,
+     1.8978701177296395,
+     1.8913633151530338,
+     1.8828195270941128,
+     1.8579231137195529,
+     1.8339324092517209,
+     1.8118073915152026,
+     1.7709657172577296,
+     1.7260326391460694,
+     1.6950616782221892,
+     1.6597935443687226,
+     1.6263171006906811,
+     1.6054930771576073,
+     1.5960369143972173,
+     1.6002156169794666,
+     1.6206665111359908,
+     1.6599823362689183,
+     1.7238682239507495,
+     1.8148043252574555,
+     1.9208222303075353,
+     2.046608425975591,
+     2.194248305530898,
+     2.3620244791334484,
+     2.551785548871571,
+     2.7612788331558358,
+     2.9832806853369718,
+     3.226156453207743,
+     3.483586788799928,
+     3.7577613548663007,
+     4.051475278181174,
+     4.352834851198757
+    ],
+    "t": [
+     0.0,
+     1.0,
+     2.0,
+     3.0,
+     4.0,
+     5.0,
+     6.0,
+     7.0,
+     8.0,
+     9.0,
+     10.0,
+     11.0,
+     12.0,
+     13.0,
+     14.0,
+     15.0,
+     16.0,
+     17.0,
+     18.0,
+     19.0,
+     20.0,
+     21.0,
+     22.0,
+     23.0,
+     24.0,
+     25.0,
+     26.0,
+     27.0,
+     28.0,
+     29.0,
+     30.0
+    ]
+   },
+   "estimator": {
+    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_sigma_m": 1.0,
+    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_sigma_deg": 5.0,
+    "class": "ErrorStateKalmanFilter",
+    "fdir_config": {
+     "auto_recovery_count": 10,
+     "confidence_level": 0.999,
+     "enabled": true,
+     "max_consecutive_rejections": 5,
+     "max_drift_sigma_mps": 0.5,
+     "max_inflation_factor": 100.0,
+     "reaccept_margin": 0.25,
+     "reacq_consecutive_rejections": 3,
+     "reacq_sigma_m": 3.0,
+     "reacq_window": 5,
+     "spoof_grant_threshold": 2,
+     "spoof_lockout_s": 60.0,
+     "spoof_reexpansion_factor": 2.0
+    },
+    "gate_sigma": 5.0,
+    "gnss_enabled": false,
+    "gnss_position_sigma_m": 0.8,
+    "gravity": null,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "initial_bias_sigma": 0.0,
+    "initial_pos_sigma_m": 1.0,
+    "initial_rot_sigma_deg": 2.0,
+    "initial_vel_sigma_m_s": 0.5,
+    "vision_anchor_modelled": true,
+    "vision_enabled": true,
+    "vision_keyframe_interval": 1,
+    "vision_rot_sigma_deg": 0.35,
+    "vision_trans_sigma_m": 0.05
+   },
+   "headline": {
+    "alignment": "none",
+    "ate_median_m": 1.8693084824122603,
+    "ate_p95_m": 3.9016777049174296,
+    "ate_rmse_m": 2.3091229997526828,
+    "bulk_verdict": "overconfident",
+    "calibrated": false,
+    "calibration_verdict": "overconfident",
+    "claimed_sigma_p95_m": 0.30430793071786116,
+    "claimed_sigma_p_m": 0.15576697580106832,
+    "coverage": {
+     "1sigma": 0.0,
+     "2sigma": 0.0066655557407098815,
+     "3sigma": 0.014997500416597235
+    },
+    "nees_expected": 3.0,
+    "nees_mean": 330.9670025249113,
+    "rotation_rmse_deg": 0.0907921379437327,
+    "tail_verdict": "overconfident"
+   },
+   "manifest": {},
+   "name": "vision_only",
+   "rpe_1s": {
+    "delta": "1s",
+    "delta_s": 1.0,
+    "rotation_deg": {
+     "count": 5801.0,
+     "max": 0.12898087796880608,
+     "mean": 0.01797668630117125,
+     "median": 0.013327866022721156,
+     "min": 0.0002452247595387866,
+     "rmse": 0.027339467204947877,
+     "std": 0.020598184790891226
+    },
+    "translation_m": {
+     "count": 5801.0,
+     "max": 0.32517236406562644,
+     "mean": 0.17089804700828876,
+     "median": 0.164212986476627,
+     "min": 0.017216234945107402,
+     "rmse": 0.19374896490151033,
+     "std": 0.09128263213316874
+    }
+   },
+   "scenario": {
+    "camera_drop": null,
+    "description": "Visual odometry, no GNSS.",
+    "gnss": {
+     "enabled": false,
+     "multipath_sigma_m": 0.0,
+     "multipath_tau_s": 30.0,
+     "rate_hz": 5.0,
+     "seed": 0,
+     "sigma_m": 0.8
+    },
+    "gnss_outages": [],
+    "gnss_time_offset_s": 0.0,
+    "imu_noise": {
+     "accel_bias_rw": 0.0001,
+     "accel_bias_sigma": 0.002,
+     "accel_noise_density": 0.002,
+     "gyro_bias_rw": 2e-06,
+     "gyro_bias_sigma": 1e-05,
+     "gyro_noise_density": 0.0002
+    },
+    "imu_noise_scale": 1.0,
+    "imu_outages": [],
+    "imu_time_offset_s": 0.0,
+    "name": "vision_only",
+    "notes": "",
+    "vision": {
+     "enabled": true,
+     "noise_multiplier": 1.0,
+     "rate_hz": 20.0,
+     "rot_sigma_deg": 0.35,
+     "seed": 0,
+     "trans_sigma_m": 0.05
+    },
+    "vision_outages": [],
+    "vision_time_offset_s": 0.0
+   },
+   "scene_seed": null,
+   "seed": 0,
+   "stats": {
+    "accel_bias_final_m_s2": 6.585726549224017e-06,
+    "fdir_channels": 2,
+    "fdir_events": 0.0,
+    "fdir_inflations": 0.0,
+    "fdir_vision_rot_accepted": 599.0,
+    "fdir_vision_rot_consecutive_rejections": 0.0,
+    "fdir_vision_rot_faulted": 0.0,
+    "fdir_vision_rot_inflation_variance": 0.0,
+    "fdir_vision_rot_mean_nis": 0.01505378897515961,
+    "fdir_vision_rot_reaccepted": 0.0,
+    "fdir_vision_rot_rejected": 0.0,
+    "fdir_vision_trans_accepted": 599.0,
+    "fdir_vision_trans_consecutive_rejections": 0.0,
+    "fdir_vision_trans_faulted": 0.0,
+    "fdir_vision_trans_inflation_variance": 0.0,
+    "fdir_vision_trans_mean_nis": 0.0014250441116276185,
+    "fdir_vision_trans_reaccepted": 0.0,
+    "fdir_vision_trans_rejected": 0.0,
+    "final_pos_sigma_m": 0.1124402458670765,
+    "gnss_fixes_seen": 0.0,
+    "gnss_updates_rejected": 0.0,
+    "gnss_updates_used": 0.0,
+    "gyro_bias_final_rad_s": 2.3466674703079338e-07,
+    "max_measurement_latency_s": 0.0,
+    "max_pos_sigma_m": 1.0011282032813067,
+    "vision_keyframe_initialisations": 1.0,
+    "vision_updates_rejected": 0.0,
+    "vision_updates_used": 599.0
+   },
+   "summary": {
+    "accel_bias_final_m_s2": 6.585726549224017e-06,
+    "fdir_channels": 2,
+    "fdir_events": 0.0,
+    "fdir_inflations": 0.0,
+    "fdir_vision_rot_accepted": 599.0,
+    "fdir_vision_rot_consecutive_rejections": 0.0,
+    "fdir_vision_rot_faulted": 0.0,
+    "fdir_vision_rot_inflation_variance": 0.0,
+    "fdir_vision_rot_mean_nis": 0.01505378897515961,
+    "fdir_vision_rot_reaccepted": 0.0,
+    "fdir_vision_rot_rejected": 0.0,
+    "fdir_vision_trans_accepted": 599.0,
+    "fdir_vision_trans_consecutive_rejections": 0.0,
+    "fdir_vision_trans_faulted": 0.0,
+    "fdir_vision_trans_inflation_variance": 0.0,
+    "fdir_vision_trans_mean_nis": 0.0014250441116276185,
+    "fdir_vision_trans_reaccepted": 0.0,
+    "fdir_vision_trans_rejected": 0.0,
+    "final_pos_sigma_m": 0.1124402458670765,
+    "gnss_fixes_seen": 0.0,
+    "gnss_updates_rejected": 0.0,
+    "gnss_updates_used": 0.0,
+    "gyro_bias_final_rad_s": 2.3466674703079338e-07,
+    "max_measurement_latency_s": 0.0,
+    "max_pos_sigma_m": 1.0011282032813067,
+    "name": "eskf",
+    "path_length_m": 35.72519921267489,
+    "poses": 6001,
+    "reports_covariance": true,
+    "trajectory_duration_s": 30.0,
+    "vision_keyframe_initialisations": 1.0,
+    "vision_updates_rejected": 0.0,
+    "vision_updates_used": 599.0
+   },
+   "synthetic": {
+    "circles": 1.5,
+    "duration_s": 30.0,
+    "height_amplitude_m": 0.15,
+    "radius_m": 4.0,
+    "rate_hz": 100.0,
+    "roll_amplitude_deg": 4.0,
+    "roll_cycles": 6.0,
+    "start_position": [
+     1.0,
+     0.0,
+     1.6
+    ],
+    "sway_amplitude_m": 0.6,
+    "sway_cycles": 3.0,
+    "yaw_amplitude_deg": 35.0,
+    "yaw_cycles": 1.0
+   }
+  }
+ },
+ "claim_type": "MEASUREMENT",
+ "config_file": "configs/benchmark.yaml",
+ "config_sha256": "1a5932987f82aa90d62482a47cba938d81014ca7f814f5730f3b05a881ce1899",
+ "data_class": "synthetic",
+ "disclaimer": "All numbers are from a known-answer synthetic fixture. They are not field measurements and must not be presented as real-sensor performance.",
+ "schema": "navkit-benchmark/1"
+}
