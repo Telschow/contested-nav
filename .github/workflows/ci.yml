@@ -145,6 +145,22 @@ jobs:
           /tmp/verify/bin/navkit sweep outages --seeds 2 --cases outage_control --starts 5 --durations 5 --out /tmp/verify_outages.json
           /tmp/verify/bin/navkit figures --results /tmp/verify_gnss.json
 
+  docs:
+    # The documentation site must build with warnings as errors: a broken link, a missing page or a
+    # docstring the API reference cannot read fails here, not on the published site.
+    name: docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[docs]"
+      - run: python -m mkdocs build --strict
+
   container:
     # Proves the Dockerfile and the devcontainer that reuses it still build, and that the
     # image can run the CLI and a fast slice of the suite. The full suite already runs in
@@ -209,7 +225,7 @@ jobs:
           print("benchmark is reproducible")
           PY
       - name: Check the documented tables against the generated benchmark
-        # README.md and docs/index.html both claim their numbers are generated
+        # README.md and docs/results.md both claim their numbers are generated
         # rather than typed. This is what makes that claim testable: the
         # benchmark is regenerated here, then every numeric cell of both tables
         # is compared against it. Without this step a re-run that moves a number

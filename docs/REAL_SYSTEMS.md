@@ -1,7 +1,7 @@
 # Limitations and path to real systems
 
 A note, not an implementation. A ROS integration is out of scope for this repository
-([ROADMAP](../ROADMAP.md)), so nothing below exists as code. It records where the gap
+([ROADMAP](https://github.com/Telschow/contested-nav/blob/main/ROADMAP.md)), so nothing below exists as code. It records where the gap
 between this simulator and a real system sits, and what a bridge would have to do, so
 that the gap is visible before anyone builds on the numbers. The full list of
 limitations is in [defense/LIMITATIONS.md](defense/LIMITATIONS.md); this page maps them

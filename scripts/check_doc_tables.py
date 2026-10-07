@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that the tables in README.md and docs/index.html match the benchmark.
+"""Verify that the benchmark tables in README.md and docs/results.md match the benchmark.
 
 Both documents claim that their numbers are generated rather than typed. This
 script is what makes that claim checkable: it re-reads the generated
@@ -168,7 +168,7 @@ def main(argv: list[str] | None = None) -> int:
     if not args.results.exists():
         print(f"{args.results} not found; run scripts/run_benchmark.py first", file=sys.stderr)
         return 1
-    documents = args.documents or [ROOT / "README.md", ROOT / "docs" / "index.html"]
+    documents = args.documents or [ROOT / "README.md", ROOT / "docs" / "results.md"]
     return check(args.results, documents)
 
 

@@ -162,4 +162,4 @@ def test_the_real_documents_match_the_committed_benchmark() -> None:
     results = ROOT / "results" / "benchmark.json"
     if not results.exists():
         pytest.skip("results/benchmark.json not generated")
-    assert check_doc_tables.check(results, [ROOT / "README.md", ROOT / "docs" / "index.html"]) == 0
+    assert check_doc_tables.check(results, [ROOT / "README.md", ROOT / "docs" / "results.md"]) == 0

@@ -25,6 +25,7 @@ make hooks       # install the pre-commit hooks (ruff, ruff format, mypy, file h
 make check       # lint + test + coverage ratchet: the same gates a pull request faces
 make repro       # regenerate every figure and table from scratch (measured 321 s, about 5 minutes)
 make docker      # build the container image and run the CLI inside it
+make docs        # build the documentation site (pip install -e ".[docs]" first)
 ```
 
 The `Dockerfile` builds a clean environment, and `.devcontainer/devcontainer.json` reuses
@@ -191,7 +192,7 @@ protection rules, for `main`. Nothing here is changed by a pull request.
 
 Required checks, by the names GitHub shows (they come from the `name:` of each job):
 
-- `lint`, `build`
+- `lint`, `build`, `docs`
 - `test (py3.11)`, `test (py3.12)`, `test (py3.13)`
 - `test (py3.13, macos-latest)`, `test (py3.13, windows-latest)`
 - `benchmark reproducibility`, `sweep reproducibility`
