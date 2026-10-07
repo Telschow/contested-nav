@@ -9,6 +9,7 @@ subcommand lives in its own module, so this file only routes arguments.
     navkit run --only gnss_only outage_visual --out results/two_cases.json
     navkit sweep seeds --seeds 10 --markdown
     navkit sweep scenes --seeds 8
+    navkit sweep outages --markdown
     navkit figures --results results/benchmark.json
     python -m navkit run --list
 """
@@ -19,21 +20,27 @@ import argparse
 import sys
 from collections.abc import Callable
 
-from . import __version__, benchmark, figures, scene_sweep, seed_sweep
+from . import __version__, benchmark, figures, outage_sweep, scene_sweep, seed_sweep
 
 _SWEEPS: dict[str, Callable[[list[str] | None], int]] = {
     "seeds": seed_sweep.main,
     "scenes": scene_sweep.main,
+    "outages": outage_sweep.main,
 }
 
 
 def _sweep(argv: list[str] | None) -> int:
-    """Route ``navkit sweep seeds|scenes`` to the matching sweep."""
+    """Route ``navkit sweep seeds|scenes|outages`` to the matching sweep."""
     args = list(argv or [])
     if not args or args[0] in ("-h", "--help") or args[0] not in _SWEEPS:
         names = ", ".join(_SWEEPS)
         usage = f"usage: navkit sweep {{{names}}} [options]"
-        print(f"{usage}\n  seeds   vary sensor noise on one scene\n  scenes  vary the trajectory", file=sys.stderr)
+        kinds = (
+            "  seeds   vary sensor noise on one scene",
+            "  scenes  vary the trajectory",
+            "  outages vary the GNSS outage start and duration",
+        )
+        print("\n".join((usage, *kinds)), file=sys.stderr)
         return 0 if args and args[0] in ("-h", "--help") else 2
     return _SWEEPS[args[0]](args[1:])
 
@@ -41,7 +48,10 @@ def _sweep(argv: list[str] | None) -> int:
 #: Subcommand name to ``main(argv) -> int``, with a one-line summary for ``--help``.
 _COMMANDS: dict[str, tuple[Callable[[list[str] | None], int], str]] = {
     "run": (benchmark.main, "run the seeded benchmark scenarios and write a result JSON"),
-    "sweep": (_sweep, "repeat the benchmark over noise seeds (`seeds`) or trajectories (`scenes`)"),
+    "sweep": (
+        _sweep,
+        "repeat the benchmark over noise seeds (`seeds`), trajectories (`scenes`) or outage windows (`outages`)",
+    ),
     "figures": (figures.main, "render the benchmark figures from a result JSON"),
 }
 
