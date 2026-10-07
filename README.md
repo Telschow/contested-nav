@@ -1,156 +1,50 @@
 # contested-nav
 
-Reproducible autonomous navigation / state estimation for GNSS-denied scenarios.
-
-> **Is the filter right about how wrong it is?**
-
-`contested-nav` is a 21-state error-state Kalman filter (ESKF) and evaluation
-harness for GNSS-denied navigation. It fuses inertial, GNSS and visual-odometry
-measurements and evaluates not only trajectory accuracy, but whether the
-uncertainty reported by the filter is calibrated.
-
-The central result is intentionally uncomfortable:
-
-**with GNSS denied and visual odometry enabled, the filter becomes substantially
-more accurate by ATE while becoming severely overconfident in its uncertainty.**
-
-The overconfidence does not depend on the outage. The accuracy gain does: an
-[outage sweep](#status-and-limits) found it for outages that start early, and not for
-outages that start later in the run.
-
-The repository makes that failure reproducible, quantifies it with NEES and
-ellipsoidal coverage, and ships visual fusion disabled by default rather than
-presenting the uncalibrated configuration as trustworthy.
-
-> **Synthetic evidence only.**
-> Every headline result comes from a deterministic known-answer fixture.
-> No real sensor capture is evaluated and no number in this repository is a
-> field measurement.
+**Is the filter right about how wrong it is?**
 
 [![CI](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml)
-[![Pages](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml)
+[![Security](https://github.com/Telschow/contested-nav/actions/workflows/security.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/security.yml)
+[![Docs](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml/badge.svg)](https://telschow.github.io/contested-nav/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> **All results in this repository are synthetic.** They come from a
-> known-answer fixture: an analytic trajectory with the filter initialised
-> exactly at the truth. No real sensor capture is vendored or evaluated, and no
-> number here is a field measurement. See [Status and limits](#status-and-limits).
+![Position error against the uncertainty the filter claims, through a GNSS outage, without and with vision](docs/figures/hero.png)
 
-## The result
+A 21-state error-state Kalman filter and an evaluation harness for GNSS-denied navigation.
+It measures not only how accurate the trajectory is, but whether the uncertainty the filter
+reports is honest. With GNSS denied and visual odometry on, the filter's position error
+falls from 3.782 m to 2.541 m while its claimed uncertainty collapses to 0.161 m:
 
-| Configuration | ATE RMSE | Claimed 1σ | Mean NEES | 2σ-per-axis coverage |
+| Configuration | ATE RMSE | Claimed 1σ | Mean NEES (expected 3) | 2σ-per-axis coverage (expected 99.3%) |
 |---|---:|---:|---:|---:|
 | GNSS denied, vision off | 3.782 m | 0.567 m | 4.1 | 100.0% |
 | GNSS denied, vision on | **2.541 m** | **0.161 m** | **419.4** | **20.0%** |
 
-The vision-enabled configuration reduces ATE RMSE by 32.8%, but mean NEES
-increases from 4.1 to 419.4 and observed 2σ-per-axis ellipsoid coverage falls
-from 100.0% to 20.0%.
+**Accuracy improved. Calibration failed.** The filter converges and is confidently wrong, so
+visual fusion ships **off by default**. Across 8 outage windows the overconfidence held in
+every run; the accuracy gain did not (see [what the sweeps show](#what-the-sweeps-show)).
 
-Under the repository's 3-D calibration definition, the expected coverage of a
-2σ-per-axis ellipsoid is approximately 99.3%.
+> **Synthetic evidence only.** Every number comes from a deterministic known-answer fixture: an
+> analytic trajectory with generated sensor streams. No real sensor capture is evaluated and
+> no number here is a field measurement.
 
-**Accuracy improved. Calibration failed.**
+## Quickstart
 
-That distinction is the central finding of the project.
-
-Both rows are generated, not typed. `scripts/run_benchmark.py` emits this table,
-CI regenerates it and fails the build if any cell disagrees with the code.
-
-## Why it is not a tuning problem
-
-The filter runs, converges, and produces a bounded, well-behaved, wrong answer. No
-crash, no NaN, no divergence. So the response was measurement and a shipping
-decision, not a tuning pass:
-
-- **It is a design property, not a bad seed.** Over **10 noise realisations** of
-  the same trajectory, `outage_visual` is overconfident at **every** seed: mean
-  NEES **844**, range **211.7 to 2103.4**, coverage **6.8% to 34.8%**. Over **8
-  scenes** with trajectory geometry varied — path length **17.3 m to 80.6 m**, a
-  **4.65×** range — **all seven case verdicts are identical in all eight scenes**,
-  and `outage_visual` holds mean NEES **419.7 [414.4, 424.9]** at 20.0% coverage.
-- **Sweeps cannot disagree with themselves.** Intervals are deterministic
-  percentile bootstrap, 10 000 resamples, fixed RNG seed. CI runs the benchmark
-  and the sweeps twice and fails if any two runs differ.
-- **The fix is partly shipped, and is still not enough.** Adaptive covariance
-  inflation ([ADR-0006](docs/adr/0006-nis-window-monitor.md)) took this case from
-  ATE **5.059 m to 2.541 m** and rejections **51 to 5** — and in doing so made
-  the filter *more* accurate and therefore *harder* to catch by ranking on error.
-- **So the mitigation is to refuse the feature.** Visual fusion ships
-  `vision_enabled=False`, and the residual NEES gap is an open blocker recorded in
-  [CONSTRAINTS.md](CONSTRAINTS.md), not a caveat in a footnote.
-  [Why it cannot be fixed by more filtering](#the-one-thing-this-cannot-do).
-
-The underlying cause is that the visual anchor is a pose the filter itself
-produced, so its error is not independent evidence. The 21-state filter carries
-the anchor error as two 3-D nuisance parameters (`c_p`, `c_t`) rather than
-assuming it away — which fixes the *bulk* miscalibration and not the *tail*, and
-the table above is the tail. Full mechanism in
-[Reading the calibration numbers](docs/calibration.md).
-
-## Start here — 5 minutes
-
-| If you want | Read |
-|---|---|
-| The argument, condensed for a defence or review | [Defense relevance](docs/defense/DEFENSE_RELEVANCE.md) |
-| Where the project actually stands today | [Project state](docs/PROJECT_STATE.md) |
-| Requirements, acceptance criteria, and which ones fail | [System Requirements Specification](docs/product_management/01_system_requirements_spec.md) |
-| Why these sensors, and what was traded away | [SWaP-C and Sensor Selection Trade-off Matrix](docs/product_management/02_swapc_tradeoff_matrix.md) |
-| The decision to ship visual fusion disabled | [ADR-0003](docs/adr/0003-ship-visual-disabled.md) |
-
-Or scan the code: [Repository map](docs/REPOSITORY_MAP.md) has every module, its
-focus, and the command that exercises it.
-
-## Install
-
-No install step is required to run the tests or the scripts; everything runs
-against the source tree.
+Python 3.11 to 3.13. From a fresh clone this took **18.7 s** (clone, environment, install and a
+three-case run) on the machine that wrote this page:
 
 ```bash
-python -m venv .venv
-.venv/bin/pip install -e ".[dev]"
-
-.venv/bin/python -m pytest           # 652 passed, 3 skipped, 2 xfailed, ~110 s on a fresh clone
+git clone https://github.com/Telschow/contested-nav.git && cd contested-nav
+python -m venv .venv && .venv/bin/pip install -e .
+.venv/bin/navkit run --only gnss_only outage_control outage_visual --markdown
 ```
 
-Runtime dependencies are NumPy, Matplotlib and PyYAML. There is no SciPy, no
-GTSAM, no factor graph library and no compiled extension: the incomplete gamma
-function, the chi-square quantiles, the covariance propagation and the metric
-definitions are all implemented here, from the published definitions, so every
-number can be traced to code in this repository.
-
-## Reproduce every number
-
-No figure or table in this README is typed in by hand. The table below is
-emitted by the same code that writes the result JSON, and CI runs the benchmark
-twice and fails the build if the two runs disagree.
-
-```bash
-.venv/bin/python scripts/run_benchmark.py --markdown   # table + results/benchmark.json
-.venv/bin/python scripts/seed_sweep.py --seeds 10      # noise robustness
-.venv/bin/python scripts/scene_sweep.py                 # geometry robustness
-.venv/bin/python scripts/outage_sweep.py                # outage start and length, ~2.5 min
-.venv/bin/python scripts/make_figures.py                # docs/figures/*.png
-.venv/bin/python scripts/coverage_report.py             # coverage ratchet
-```
-
-After `pip install -e .` the same tools are installed commands: `navkit run --markdown`,
-`navkit sweep seeds`, `navkit sweep scenes`, `navkit sweep outages` and `navkit figures`. They take the same
-options as the scripts and give the same numbers. They work from any directory, because
-the default scenario file is shipped inside the package; output paths such as `results/`
-and `docs/figures/` are relative to where you run them.
-
-Scenarios live in [`configs/benchmark.yaml`](configs/benchmark.yaml). JSON lands
-in `results/` (gitignored); the figures under `docs/figures/` are committed
-because they are the evidence. CI runs the benchmark and the sweeps twice and
-fails the build if any two runs disagree.
+`make repro` regenerates every figure and table from scratch in about 5 minutes (321 s
+measured). More in [Getting started](docs/getting-started.md).
 
 ## Results
 
-Synthetic 30 s run, 5 Hz GNSS, 20 Hz vision, noisy IMU, 21-state ESKF. ATE is
-reported with `alignment=none`: the filter is initialised in the reference
-frame, so there is no global offset for a fitted transform to absorb. This is
-the strictest of the four conventions the code supports.
+Synthetic 30 s run, 5 Hz GNSS, 20 Hz vision, noisy IMU, seed 0. ATE uses `alignment=none`: the
+filter starts in the reference frame, so there is no offset for a fitted transform to absorb.
 
 | Scenario | ATE RMSE (m) | Claimed 1σ (m) | Mean NEES (exp. 3) | Coverage @ 2σ | Verdict |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -162,354 +56,73 @@ the strictest of the four conventions the code supports.
 | GNSS denied 5–20 s, vision on | 2.541 | 0.161 | 419.4 | 20.0% | overconfident |
 | GNSS denied, 30% camera frames dropped | 1.872 | 0.190 | 216.6 | 18.5% | overconfident |
 
-Three rows deserve more than a glance.
+This table is generated by `navkit run --markdown`, and CI fails if any cell disagrees with the
+code. Interpretation, the four ATE alignments and the figures are on the
+[Results page](docs/results.md).
 
-**The defect row is not a gate-threshold problem.** Folding the visual anchor
-error into the measurement covariance, rather than treating it as filter state,
-drops coverage to 16%. Both variants are in the benchmark so the comparison is
-reproducible, and the broken one is kept in the default run on purpose.
+## What the sweeps show
 
-**Turning vision on makes the filter much less calibrated, though not much less
-accurate.** The outage control with vision off ends at 3.78 m with its
-uncertainty grown to match, so coverage stays at 100%. The aided case claims
-0.16 m while being 2.54 m wrong. Note what adaptive inflation did to this
-comparison: before it, the FDIR gate made the aided case *worse* on ATE (5.06 m),
-so a reader sorting by ATE at least got sent to the more honest filter. Recovering
-the error put the less-calibrated configuration back on top, and the ATE column no
-longer flags it at all. Ranking by error is not a calibration check, and this table is
-a demonstration of that rather than an argument against the fix.
+- **Not a bad seed.** Over 10 noise seeds, `outage_visual` is overconfident at every one: mean
+  NEES 844, range 211.7 to 2103.4, coverage 6.8% to 34.8%. Over 8 synthetic trajectories all
+  seven case verdicts are unchanged.
+- **Not a long-outage effect.** Over 8 outage windows (start 5 s or 10 s, length 5 to 20 s, 5
+  seeds each) the visual case had a 2σ coverage of 10.4% to 39.2% in all 40 runs, including 5 s
+  outages. The no-vision control stayed at 97.3% to 100.0%.
+- **The accuracy gain is not general.** With the outage starting at 5 s, vision beat the
+  control in every seed for outages of 10 s or longer. With it starting at 10 s, vision was
+  worse in all 20 runs. The cause is not tested here.
 
-**Dead reckoning has no claimed-σ or NEES value.** An integrator with no
-uncertainty model has nothing to calibrate. Printing a covariance it never
-computed would be the same error as printing one it does not deserve, so the
-columns are `n/a` rather than zero.
+## Limits
 
-### Two verdicts, not one
+- **Not field validated.** Synthetic fixture only; no real capture is vendored or evaluated.
+- **Visual fusion under GNSS denial is not trustworthy.** The cause is structural (the visual
+  anchor is a pose the filter itself produced) and the established remedies are not implemented
+  here. See [Concepts](docs/concepts.md#the-one-thing-this-cannot-do).
+- **FDIR detects implausible updates but does not explain them,** and one spoofing case
+  (a modest offset after an outage) is documented as undetected
+  ([ADR-0007](docs/adr/0007-spoof-permanence-hysteresis.md),
+  [ADR-0008](docs/adr/0008-frozen-anchor-cross-check.md)).
+- **Not flight-ready:** no sensor driver, no live front end, no real-time loop.
 
-Calibration is reported as a **bulk** test (mean NEES against its expectation)
-and a **tail** test (coverage inside the 2σ ellipsoid, by Wilson interval), and
-a disagreement is named rather than resolved. A filter can be marginally
-overconfident almost everywhere while never once producing a tail escape;
-collapsing that into a single "calibrated" boolean discards half the evidence
-and hides the shape of the error distribution.
+All of it, with sources, is in [Status and limits](docs/status.md) and
+[Limitations](docs/defense/LIMITATIONS.md).
 
-The `mixed` rows are exactly that case: mean NEES of 3.7 against an expected 3
-is a real, statistically detectable overconfidence, and yet no epoch escapes
-2σ. Both statements are true and only one of them is usually quoted.
+## Scope and responsible use
 
-![Error against claimed uncertainty](docs/figures/error-vs-claim.png)
-
-![Coverage against expectation](docs/figures/coverage.png)
-
-![Error through the outage](docs/figures/outage-error.png)
-
-![Mean NEES by scenario](docs/figures/nees.png)
-
-### Alignment is not a detail
-
-ATE is reported four ways, because the convention changes the number by metres
-and an ATE quoted without its alignment is not a result:
-
-| Alignment | Fitted on | What it hides |
-| --- | --- | --- |
-| `none` | nothing | nothing; the raw error in the filter's own frame |
-| `rigid` | all poses | accumulated drift, absorbed into the fit |
-| `rigid_start` | first 20% only | nothing after the first fifth of the run |
-| `similarity` | all poses, with scale | a scale error in the estimate |
-
-All headline numbers above use `none`. A rigid fit uses positions only, so
-attitude error passes through it untouched and is reported separately; a reader
-who assumed "rigid alignment" meant 6-DoF pose alignment would otherwise quote
-an attitude error several times smaller than reality.
-
-## The one thing this cannot do
-
-**Visual fusion under GNSS denial is not trustworthy yet.** This is the central
-open result.
-
-With GNSS available the 21-state anchor model is well behaved. With GNSS denied
-and vision enabled, the filter is badly overconfident. The cause is structural.
-
-A visual front end supplies a *relative* transform between consecutive frames.
-The absolute pose has to come from somewhere, so the filter declares an anchor
-pose at the start of the run and carries its error as two estimated states
-(`c_p`, `c_t`). That is the correct model, and while GNSS keeps the anchor
-honest it works. When GNSS disappears, the only thing constraining the anchor is
-the anchor itself, and the covariance stops describing reality.
-
-The alternatives do not rescue it:
-
-- **Anchor as measurement noise** — the obvious shortcut, and demonstrably
-  worse. It looks identical in the source and drops coverage to 16%.
-- **A single anchor for the whole run** — mean NEES 23 instead of 3. It makes
-  the anchor error one unknown shared by every measurement.
-- **A larger gate or a bigger anchor prior** — inflates the uncertainty to
-  acknowledge the error instead of fixing it.
-
-The anchor model is the wrong tool, and this is a known failure mode rather than
-a discovery. A visual front end supplies only *relative* transforms, so the
-absolute pose has to come from a single arbitrary reference; when that reference
-is only weakly constrained, an error-state filter gains spurious information
-along the unobservable directions and becomes overconfident. This has been
-characterised in the vision-aided inertial navigation literature for over a
-decade — Hesch et al. (IEEE T-RO, 2014) traced it to a mismatch between the
-observability of the linearised estimator and that of the true system, and the
-remedies are established: observability-constrained EKF, first-estimate
-Jacobians, invariant and Schmidt filters, and pose-graph formulations. See
-[docs/defense/DEFENSE_RELEVANCE.md](docs/defense/DEFENSE_RELEVANCE.md) for the
-citations.
-
-**This repository implements none of those remedies.** What it contributes is a
-reproducible harness that measures the failure in its own anchor formulation and
-refuses to ship the configuration. Until one of the known fixes is implemented,
-`vision_enabled` defaults to `False`: a caller who did not ask for a
-confidently-wrong filter should not receive one.
-
-The reasoning is recorded in
-[ADR 0001](docs/adr/0001-anchor-as-filter-state.md) and
-[ADR 0003](docs/adr/0003-ship-visual-disabled.md).
-
-## What is in the filter
-
-Twenty-one states in error-state form: attitude error, velocity error, position
-error, gyro and accel bias error, plus six anchor-error states. Covariance is
-propagated in 21×21 form and updated with the Joseph formulation, which preserves
-covariance symmetry and positive-semidefinite structure under finite precision
-rather than drifting until something breaks.
-
-The measurement Jacobians are where the original defect lived, and the frame
-matters as much as the sign. For a relative visual transform with
-`T_prev_cur = T_prev⁻¹ T_cur`, writing `R_rel_pred = R_prevᵀ R_cur`:
-
-| Block | Jacobian |
-| --- | --- |
-| attitude error | `H_theta = R_rel_pred` |
-| anchor attitude | `H_ct = −R_rel_pred` |
-| position | `H_p = R_prevᵀ` |
-| anchor position | `H_cp = −R_prevᵀ` |
-
-`H_ct = −R_rel_pred` rather than `+R_rel_pred` is what makes modelling the anchor
-as filter state correct rather than merely different.
-
-The rotation blocks are `R_rel_pred`, not the identity, because
-`rot_log(Q · Exp(v) · Qᵀ) = Q · v`: the conjugation identity rotates the
-increment into the previous body frame, which is the frame the residual lives
-in. Writing `H_theta = +I` is a frame error that happens to be invisible
-whenever the inter-frame rotation is small — at 20 Hz against a smooth
-trajectory it changes the benchmark in the third decimal. All four blocks are
-pinned against central differences of the filter's own residual in
-`tests/test_estimators.py`, which is how this was found; a sign or frame error
-here runs, fuses, and is wrong without ever raising.
-
-## Calibration
-
-`navkit.eval.calibration` implements the diagnostics from their published
-definitions, with no SciPy:
-
-- **NEES** — normalised error squared, from the filter's own covariance.
-  Singularity is handled by symmetric regularisation, never by dropping an
-  epoch; silently discarding the worst epochs is precisely how a miscalibrated
-  filter comes to look well behaved.
-- **Coverage** — the exact ellipsoid coverage for the stated degrees of
-  freedom. The familiar "3σ means 99.7%" is the one-dimensional figure and does
-  not hold for a 3-D position error; the real expectation at 2σ per axis in 3-D
-  is 99.3%, and the code uses that.
-- **Conformal radius** — a finite-sample, distribution-free bound, used to check
-  whether a confidence claim still holds under shift.
-- **Inflation factor** — the scalar covariance inflation that reaches a target
-  coverage, reported as `inf` when the target is unreachable. Clipping it to a
-  large finite number would disguise an unbounded calibration error as a merely
-  large correction.
-
-See [docs/calibration.md](docs/calibration.md) for how to read these, and
-[docs/architecture.md](docs/architecture.md) for the state and update sequence.
-
-## Repository layout
-
-```
-src/navkit/
-  estimators/     21-state ESKF, dead reckoning
-  fdir/           chi-square innovation gating, per-channel fault isolation
-  sensors/        GNSS, visual, IMU stream models
-  degrade/        outages, sensor degradation, scenario configs
-  eval/           metrics, calibration, failure thresholds, statistics
-  geometry/       SO(3)/SE(3) utilities, Umeyama alignment
-  io/             trajectory formats, IMU, config
-  analysis/       typed claims and report rendering
-configs/          benchmark scenarios
-scripts/          run_benchmark.py, seed_sweep.py, scene_sweep.py,
-                  make_figures.py, coverage_report.py
-docs/             architecture, calibration, ADRs, figures, site,
-                  defense/ (public dual-use assessment),
-                  product_management/ (SRS, SWaP-C matrix, FDIR strategy)
-tests/            629 tests (fresh clone: 624 pass, 3 skip, 2 xfail; the skips are
-                  2 TUM VI checks plus the doc-table check, which runs once
-                  results/benchmark.json exists; the xfails are by design: the
-                  spoof-permanence case ADR-0007 leaves open)
-```
-
-## Product management and systems engineering
-
-Three documents in `docs/product_management/`, written against the measured
-state of this repository rather than an aspiration. Every number in them is
-tagged **[M]** measured, **[D]** derived, **[C]** configured, **[E]** estimate
-or **[P]** proposed, and the two that are not verifiable today are marked
-**NOT VERIFIED** rather than omitted.
-
-| Document | ID | What it settles |
-|---|---|---|
-| [System Requirements Specification](docs/product_management/01_system_requirements_spec.md) | PM-SRS-001 | The three operational user needs, 32 technical requirements, and a per-requirement verdict. **Only one OUN passes in full.** |
-| [SWaP-C and Sensor Selection Trade-off](docs/product_management/02_swapc_tradeoff_matrix.md) | PM-SWAPC-002 | Three platform profiles, IMU grades, cost and power bands, and the rule for when to move off pure ESKF dead reckoning. |
-| [FDIR and Adversarial Spoofing Strategy](docs/product_management/03_fdir_and_spoofing_strategy.md) | PM-FDIR-003 | Threat taxonomy, the two-stage defence architecture, and what the operator is actually shown. |
-
-Start with the SRS if you want one number: **AC-03 and AC-04 fail**, so the
-filter is not yet trustworthy under GNSS denial, and the cause is a model error
-rather than a tuning error.
-
-## What this is, and is not
-
-This is a research and evaluation library in a publicly studied field. It is not
-a navigation product, not field-validated, not novel, and not qualified for any
-platform. [`docs/defense/`](docs/defense/README.md) is a public, source-cited
-assessment of where it sits: capability-level relevance, a dual-use review, the
-technical ecosystem, a consolidated limitations list, and the literature it
-relates to.
-
-The most important line in that assessment is this: **the failure documented
-above is a known failure mode with established remedies, and this repository
-implements none of them.** What it adds is a harness that measures the failure
-and refuses to ship the broken configuration.
-
-## Status and limits
-
-- **Not field validated.** Synthetic fixture only. No real capture is vendored
-  or evaluated, and no number is a field measurement.
-- **Visual aiding under GNSS denial is untrustworthy**, and disabled by default.
-  See [above](#the-one-thing-this-cannot-do).
-- **FDIR detects implausible updates; it does not yet explain them.** The
-  chi-square gate in `fdir/` isolates a channel and says how long it was out,
-  but it does not separate multipath from spoofing from sensor degradation. See
-  [ADR-0005](docs/adr/0005-chi-square-fdir-gating.md).
-- **The calibrated-covariance failure is mitigated, not fixed.** The ADR-0005
-  gate assumed a calibrated innovation covariance the filter does not have once
-  position covariance has collapsed, and in `outage_visual` that cost 1.6 m of
-  ATE. That was blocker B5, closed by
-  [ADR-0006](docs/adr/0006-nis-window-monitor.md): a per-channel NIS window plus
-  adaptive GNSS covariance inflation, which re-gates a returning fix once
-  under an inflated covariance. ATE 5.059 m to 2.541 m and rejections 51 to 5,
-  with the false-alarm rate unchanged. B1 is still open — see below.
-- **The filter is still overconfident under visual aiding.** Mean NEES 419.4
-  against a nominal 3, 2σ coverage 20.0% where 95% is required. It converges and
-  is confidently wrong. This is blocker B1, and it is a pose-graph problem that
-  no threshold in the FDIR subsystem will move. Robust across 10 noise seeds
-  (worst case NEES 211.7, 6.8% coverage) and across all 8 scenes
-  (419.7 [414.4, 424.9], 20.0%).
-
-- **ADR-0008 frozen-anchor cross-check — implemented but unreachable under the
-  current state-transition logic; the security gap remains documented as open.**
-- **The published numbers are single draws.** A 10-seed sweep shows NEES varying
-  by 4.4x to 45x between cases, and the two controls the tables call calibrated
-  (`gnss_only`, `outage_control`) flip verdict across seeds — `outage_control` is
-  never clean in 10 draws. The shipped tables remain the seed-0 benchmark, which
-  is the committed artefact; treat the magnitudes as order-of-magnitude and the
-  verdicts as the claim.
-- **Scene generalisation is demonstrated, external validity is not.** The
-  8-scene sweep varies trajectory geometry over a 4.65x path-length range and all
-  seven verdicts hold, so the failure above is not a property of one path. What is
-  *not* shown: any real capture, any measured sensor characteristic, or any scene
-  outside an analytic trajectory generator. Eight synthetic scenes bound the
-  claim "the anchor model is structurally wrong under visual aiding"; they do not
-  bound its behaviour on real imagery. Scenario duration remains fixed at 30 s.
-- **The outage window matters for accuracy, not for calibration.** The outage
-  sweep (`navkit sweep outages`, 8 windows, 5 seeds each, one synthetic path)
-  gives `outage_visual` a 2-sigma coverage of 10.4% to 39.2% and a mean NEES of
-  61.5 to 10 322 in **all 40 runs**, including 5 s outages; `outage_control`
-  stays at 97.3% to 100.0% coverage in all 40. Accuracy is different. With the
-  outage starting at 5 s, vision beats the control in all 5 seeds for 10 s, 15 s
-  and 20 s outages (ATE ratio 0.14 to 0.96) and in 2 of 5 for 5 s. With the outage
-  starting at 10 s, vision is **worse** than the control in all 20 runs (ATE
-  ratio 1.26 to 7.11). The cause is not tested here. So "vision improves ATE"
-  is a property of the benchmark's early outage, not a general result.
-
-  ![Outage sweep](docs/figures/outage-sweep.png)
-- **Not flight-ready.** No sensor driver, no live front end, no real-time loop,
-  no failure-mode handling beyond a measurement gate.
-- **TUM VI regression is partial.** The trajectory reader is validated against
-  the published room1/512/16 ATE, but the full mocap ground truth is not
-  vendored, so that check is skipped when the data is absent.
-
-## Design constraints
-
-These are decisions, not preferences, and they are why the dependency list is
-short. See [CONSTRAINTS.md](CONSTRAINTS.md).
-
-- Pure Python + NumPy at runtime. No compiled extension to build, no BLAS
-  requirement to satisfy, no solver to license.
-- Seeded and reproducible. Two runs of the benchmark must be identical apart
-  from wall-clock timings, and CI fails if they are not.
-- Coverage is a ratchet, not a report. Every module has a floor; a drop fails
-  the build.
-- No vendored datasets. Reproducibility comes from seeded configs and committed
-  figures, not from committing megabytes of capture.
-- Claims are typed `FACT`, `MEASUREMENT`, `INTERPRETATION` or `HYPOTHESIS`, and
-  a synthetic result is never presented as a field measurement.
+This is a research and evaluation library built from public sources and synthetic data. It
+contains no real sensor data or drivers, no radio-frequency model (a GNSS outage is a gap in a
+stream; spoofing tests inject offsets into the filter), and no guidance, targeting or platform
+integration code. It is not a navigation product and is not qualified for any platform. To the
+maintainer's knowledge nothing in it is classified or restricted, but that is not a legal
+determination: check your own obligations before using it in a regulated or operational setting.
+Details in [Scope and responsible use](docs/scope.md); report a vulnerability through the
+[security policy](SECURITY.md).
 
 ## Documentation
 
+The site is at [telschow.github.io/contested-nav](https://telschow.github.io/contested-nav/);
+every page is also a Markdown file under `docs/`.
+
 | If you want | Read |
 |---|---|
-| How the filter works | [docs/architecture.md](docs/architecture.md) |
-| Why the covariance is calibrated, or not | [docs/calibration.md](docs/calibration.md) |
-| Reproduce every published number | [Reproduce every number](#reproduce-every-number) above, and [CONSTRAINTS.md](CONSTRAINTS.md) for the gates |
-| The evidence, and what it bounds | [Results](#results) above, and the acceptance criteria in the [system requirements](docs/product_management/01_system_requirements_spec.md) |
-| Research context and prior art | [docs/defense/SOURCES.md](docs/defense/SOURCES.md), and [What this is, and is not](#what-this-is-and-is-not) |
-| What it cannot do | [Status and limits](#status-and-limits) above, and the consolidated [LIMITATIONS.md](docs/defense/LIMITATIONS.md) |
-| What is planned, and what is not | [ROADMAP.md](ROADMAP.md) |
-| Defense and dual-use assessment | [docs/defense/](docs/defense/README.md) |
-| Design decisions of record | [docs/adr/](docs/adr/0001-anchor-as-filter-state.md) — eight ADRs, each with its alternatives and consequences |
+| To run it | [Getting started](docs/getting-started.md) |
+| The argument and the mechanism | [Concepts](docs/concepts.md), [calibration](docs/calibration.md) |
+| What the filter assumes, every config key, the result format | [Model and interface contract](docs/MODEL.md) |
+| How fast it is, measured | [Performance](docs/PERFORMANCE.md) |
+| Decisions of record | [Architecture decision records](docs/adr/index.md) |
+| What is planned | [ROADMAP](ROADMAP.md), [CHANGELOG](CHANGELOG.md) |
+| How to contribute | [CONTRIBUTING](CONTRIBUTING.md), [code of conduct](CODE_OF_CONDUCT.md) |
 
-## Documentation Map
+## Layout
 
-| Topic | Documentation |
-|-------|---------------|
-| Architecture | `docs/architecture.md` |
-| Model assumptions, units, config and result contract, FMEA-lite | [`docs/MODEL.md`](docs/MODEL.md) |
-| State estimation | `src/navkit/estimators/`, `docs/architecture.md` |
-| Calibration | `docs/calibration.md` |
-| FDIR | ADR-0005, ADR-0006, ADR-0008 |
-| Security assumptions | `docs/defense/DEFENSE_RELEVANCE.md`, ADRs |
-| Evaluation | `src/navkit/eval/`, `docs/calibration.md` |
-| Reproducibility | `scripts/run_benchmark.py`, `scripts/seed_sweep.py`, `scripts/scene_sweep.py` |
-| Limitations | `docs/defense/LIMITATIONS.md`, `CONSTRAINTS.md` |
-| Path to real systems (note) | [`docs/REAL_SYSTEMS.md`](docs/REAL_SYSTEMS.md) |
-| Demo | `docs/demo.md`, `scripts/generate_demo.py`, `docs/architecture/demo-snapshot.png` |
-
-## See it in action
-
-`scripts/generate_demo.py` runs the `outage_visual` benchmark case, through the same
-`navkit.benchmark.run_case` call that produces every number in the documentation, and
-renders 25 frames that reveal the run in time order: ground truth against the estimate, the
-part of the path flown with GNSS denied, and the position error and claimed sigma. The
-final frame is committed as a preview:
-
-![Final frame of the demo](docs/architecture/demo-snapshot.png)
-
-It shows the benchmark headline: ATE RMSE 2.541 m, claimed 1-sigma 0.161 m, mean NEES 419.4,
-2-sigma-per-axis coverage 20.0%. A test fails if the demo's headline differs from the
-committed benchmark snapshot.
-
-```bash
-python scripts/generate_demo.py --out artifacts/demo
+```text
+src/navkit/   estimators (ESKF, dead reckoning), fdir, sensors, degrade, eval, geometry, io
+configs/      benchmark scenarios (configs/benchmark.yaml)
+scripts/      thin wrappers, coverage ratchet, doc-table and link checks, secret scan
+benchmarks/   timing harness for docs/PERFORMANCE.md
+docs/         site pages, ADRs, figures, defense assessment, product management
+tests/        unit, property, golden-snapshot and documentation consistency tests
 ```
-
-It writes, into `artifacts/demo` (gitignored):
-
-* `frames/*.png`: the 25 frames
-* `snapshot.png`: the final frame, 1920x1080
-* `results.json`: the benchmark record for the case, with the estimated and reference paths
-* `metadata.json`: seed, scenario and headline metrics
-
-More detail is in [`docs/demo.md`](docs/demo.md).
 
 ## License
 

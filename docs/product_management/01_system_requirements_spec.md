@@ -454,7 +454,7 @@ most often skipped.
 
 `tests/test_doc_tables.py::test_the_real_documents_match_the_committed_benchmark`
 re-parses `results/benchmark.json` and compares every published figure in
-`README.md` and `docs/index.html` against the generated value, failing on any
+`README.md` and `docs/results.md` against the generated value, failing on any
 disagreement. It is not a formatting check. It exists because during ADR-0006
 the benchmark was regenerated repeatedly with `--only` flags, which silently
 reduced the artifact to 2 of 7 cases, and the first symptom was a documentation
