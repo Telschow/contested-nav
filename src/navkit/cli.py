@@ -10,6 +10,7 @@ subcommand lives in its own module, so this file only routes arguments.
     navkit sweep seeds --seeds 10 --markdown
     navkit sweep scenes --seeds 8
     navkit sweep outages --markdown
+    navkit sweep mismatch --markdown
     navkit figures --results results/benchmark.json
     python -m navkit run --list
 """
@@ -20,25 +21,27 @@ import argparse
 import sys
 from collections.abc import Callable
 
-from . import __version__, benchmark, figures, outage_sweep, scene_sweep, seed_sweep
+from . import __version__, benchmark, figures, mismatch_sweep, outage_sweep, scene_sweep, seed_sweep
 
 _SWEEPS: dict[str, Callable[[list[str] | None], int]] = {
     "seeds": seed_sweep.main,
     "scenes": scene_sweep.main,
     "outages": outage_sweep.main,
+    "mismatch": mismatch_sweep.main,
 }
 
 
 def _sweep(argv: list[str] | None) -> int:
-    """Route ``navkit sweep seeds|scenes|outages`` to the matching sweep."""
+    """Route ``navkit sweep seeds|scenes|outages|mismatch`` to the matching sweep."""
     args = list(argv or [])
     if not args or args[0] in ("-h", "--help") or args[0] not in _SWEEPS:
         names = ", ".join(_SWEEPS)
         usage = f"usage: navkit sweep {{{names}}} [options]"
         kinds = (
-            "  seeds   vary sensor noise on one scene",
-            "  scenes  vary the trajectory",
-            "  outages vary the GNSS outage start and duration",
+            "  seeds    vary sensor noise on one scene",
+            "  scenes   vary the trajectory",
+            "  outages  vary the GNSS outage start and duration",
+            "  mismatch vary how wrong the filter's assumed sensor noise is",
         )
         print("\n".join((usage, *kinds)), file=sys.stderr)
         return 0 if args and args[0] in ("-h", "--help") else 2
@@ -50,7 +53,7 @@ _COMMANDS: dict[str, tuple[Callable[[list[str] | None], int], str]] = {
     "run": (benchmark.main, "run the seeded benchmark scenarios and write a result JSON"),
     "sweep": (
         _sweep,
-        "repeat the benchmark over noise seeds (`seeds`), trajectories (`scenes`) or outage windows (`outages`)",
+        "repeat the benchmark over noise seeds, trajectories, outage windows or a wrong noise model",
     ),
     "figures": (figures.main, "render the benchmark figures from a result JSON"),
 }
