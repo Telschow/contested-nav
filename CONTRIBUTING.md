@@ -41,7 +41,7 @@ do not invalidate it anywhere it has already been exposed.
 All five must pass locally. These are the same five CI runs.
 
 ```bash
-pytest                                    # 643 passed, 3 skipped, 2 xfailed
+pytest                                    # 652 passed, 3 skipped, 2 xfailed
 python scripts/coverage_report.py --ratchet
 ruff check src tests scripts
 ruff format --check src tests scripts
@@ -51,10 +51,10 @@ mypy src --ignore-missing-imports
 `ruff format src tests scripts` applies formatting; the `--check` form is the
 gate.
 
-The expected suite result on a fresh clone is `643 passed, 3 skipped, 2 xfailed`.
+The expected suite result on a fresh clone is `652 passed, 3 skipped, 2 xfailed`.
 Two skips need TUM VI reference data that is not vendored (see below). The third
 is the doc-table check, which runs once `python scripts/run_benchmark.py` has
-written `results/benchmark.json` (then `644 passed, 2 skipped, 2 xfailed`). The
+written `results/benchmark.json` (then `653 passed, 2 skipped, 2 xfailed`). The
 two xfails
 are deliberate: they pin ADR-0007's spoof-permanence signal, which is inert for
 every reachable configuration. They are meant to keep failing until Track B

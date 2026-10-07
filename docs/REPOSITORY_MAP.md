@@ -96,7 +96,7 @@ contested-nav/
 | `seed_sweep.py` | `python scripts/seed_sweep.py --seeds 10` | 10 seeds × 7 cases |
 | `scene_sweep.py` | `python scripts/scene_sweep.py --seeds 10` | 10 scenes; run twice and compared in CI |
 | `check_doc_tables.py` | `python scripts/check_doc_tables.py` | README + `index.html` tables match `benchmark.json` |
-| `coverage_report.py` | `python scripts/coverage_report.py --ratchet` | 91.83% total on CPython 3.13, ratchet OK; the report prints its own interpreter |
+| `coverage_report.py` | `python scripts/coverage_report.py --ratchet` | 91.62% total on CPython 3.13, ratchet OK; the report prints its own interpreter |
 | `make_figures.py` | `python scripts/make_figures.py` | 4 PNGs, **byte-identical to the committed images**, regenerated and checksummed |
 
 There is deliberately no LOC column. A hand-maintained line count was in this
@@ -113,9 +113,9 @@ diffing the two outputs, which is what CI does.
 
 ## 4. Test suite **[R]**
 
-648 collected · **643 passed** · 3 skipped · 2 xfailed · ~100 s on CPython 3.13, fresh clone.
+657 collected · **652 passed** · 3 skipped · 2 xfailed · ~110 s on CPython 3.13, fresh clone.
 After `python scripts/run_benchmark.py` writes `results/benchmark.json`, the third skip
-(`test_doc_tables.py`) runs: 644 passed · 2 skipped · 2 xfailed.
+(`test_doc_tables.py`) runs: 653 passed · 2 skipped · 2 xfailed.
 
 | File | Focus |
 |---|---|
