@@ -129,9 +129,11 @@ twice and fails the build if the two runs disagree.
 .venv/bin/python scripts/coverage_report.py             # coverage ratchet
 ```
 
-After `pip install -e .` the benchmark is also an installed command, `navkit run
---markdown`, which takes the same options and gives the same numbers. It works from
-any directory, because the default scenario file is shipped inside the package.
+After `pip install -e .` the same tools are installed commands: `navkit run --markdown`,
+`navkit sweep seeds`, `navkit sweep scenes` and `navkit figures`. They take the same
+options as the scripts and give the same numbers. They work from any directory, because
+the default scenario file is shipped inside the package; output paths such as `results/`
+and `docs/figures/` are relative to where you run them.
 
 Scenarios live in [`configs/benchmark.yaml`](configs/benchmark.yaml). JSON lands
 in `results/` (gitignored); the figures under `docs/figures/` are committed
