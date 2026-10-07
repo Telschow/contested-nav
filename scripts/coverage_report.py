@@ -49,6 +49,7 @@ FLOORS: dict[str, float] = {
     "src/navkit/fdir/nis_monitor.py": 80.0,
     # The two sweeps and the figure script were under scripts/, outside this measurement,
     # until they moved into the package behind `navkit sweep` and `navkit figures`.
+    "src/navkit/hero.py": 80.0,
     "src/navkit/seed_sweep.py": 75.0,
     "src/navkit/scene_sweep.py": 80.0,
     "src/navkit/figures.py": 70.0,
