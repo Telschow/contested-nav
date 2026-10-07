@@ -130,6 +130,7 @@ nav:
       - Status and limits: status.md
       - Limitations: defense/LIMITATIONS.md
       - Roadmap: roadmap.md
+      - Prioritisation (RICE): prioritisation.md
       - Changelog: changelog.md
       - Constraints: constraints.md
       - Product management:
