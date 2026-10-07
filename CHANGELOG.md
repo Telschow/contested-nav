@@ -16,6 +16,14 @@ this project uses [semantic versioning](https://semver.org/).
   ships inside the wheel. ([#16](https://github.com/Telschow/contested-nav/pull/16), [#19](https://github.com/Telschow/contested-nav/pull/19), [#22](https://github.com/Telschow/contested-nav/pull/22), [#25](https://github.com/Telschow/contested-nav/pull/25))
 - Outage sweep: the GNSS outage start and duration swept for the control and the visual case,
   with bootstrap intervals, a CSV and a figure. ([#22](https://github.com/Telschow/contested-nav/pull/22))
+- Noise-mismatch sweep (`navkit sweep mismatch`): the filter is told sensor noise that is a factor of the
+  true value, with the estimator keys `gnss_sigma_scale` and `vision_sigma_scale` (default 1, no change to
+  any result). New page [Noise mismatch](docs/mismatch.md). ([#42](https://github.com/Telschow/contested-nav/issues/42))
+- Fault matrix (`navkit sweep faults`): eight fault modes measured against a clean control over five
+  seeds, with detection and false-alarm counts from the FDIR event log. New page
+  [Fault matrix](docs/faults.md); the FMEA-lite rows are updated from the results.
+  `run_case` gains `gnss_hook`, `fdir_events` and `force_inject`, all off by default.
+  ([#43](https://github.com/Telschow/contested-nav/issues/43))
 - SRS traceability check (`scripts/check_srs_trace.py`, `docs/product_management/srs_trace.csv`): every
   requirement and acceptance criterion has a test, a checked configuration value or a declared gap, and
   the roll-up counts follow from the verdicts. It found two wrong roll-up counts and stale prose, now

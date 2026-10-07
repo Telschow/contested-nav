@@ -43,6 +43,7 @@ import json
 import platform
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import asdict, is_dataclass
 from importlib import resources
 from pathlib import Path
@@ -67,6 +68,7 @@ from .eval.metrics import (
 )
 from .sensors.models import gnss_fixes, visual_updates
 from .synthetic import SyntheticConfig, seeded_scene, synthetic_imu, synthetic_trajectory
+from .types import GnssFix
 
 #: How the shipped scenario file is named in a result. It is a label for the canonical
 #: source, so a result made from the packaged copy of the file reads the same as one made
@@ -114,16 +116,32 @@ def _jsonable(obj: Any) -> Any:
     return obj
 
 
+def _sigma_scale(keys: dict[str, Any], key: str) -> float:
+    """A positive multiplier on the noise the filter assumes for one sensor (default 1)."""
+    scale = float(keys.get(key, 1.0))
+    if not scale > 0.0 or not np.isfinite(scale):
+        raise ValueError(f"estimator key {key!r} must be a positive finite number, got {scale!r}")
+    return scale
+
+
 def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
-    """Build the filter config from a scenario plus estimator overrides."""
+    """Build the filter config from a scenario plus estimator overrides.
+
+    By default the filter is told the noise the generator used. ``gnss_sigma_scale`` and
+    ``vision_sigma_scale`` multiply the sigmas the *filter* assumes and leave the generator
+    alone, so the same data can be filtered with a wrong noise model. A value below 1 makes
+    the filter more confident in the sensor than it should be; above 1, less.
+    """
     noise = scenario.imu_noise
+    gnss_scale = _sigma_scale(keys, "gnss_sigma_scale")
+    vision_scale = _sigma_scale(keys, "vision_sigma_scale")
     return EskfConfig(
         imu_noise=noise.scaled(scenario.imu_noise_scale),
         gnss_enabled=scenario.gnss.enabled,
-        gnss_position_sigma_m=scenario.gnss.sigma_m,
+        gnss_position_sigma_m=scenario.gnss.sigma_m * gnss_scale,
         vision_enabled=scenario.vision.enabled and bool(keys.get("vision_fuse", False)),
-        vision_rot_sigma_deg=scenario.vision.rot_sigma_deg,
-        vision_trans_sigma_m=scenario.vision.trans_sigma_m,
+        vision_rot_sigma_deg=scenario.vision.rot_sigma_deg * vision_scale,
+        vision_trans_sigma_m=scenario.vision.trans_sigma_m * vision_scale,
         vision_keyframe_interval=keys.get("vision_keyframe_interval", 1),
         vision_anchor_modelled=bool(keys.get("vision_anchor_modelled", True)),
         anchor_pos_sigma_m=keys.get("anchor_pos_sigma_m", 1.0),
@@ -140,6 +158,9 @@ def run_case(
     seed: int | None = None,
     scene_seed: int | None = None,
     trajectories: bool = False,
+    gnss_hook: Callable[[GnssFix], GnssFix] | None = None,
+    fdir_events: bool = False,
+    force_inject: bool = False,
 ) -> dict[str, Any]:
     """Run one scenario end to end and return its result record.
 
@@ -156,6 +177,21 @@ def run_case(
     ``trajectories`` adds ``trajectory_est`` and ``trajectory_ref`` (time and positions, the
     reference resampled onto the estimate's timestamps) for a caller that draws the path. It
     is off by default so the benchmark JSON stays small and unchanged.
+
+    ``gnss_hook`` receives the GNSS stream after the scenario has been applied and returns the
+    stream the filter sees. It is for a fault the scenario schema does not describe, such as a
+    position offset (a spoof); the fault matrix uses it. The hook is not part of the scenario,
+    so it is not in ``config_hash``: a caller that uses it must record the fault itself.
+
+    ``fdir_events`` adds the FDIR event log (declarations, lockouts, inflation grants) to the record
+    as ``fdir_events``. It is off by default so the benchmark JSON is unchanged.
+
+    ``force_inject`` runs the injection layer even when the scenario has no outage or camera drop.
+    By default the layer is skipped for such a scenario, which means the IMU noise and bias it adds
+    are skipped too: the benchmark cases without an outage run with a noiseless IMU and the cases
+    with one do not (``docs/MODEL.md``, finding 7). The default is kept so published results do not
+    move; a caller that compares scenarios with each other, as the fault matrix does, sets this so
+    every run takes the same path.
     """
     merged = {**defaults.get("synthetic", {}), **case.get("synthetic", {})}
     syn = SyntheticConfig(**merged)
@@ -179,11 +215,15 @@ def run_case(
     gnss_clean = gnss_fixes(reference, scenario.gnss)
     vision_clean = visual_updates(reference, scenario.vision)
 
-    if scenario.camera_drop is not None or scenario.gnss_outages or scenario.vision_outages or scenario.imu_outages:
+    degraded = scenario.camera_drop is not None or scenario.gnss_outages or scenario.vision_outages
+    if force_inject or degraded or scenario.imu_outages:
         streams = inject(scenario, imu_clean, gnss_clean, vision_clean, reference=reference)
         imu, gnss, vision, manifest = streams.imu, streams.gnss, streams.vision, streams.manifest
     else:
         imu, gnss, vision, manifest = imu_clean, gnss_clean, vision_clean, {}
+
+    if gnss_hook is not None:
+        gnss = gnss_hook(gnss)
 
     cfg = _eskf_config(scenario, keys)
 
@@ -292,6 +332,9 @@ def run_case(
     rpe = relative_pose_error(est, reference, delta=float(keys.get("rpe_delta_s", 1.0)), mode="time")
     record["rpe_1s"] = rpe.as_dict()
     record["drift"] = drift(ate["none"], reference).as_dict()
+
+    if fdir_events:
+        record["fdir_events"] = list(est.metadata.get("fdir_events", []))
 
     if trajectories:
         record["trajectory_est"] = {"t": est.t.tolist(), "positions": est.positions.tolist()}
