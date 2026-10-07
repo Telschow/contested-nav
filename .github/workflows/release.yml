@@ -1,0 +1,105 @@
+name: Release
+
+# Builds the sdist and wheel and a CycloneDX SBOM, checks the wheel installs and runs, and on a
+# version tag attests the provenance of the build and creates a DRAFT GitHub release for the
+# maintainer to publish.
+#
+# A manual run is a dry run. It builds and checks and publishes nothing. It does not attest either:
+# an attestation is a public record, and a dry run should not leave one for an artifact that is never
+# released.
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build and check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Check the version, the notes and the changelog agree
+        # On a tag every problem fails the run. On a manual run the problems are printed and the run
+        # continues, so a dry run shows what would block a release without failing.
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            python scripts/check_release.py --tag "${GITHUB_REF_NAME}"
+          else
+            python scripts/check_release.py --dry-run
+          fi
+
+      - name: Build the sdist and wheel
+        run: |
+          python -m pip install --upgrade pip build==1.6.1
+          python -m build
+
+      - name: Install the wheel in a clean environment and run it from another directory
+        run: |
+          python -m venv /tmp/verify
+          /tmp/verify/bin/python -m pip install --upgrade pip
+          /tmp/verify/bin/python -m pip install dist/*.whl
+          cd /tmp
+          /tmp/verify/bin/navkit --version
+          /tmp/verify/bin/navkit run --only gnss_only --out /tmp/verify_gnss.json
+
+      - name: Generate a CycloneDX SBOM of the runtime dependencies
+        run: |
+          python -m venv /tmp/target
+          /tmp/target/bin/pip install .
+          python -m venv /tmp/generator
+          /tmp/generator/bin/pip install cyclonedx-bom==7.5.0
+          /tmp/generator/bin/cyclonedx-py environment --pyproject pyproject.toml --of JSON --sv 1.6 -o dist/navkit.cdx.json /tmp/target/bin/python
+
+      - name: Record the checksums
+        run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-files
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    name: attest and draft the release
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the draft release
+      id-token: write # the Sigstore identity the attestation is signed with
+      attestations: write # store the attestation
+      actions: read # download the build's artifact
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download what the build job produced
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "${GITHUB_RUN_ID}" --name release-files --dir out
+
+      - name: Attest the provenance of the sdist and the wheel
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            out/*.whl
+            out/*.tar.gz
+
+      - name: Create a draft release
+        # A draft: nothing is public until the maintainer publishes it.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "${GITHUB_REF_NAME}" out/* \
+            --draft --verify-tag \
+            --title "navkit ${VERSION}" \
+            --notes-file "docs/releases/${VERSION}.md"
