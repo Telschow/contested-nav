@@ -1,0 +1,46 @@
+name: Links
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "41 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: links-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  internal:
+    # Relative links and heading anchors in every Markdown file. Offline, deterministic, and fast,
+    # so it can gate a pull request.
+    name: relative links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: python scripts/check_links.py
+
+  external:
+    # http(s) links need the network and fail for reasons that are not ours (a host that is down
+    # for an hour), so they are checked weekly and on demand, never on a pull request.
+    name: external links
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --no-progress --max-retries 3 --timeout 20
+            --exclude 'localhost' --exclude '127\.0\.0\.1'
+            --accept '200..=299,429'
+            README.md CONTRIBUTING.md SECURITY.md 'docs/**/*.md'
+          fail: true
