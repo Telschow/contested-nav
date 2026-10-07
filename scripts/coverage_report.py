@@ -52,6 +52,7 @@ FLOORS: dict[str, float] = {
     "src/navkit/seed_sweep.py": 75.0,
     "src/navkit/scene_sweep.py": 80.0,
     "src/navkit/figures.py": 70.0,
+    "src/navkit/outage_sweep.py": 80.0,
     "src/navkit/degrade/config.py": 50.0,
     "src/navkit/degrade/inject.py": 50.0,
 }

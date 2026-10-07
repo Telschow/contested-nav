@@ -96,7 +96,8 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 | `fdir/records.py` coverage | 70% | 99.2% | as above |
 | `seed_sweep.py` coverage | 75% | 87.0% | as above |
 | `scene_sweep.py` coverage | 80% | 97.4% | as above |
-| `figures.py` coverage | 70% | 81.8% | as above |
+| `figures.py` coverage | 70% | 86.0% | as above |
+| `outage_sweep.py` coverage | 80% | 98.4% | as above |
 | `fdir/nis_monitor.py` coverage | 80% | 98.8% | as above |
 | `degrade/` coverage | 50% | 78.0% (`config.py`) / 84.2% (`inject.py`) | as above |
 | Docs | README + architecture + calibration + ADR-0001..0008 | 8 of 8 docs | manual |
