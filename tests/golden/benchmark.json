@@ -500,7 +500,7 @@
    "claim_type": "MEASUREMENT",
    "config_hash": "c327078a657d81a3",
    "data_class": "synthetic",
-   "description": "GNSS at 5 Hz, no outage, no vision. This is the reference point every other case is read against; it establishes that the filter is calibrated when a satellite solution is available.",
+   "description": "GNSS at 5 Hz, no outage, no vision. The reference every other case is read against. Its verdict is mixed rather than clean: mean NEES sits slightly above the expected value while no epoch leaves the 2-sigma ellipsoid.",
    "drift": {
     "duration_s": 30.0,
     "final_drift_pct_path_length": 1.1482712349114776,
@@ -1016,7 +1016,7 @@
    "claim_type": "MEASUREMENT",
    "config_hash": "197860468d3e6789",
    "data_class": "synthetic",
-   "description": "15 s GNSS outage, 5 s to 20 s, with vision OFF. This is the honest baseline for a contested receiver: the error grows, the filter knows it grows, and the coverage stays at nominal throughout.",
+   "description": "15 s GNSS outage, 5 s to 20 s, with vision off. The baseline for a contested receiver: the error grows and so does the claimed uncertainty, and coverage stays at or above nominal. The verdict is mixed because mean NEES is slightly above the expected value.",
    "drift": {
     "duration_s": 30.0,
     "final_drift_pct_path_length": 1.4768726456583667,
@@ -1605,7 +1605,7 @@
    "claim_type": "MEASUREMENT",
    "config_hash": "f8853c18d7b73e02",
    "data_class": "synthetic",
-   "description": "The same 15 s outage with vision ON. This is the case the 21-state refactor was supposed to fix, and the numbers say it did not: the filter reports roughly 0.3 m of uncertainty while being tens of metres wrong, and coverage collapses. That is why vision_enabled defaults to false, and why closing the gap needs a pose graph rather than a better filter.",
+   "description": "The same 15 s outage with vision on. Position error is lower than the control in this window, but the claimed uncertainty stays small and coverage collapses: accurate and confidently wrong. That is why vision_enabled defaults to false. The accuracy gain depends on when the outage starts (see the outage sweep); the overconfidence does not.",
    "drift": {
     "duration_s": 30.0,
     "final_drift_pct_path_length": 7.231218239703128,
@@ -2222,7 +2222,7 @@
    "claim_type": "MEASUREMENT",
    "config_hash": "743faa6f09841e35",
    "data_class": "synthetic",
-   "description": "Visual aiding through the outage with 30% of camera frames dropped in bursts. Checks that the anchor model does not collapse when the visual stream is intermittent rather than clean.",
+   "description": "Visual aiding through the outage with 30% of camera frames dropped in 1 s bursts. Checks whether an intermittent visual stream changes the result. It does not: the filter is still overconfident, with a smaller error than the clean case.",
    "drift": {
     "duration_s": 30.0,
     "final_drift_pct_path_length": 4.930270283788833,
@@ -3387,7 +3387,7 @@
    "claim_type": "MEASUREMENT",
    "config_hash": "94d39ee548927bc5",
    "data_class": "synthetic",
-   "description": "Visual odometry at 20 Hz with no GNSS. Calibrated, and much better than dead reckoning, but it cannot be trusted for an unbounded outage: a single anchor held for a long run freezes the position uncertainty.",
+   "description": "Visual odometry at 20 Hz with no GNSS. In this fixture it is less accurate than dead reckoning and severely overconfident: nothing constrains the absolute pose, and the claimed uncertainty is far smaller than the error.",
    "drift": {
     "duration_s": 30.0,
     "final_drift_pct_path_length": 12.711478190738829,
@@ -3719,7 +3719,7 @@
  },
  "claim_type": "MEASUREMENT",
  "config_file": "configs/benchmark.yaml",
- "config_sha256": "1a5932987f82aa90d62482a47cba938d81014ca7f814f5730f3b05a881ce1899",
+ "config_sha256": "83028fb85d621fb3c859ca23e7233192606a4d31f103580c47dd9a76e37ceb1e",
  "data_class": "synthetic",
  "disclaimer": "All numbers are from a known-answer synthetic fixture. They are not field measurements and must not be presented as real-sensor performance.",
  "schema": "navkit-benchmark/1"
