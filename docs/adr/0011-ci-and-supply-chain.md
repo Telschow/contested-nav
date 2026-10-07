@@ -29,6 +29,25 @@ what is in place on `main`; it is deliberately modest and says what it leaves ou
 - A build job that installs the wheel in a clean environment and runs the CLI from another
   directory, and a container job that builds the image.
 
+**Release with provenance.** `.github/workflows/release.yml` runs on a version tag
+(`vMAJOR.MINOR.PATCH`) and, as a dry run, by hand.
+- It checks that the tag, `pyproject.toml`, `navkit.__version__`, `docs/releases/<version>.md`
+  (without its DRAFT banner) and a `CHANGELOG.md` section agree (`scripts/check_release.py`). On a
+  tag any disagreement fails the run; on a manual run it is only printed.
+- It builds the sdist and wheel, installs the wheel in a clean environment and runs the CLI from
+  another directory, generates a CycloneDX SBOM, and records SHA-256 checksums.
+- On a tag only, a second job, the only one with write permissions, attests the build provenance of
+  the sdist and the wheel (`actions/attest-build-provenance`, signed through Sigstore with the
+  workflow's identity) and creates a **draft** release with the artifacts, the SBOM, the checksums
+  and the versioned notes. Nothing is public until the maintainer publishes it.
+- A manual run builds and checks and publishes and attests nothing: an attestation is a public
+  record, and a dry run should not leave one for an artifact that is never released.
+- The Dockerfile base image is pinned by digest. Dependabot proposes the next digest and the
+  container job rebuilds the image to check it.
+- `tests/test_supply_chain.py` checks all of the above that is a property of the files: every action
+  is pinned to a SHA, the base image to a digest, the release workflow is read-only by default,
+  and only the tag-only job can write or attest.
+
 **Look for what the tests cannot see.**
 - CodeQL on push, pull request and weekly.
 - A security workflow: a secret scan of the tracked files and the whole history (one finding is
@@ -51,9 +70,14 @@ are automated review services, not gates, are not required.
 
 ## Not done
 
-- **No signed releases, no build provenance (SLSA), no package published to PyPI.** There is no
-  release yet; when there is one, provenance and signing belong in its pipeline.
+- **No package is published to PyPI**, and the release is not signed with a maintainer key. The
+  provenance attestation says which workflow built the artifact from which commit; it does not say
+  a person reviewed it. Verify one with `gh attestation verify <file> --repo Telschow/contested-nav`.
+- **The build backend floats.** `pyproject.toml` asks for `hatchling>=1.21`, so two builds of the
+  same commit at different times can use different backend versions. The attestation records the
+  build, not a reproducible one.
+- **The release workflow has not run for a tag.** It has been exercised only as a dry run, which
+  cannot test the attest and release steps.
 - **No OpenSSF Scorecard or similar external rating.**
-- **The container base image is a tag, not a digest.**
 - **`uv.lock` is not used by CI.** It is stale and either needs to be adopted or deleted.
 - **No branch protection is configured by the repository's own files.** It is a setting.
