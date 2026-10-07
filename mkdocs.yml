@@ -131,6 +131,7 @@ nav:
       - Limitations: defense/LIMITATIONS.md
       - Roadmap: roadmap.md
       - Prioritisation (RICE): prioritisation.md
+      - Risk register: risks.md
       - Changelog: changelog.md
       - Constraints: constraints.md
       - Product management:
