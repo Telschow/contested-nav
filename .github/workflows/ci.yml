@@ -267,6 +267,10 @@ jobs:
           for n in 1 2; do
             python scripts/outage_sweep.py --seeds 2 --starts 5 --durations 5 10 --out /tmp/outage_sweep_$n.json
           done
+          # So does the mismatch sweep: one case, two factors, two seeds.
+          for n in 1 2; do
+            python scripts/mismatch_sweep.py --cases gnss_only --scales 0.5 1 --seeds 2 --out /tmp/mismatch_sweep_$n.json
+          done
           python - <<'PY'
           import json, sys
 
@@ -284,12 +288,19 @@ jobs:
               return json.dumps(strip(json.load(open(path))), sort_keys=True)
 
           failed = []
-          for name in ("seed_sweep", "scene_sweep", "outage_sweep"):
+          for name in ("seed_sweep", "scene_sweep", "outage_sweep", "mismatch_sweep"):
               a, b = f"/tmp/{name}_1.json", f"/tmp/{name}_2.json"
               if norm(a) != norm(b):
                   failed.append(name)
           if failed:
               print("NOT reproducible across runs: " + ", ".join(failed))
               sys.exit(1)
-          print("all three sweeps are reproducible")
+          print("all four sweeps are reproducible")
           PY
+
+      - name: The committed mismatch result matches a fresh run
+        # docs/mismatch.md is generated from docs/data/mismatch_sweep.csv, and its prose is
+        # tested against that file. This reruns the default grid and fails if the file no
+        # longer matches, so a change that moves the result cannot leave the page describing
+        # the old one. Numbers are compared to 1e-6 relative, as in ADR-0009.
+        run: python scripts/mismatch_sweep.py --out /tmp/mismatch_full.json --compare docs/data/mismatch_sweep.csv

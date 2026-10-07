@@ -114,16 +114,32 @@ def _jsonable(obj: Any) -> Any:
     return obj
 
 
+def _sigma_scale(keys: dict[str, Any], key: str) -> float:
+    """A positive multiplier on the noise the filter assumes for one sensor (default 1)."""
+    scale = float(keys.get(key, 1.0))
+    if not scale > 0.0 or not np.isfinite(scale):
+        raise ValueError(f"estimator key {key!r} must be a positive finite number, got {scale!r}")
+    return scale
+
+
 def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
-    """Build the filter config from a scenario plus estimator overrides."""
+    """Build the filter config from a scenario plus estimator overrides.
+
+    By default the filter is told the noise the generator used. ``gnss_sigma_scale`` and
+    ``vision_sigma_scale`` multiply the sigmas the *filter* assumes and leave the generator
+    alone, so the same data can be filtered with a wrong noise model. A value below 1 makes
+    the filter more confident in the sensor than it should be; above 1, less.
+    """
     noise = scenario.imu_noise
+    gnss_scale = _sigma_scale(keys, "gnss_sigma_scale")
+    vision_scale = _sigma_scale(keys, "vision_sigma_scale")
     return EskfConfig(
         imu_noise=noise.scaled(scenario.imu_noise_scale),
         gnss_enabled=scenario.gnss.enabled,
-        gnss_position_sigma_m=scenario.gnss.sigma_m,
+        gnss_position_sigma_m=scenario.gnss.sigma_m * gnss_scale,
         vision_enabled=scenario.vision.enabled and bool(keys.get("vision_fuse", False)),
-        vision_rot_sigma_deg=scenario.vision.rot_sigma_deg,
-        vision_trans_sigma_m=scenario.vision.trans_sigma_m,
+        vision_rot_sigma_deg=scenario.vision.rot_sigma_deg * vision_scale,
+        vision_trans_sigma_m=scenario.vision.trans_sigma_m * vision_scale,
         vision_keyframe_interval=keys.get("vision_keyframe_interval", 1),
         vision_anchor_modelled=bool(keys.get("vision_anchor_modelled", True)),
         anchor_pos_sigma_m=keys.get("anchor_pos_sigma_m", 1.0),
