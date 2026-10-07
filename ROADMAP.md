@@ -266,6 +266,10 @@ a technical one.
 configuration, or an explicitly declared gap. The SRS has a traceability matrix
 (section 2); it is not yet checked by a script, so it can drift.
 
+## Phase 5 backlog
+
+The next work is ordered by RICE score in [docs/prioritisation.md](docs/prioritisation.md). The inputs are judgements, and the page shows how stable the order is.
+
 ---
 
 ## Open blockers
