@@ -464,39 +464,34 @@ short. See [CONSTRAINTS.md](CONSTRAINTS.md).
 | Evaluation | `src/navkit/eval/`, `docs/calibration.md` |
 | Reproducibility | `scripts/run_benchmark.py`, `scripts/seed_sweep.py`, `scripts/scene_sweep.py` |
 | Limitations | `docs/defense/LIMITATIONS.md`, `CONSTRAINTS.md` |
-| Demo | `docs/demo.md`, `scripts/generate_demo.py`, `docs/architecture/demo-snapshot.png`, `docs/architecture/demo.html`, `docs/architecture/demo.workflow.json` |
+| Demo | `docs/demo.md`, `scripts/generate_demo.py`, `docs/architecture/demo-snapshot.png` |
 
 ## See it in action
 
-This repository ships a deterministic, end‑to‑end visualisation of the headline scientific result. The static architecture diagram below is the immediate preview; the interactive HTML version provides an explorable view of the eight‑stage pipeline. Both are generated from the actual navkit estimator/FDIR pipeline, not from hand‑typed numbers, and reproduce the same computation that produces every number in the documentation.
+`scripts/generate_demo.py` runs the `outage_visual` benchmark case, through the same
+`navkit.benchmark.run_case` call that produces every number in the documentation, and
+renders 25 frames that reveal the run in time order: ground truth against the estimate, the
+part of the path flown with GNSS denied, and the position error and claimed sigma. The
+final frame is committed as a preview:
 
-**Static preview (architecture diagram):**
-![Architecture diagram](docs/architecture/demo-snapshot.png)
+![Final frame of the demo](docs/architecture/demo-snapshot.png)
 
-The diagram visualises the eight‑stage deterministic demo: normal navigation → GNSS denial → visual aiding → calibration problem → FDIR response → final quantitative result.
-
-**Interactive version:** [`docs/architecture/demo.html`](docs/architecture/demo.html)
-
-Run the demo locally:
+It shows the benchmark headline: ATE RMSE 2.541 m, claimed 1-sigma 0.161 m, mean NEES 419.4,
+2-sigma-per-axis coverage 20.0%. A test fails if the demo's headline differs from the
+committed benchmark snapshot.
 
 ```bash
 python scripts/generate_demo.py --out artifacts/demo
 ```
 
-The script creates (in `artifacts/demo`, which is gitignored):
+It writes, into `artifacts/demo` (gitignored):
 
-* ``artifacts/demo/frames/*.png`` – 25 frames (15–25 s) showing GNSS denial, visual aiding, the overconfidence divergence, and the FDIR response.
-* ``artifacts/demo/results.json`` – the full per‑epoch state from the navkit run (timestamps, position error, covariance, NEES, coverage).
-* ``artifacts/demo/metadata.json`` – reproducibility metadata (seed, scenario, estimator, etc.).
+* `frames/*.png`: the 25 frames
+* `snapshot.png`: the final frame, 1920x1080
+* `results.json`: the benchmark record for the case, with the estimated and reference paths
+* `metadata.json`: seed, scenario and headline metrics
 
-The canonical GitHub-visible presentation assets are under `docs/architecture/`:
-
-* ``docs/architecture/demo-snapshot.png`` – 1920×1080 static thumbnail
-* ``docs/architecture/demo.html`` – interactive explorable version
-
-All numbers displayed in the animation are computed from the deterministic navkit execution; no constants such as 2.541 m, 0.161 m, 419.4 or 20.0 % are hard‑coded. If the implementation changes, the visualisation updates automatically.
-
-The animation follows the storyboard documented in the repository’s implementation plan and preserves the existing scientific interpretation. It is intended as an engineering aid, not a replacement for the rigorous analysis in the documentation.
+More detail is in [`docs/demo.md`](docs/demo.md).
 
 ## License
 
