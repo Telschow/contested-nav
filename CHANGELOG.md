@@ -19,6 +19,11 @@ this project uses [semantic versioning](https://semver.org/).
 - Noise-mismatch sweep (`navkit sweep mismatch`): the filter is told sensor noise that is a factor of the
   true value, with the estimator keys `gnss_sigma_scale` and `vision_sigma_scale` (default 1, no change to
   any result). New page [Noise mismatch](docs/mismatch.md). ([#42](https://github.com/Telschow/contested-nav/issues/42))
+- Fault matrix (`navkit sweep faults`): eight fault modes measured against a clean control over five
+  seeds, with detection and false-alarm counts from the FDIR event log. New page
+  [Fault matrix](docs/faults.md); the FMEA-lite rows are updated from the results.
+  `run_case` gains `gnss_hook`, `fdir_events` and `force_inject`, all off by default.
+  ([#43](https://github.com/Telschow/contested-nav/issues/43))
 - Golden snapshot test of the seeded benchmark ([#12](https://github.com/Telschow/contested-nav/pull/12)); Hypothesis property tests for
   rotations, the filter's covariance and attitude, NEES and the chi-square functions ([#21](https://github.com/Telschow/contested-nav/pull/21)).
 - macOS and Windows test legs, and ADR-0009 on cross-platform numerics. ([#24](https://github.com/Telschow/contested-nav/pull/24))
