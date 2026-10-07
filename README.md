@@ -473,6 +473,7 @@ short. See [CONSTRAINTS.md](CONSTRAINTS.md).
 | Topic | Documentation |
 |-------|---------------|
 | Architecture | `docs/architecture.md` |
+| Model assumptions, units, config and result contract, FMEA-lite | [`docs/MODEL.md`](docs/MODEL.md) |
 | State estimation | `src/navkit/estimators/`, `docs/architecture.md` |
 | Calibration | `docs/calibration.md` |
 | FDIR | ADR-0005, ADR-0006, ADR-0008 |
@@ -480,6 +481,7 @@ short. See [CONSTRAINTS.md](CONSTRAINTS.md).
 | Evaluation | `src/navkit/eval/`, `docs/calibration.md` |
 | Reproducibility | `scripts/run_benchmark.py`, `scripts/seed_sweep.py`, `scripts/scene_sweep.py` |
 | Limitations | `docs/defense/LIMITATIONS.md`, `CONSTRAINTS.md` |
+| Path to real systems (note) | [`docs/REAL_SYSTEMS.md`](docs/REAL_SYSTEMS.md) |
 | Demo | `docs/demo.md`, `scripts/generate_demo.py`, `docs/architecture/demo-snapshot.png` |
 
 ## See it in action
