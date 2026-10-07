@@ -16,6 +16,9 @@ this project uses [semantic versioning](https://semver.org/).
   ships inside the wheel. ([#16](https://github.com/Telschow/contested-nav/pull/16), [#19](https://github.com/Telschow/contested-nav/pull/19), [#22](https://github.com/Telschow/contested-nav/pull/22), [#25](https://github.com/Telschow/contested-nav/pull/25))
 - Outage sweep: the GNSS outage start and duration swept for the control and the visual case,
   with bootstrap intervals, a CSV and a figure. ([#22](https://github.com/Telschow/contested-nav/pull/22))
+- Noise-mismatch sweep (`navkit sweep mismatch`): the filter is told sensor noise that is a factor of the
+  true value, with the estimator keys `gnss_sigma_scale` and `vision_sigma_scale` (default 1, no change to
+  any result). New page [Noise mismatch](docs/mismatch.md). ([#42](https://github.com/Telschow/contested-nav/issues/42))
 - Golden snapshot test of the seeded benchmark ([#12](https://github.com/Telschow/contested-nav/pull/12)); Hypothesis property tests for
   rotations, the filter's covariance and attitude, NEES and the chi-square functions ([#21](https://github.com/Telschow/contested-nav/pull/21)).
 - macOS and Windows test legs, and ADR-0009 on cross-platform numerics. ([#24](https://github.com/Telschow/contested-nav/pull/24))
