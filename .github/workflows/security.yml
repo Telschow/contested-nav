@@ -1,0 +1,90 @@
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Weekly, so a vulnerability disclosed after a dependency was merged is still noticed.
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the history scan needs every commit
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Scan the tracked files
+        run: python scripts/scan_secrets.py
+      - name: Scan the whole history
+        # One finding is already known and accepted (see KNOWN_HISTORY in the script): a
+        # provider key that was committed once, redacted the next day and rotated. A new
+        # finding fails the build.
+        run: python scripts/scan_secrets.py --history
+
+  dependency-review:
+    name: dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: never
+
+  pip-audit:
+    name: pip-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Install the project with its dev tools into one environment, the auditor into another
+        run: |
+          python -m venv /tmp/target
+          /tmp/target/bin/pip install ".[dev]"
+          python -m venv /tmp/auditor
+          /tmp/auditor/bin/pip install pip-audit==2.10.1
+      - name: Audit what was installed
+        # `navkit` itself is skipped by the tool because it is not on PyPI; every dependency
+        # is checked against the PyPI advisory database. Any known vulnerability fails.
+        run: |
+          SITE=$(/tmp/target/bin/python -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
+          /tmp/auditor/bin/pip-audit --path "$SITE"
+
+  sbom:
+    name: SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Install the runtime dependencies only, and the generator separately
+        run: |
+          python -m venv /tmp/target
+          /tmp/target/bin/pip install .
+          python -m venv /tmp/generator
+          /tmp/generator/bin/pip install cyclonedx-bom==7.5.0
+      - name: Generate a CycloneDX SBOM
+        run: /tmp/generator/bin/cyclonedx-py environment --pyproject pyproject.toml --of JSON --sv 1.6 -o navkit.cdx.json /tmp/target/bin/python
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: navkit-sbom-cyclonedx
+          path: navkit.cdx.json
+          if-no-files-found: error
