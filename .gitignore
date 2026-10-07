@@ -51,3 +51,4 @@ results/
 artifacts/
 *.json.tmp
 coverage.json
+.hypothesis/
