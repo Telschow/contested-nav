@@ -129,6 +129,10 @@ twice and fails the build if the two runs disagree.
 .venv/bin/python scripts/coverage_report.py             # coverage ratchet
 ```
 
+After `pip install -e .` the benchmark is also an installed command, `navkit run
+--markdown`, which takes the same options and gives the same numbers. It works from
+any directory, because the default scenario file is shipped inside the package.
+
 Scenarios live in [`configs/benchmark.yaml`](configs/benchmark.yaml). JSON lands
 in `results/` (gitignored); the figures under `docs/figures/` are committed
 because they are the evidence. CI runs the benchmark and both sweeps twice and

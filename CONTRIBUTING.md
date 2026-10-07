@@ -106,7 +106,8 @@ audit.
 ## Reproducing the published results
 
 ```bash
-python scripts/run_benchmark.py --out results/benchmark.json   # ~40 s, 7 cases
+python scripts/run_benchmark.py --out results/benchmark.json   # ~16 s, 7 cases
+# or, after `pip install -e .`: navkit run --out results/benchmark.json
 python scripts/seed_sweep.py --seeds 10 --markdown             # sensor noise
 python scripts/scene_sweep.py --seeds 8  --markdown            # trajectory
 python scripts/make_figures.py                                 # docs/figures/*.png
