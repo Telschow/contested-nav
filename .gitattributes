@@ -1,0 +1,5 @@
+# Files whose exact bytes are hashed or compared by tests must not be rewritten to CRLF by a
+# Windows checkout. `config_sha256` in every result is the hash of configs/benchmark.yaml, and the
+# first Windows CI leg failed because autocrlf changed the bytes and so the hash.
+configs/*.yaml text eol=lf
+tests/golden/*.json text eol=lf
