@@ -1,0 +1,37 @@
+# Install once with `make hooks` (or `pre-commit install`). The Python hooks run the same
+# ruff and mypy that CI runs, from the environment `make install` creates, so a hook can
+# never disagree with CI about a version.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: end-of-file-fixer
+        exclude: ^(tests/golden/|docs/audit/|docs/index\.html$)
+      - id: trailing-whitespace
+        # Markdown uses two trailing spaces for a line break; the audit snapshots are history.
+        exclude: ^(tests/golden/|docs/audit/|docs/index\.html$|.*\.md$)
+
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: python -m ruff check
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: ruff format --check
+        entry: python -m ruff format --check
+        language: system
+        types: [python]
+      - id: mypy
+        name: mypy src
+        entry: python -m mypy src --ignore-missing-imports
+        language: system
+        pass_filenames: false
+        files: ^(src/|pyproject\.toml$)

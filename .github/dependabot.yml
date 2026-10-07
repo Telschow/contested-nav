@@ -37,3 +37,11 @@ updates:
           - "build"
           - "wheel"
           - "setuptools"
+
+  # The base image of the Dockerfile. Bumps arrive as pull requests that rebuild it in CI.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2
+    labels: [dependencies, ci]
