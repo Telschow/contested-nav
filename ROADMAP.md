@@ -265,7 +265,9 @@ a technical one.
 
 **Exit test:** a reviewer can trace every requirement in the SRS to a test, a
 configuration, or an explicitly declared gap. The SRS has a traceability matrix
-(section 2); it is not yet checked by a script, so it can drift.
+(section 2), now checked by `scripts/check_srs_trace.py` against `docs/product_management/srs_trace.csv`:
+every requirement and criterion has a test, a checked configuration value or a declared gap, and the
+roll-up counts follow from the verdicts. The check is structural; it does not re-measure a number.
 
 ## Phase 5 backlog
 

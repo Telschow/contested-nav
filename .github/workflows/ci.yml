@@ -110,6 +110,10 @@ jobs:
         # were disabled in the config and the job could not see the 12 errors
         # they were hiding.
         run: mypy src --ignore-missing-imports
+      - name: SRS traceability
+        # Every requirement and acceptance criterion in the SRS has a test, a checked configuration
+        # value or a declared gap, and the roll-up counts follow from the verdicts. Structural only.
+        run: python scripts/check_srs_trace.py
 
   build:
     name: build

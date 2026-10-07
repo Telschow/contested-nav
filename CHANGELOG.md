@@ -24,6 +24,10 @@ this project uses [semantic versioning](https://semver.org/).
   [Fault matrix](docs/faults.md); the FMEA-lite rows are updated from the results.
   `run_case` gains `gnss_hook`, `fdir_events` and `force_inject`, all off by default.
   ([#43](https://github.com/Telschow/contested-nav/issues/43))
+- SRS traceability check (`scripts/check_srs_trace.py`, `docs/product_management/srs_trace.csv`): every
+  requirement and acceptance criterion has a test, a checked configuration value or a declared gap, and
+  the roll-up counts follow from the verdicts. It found two wrong roll-up counts and stale prose, now
+  fixed. ([#49](https://github.com/Telschow/contested-nav/issues/49))
 - Golden snapshot test of the seeded benchmark ([#12](https://github.com/Telschow/contested-nav/pull/12)); Hypothesis property tests for
   rotations, the filter's covariance and attitude, NEES and the chi-square functions ([#21](https://github.com/Telschow/contested-nav/pull/21)).
 - macOS and Windows test legs, and ADR-0009 on cross-platform numerics. ([#24](https://github.com/Telschow/contested-nav/pull/24))
