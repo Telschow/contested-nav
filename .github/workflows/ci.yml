@@ -102,6 +102,15 @@ jobs:
           # Importing is the actual test: a wheel that builds but cannot be
           # imported is a packaging bug the build step alone will not catch.
           /tmp/verify/bin/python -c "import navkit; print(navkit.__version__)"
+      - name: Check the installed command works from another directory
+        # The default scenario file is copied into the wheel at build time. Running one
+        # case from a directory that is not the repository proves the entry point and
+        # the packaged file, which the source-tree tests cannot.
+        run: |
+          cd /tmp
+          /tmp/verify/bin/navkit --version
+          /tmp/verify/bin/navkit run --list
+          /tmp/verify/bin/navkit run --only gnss_only --out /tmp/verify_gnss.json
 
   benchmark:
     name: benchmark reproducibility
