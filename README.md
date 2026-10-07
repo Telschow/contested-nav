@@ -106,7 +106,7 @@ against the source tree.
 python -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 
-.venv/bin/python -m pytest           # 624 passed, 3 skipped, 2 xfailed, ~120 s on a fresh clone
+.venv/bin/python -m pytest           # 643 passed, 3 skipped, 2 xfailed, ~100 s on a fresh clone
 ```
 
 Runtime dependencies are NumPy, Matplotlib and PyYAML. There is no SciPy, no
