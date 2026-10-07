@@ -14,6 +14,10 @@ The central result is intentionally uncomfortable:
 **with GNSS denied and visual odometry enabled, the filter becomes substantially
 more accurate by ATE while becoming severely overconfident in its uncertainty.**
 
+The overconfidence does not depend on the outage. The accuracy gain does: an
+[outage sweep](#status-and-limits) found it for outages that start early, and not for
+outages that start later in the run.
+
 The repository makes that failure reproducible, quantifies it with NEES and
 ellipsoidal coverage, and ships visual fusion disabled by default rather than
 presenting the uncalibrated configuration as trustworthy.
@@ -67,7 +71,7 @@ decision, not a tuning pass:
   and `outage_visual` holds mean NEES **419.7 [414.4, 424.9]** at 20.0% coverage.
 - **Sweeps cannot disagree with themselves.** Intervals are deterministic
   percentile bootstrap, 10 000 resamples, fixed RNG seed. CI runs the benchmark
-  and both sweeps twice and fails if any two runs differ.
+  and the sweeps twice and fails if any two runs differ.
 - **The fix is partly shipped, and is still not enough.** Adaptive covariance
   inflation ([ADR-0006](docs/adr/0006-nis-window-monitor.md)) took this case from
   ATE **5.059 m to 2.541 m** and rejections **51 to 5** — and in doing so made
@@ -125,19 +129,20 @@ twice and fails the build if the two runs disagree.
 .venv/bin/python scripts/run_benchmark.py --markdown   # table + results/benchmark.json
 .venv/bin/python scripts/seed_sweep.py --seeds 10      # noise robustness
 .venv/bin/python scripts/scene_sweep.py                 # geometry robustness
+.venv/bin/python scripts/outage_sweep.py                # outage start and length, ~2.5 min
 .venv/bin/python scripts/make_figures.py                # docs/figures/*.png
 .venv/bin/python scripts/coverage_report.py             # coverage ratchet
 ```
 
 After `pip install -e .` the same tools are installed commands: `navkit run --markdown`,
-`navkit sweep seeds`, `navkit sweep scenes` and `navkit figures`. They take the same
+`navkit sweep seeds`, `navkit sweep scenes`, `navkit sweep outages` and `navkit figures`. They take the same
 options as the scripts and give the same numbers. They work from any directory, because
 the default scenario file is shipped inside the package; output paths such as `results/`
 and `docs/figures/` are relative to where you run them.
 
 Scenarios live in [`configs/benchmark.yaml`](configs/benchmark.yaml). JSON lands
 in `results/` (gitignored); the figures under `docs/figures/` are committed
-because they are the evidence. CI runs the benchmark and both sweeps twice and
+because they are the evidence. CI runs the benchmark and the sweeps twice and
 fails the build if any two runs disagree.
 
 ## Results
@@ -414,8 +419,19 @@ and refuses to ship the broken configuration.
   *not* shown: any real capture, any measured sensor characteristic, or any scene
   outside an analytic trajectory generator. Eight synthetic scenes bound the
   claim "the anchor model is structurally wrong under visual aiding"; they do not
-  bound its behaviour on real imagery. Varying duration, outage timing and outage
-  duration remains open.
+  bound its behaviour on real imagery. Scenario duration remains fixed at 30 s.
+- **The outage window matters for accuracy, not for calibration.** The outage
+  sweep (`navkit sweep outages`, 8 windows, 5 seeds each, one synthetic path)
+  gives `outage_visual` a 2-sigma coverage of 10.4% to 39.2% and a mean NEES of
+  61.5 to 10 322 in **all 40 runs**, including 5 s outages; `outage_control`
+  stays at 97.3% to 100.0% coverage in all 40. Accuracy is different. With the
+  outage starting at 5 s, vision beats the control in all 5 seeds for 10 s, 15 s
+  and 20 s outages (ATE ratio 0.14 to 0.96) and in 2 of 5 for 5 s. With the outage
+  starting at 10 s, vision is **worse** than the control in all 20 runs (ATE
+  ratio 1.26 to 7.11). The cause is not tested here. So "vision improves ATE"
+  is a property of the benchmark's early outage, not a general result.
+
+  ![Outage sweep](docs/figures/outage-sweep.png)
 - **Not flight-ready.** No sensor driver, no live front end, no real-time loop,
   no failure-mode handling beyond a measurement gate.
 - **TUM VI regression is partial.** The trajectory reader is validated against
