@@ -160,7 +160,6 @@ def run_case(
     trajectories: bool = False,
     gnss_hook: Callable[[GnssFix], GnssFix] | None = None,
     fdir_events: bool = False,
-    force_inject: bool = False,
 ) -> dict[str, Any]:
     """Run one scenario end to end and return its result record.
 
@@ -186,12 +185,9 @@ def run_case(
     ``fdir_events`` adds the FDIR event log (declarations, lockouts, inflation grants) to the record
     as ``fdir_events``. It is off by default so the benchmark JSON is unchanged.
 
-    ``force_inject`` runs the injection layer even when the scenario has no outage or camera drop.
-    By default the layer is skipped for such a scenario, which means the IMU noise and bias it adds
-    are skipped too: the benchmark cases without an outage run with a noiseless IMU and the cases
-    with one do not (``docs/MODEL.md``, finding 7). The default is kept so published results do not
-    move; a caller that compares scenarios with each other, as the fault matrix does, sets this so
-    every run takes the same path.
+    Every scenario goes through the injection layer, including one with no outage or camera drop.
+    The synthetic IMU has no noise of its own; the IMU noise and bias come from that layer, so
+    skipping it ran some cases with a noiseless IMU (ADR-0012).
     """
     merged = {**defaults.get("synthetic", {}), **case.get("synthetic", {})}
     syn = SyntheticConfig(**merged)
@@ -215,12 +211,8 @@ def run_case(
     gnss_clean = gnss_fixes(reference, scenario.gnss)
     vision_clean = visual_updates(reference, scenario.vision)
 
-    degraded = scenario.camera_drop is not None or scenario.gnss_outages or scenario.vision_outages
-    if force_inject or degraded or scenario.imu_outages:
-        streams = inject(scenario, imu_clean, gnss_clean, vision_clean, reference=reference)
-        imu, gnss, vision, manifest = streams.imu, streams.gnss, streams.vision, streams.manifest
-    else:
-        imu, gnss, vision, manifest = imu_clean, gnss_clean, vision_clean, {}
+    streams = inject(scenario, imu_clean, gnss_clean, vision_clean, reference=reference)
+    imu, gnss, vision, manifest = streams.imu, streams.gnss, streams.vision, streams.manifest
 
     if gnss_hook is not None:
         gnss = gnss_hook(gnss)
