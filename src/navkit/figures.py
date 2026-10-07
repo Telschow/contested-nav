@@ -24,6 +24,8 @@ matplotlib.use("Agg")  # headless: required for CI and for a server without a di
 import matplotlib.pyplot as plt
 import numpy as np
 
+from .hero import animate_hero, fig_hero
+
 FIGDIR = Path("docs") / "figures"
 
 # Colourblind-safe, and distinguishable in greyscale, because these get pasted
@@ -167,9 +169,76 @@ def fig_nees(cases: list[dict]) -> Path | None:
     return out
 
 
+def fig_outage_sweep(cells: list[dict], out: Path) -> Path:
+    """Error, NEES and coverage against outage length, one column per outage start.
+
+    Each line is a case and the band is its bootstrap 95% interval over noise seeds.
+    The reference lines are what a calibrated filter would show: NEES 3 and 99.3%
+    coverage of the 2-sigma ellipsoid. Written to ``out``, not ``FIGDIR``, because the
+    sweep is a command with its own output path.
+    """
+    from .eval.statistics import ellipsoid_coverage
+
+    starts = sorted({c["start_s"] for c in cells})
+    names = sorted({c["case"] for c in cells})
+    colours = dict(zip(names, (C_OK, C_ERR, C_CLAIM, C_GREY), strict=False))
+    rows = (
+        ("ate_rmse_m", "ATE RMSE (m)", False),
+        ("nees_mean", "mean NEES", True),
+        ("coverage_2sigma_pct", "2-sigma coverage (%)", False),
+    )
+    fig, axes = plt.subplots(len(rows), len(starts), figsize=(3.6 * len(starts) + 0.8, 7.2), squeeze=False, sharex=True)
+    expected_cov = 100.0 * ellipsoid_coverage(2.0, 3)
+    for j, start in enumerate(starts):
+        for i, (metric, label, logy) in enumerate(rows):
+            ax = axes[i][j]
+            for name in names:
+                pts = sorted(
+                    (c["duration_s"], c[metric])
+                    for c in cells
+                    if c["case"] == name and c["start_s"] == start and c[metric]
+                )
+                if not pts:
+                    continue
+                x = [d for d, _ in pts]
+                ax.plot(
+                    x, [m["mean"] for _, m in pts], marker="o", markersize=4, color=colours[name], label=name, zorder=3
+                )
+                ax.fill_between(
+                    x, [m["lo"] for _, m in pts], [m["hi"] for _, m in pts], color=colours[name], alpha=0.18, zorder=2
+                )
+            if metric == "nees_mean":
+                ax.axhline(3.0, color=C_GREY, linestyle="--", linewidth=1.0)
+            if metric == "coverage_2sigma_pct":
+                ax.axhline(expected_cov, color=C_GREY, linestyle="--", linewidth=1.0)
+                ax.set_ylim(0, 105)
+            if logy:
+                ax.set_yscale("log")
+            _style(
+                ax,
+                f"outage starts at {start:g} s" if i == 0 else "",
+                "outage duration (s)" if i == len(rows) - 1 else "",
+                label if j == 0 else "",
+            )
+    axes[0][0].legend(fontsize=7, frameon=False)
+    fig.text(
+        0.01,
+        0.005,
+        "Synthetic fixture. Dashed = calibrated. Band = bootstrap 95% over noise seeds.",
+        fontsize=7,
+        color=C_GREY,
+    )
+    fig.tight_layout(rect=(0, 0.02, 1, 1))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=160)
+    plt.close(fig)
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--results", type=Path, default=Path("results") / "benchmark.json")
+    ap.add_argument("--animate", action="store_true", help="also write docs/figures/hero.gif (a few seconds more)")
     args = ap.parse_args(argv)
 
     if not args.results.exists():
@@ -184,6 +253,13 @@ def main(argv: list[str] | None = None) -> int:
         p = fn(cases)
         if p:
             made.append(p)
+    hero = fig_hero(cases, FIGDIR / "hero.png")
+    if hero:
+        made.append(hero)
+    if args.animate:
+        gif = animate_hero(cases, FIGDIR / "hero.gif")
+        if gif:
+            made.append(gif)
 
     for p in made:
         print(f"wrote {p}", file=sys.stderr)

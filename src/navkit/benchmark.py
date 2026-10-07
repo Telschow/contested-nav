@@ -139,6 +139,7 @@ def run_case(
     defaults: dict[str, Any],
     seed: int | None = None,
     scene_seed: int | None = None,
+    trajectories: bool = False,
 ) -> dict[str, Any]:
     """Run one scenario end to end and return its result record.
 
@@ -151,6 +152,10 @@ def run_case(
     the sensor noise, so the question becomes "is this a property of the filter"
     instead of "was this a property of one noise draw". The two are independent
     on purpose, and passing both sweeps the full cross product.
+
+    ``trajectories`` adds ``trajectory_est`` and ``trajectory_ref`` (time and positions, the
+    reference resampled onto the estimate's timestamps) for a caller that draws the path. It
+    is off by default so the benchmark JSON stays small and unchanged.
     """
     merged = {**defaults.get("synthetic", {}), **case.get("synthetic", {})}
     syn = SyntheticConfig(**merged)
@@ -271,6 +276,9 @@ def run_case(
         record["error_time_series"] = {
             "t": est.t.tolist(),
             "position_error_m": headline.per_pose_position_m.tolist(),
+            # The filter's own per-axis 1-sigma, next to the error it claims to bound. The
+            # hero figure is this series against the error.
+            "claimed_sigma_p_m": claimed.tolist(),
         }
         if scenario.gnss_outages:
             baseline = float(np.median(headline.per_pose_position_m[: max(1, len(est) // 10)]))
@@ -284,6 +292,10 @@ def run_case(
     rpe = relative_pose_error(est, reference, delta=float(keys.get("rpe_delta_s", 1.0)), mode="time")
     record["rpe_1s"] = rpe.as_dict()
     record["drift"] = drift(ate["none"], reference).as_dict()
+
+    if trajectories:
+        record["trajectory_est"] = {"t": est.t.tolist(), "positions": est.positions.tolist()}
+        record["trajectory_ref"] = {"t": ref_on_est.t.tolist(), "positions": ref_on_est.positions.tolist()}
 
     return record
 

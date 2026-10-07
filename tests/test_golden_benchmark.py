@@ -11,15 +11,14 @@ What is compared. Every section of every case except wall-clock values (which
 measure the machine, not the filter) and the ``environment`` block. The 6001-sample
 position-error series is decimated to every 200th sample plus the last, which keeps
 the file small and still moves if the trajectory error moves. Floats are compared with
-a relative tolerance of 1e-9 plus an absolute floor of 1e-9. The floor exists because
-the first CI run found the same snapshot differing from a laptop run by up to 4e-11
-absolute (1.3e-8 relative) on statistics of very small quantities, such as a minimum
-rotation error of 0.002 degrees or a median attitude error of 0.016 degrees: last-bit
-differences between CPUs and math libraries, amplified by subtracting near-equal
-numbers. Python 3.12 and 3.13 on the runner agreed with each other exactly, so this is
-a machine effect, not an interpreter one. The floor is about 25 times the largest gap
-seen, and the headline covariance metrics (NEES, claimed sigma, coverage) agreed at
-the relative tolerance. A NaN matches a NaN: dead reckoning reports no covariance, and
+a relative tolerance of 1e-9 plus an absolute floor of 1e-9. The floor was first added after
+the first CI run found the snapshot differing from a laptop run by up to 4e-11 absolute,
+and the macOS and Windows legs then showed the cause: the synthetic IMU used to be a finite
+difference whose rounding error was amplified by about 1e10, so it moved with the math
+library (see ADR-0009). The IMU is now derived analytically and all three operating systems
+pass at this tolerance, which is kept because it was set with margin and has not been
+measured below. The headline covariance metrics (NEES, claimed sigma, coverage) agree at the
+relative tolerance. A NaN matches a NaN: dead reckoning reports no covariance, and
 that is part of the record.
 
 Regenerate after an intended behaviour change, and say why in the commit:
