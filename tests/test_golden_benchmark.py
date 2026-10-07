@@ -18,8 +18,9 @@ difference whose rounding error was amplified by about 1e10, so it moved with th
 library (see ADR-0009). The IMU is now derived analytically and all three operating systems
 pass at this tolerance, which is kept because it was set with margin and has not been
 measured below. The headline covariance metrics (NEES, claimed sigma, coverage) agree at the
-relative tolerance. A NaN matches a NaN: dead reckoning reports no covariance, and
-that is part of the record.
+relative tolerance. The claimed-sigma series alone has a looser tolerance, see
+``SERIES_REL_TOL``. A NaN matches a NaN: dead reckoning reports no covariance, and that is
+part of the record.
 
 Regenerate after an intended behaviour change, and say why in the commit:
 
@@ -48,6 +49,12 @@ ENVIRONMENT_KEYS = frozenset({"environment"})
 DECIMATE_EVERY = 200
 REL_TOL = 1e-9
 ABS_TOL = 1e-9
+#: The claimed-sigma series is read straight out of the covariance, which is sensitive to which
+#: CPU kernel the linear algebra dispatches to. The same commit differed between GitHub runners
+#: by up to 1.1e-8 relative in it, while every other quantity agreed at 1e-9. 1e-6 is about
+#: 100 times the largest gap seen; see ADR-0009.
+SERIES_REL_TOL = 1e-6
+SERIES_MARKER = ".error_time_series.claimed_sigma_p_m["
 
 
 def _strip(node: Any) -> Any:
@@ -103,7 +110,8 @@ def _differences(path: str, got: Any, want: Any) -> list[str]:
             return [] if got == want else [f"{path}: {got!r} != golden {want!r}"]
         if math.isnan(want) and math.isnan(got):
             return []
-        if math.isclose(got, want, rel_tol=REL_TOL, abs_tol=ABS_TOL):
+        rel_tol = SERIES_REL_TOL if SERIES_MARKER in path else REL_TOL
+        if math.isclose(got, want, rel_tol=rel_tol, abs_tol=ABS_TOL):
             return []
         return [f"{path}: {got!r} != golden {want!r}"]
     return [] if got == want else [f"{path}: {got!r} != golden {want!r}"]
@@ -176,6 +184,23 @@ def test_the_comparison_notices_a_small_change(golden: dict[str, Any]) -> None:
     diffs = _differences("$", changed, golden)
     assert len(diffs) == 1
     assert diffs[0].startswith("$.cases.outage_visual.headline.ate_rmse_m")
+
+
+def test_the_claimed_sigma_series_tolerates_runner_to_runner_noise_but_not_a_real_change(
+    golden: dict[str, Any],
+) -> None:
+    """The series gets 1e-6, the rest of the snapshot keeps 1e-9."""
+    series = golden["cases"]["outage_control"]["error_time_series"]["claimed_sigma_p_m"]
+    noisy = json.loads(json.dumps(golden))
+    noisy["cases"]["outage_control"]["error_time_series"]["claimed_sigma_p_m"][14] = series[14] * (1.0 + 2e-8)
+    assert _differences("$", noisy, golden) == []
+    changed = json.loads(json.dumps(golden))
+    changed["cases"]["outage_control"]["error_time_series"]["claimed_sigma_p_m"][14] = series[14] * (1.0 + 1e-4)
+    assert len(_differences("$", changed, golden)) == 1
+    # The same 2e-8 on a headline number is still a difference.
+    headline = json.loads(json.dumps(golden))
+    headline["cases"]["outage_control"]["headline"]["claimed_sigma_p_m"] *= 1.0 + 2e-8
+    assert len(_differences("$", headline, golden)) == 1
 
 
 def test_the_comparison_ignores_last_bit_noise(golden: dict[str, Any]) -> None:
