@@ -388,6 +388,27 @@ class ErrorStateKalmanFilter:
 
     # -- state ---------------------------------------------------------------
 
+    def _initial_state(self) -> FilterState:
+        """The state a run starts from: identity pose at rest, zero biases, declared prior."""
+        return {
+            "R": np.eye(3),
+            "p": np.zeros(3),
+            "v": np.zeros(3),
+            "b_a": np.zeros(3),
+            "b_g": np.zeros(3),
+            "P": self._initial_covariance(),
+            "R_vk": np.eye(3),
+            "p_vk": np.zeros(3),
+            "P_theta_vk": np.zeros((3, 3)),
+            "P_p_vk": np.zeros((3, 3)),
+            "c_p": np.zeros(3),
+            "c_t": np.zeros(3),
+            "vision_updates": 0,
+            "gnss_grants_since_verified": 0,
+            "vision_keyframe_set": False,
+            "anchor_snapshot": None,
+        }
+
     def _initial_covariance(self) -> np.ndarray:
         cfg = self.cfg
         P = np.zeros((_N_STATES, _N_STATES))
@@ -918,24 +939,7 @@ class ErrorStateKalmanFilter:
         if n < 2:
             raise ValueError("ESKF needs at least 2 IMU samples")
 
-        x: FilterState = {
-            "R": np.eye(3),
-            "p": np.zeros(3),
-            "v": np.zeros(3),
-            "b_a": np.zeros(3),
-            "b_g": np.zeros(3),
-            "P": self._initial_covariance(),
-            "R_vk": np.eye(3),
-            "p_vk": np.zeros(3),
-            "P_theta_vk": np.zeros((3, 3)),
-            "P_p_vk": np.zeros((3, 3)),
-            "c_p": np.zeros(3),
-            "c_t": np.zeros(3),
-            "vision_updates": 0,
-            "gnss_grants_since_verified": 0,
-            "vision_keyframe_set": False,
-            "anchor_snapshot": None,
-        }
+        x = self._initial_state()
         cfg = self.cfg
         use_gnss = gnss is not None and cfg.gnss_enabled
         use_vision = vision is not None and cfg.vision_enabled

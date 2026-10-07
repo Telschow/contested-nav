@@ -61,6 +61,9 @@ here so the number cannot read higher than it measures.
   for configs. No SciPy, GTSAM, `evo`, C++/CMake, neural networks, or cloud
   services. Chi-square quantiles are implemented in `eval/statistics.py`
   because the alternative is an unverifiable dependency.
+  S1 constrains the runtime (`[project] dependencies`). Test-only tools in
+  `[project.optional-dependencies] dev` are allowed when they add no runtime
+  import: pytest, Hypothesis for property tests, ruff and mypy.
 
 - **S2: No third-party data is vendored.** Fetch locally; commit seeded
   configs and frozen figures instead.
@@ -94,9 +97,11 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 | `fdir/fdir_manager.py` coverage | 70% | 98.5% | as above |
 | `fdir/config.py` coverage | 70% | 100.0% | as above |
 | `fdir/records.py` coverage | 70% | 99.2% | as above |
+| `hero.py` coverage | 80% | 100.0% | as above |
 | `seed_sweep.py` coverage | 75% | 87.0% | as above |
 | `scene_sweep.py` coverage | 80% | 97.4% | as above |
-| `figures.py` coverage | 70% | 81.8% | as above |
+| `figures.py` coverage | 70% | 86.0% | as above |
+| `outage_sweep.py` coverage | 80% | 98.4% | as above |
 | `fdir/nis_monitor.py` coverage | 80% | 98.8% | as above |
 | `degrade/` coverage | 50% | 78.0% (`config.py`) / 84.2% (`inject.py`) | as above |
 | Docs | README + architecture + calibration + ADR-0001..0008 | 8 of 8 docs | manual |

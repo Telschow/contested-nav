@@ -75,10 +75,12 @@ part of why visual aiding stays overconfident ([ADR-0001](adr/0001-anchor-as-fil
   are exactly zero at `t = 0`. A filter initialised at the identity pose is exactly
   right at the first sample, which is what makes the fixture a known-answer test.
 - The same code on the same machine gives byte-identical output once timing fields are
-  stripped, and CI enforces that for the benchmark and the sweeps. Across machines,
-  last-bit differences in the maths library appear: the golden snapshot saw up to
-  4e-11 absolute, and its comparison uses a relative tolerance of 1e-9 plus an absolute
-  floor of 1e-9. Only Linux is tested in CI today.
+  stripped, and CI enforces that for the benchmark and the sweeps. Across platforms the
+  benchmark is compared with the golden snapshot at a relative tolerance of 1e-9 plus an
+  absolute floor of 1e-9, on Linux (Python 3.11, 3.12, 3.13), macOS and Windows (3.13). The
+  first macOS and Windows runs differed by about 1e-7 because the synthetic IMU was a finite
+  difference that amplified one-ulp differences in `cos`; it is now derived analytically
+  ([ADR-0009](adr/0009-cross-platform-numerics.md)).
 
 ## Configuration reference
 
@@ -288,7 +290,7 @@ Each case record:
 | `calibration` | Full calibration report: coverage points with intervals, conformal radius, inflation to reach 95%, verdicts. Absent for dead reckoning. |
 | `drift` | Drift as a percentage of path length and of time, with a fitted growth rate. |
 | `rpe_1s` | Relative pose error over 1 s windows, translation and rotation. |
-| `error_time_series` | Position error against time. Present when the estimator reports a covariance. |
+| `error_time_series` | Position error and the filter's claimed per-axis sigma against time (`t`, `position_error_m`, `claimed_sigma_p_m`). Present when the estimator reports a covariance. |
 
 The golden snapshot (`tests/golden/benchmark.json`) is the executable form of this
 contract for the seeded benchmark.
@@ -329,8 +331,8 @@ accuracy or calibration. This is a map of what is known, not a safety analysis.
 
 | Fault mode | Injected by | Detection and mitigation | Evidence | Status and residual gap |
 |---|---|---|---|---|
-| GNSS denial | `gnss_outages` | The filter dead-reckons; covariance grows. Re-acquisition after the outage can use bounded adaptive inflation ([ADR-0006](adr/0006-nis-window-monitor.md)). | Benchmark `outage_control` (README table); `tests/test_nis_monitor.py` | Benchmarked. One outage window only (5 s to 20 s) in the benchmark. |
-| GNSS denial with visual aiding | `gnss_outages` with `vision_fuse` | Visual relative pose with an anchor modelled as state ([ADR-0001](adr/0001-anchor-as-filter-state.md)). | Benchmark `outage_visual` | Benchmarked. More accurate on that window and severely overconfident (NEES, coverage in the README). Structural, not a fault: shipped disabled ([ADR-0003](adr/0003-ship-visual-disabled.md)). |
+| GNSS denial | `gnss_outages` | The filter dead-reckons; covariance grows. Re-acquisition after the outage can use bounded adaptive inflation ([ADR-0006](adr/0006-nis-window-monitor.md)). | Benchmark `outage_control` (README table); `navkit sweep outages`; `tests/test_nis_monitor.py` | Benchmarked, and swept over 8 outage windows: stays calibrated (coverage 97.3% to 100.0% in all 40 runs). |
+| GNSS denial with visual aiding | `gnss_outages` with `vision_fuse` | Visual relative pose with an anchor modelled as state ([ADR-0001](adr/0001-anchor-as-filter-state.md)). | Benchmark `outage_visual`; `navkit sweep outages` | Benchmarked and swept. Overconfident in all 40 sweep runs (coverage 10.4% to 39.2%), including 5 s outages. More accurate than the control only when the outage starts early. Structural, not a fault: shipped disabled ([ADR-0003](adr/0003-ship-visual-disabled.md)). |
 | Camera frame loss | `camera_drop`, `vision_outages` | Missed frames are simply absent; the relative pose then spans a longer baseline. | Benchmark `outage_visual_degraded_camera`; `test_camera_drop_*` in `tests/test_thresholds_and_injection.py` | Benchmarked for one bursty pattern (30% of frames, 1 s bursts). Vision outages are injectable; no test or case covers them. |
 | IMU sample loss | `imu_outages` | The previous reading is held over the gap. An outage that removes almost every sample is refused. | `test_imu_outage_*` in `tests/test_thresholds_and_injection.py` | Unit-tested only. Effect on accuracy not measured. |
 | Timestamp offset (IMU, GNSS, vision) | `*_time_offset_s` | None: no latency compensation. | `test_inject_applies_a_vision_time_offset` (injection only) | Unit-tested only. Effect on the filter not measured. |
@@ -339,4 +341,4 @@ accuracy or calibration. This is a map of what is known, not a safety analysis.
 | GNSS slow bias | `gnss.multipath_sigma_m`, `multipath_tau_s` | None specific. A Gauss-Markov surrogate, not a multipath model. | The model is in `sensors/models.py` | No benchmark case sets it. Effect not measured. |
 | GNSS spoofing, large sustained offset | measurement offset (unit tests inject it directly) | Gate rejects; after `max_consecutive_rejections` the channel is isolated as faulty ([ADR-0005](adr/0005-chi-square-fdir-gating.md)). Inflation is capped and not available to visual channels. | `test_a_persistent_spoofed_signal_isolates_the_channel` (`tests/test_fdir.py`); `test_a_large_sustained_offset_is_not_followed`, `test_inflation_is_not_available_to_the_visual_channels` (`tests/test_nis_monitor.py`) | Unit-tested only. No spoofing scenario in the benchmark. |
 | GNSS spoofing, modest offset after an outage | measurement offset after denial | Escalation to a 60 s lockout exists ([ADR-0007](adr/0007-spoof-permanence-hysteresis.md)) but its trigger does not fire on the measured case; the frozen-anchor cross-check is implemented and unreachable ([ADR-0008](adr/0008-frozen-anchor-cross-check.md)). | `TestPermanenceIsStillUndetected` is `xfail` on purpose (`tests/test_nis_monitor.py`) | **Open.** A modest offset after an outage is admitted by one inflation grant and is not detected. |
-| Covariance corruption (loss of symmetry or positive semi-definiteness) | numerical | Joseph-form update ([ADR-0002](adr/0002-joseph-covariance-form.md)); NEES scorer floors small eigenvalues. | `tests/test_estimators.py`, `tests/test_calibration.py` | Covered on the benchmark's inputs. |
+| Covariance corruption (loss of symmetry or positive semi-definiteness) | numerical | Joseph-form update ([ADR-0002](adr/0002-joseph-covariance-form.md)); NEES scorer floors small eigenvalues. | `tests/test_estimators.py`, `tests/test_calibration.py` | Property tests (`tests/test_properties.py`) check symmetry, positive semi-definiteness and orthonormality after every update on random inputs; they cannot distinguish the Joseph form from the textbook update. |
