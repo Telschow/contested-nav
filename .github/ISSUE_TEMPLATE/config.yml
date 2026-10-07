@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem privately
+    url: https://github.com/Telschow/contested-nav/security/advisories/new
+    about: Do not open a public issue for a vulnerability. See SECURITY.md for what counts.

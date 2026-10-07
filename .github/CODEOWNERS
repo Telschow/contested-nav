@@ -1,0 +1,6 @@
+# Everything is reviewed by the maintainer. List narrower owners above the catch-all when
+# another maintainer takes an area; the last matching pattern wins.
+*                       @Telschow
+/src/navkit/fdir/       @Telschow
+/.github/workflows/     @Telschow
+/SECURITY.md            @Telschow
