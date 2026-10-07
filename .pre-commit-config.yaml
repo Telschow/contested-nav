@@ -35,3 +35,9 @@ repos:
         language: system
         pass_filenames: false
         files: ^(src/|pyproject\.toml$)
+      - id: scan-secrets
+        name: scan tracked files for credential-shaped strings
+        entry: python scripts/scan_secrets.py
+        language: system
+        pass_filenames: false
+        always_run: true
