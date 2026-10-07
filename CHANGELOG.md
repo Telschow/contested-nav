@@ -42,6 +42,13 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Fixed
 
+- Five scenario descriptions in `configs/benchmark.yaml` contradicted the measured results and
+  were copied into every result record: `vision_only` was "calibrated, and much better than
+  dead reckoning" (it is overconfident and less accurate), `outage_visual` was "tens of metres
+  wrong" (2.541 m), `gnss_only` and `outage_control` were "calibrated" and "nominal" (their
+  verdict is mixed), and the degraded-camera case "checks the anchor model does not collapse" (it
+  does not change the result). The text now says what the numbers say. Only the `description`
+  fields and `config_sha256` change in the golden snapshot.
 - The demo reported mean NEES 1.4e10 and a claimed sigma of 7 mm while the README said 419.4 and
   0.161 m, because it ran its own copy of the filter configuration. It now runs the benchmark case
   and a test compares its headline with the golden snapshot. ([#27](https://github.com/Telschow/contested-nav/pull/27))

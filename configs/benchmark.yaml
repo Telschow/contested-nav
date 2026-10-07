@@ -38,9 +38,9 @@ cases:
   gnss_only:
     name: gnss_only
     description: >-
-      GNSS at 5 Hz, no outage, no vision. This is the reference point every
-      other case is read against; it establishes that the filter is calibrated
-      when a satellite solution is available.
+      GNSS at 5 Hz, no outage, no vision. The reference every other case is read
+      against. Its verdict is mixed rather than clean: mean NEES sits slightly
+      above the expected value while no epoch leaves the 2-sigma ellipsoid.
     scenario:
       name: gnss_only
       description: GNSS only, nominal noise.
@@ -100,9 +100,9 @@ cases:
   vision_only:
     name: vision_only
     description: >-
-      Visual odometry at 20 Hz with no GNSS. Calibrated, and much better than
-      dead reckoning, but it cannot be trusted for an unbounded outage: a single
-      anchor held for a long run freezes the position uncertainty.
+      Visual odometry at 20 Hz with no GNSS. In this fixture it is less accurate
+      than dead reckoning and severely overconfident: nothing constrains the
+      absolute pose, and the claimed uncertainty is far smaller than the error.
     estimator:
       vision_fuse: true
     scenario:
@@ -123,9 +123,10 @@ cases:
   outage_control:
     name: outage_control
     description: >-
-      15 s GNSS outage, 5 s to 20 s, with vision OFF. This is the honest
-      baseline for a contested receiver: the error grows, the filter knows it
-      grows, and the coverage stays at nominal throughout.
+      15 s GNSS outage, 5 s to 20 s, with vision off. The baseline for a contested
+      receiver: the error grows and so does the claimed uncertainty, and coverage
+      stays at or above nominal. The verdict is mixed because mean NEES is slightly
+      above the expected value.
     estimator:
       vision_fuse: false
     scenario:
@@ -144,11 +145,11 @@ cases:
   outage_visual:
     name: outage_visual
     description: >-
-      The same 15 s outage with vision ON. This is the case the 21-state
-      refactor was supposed to fix, and the numbers say it did not: the filter
-      reports roughly 0.3 m of uncertainty while being tens of metres wrong, and
-      coverage collapses. That is why vision_enabled defaults to false, and why
-      closing the gap needs a pose graph rather than a better filter.
+      The same 15 s outage with vision on. Position error is lower than the
+      control in this window, but the claimed uncertainty stays small and coverage
+      collapses: accurate and confidently wrong. That is why vision_enabled
+      defaults to false. The accuracy gain depends on when the outage starts
+      (see the outage sweep); the overconfidence does not.
     estimator:
       vision_fuse: true
     scenario:
@@ -175,9 +176,10 @@ cases:
   outage_visual_degraded_camera:
     name: outage_visual_degraded_camera
     description: >-
-      Visual aiding through the outage with 30% of camera frames dropped in
-      bursts. Checks that the anchor model does not collapse when the visual
-      stream is intermittent rather than clean.
+      Visual aiding through the outage with 30% of camera frames dropped in 1 s
+      bursts. Checks whether an intermittent visual stream changes the result. It
+      does not: the filter is still overconfident, with a smaller error than the
+      clean case.
     estimator:
       vision_fuse: true
     scenario:
