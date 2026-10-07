@@ -18,6 +18,10 @@ accumulated. This package provides that judgement in two layers:
     The policy. Per-channel state that turns a stream of accept/reject verdicts
     into isolation, recovery, and bounded covariance inflation, so a single bad
     epoch cannot remove a good sensor and a dead sensor is not permanent.
+``navkit.fdir.config``, ``navkit.fdir.records`` and ``navkit.fdir.status``
+    What the policy reads and produces: the configuration, the per-update decision,
+    event and channel-state records, and the status codes. They were part of
+    ``fdir_manager`` and are still importable from it.
 
 Wiring into the 21-state ESKF is described in ADR-0005, ADR-0006 and
 ``docs/architecture.md``.

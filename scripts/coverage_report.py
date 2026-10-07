@@ -42,6 +42,10 @@ FLOORS: dict[str, float] = {
     # is documented but absent from this table is not a floor.
     "src/navkit/fdir/gating.py": 70.0,
     "src/navkit/fdir/fdir_manager.py": 70.0,
+    # config.py and records.py were part of fdir_manager.py, and so under its 70% floor,
+    # until they were split out. They keep the same floor.
+    "src/navkit/fdir/config.py": 70.0,
+    "src/navkit/fdir/records.py": 70.0,
     "src/navkit/fdir/nis_monitor.py": 80.0,
     "src/navkit/degrade/config.py": 50.0,
     "src/navkit/degrade/inject.py": 50.0,
