@@ -23,7 +23,7 @@ No install step is strictly required to run the tests: `pyproject.toml` puts
 make install     # editable install with the pinned dev tools
 make hooks       # install the pre-commit hooks (ruff, ruff format, mypy, file hygiene)
 make check       # lint + test + coverage ratchet: the same gates a pull request faces
-make repro       # regenerate every figure and table from scratch (about 10 minutes)
+make repro       # regenerate every figure and table from scratch (measured 321 s, about 5 minutes)
 make docker      # build the container image and run the CLI inside it
 ```
 

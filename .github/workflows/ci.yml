@@ -160,7 +160,7 @@ jobs:
         run: |
           docker run --rm navkit navkit --version
           docker run --rm navkit navkit run --list
-          docker run --rm navkit python -m pytest -q tests/test_cli.py tests/test_model_doc.py
+          docker run --rm navkit python -m pytest -q tests/test_cli.py tests/test_synthetic_imu.py
 
   benchmark:
     name: benchmark reproducibility
