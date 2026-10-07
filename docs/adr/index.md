@@ -16,3 +16,4 @@ what it cost, and what was rejected.
 | [ADR-0009](0009-cross-platform-numerics.md) | Cross-platform numerics and the golden tolerance | accepted |
 | [ADR-0010](0010-determinism-and-seeding.md) | Determinism and seeding policy | accepted |
 | [ADR-0011](0011-ci-and-supply-chain.md) | CI and supply-chain strategy | accepted |
+| [ADR-0012](0012-every-scenario-is-injected.md) | Every scenario goes through the injection layer | accepted |

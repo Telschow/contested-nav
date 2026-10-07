@@ -420,7 +420,7 @@ def _run_cell(
     rows: list[dict[str, Any]] = []
     runs: list[dict[str, Any]] = []
     for seed in range(seeds):
-        record = run_case(base, case, defaults, seed=seed, gnss_hook=hook, fdir_events=True, force_inject=True)
+        record = run_case(base, case, defaults, seed=seed, gnss_hook=hook, fdir_events=True)
         row = collect(record, onset_s)
         rows.append(row)
         runs.append({"fault": fault_id, "base": base, "level": level, **row})

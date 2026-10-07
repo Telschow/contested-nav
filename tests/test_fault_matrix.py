@@ -49,48 +49,11 @@ def test_offset_window_does_not_touch_its_input_or_resurrect_a_removed_fix() -> 
 def test_the_hook_changes_what_the_filter_sees_and_not_the_scenario_hash() -> None:
     doc = _doc()
     case = doc["cases"]["gnss_only"]
-    plain = run_case("gnss_only", case, doc["defaults"], seed=0, force_inject=True)
-    hooked = run_case(
-        "gnss_only",
-        case,
-        doc["defaults"],
-        seed=0,
-        force_inject=True,
-        gnss_hook=fault_matrix.offset_window(10, 20, 10.0),
-    )
+    plain = run_case("gnss_only", case, doc["defaults"], seed=0)
+    hook = fault_matrix.offset_window(10, 20, 10.0)
+    hooked = run_case("gnss_only", case, doc["defaults"], seed=0, gnss_hook=hook)
     assert plain["config_hash"] == hooked["config_hash"]  # why a caller must record the fault itself
     assert plain["headline"]["ate_rmse_m"] != hooked["headline"]["ate_rmse_m"]
-
-
-def test_a_scenario_that_sets_only_a_time_offset_is_ignored_unless_injection_is_forced() -> None:
-    """Pins issue 56: the runner skips the injection layer when there is no outage or camera drop."""
-    doc = _doc()
-    fault = fault_matrix.BY_ID["gnss_time_offset"]
-    case, _ = fault.build(doc["cases"]["gnss_only"], 0.5)
-    base = run_case("gnss_only", doc["cases"]["gnss_only"], doc["defaults"], seed=0)
-    skipped = run_case("gnss_only", case, doc["defaults"], seed=0)
-    forced = run_case("gnss_only", case, doc["defaults"], seed=0, force_inject=True)
-    assert skipped["headline"]["ate_rmse_m"] == base["headline"]["ate_rmse_m"]
-    assert skipped["manifest"] == {}
-    assert forced["headline"]["ate_rmse_m"] != base["headline"]["ate_rmse_m"]
-    assert forced["manifest"]
-
-
-def test_cases_without_an_outage_run_with_a_noiseless_imu() -> None:
-    """Pins issue 56: four benchmark cases are not injected, so they have no IMU noise."""
-    doc = _doc()
-    injected = {
-        name: bool(run_case(name, case, doc["defaults"], seed=0)["manifest"]) for name, case in doc["cases"].items()
-    }
-    assert injected == {
-        "gnss_only": False,
-        "dead_reckoning": False,
-        "vision_anchor_in_measurement_noise": False,
-        "vision_only": False,
-        "outage_control": True,
-        "outage_visual": True,
-        "outage_visual_degraded_camera": True,
-    }
 
 
 def test_the_default_run_case_does_not_add_event_or_hook_fields() -> None:
