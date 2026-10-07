@@ -27,10 +27,17 @@ macOS and Windows agreed with each other to every printed digit. Two things were
 - **Remove the cause, do not widen the tolerance.** The synthetic IMU is derived analytically
   (`navkit.synthetic.analytic_kinematics`). A test perturbs `cos` by one ulp and requires the
   IMU to move by less than 1e-12; the old implementation moved by 7e-5.
-- **Keep the golden tolerance** at a relative 1e-9 plus an absolute floor of 1e-9. With the IMU
+- **Keep the golden tolerance** at a relative 1e-9 plus an absolute floor of 1e-9, with one exception below. With the IMU
   fixed, all three operating systems pass at that tolerance (CI run on the pull request that
   added this ADR). The actual cross-platform gap was not measured below the tolerance, so no
   tighter claim is made.
+- **The claimed-sigma series gets 1e-6.** It was added to the snapshot later and is read directly
+  from the covariance. On a later CI run of the same commit it differed from the committed values
+  by up to 1.1e-8 relative on one runner while passing on another, and every other quantity
+  still agreed at 1e-9. GitHub runners are not identical machines, and the covariance depends on
+  which CPU kernel the linear algebra uses. The series now has a relative tolerance of 1e-6, about
+  100 times the largest gap seen. A real change (1e-4) is still caught, and the same 2e-8 on a
+  headline number is still a difference; both are tests.
 - **Pin line endings** of the hashed configuration and the golden snapshot to LF with
   `.gitattributes`.
 - **Scope of the new legs.** macOS and Windows run the full test suite at Python 3.13 only. The
