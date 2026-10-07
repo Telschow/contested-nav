@@ -82,3 +82,55 @@ def test_run_reproduces_the_golden_headline_for_one_case(tmp_path: Path) -> None
 def test_python_dash_m_navkit_is_an_alias() -> None:
     proc = subprocess.run([sys.executable, "-m", "navkit", "--version"], capture_output=True, text=True, check=True)
     assert proc.stdout.strip() == f"navkit {__version__}"
+
+
+def test_sweep_without_a_kind_prints_usage_and_fails(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["sweep"]) == 2
+    assert "navkit sweep {seeds, scenes}" in capsys.readouterr().err
+
+
+def test_sweep_help_succeeds(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["sweep", "--help"]) == 0
+    assert "seeds" in capsys.readouterr().err
+
+
+def test_sweep_refuses_an_unknown_kind() -> None:
+    assert cli.main(["sweep", "bogus"]) == 2
+
+
+@pytest.mark.parametrize(("kind", "message"), [("seeds", "at least 2 seeds"), ("scenes", "at least 2 scenes")])
+def test_sweep_routes_to_the_matching_sweep(kind: str, message: str) -> None:
+    """Each kind reaches its own argument guard, so the router did not cross them."""
+    with pytest.raises(SystemExit, match=message):
+        cli.main(["sweep", kind, "--seeds", "1"])
+
+
+def test_sweep_seeds_runs_and_labels_the_default_config(tmp_path: Path) -> None:
+    out = tmp_path / "seed_sweep.json"
+    assert cli.main(["sweep", "seeds", "--seeds", "2", "--only", "gnss_only", "--out", str(out)]) == 0
+    payload = json.loads(out.read_text())
+    assert payload["n_seeds"] == 2
+    assert payload["config_file"] == "configs/benchmark.yaml"
+
+
+def test_figures_needs_a_results_file(tmp_path: Path) -> None:
+    with pytest.raises(SystemExit, match="not found"):
+        cli.main(["figures", "--results", str(tmp_path / "missing.json")])
+
+
+def test_figures_writes_under_the_working_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The figures land in ``docs/figures`` of the current directory, not of the package."""
+    results = tmp_path / "benchmark.json"
+    assert cli.main(["run", "--only", "gnss_only", "--out", str(results)]) == 0
+    monkeypatch.chdir(tmp_path)
+    assert cli.main(["figures", "--results", str(results)]) == 0
+    assert (tmp_path / "docs" / "figures" / "error-vs-claim.png").stat().st_size > 0
+    assert (tmp_path / "docs" / "figures" / "coverage.png").stat().st_size > 0
+
+
+def test_sweep_scenes_runs_and_prints_a_table(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    out = tmp_path / "scene_sweep.json"
+    argv = ["sweep", "scenes", "--seeds", "2", "--only", "gnss_only", "--markdown", "--out", str(out)]
+    assert cli.main(argv) == 0
+    assert json.loads(out.read_text())["n_scenes"] == 2
+    assert "gnss_only" in capsys.readouterr().out

@@ -41,7 +41,7 @@ def bench():
 
 @pytest.fixture(scope="module")
 def sweep():
-    return _load("seed_sweep", ROOT / "scripts" / "seed_sweep.py")
+    return importlib.import_module("navkit.seed_sweep")
 
 
 @pytest.fixture(scope="module")
@@ -124,7 +124,7 @@ class TestProvenance:
         protect.
         """
         assert "a known-answer fixture into\na field measurement" in sweep.__doc__
-        text = (ROOT / "scripts" / "seed_sweep.py").read_text()
+        text = (ROOT / "src" / "navkit" / "seed_sweep.py").read_text()
         assert '"data_class": "synthetic"' in text
         assert "Multiple seeds do not make" in text
 
@@ -191,7 +191,7 @@ class TestSummaryStatistics:
 
 
 def sweep_spread(values):
-    module = sys.modules.get("seed_sweep")
+    module = sys.modules.get("navkit.seed_sweep")
     return module._spread(values)
 
 

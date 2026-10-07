@@ -107,12 +107,15 @@ audit.
 
 ```bash
 python scripts/run_benchmark.py --out results/benchmark.json   # ~16 s, 7 cases
-# or, after `pip install -e .`: navkit run --out results/benchmark.json
 python scripts/seed_sweep.py --seeds 10 --markdown             # sensor noise
 python scripts/scene_sweep.py --seeds 8  --markdown            # trajectory
 python scripts/make_figures.py                                 # docs/figures/*.png
 python scripts/check_doc_tables.py --results results/benchmark.json
 ```
+
+After `pip install -e .` each script has an installed equivalent with the same options:
+`navkit run`, `navkit sweep seeds`, `navkit sweep scenes` and `navkit figures`. The
+scripts are thin wrappers around the same code in `src/navkit/`.
 
 The benchmark is bit-reproducible: running it twice gives byte-identical output
 once wall-clock timings are stripped, and CI enforces that. Both sweeps are

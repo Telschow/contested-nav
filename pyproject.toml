@@ -111,10 +111,10 @@ ignore = [
 # `as_markdown` builds a Markdown table whose header says "Coverage @2sigma" and
 # whose cells use an en dash as a range separator. Both are intended typography,
 # and substituting the ASCII lookalikes would be a real regression in the output.
-"scripts/seed_sweep.py" = ["RUF001"]
+"src/navkit/seed_sweep.py" = ["RUF001"]
 # Same Markdown-table typography as the seed sweep: "Coverage @2sigma" and an
 # en-dash range separator are intended, not typos.
-"scripts/scene_sweep.py" = ["RUF001"]
+"src/navkit/scene_sweep.py" = ["RUF001"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["navkit"]
