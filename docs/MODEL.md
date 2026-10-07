@@ -249,9 +249,11 @@ default in the benchmark:
 | `anchor_pos_sigma_m`, `anchor_rot_sigma_deg` | as in `EskfConfig` |
 | `anchor_pos_drift_sigma_m_s`, `anchor_rot_drift_sigma_deg_s` | as in `EskfConfig` |
 | `rpe_delta_s` | spacing of the relative-pose-error metric, s |
+| `gnss_sigma_scale`, `vision_sigma_scale` | multiply the GNSS or vision noise the *filter* assumes (default 1); the generator keeps the true noise |
 
-The filter's GNSS and vision noise are taken from the scenario's sensor model, so the
-filter is told the true noise level; there is no mismatch case in the benchmark.
+By default the filter's GNSS and vision noise are taken from the scenario's sensor model, so
+the filter is told the true noise level, and no benchmark case sets the two scale keys.
+`navkit sweep mismatch` does ([Noise mismatch](mismatch.md)).
 
 ## Result JSON contract
 
@@ -316,8 +318,10 @@ snapshot.
    `sigma^2 dt`. The velocity block receives none. In Phase 1 the golden snapshot was found insensitive to
    the accelerometer and gyro terms at the 5 ms step, so benchmark results do not depend
    on them; a different IMU or step could.
-5. **The filter is told the true sensor noise.** The scenario's GNSS and vision sigmas
-   feed both the generator and the filter. Mismatched noise is not exercised by any case.
+5. **The filter is told the true sensor noise** unless the scale keys are set. The
+   scenario's GNSS and vision sigmas feed both the generator and the filter. Mismatched
+   noise is not exercised by any benchmark case; `navkit sweep mismatch` measures it
+   ([Noise mismatch](mismatch.md)).
 6. **The reference frame is the filter's frame.** The filter starts at the identity pose
    and the fixture starts there too, so ATE with `alignment: none` is the headline and
    there is no alignment error to absorb.
@@ -337,6 +341,7 @@ accuracy or calibration. This is a map of what is known, not a safety analysis.
 | IMU sample loss | `imu_outages` | The previous reading is held over the gap. An outage that removes almost every sample is refused. | `test_imu_outage_*` in `tests/test_thresholds_and_injection.py` | Unit-tested only. Effect on accuracy not measured. |
 | Timestamp offset (IMU, GNSS, vision) | `*_time_offset_s` | None: no latency compensation. | `test_inject_applies_a_vision_time_offset` (injection only) | Unit-tested only. Effect on the filter not measured. |
 | IMU noise and bias | `imu_noise`, `imu_noise_scale` | Filter carries gyro and accelerometer bias states and a matching process noise. | Every benchmark case uses the default noise at scale 1 | Only scale 1 is run. Bias sigma fields are inert (see above). |
+| Sensor noise mismatch (assumed GNSS or vision noise differs from the true noise) | `estimator.gnss_sigma_scale`, `estimator.vision_sigma_scale` | None specific. The chi-square gate and the NIS monitor work from the assumed noise. | `navkit sweep mismatch`; [Noise mismatch](mismatch.md) | Swept over nine factors for `gnss_only` and `outage_control`. An optimistic model makes the gate reject healthy fixes and calibration is lost between 0.7 and 0.8 of the true noise; a pessimistic one is loose, not wrong. A vision-noise mismatch is not swept. |
 | GNSS multipath, single spike | measurement outlier | Chi-square gate rejects it once, with a stated false-alarm rate ([ADR-0005](adr/0005-chi-square-fdir-gating.md)); recovers on the next good fix. | `test_a_single_multipath_spike_is_rejected_once_and_recovers_immediately` in `tests/test_fdir.py` | Unit-tested only. |
 | GNSS slow bias | `gnss.multipath_sigma_m`, `multipath_tau_s` | None specific. A Gauss-Markov surrogate, not a multipath model. | The model is in `sensors/models.py` | No benchmark case sets it. Effect not measured. |
 | GNSS spoofing, large sustained offset | measurement offset (unit tests inject it directly) | Gate rejects; after `max_consecutive_rejections` the channel is isolated as faulty ([ADR-0005](adr/0005-chi-square-fdir-gating.md)). Inflation is capped and not available to visual channels. | `test_a_persistent_spoofed_signal_isolates_the_channel` (`tests/test_fdir.py`); `test_a_large_sustained_offset_is_not_followed`, `test_inflation_is_not_available_to_the_visual_channels` (`tests/test_nis_monitor.py`) | Unit-tested only. No spoofing scenario in the benchmark. |

@@ -99,6 +99,7 @@ nav:
   - Evidence:
       - Results: results.md
       - Scenarios: scenarios.md
+      - Noise mismatch: mismatch.md
       - Performance: PERFORMANCE.md
       - Demo: demo.md
   - Reference:
