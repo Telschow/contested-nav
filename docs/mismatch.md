@@ -23,15 +23,15 @@ reruns the sweep and fails if the committed CSV no longer matches it.
 
 | Case | Assumed noise x | ATE rmse m [95% CI] | NEES mean [95% CI] | Coverage @2σ % [95% CI] | Claimed 1σ m | GNSS fixes rejected % [95% CI] | Verdicts |
 |---|---:|---|---|---|---:|---|---|
-| gnss_only | 0.25 | 45.03 [26.46, 62.92] | 72.3 [48.1, 100.8] | 10.8 [3.7, 18.0] | 7.198 | 94.4 [92.1, 96.8] | overconfident x5 |
-| gnss_only | 0.5 | 10.07 [0.70, 19.57] | 24.3 [18.8, 29.3] | 23.5 [11.0, 37.0] | 2.251 | 47.8 [22.8, 75.0] | overconfident x5 |
-| gnss_only | 0.7 | 0.57 [0.53, 0.61] | 8.4 [6.4, 10.4] | 76.5 [61.3, 89.7] | 0.187 | 4.2 [3.7, 4.9] | overconfident x5 |
-| gnss_only | 0.8 | 0.52 [0.49, 0.57] | 5.9 [4.5, 7.3] | 92.0 [86.3, 97.1] | 0.207 | 1.2 [0.9, 1.3] | mixed(bulk xoverconfident, tail xunderconfident) x1, overconfident x4 |
-| gnss_only | 0.9 | 0.51 [0.47, 0.56] | 4.6 [3.4, 5.8] | 98.8 [96.7, 100.0] | 0.228 | 0.1 [0.0, 0.4] | mixed(bulk xoverconfident, tail xcalibrated) x1, mixed(bulk xoverconfident, tail xunderconfident) x2, overconfident x1, underconfident x1 |
-| gnss_only | 1 | 0.51 [0.46, 0.55] | 3.7 [2.7, 4.6] | 99.9 [99.6, 100.0] | 0.252 | 0.0 [0.0, 0.0] | mixed(bulk xoverconfident, tail xcalibrated) x1, mixed(bulk xoverconfident, tail xunderconfident) x2, underconfident x2 |
-| gnss_only | 1.25 | 0.50 [0.46, 0.54] | 2.3 [1.7, 3.0] | 100.0 [100.0, 100.0] | 0.312 | 0.0 [0.0, 0.0] | mixed(bulk xoverconfident, tail xunderconfident) x1, underconfident x4 |
-| gnss_only | 2 | 0.49 [0.44, 0.54] | 0.9 [0.7, 1.2] | 100.0 [100.0, 100.0] | 0.489 | 0.0 [0.0, 0.0] | underconfident x5 |
-| gnss_only | 4 | 0.54 [0.48, 0.60] | 0.4 [0.3, 0.5] | 100.0 [100.0, 100.0] | 0.920 | 0.0 [0.0, 0.0] | underconfident x5 |
+| gnss_only | 0.25 | 45.14 [26.64, 62.88] | 72.1 [48.4, 99.7] | 10.8 [3.7, 18.0] | 7.199 | 94.4 [92.1, 96.8] | overconfident x5 |
+| gnss_only | 0.5 | 10.10 [0.70, 19.69] | 25.8 [18.9, 32.3] | 23.7 [11.1, 37.2] | 2.255 | 48.1 [22.9, 75.4] | overconfident x5 |
+| gnss_only | 0.7 | 0.57 [0.53, 0.62] | 8.7 [6.5, 10.7] | 74.0 [60.3, 86.2] | 0.187 | 4.4 [3.7, 5.2] | overconfident x5 |
+| gnss_only | 0.8 | 0.53 [0.50, 0.58] | 6.2 [4.7, 7.6] | 90.6 [82.5, 97.0] | 0.207 | 1.2 [0.9, 1.3] | mixed(bulk xoverconfident, tail xunderconfident) x1, overconfident x4 |
+| gnss_only | 0.9 | 0.52 [0.48, 0.57] | 4.8 [3.7, 6.0] | 97.5 [92.7, 100.0] | 0.228 | 0.1 [0.0, 0.4] | mixed(bulk xcalibrated, tail xunderconfident) x1, mixed(bulk xoverconfident, tail xcalibrated) x1, mixed(bulk xoverconfident, tail xunderconfident) x2, overconfident x1 |
+| gnss_only | 1 | 0.52 [0.47, 0.57] | 3.9 [3.0, 4.9] | 99.5 [98.4, 100.0] | 0.252 | 0.0 [0.0, 0.0] | mixed(bulk xcalibrated, tail xunderconfident) x1, mixed(bulk xoverconfident, tail xunderconfident) x2, overconfident x1, underconfident x1 |
+| gnss_only | 1.25 | 0.51 [0.47, 0.56] | 2.5 [1.9, 3.1] | 100.0 [100.0, 100.0] | 0.312 | 0.0 [0.0, 0.0] | mixed(bulk xoverconfident, tail xunderconfident) x1, underconfident x4 |
+| gnss_only | 2 | 0.50 [0.45, 0.56] | 1.0 [0.7, 1.3] | 100.0 [100.0, 100.0] | 0.489 | 0.0 [0.0, 0.0] | underconfident x5 |
+| gnss_only | 4 | 0.55 [0.49, 0.62] | 0.4 [0.3, 0.5] | 100.0 [100.0, 100.0] | 0.920 | 0.0 [0.0, 0.0] | underconfident x5 |
 | outage_control | 0.25 | 35.37 [15.85, 58.09] | 48.6 [30.5, 68.6] | 39.3 [14.6, 63.8] | 6.940 | 87.9 [82.1, 93.7] | overconfident x5 |
 | outage_control | 0.5 | 21.02 [12.66, 31.96] | 17.8 [12.7, 24.5] | 29.4 [10.6, 51.7] | 2.669 | 43.4 [20.5, 67.9] | overconfident x5 |
 | outage_control | 0.7 | 11.53 [6.77, 16.29] | 7.4 [5.3, 9.4] | 74.3 [54.4, 92.5] | 0.420 | 3.4 [1.6, 5.3] | overconfident x5 |
@@ -82,11 +82,9 @@ Each statement below is checked against the CSV by `tests/test_mismatch_sweep.py
   noise is mismatched.
 - Only the assumed GNSS and vision sigmas change. IMU noise, the outage window and the
   trajectory do not.
-- `gnss_only` runs with a noiseless IMU and `outage_control` with the default IMU noise, because the
-  benchmark runner skips the injection layer for a case with no outage
-  ([issue 56](https://github.com/Telschow/contested-nav/issues/56)). The two cases differ in more than the
-  outage, and the `gnss_only` rows are for a filter with no IMU noise to contend with. The sweep has not
-  been re-run with the layer forced on.
+- Both cases have the default IMU noise ([ADR-0012](adr/0012-every-scenario-is-injected.md)). An
+  earlier version of this sweep ran `gnss_only` with a noiseless IMU; it was rerun after that was fixed
+  and the statements above still hold.
 - Five seeds per cell, so the intervals are rough. At factor 1 the per-seed verdicts are split
   between `mixed`, `underconfident` and `overconfident`; the verdict column shows the split
   rather than a single label.

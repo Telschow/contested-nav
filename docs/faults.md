@@ -110,10 +110,9 @@ on the control. **It is not met.**
   runs from under 1 m to nearly 10 m.
 - The spoof is a constant offset east. A spoof that ramps, or that is consistent with the IMU, is
   not tried.
-- Every cell, controls included, goes through the injection layer, so all of them have the default
-  IMU noise. The `gnss_only` and `vision_only` controls therefore differ from the benchmark rows of
-  the same name, which run with a noiseless IMU
-  ([issue 56](https://github.com/Telschow/contested-nav/issues/56), model contract finding 7).
+- Every cell, controls included, has the default IMU noise, as does every benchmark case
+  ([ADR-0012](adr/0012-every-scenario-is-injected.md)). Before that decision four benchmark cases ran
+  with a noiseless IMU; this sweep did not, because it forced the injection.
 - "Detected" and "declared" describe what the filter's own gate did. Nothing here is a protection
   level or an integrity claim, and there is no detector for a slow bias or a timing error to
   measure.
