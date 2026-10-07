@@ -163,6 +163,7 @@ import numpy as np
 from ..fdir.fdir_manager import (
     FdirConfig,
     FdirManager,
+    GatingDecision,
 )
 from ..geometry.rigid import rot_exp, rot_log, rot_right_jacobian
 from ..geometry.rigid import skew as _skew
@@ -543,6 +544,46 @@ class ErrorStateKalmanFilter:
         P = x["P"]
         S = H @ P @ H.T + Rcov
 
+        decision = self._fdir_decision(sensor, residual, S, P, H, t_s)
+        if not decision.accepted:
+            self._apply_reexpansion(P, decision)
+            return False, decision.mahalanobis_sq
+
+        if decision.inflated:
+            if sensor == "gnss" and x.get("gnss_grants_since_verified", 0) > 0:
+                disagrees, d2 = self._frozen_anchor_disagrees(x, residual, Rcov)
+                if disagrees:
+                    return False, d2
+            S = self._apply_inflation(x, decision, H, Rcov, sensor)
+
+        # Clean GNSS accept (no inflation) resets the grant counter.
+        if sensor == "gnss" and decision.accepted and not decision.inflated:
+            x["gnss_grants_since_verified"] = 0
+
+        K = self._kalman_gain(P, H, S)
+        if K is None:  # pragma: no cover - defensive
+            return False, float("nan")
+        # Computed independently of `decision.mahalanobis_sq` rather than reused
+        # from it: with FDIR disabled the decision reports 0.0 by design, and the
+        # legacy gate still needs the real Mahalanobis distance.
+        innov = float(residual @ np.linalg.solve(S, residual))
+
+        dof = residual.shape[0]
+        if self.cfg.gate_sigma > 0.0 and innov > (self.cfg.gate_sigma**2) * dof:
+            return False, innov
+        self._inject_correction(x, K, residual, H, Rcov)
+        return True, innov
+
+    def _fdir_decision(
+        self,
+        sensor: str,
+        residual: np.ndarray,
+        S: np.ndarray,
+        P: np.ndarray,
+        H: np.ndarray,
+        t_s: float,
+    ) -> GatingDecision:
+        """Ask the FDIR manager whether this update may be applied, and on what terms."""
         # FDIR first, and always. It is the only stage that records *why* an
         # update did not happen, so anything that can reject must pass through
         # it: a singular S below would otherwise return with no decision object
@@ -559,7 +600,7 @@ class ErrorStateKalmanFilter:
         # rejecting those fixes is how a filter walks itself further from truth
         # while holding the measurements that would correct it.
         block = _FDIR_INFLATION_BLOCK.get(sensor, ())
-        decision = self.fdir.evaluate_and_adapt(
+        return self.fdir.evaluate_and_adapt(
             sensor,
             residual,
             S,
@@ -568,75 +609,89 @@ class ErrorStateKalmanFilter:
             H=H,
             block=block,
         )
-        if not decision.accepted:
-            # A spoof lockout (ADR-0007) refuses the fix *and* widens the
-            # covariance, because a filter that has been walked off position
-            # must not keep coasting on a covariance that no longer describes
-            # where it is. Applied before the early return so the refusal and
-            # the re-expansion cannot come apart.
-            if decision.reexpanded and decision.reexpansion_block:
-                ridx = list(decision.reexpansion_block)
-                P[ridx, ridx] += decision.reexpansion_variance
-                self.fdir_inflations += 1
-            return False, decision.mahalanobis_sq
 
-        if decision.inflated:
-            # Cross-check: refuse grant if fix disagrees with frozen visual anchor.
-            # Only applies on second and later grants in an episode (ADR-0007):
-            # the first grant is the reacquisition; the second signals the first
-            # did not fix anything (spoof).
-            if sensor == "gnss" and x.get("gnss_grants_since_verified", 0) > 0:
-                # Use the anchor snapshot from the start of the GNSS outage
-                # if available, otherwise fall back to current anchor.
-                snap = x.get("anchor_snapshot")
-                if snap is not None:
-                    p_anchor = snap["p_vk"] + snap["c_p"]
-                    P_p_vk = snap["P_p_vk"]
-                    P_cp = snap["P_cp"]
-                else:
-                    p_anchor = x["p_vk"] + x["c_p"]
-                    P_p_vk = x["P_p_vk"]
-                    P_cp = x["P"][_IDX_CP, _IDX_CP]
-                p_meas = residual + x["p"]
-                z = p_meas - p_anchor
-                # Anchor covariance: P_p_vk + P[c_p, c_p] + Rcov
-                P_anchor = P_p_vk + P_cp + Rcov
-                try:
-                    d2 = float(z.T @ np.linalg.solve(P_anchor, z))
-                except np.linalg.LinAlgError:
-                    d2 = float("inf")
-                if d2 > _SPOOF_CROSS_CHECK_SIGMA**2:
-                    return False, d2
-
-            # Honour the request before forming the gain, and recompute S from
-            # the inflated covariance rather than reusing the value the gate
-            # re-tested against. The two are the same matrix by construction --
-            # the gate built its re-gate as S + H dP H^T -- so the update below is
-            # the one whose distance the verdict was based on. Reusing the old S
-            # here would fuse an update the gate had not actually cleared.
-            idx = list(decision.inflation_block)
-            P[idx, idx] += decision.inflation_variance
-            S = H @ P @ H.T + Rcov
+    def _apply_reexpansion(self, P: np.ndarray, decision: GatingDecision) -> None:
+        """Widen the covariance in place when a rejection came with a re-expansion."""
+        # A spoof lockout (ADR-0007) refuses the fix *and* widens the
+        # covariance, because a filter that has been walked off position
+        # must not keep coasting on a covariance that no longer describes
+        # where it is. Applied before the early return so the refusal and
+        # the re-expansion cannot come apart.
+        if decision.reexpanded and decision.reexpansion_block:
+            ridx = list(decision.reexpansion_block)
+            P[ridx, ridx] += decision.reexpansion_variance
             self.fdir_inflations += 1
-            if sensor == "gnss":
-                x["gnss_grants_since_verified"] = int(x.get("gnss_grants_since_verified", 0)) + 1
 
-        # Clean GNSS accept (no inflation) resets the grant counter.
-        if sensor == "gnss" and decision.accepted and not decision.inflated:
-            x["gnss_grants_since_verified"] = 0
+    def _frozen_anchor_disagrees(self, x: FilterState, residual: np.ndarray, Rcov: np.ndarray) -> tuple[bool, float]:
+        """Cross-check a GNSS fix against the visual anchor frozen at outage start.
 
+        Returns ``(disagrees, squared_distance)``. Only applies on second and later
+        grants in an episode (ADR-0007): the first grant is the reacquisition; the
+        second signals the first did not fix anything (spoof).
+        """
+        # Use the anchor snapshot from the start of the GNSS outage
+        # if available, otherwise fall back to current anchor.
+        snap = x.get("anchor_snapshot")
+        if snap is not None:
+            p_anchor = snap["p_vk"] + snap["c_p"]
+            P_p_vk = snap["P_p_vk"]
+            P_cp = snap["P_cp"]
+        else:
+            p_anchor = x["p_vk"] + x["c_p"]
+            P_p_vk = x["P_p_vk"]
+            P_cp = x["P"][_IDX_CP, _IDX_CP]
+        p_meas = residual + x["p"]
+        z = p_meas - p_anchor
+        # Anchor covariance: P_p_vk + P[c_p, c_p] + Rcov
+        P_anchor = P_p_vk + P_cp + Rcov
         try:
-            K = np.linalg.solve(S, (P @ H.T).T).T
-        except np.linalg.LinAlgError:  # pragma: no cover - defensive
-            return False, float("nan")
-        # Computed independently of `decision.mahalanobis_sq` rather than reused
-        # from it: with FDIR disabled the decision reports 0.0 by design, and the
-        # legacy gate still needs the real Mahalanobis distance.
-        innov = float(residual @ np.linalg.solve(S, residual))
+            d2 = float(z.T @ np.linalg.solve(P_anchor, z))
+        except np.linalg.LinAlgError:
+            d2 = float("inf")
+        return d2 > _SPOOF_CROSS_CHECK_SIGMA**2, d2
 
-        dof = residual.shape[0]
-        if self.cfg.gate_sigma > 0.0 and innov > (self.cfg.gate_sigma**2) * dof:
-            return False, innov
+    def _apply_inflation(
+        self,
+        x: FilterState,
+        decision: GatingDecision,
+        H: np.ndarray,
+        Rcov: np.ndarray,
+        sensor: str,
+    ) -> np.ndarray:
+        """Honour an inflation request in place and return the innovation covariance."""
+        # Honour the request before forming the gain, and recompute S from
+        # the inflated covariance rather than reusing the value the gate
+        # re-tested against. The two are the same matrix by construction --
+        # the gate built its re-gate as S + H dP H^T -- so the update below is
+        # the one whose distance the verdict was based on. Reusing the old S
+        # here would fuse an update the gate had not actually cleared.
+        P = x["P"]
+        idx = list(decision.inflation_block)
+        P[idx, idx] += decision.inflation_variance
+        S = H @ P @ H.T + Rcov
+        self.fdir_inflations += 1
+        if sensor == "gnss":
+            x["gnss_grants_since_verified"] = int(x.get("gnss_grants_since_verified", 0)) + 1
+        return S
+
+    @staticmethod
+    def _kalman_gain(P: np.ndarray, H: np.ndarray, S: np.ndarray) -> np.ndarray | None:
+        """Return ``K = P H^T S^-1``, or ``None`` if ``S`` cannot be solved against."""
+        try:
+            return np.linalg.solve(S, (P @ H.T).T).T
+        except np.linalg.LinAlgError:  # pragma: no cover - defensive
+            return None
+
+    def _inject_correction(
+        self,
+        x: FilterState,
+        K: np.ndarray,
+        residual: np.ndarray,
+        H: np.ndarray,
+        Rcov: np.ndarray,
+    ) -> None:
+        """Apply the Joseph covariance update, the attitude reset and the state injection."""
+        P = x["P"]
         dx = K @ residual
         dtheta = dx[_IDX_THETA]
         # First-order reset of the attitude error: re-linearise around the
@@ -692,7 +747,6 @@ class ErrorStateKalmanFilter:
         # patch. Until that decision is made, the correction stays unapplied and
         # vision_anchor_modelled must not be described as estimating an anchor
         # error. Tracked in CN-003; do not "fix" this line without reading it.
-        return True, innov
 
     def _gnss_update(
         self,
