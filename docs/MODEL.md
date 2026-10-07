@@ -249,9 +249,11 @@ default in the benchmark:
 | `anchor_pos_sigma_m`, `anchor_rot_sigma_deg` | as in `EskfConfig` |
 | `anchor_pos_drift_sigma_m_s`, `anchor_rot_drift_sigma_deg_s` | as in `EskfConfig` |
 | `rpe_delta_s` | spacing of the relative-pose-error metric, s |
+| `gnss_sigma_scale`, `vision_sigma_scale` | multiply the GNSS or vision noise the *filter* assumes (default 1); the generator keeps the true noise |
 
-The filter's GNSS and vision noise are taken from the scenario's sensor model, so the
-filter is told the true noise level; there is no mismatch case in the benchmark.
+By default the filter's GNSS and vision noise are taken from the scenario's sensor model, so
+the filter is told the true noise level, and no benchmark case sets the two scale keys.
+`navkit sweep mismatch` does ([Noise mismatch](mismatch.md)).
 
 ## Result JSON contract
 
@@ -316,11 +318,22 @@ snapshot.
    `sigma^2 dt`. The velocity block receives none. In Phase 1 the golden snapshot was found insensitive to
    the accelerometer and gyro terms at the 5 ms step, so benchmark results do not depend
    on them; a different IMU or step could.
-5. **The filter is told the true sensor noise.** The scenario's GNSS and vision sigmas
-   feed both the generator and the filter. Mismatched noise is not exercised by any case.
+5. **The filter is told the true sensor noise** unless the scale keys are set. The
+   scenario's GNSS and vision sigmas feed both the generator and the filter. Mismatched
+   noise is not exercised by any benchmark case; `navkit sweep mismatch` measures it
+   ([Noise mismatch](mismatch.md)).
 6. **The reference frame is the filter's frame.** The filter starts at the identity pose
    and the fixture starts there too, so ATE with `alignment: none` is the headline and
    there is no alignment error to absorb.
+7. **Four benchmark cases run with a noiseless IMU.** `run_case` calls the injection layer only
+   when the scenario has an outage or a camera drop. The synthetic IMU has no noise of its own;
+   the IMU noise and bias are added by that layer. So `gnss_only`, `dead_reckoning`,
+   `vision_anchor_in_measurement_noise` and `vision_only` have a clean IMU, and the three outage
+   cases have the default IMU noise. A scenario that sets only a timestamp offset changes nothing
+   in the streams, and one that sets only an IMU noise scale changes the noise the filter assumes
+   but not the data. Tracked in
+   [issue 56](https://github.com/Telschow/contested-nav/issues/56); `tests/test_fault_matrix.py`
+   pins which cases are affected.
 
 ## FMEA-lite
 
@@ -333,12 +346,13 @@ accuracy or calibration. This is a map of what is known, not a safety analysis.
 |---|---|---|---|---|
 | GNSS denial | `gnss_outages` | The filter dead-reckons; covariance grows. Re-acquisition after the outage can use bounded adaptive inflation ([ADR-0006](adr/0006-nis-window-monitor.md)). | Benchmark `outage_control` (README table); `navkit sweep outages`; `tests/test_nis_monitor.py` | Benchmarked, and swept over 8 outage windows: stays calibrated (coverage 97.3% to 100.0% in all 40 runs). |
 | GNSS denial with visual aiding | `gnss_outages` with `vision_fuse` | Visual relative pose with an anchor modelled as state ([ADR-0001](adr/0001-anchor-as-filter-state.md)). | Benchmark `outage_visual`; `navkit sweep outages` | Benchmarked and swept. Overconfident in all 40 sweep runs (coverage 10.4% to 39.2%), including 5 s outages. More accurate than the control only when the outage starts early. Structural, not a fault: shipped disabled ([ADR-0003](adr/0003-ship-visual-disabled.md)). |
-| Camera frame loss | `camera_drop`, `vision_outages` | Missed frames are simply absent; the relative pose then spans a longer baseline. | Benchmark `outage_visual_degraded_camera`; `test_camera_drop_*` in `tests/test_thresholds_and_injection.py` | Benchmarked for one bursty pattern (30% of frames, 1 s bursts). Vision outages are injectable; no test or case covers them. |
-| IMU sample loss | `imu_outages` | The previous reading is held over the gap. An outage that removes almost every sample is refused. | `test_imu_outage_*` in `tests/test_thresholds_and_injection.py` | Unit-tested only. Effect on accuracy not measured. |
-| Timestamp offset (IMU, GNSS, vision) | `*_time_offset_s` | None: no latency compensation. | `test_inject_applies_a_vision_time_offset` (injection only) | Unit-tested only. Effect on the filter not measured. |
-| IMU noise and bias | `imu_noise`, `imu_noise_scale` | Filter carries gyro and accelerometer bias states and a matching process noise. | Every benchmark case uses the default noise at scale 1 | Only scale 1 is run. Bias sigma fields are inert (see above). |
-| GNSS multipath, single spike | measurement outlier | Chi-square gate rejects it once, with a stated false-alarm rate ([ADR-0005](adr/0005-chi-square-fdir-gating.md)); recovers on the next good fix. | `test_a_single_multipath_spike_is_rejected_once_and_recovers_immediately` in `tests/test_fdir.py` | Unit-tested only. |
-| GNSS slow bias | `gnss.multipath_sigma_m`, `multipath_tau_s` | None specific. A Gauss-Markov surrogate, not a multipath model. | The model is in `sensors/models.py` | No benchmark case sets it. Effect not measured. |
-| GNSS spoofing, large sustained offset | measurement offset (unit tests inject it directly) | Gate rejects; after `max_consecutive_rejections` the channel is isolated as faulty ([ADR-0005](adr/0005-chi-square-fdir-gating.md)). Inflation is capped and not available to visual channels. | `test_a_persistent_spoofed_signal_isolates_the_channel` (`tests/test_fdir.py`); `test_a_large_sustained_offset_is_not_followed`, `test_inflation_is_not_available_to_the_visual_channels` (`tests/test_nis_monitor.py`) | Unit-tested only. No spoofing scenario in the benchmark. |
-| GNSS spoofing, modest offset after an outage | measurement offset after denial | Escalation to a 60 s lockout exists ([ADR-0007](adr/0007-spoof-permanence-hysteresis.md)) but its trigger does not fire on the measured case; the frozen-anchor cross-check is implemented and unreachable ([ADR-0008](adr/0008-frozen-anchor-cross-check.md)). | `TestPermanenceIsStillUndetected` is `xfail` on purpose (`tests/test_nis_monitor.py`) | **Open.** A modest offset after an outage is admitted by one inflation grant and is not detected. |
+| Camera frame loss | `camera_drop`, `vision_outages` | Missed frames are simply absent; the relative pose then spans a longer baseline. | Benchmark `outage_visual_degraded_camera`; `test_camera_drop_*` in `tests/test_thresholds_and_injection.py`; `navkit sweep faults` | Benchmarked for one bursty pattern (30% of frames, 1 s bursts). Vision outages of 2 s and 5 s are measured in the [fault matrix](faults.md): error rises slowly and nothing is detected, because a missing measurement is not an outlier. |
+| IMU sample loss | `imu_outages` | The previous reading is held over the gap. An outage that removes almost every sample is refused. | `test_imu_outage_*` in `tests/test_thresholds_and_injection.py`; `navkit sweep faults` | Measured ([fault matrix](faults.md)). A 2 s loss raises position error by two orders of magnitude and the FDIR layer declares the healthy GNSS channel faulty; a 0.5 s loss is not declared but costs calibration. |
+| Timestamp offset (IMU, GNSS, vision) | `*_time_offset_s` | None: no latency compensation. | `test_inject_applies_a_vision_time_offset` (injection only); `navkit sweep faults` | GNSS and vision measured ([fault matrix](faults.md)). A GNSS offset degrades calibration with no detection; a vision offset shows nothing on an already uncalibrated case. IMU offset not measured. Scenario time offsets are ignored by the benchmark runner unless the scenario also has an outage or a camera drop ([issue 56](https://github.com/Telschow/contested-nav/issues/56)); the fault matrix forces the injection. |
+| IMU noise and bias | `imu_noise`, `imu_noise_scale` | Filter carries gyro and accelerometer bias states and a matching process noise. | Every benchmark case uses the default noise at scale 1 | Only scale 1 is run. Bias sigma fields are inert (see above). **The four benchmark cases without an outage or camera drop run with a noiseless IMU**, because the injection layer that adds IMU noise is skipped for them (finding 7). |
+| Sensor noise mismatch (assumed GNSS or vision noise differs from the true noise) | `estimator.gnss_sigma_scale`, `estimator.vision_sigma_scale` | None specific. The chi-square gate and the NIS monitor work from the assumed noise. | `navkit sweep mismatch`; [Noise mismatch](mismatch.md) | Swept over nine factors for `gnss_only` and `outage_control`. An optimistic model makes the gate reject healthy fixes and calibration is lost between 0.7 and 0.8 of the true noise; a pessimistic one is loose, not wrong. A vision-noise mismatch is not swept. |
+| GNSS multipath, single spike | measurement outlier | Chi-square gate rejects it once, with a stated false-alarm rate ([ADR-0005](adr/0005-chi-square-fdir-gating.md)); recovers on the next good fix. | `test_a_single_multipath_spike_is_rejected_once_and_recovers_immediately` in `tests/test_fdir.py`; `navkit sweep faults` | Measured ([fault matrix](faults.md)): the gate rejects a 20 m spike in every seed, no fault is declared and the error does not move. |
+| GNSS slow bias | `gnss.multipath_sigma_m`, `multipath_tau_s` | None specific. A Gauss-Markov surrogate, not a multipath model. | The model is in `sensors/models.py`; `navkit sweep faults` | Measured ([fault matrix](faults.md)): mostly invisible to the gate at 1 sigma, and the filter becomes overconfident. |
+| GNSS spoofing, large sustained offset | measurement offset (unit tests inject it directly) | Gate rejects; after `max_consecutive_rejections` the channel is isolated as faulty ([ADR-0005](adr/0005-chi-square-fdir-gating.md)). Inflation is capped and not available to visual channels. | `test_a_persistent_spoofed_signal_isolates_the_channel` (`tests/test_fdir.py`); `test_a_large_sustained_offset_is_not_followed`, `test_inflation_is_not_available_to_the_visual_channels` (`tests/test_nis_monitor.py`); `navkit sweep faults` | Measured ([fault matrix](faults.md)): declared in every seed at 10 m and 40 m, 0.8 s after onset. Declaring is not protecting: the 10 m case costs far more error than the 40 m one. A 3 m offset is rejected but mostly not declared in time. The benchmark itself has no spoofing case. |
+| GNSS spoofing, modest offset after an outage | measurement offset after denial | Escalation to a 60 s lockout exists ([ADR-0007](adr/0007-spoof-permanence-hysteresis.md)) but its trigger does not fire on the measured case; the frozen-anchor cross-check is implemented and unreachable ([ADR-0008](adr/0008-frozen-anchor-cross-check.md)). | `TestPermanenceIsStillUndetected` is `xfail` on purpose (`tests/test_nis_monitor.py`); `navkit sweep faults` | **Open.** Measured ([fault matrix](faults.md)): at 3 m and 10 m the declarations match the control's false alarms, so the spoof is not detected; at 22 m it is declared in every seed and the error is still above the control's. |
 | Covariance corruption (loss of symmetry or positive semi-definiteness) | numerical | Joseph-form update ([ADR-0002](adr/0002-joseph-covariance-form.md)); NEES scorer floors small eigenvalues. | `tests/test_estimators.py`, `tests/test_calibration.py` | Property tests (`tests/test_properties.py`) check symmetry, positive semi-definiteness and orthonormality after every update on random inputs; they cannot distinguish the Joseph form from the textbook update. |

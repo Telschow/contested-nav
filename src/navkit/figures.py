@@ -235,6 +235,62 @@ def fig_outage_sweep(cells: list[dict], out: Path) -> Path:
     return out
 
 
+def fig_mismatch_sweep(cells: list[dict], out: Path) -> Path:
+    """Error, NEES and coverage against the factor on the filter's assumed sensor noise.
+
+    One line per case; the band is the bootstrap 95% interval over noise seeds. The dashed
+    lines are what a calibrated filter would show (NEES 3, 99.3% coverage), and the dotted
+    vertical line marks a filter that is told the true noise. Written to ``out`` because the
+    sweep is a command with its own output path.
+    """
+    from .eval.statistics import ellipsoid_coverage
+
+    names = sorted({c["case"] for c in cells})
+    factors = sorted({c["scale"] for c in cells})
+    colours = dict(zip(names, (C_OK, C_ERR, C_CLAIM, C_GREY), strict=False))
+    rows = (
+        ("ate_rmse_m", "ATE RMSE (m)", False),
+        ("nees_mean", "mean NEES", True),
+        ("coverage_2sigma_pct", "2-sigma coverage (%)", False),
+    )
+    fig, axes = plt.subplots(1, len(rows), figsize=(11.0, 3.6), squeeze=False)
+    expected_cov = 100.0 * ellipsoid_coverage(2.0, 3)
+    for ax, (metric, label, logy) in zip(axes[0], rows, strict=True):
+        for name in names:
+            pts = sorted((c["scale"], c[metric]) for c in cells if c["case"] == name and c[metric])
+            if not pts:
+                continue
+            x = [s for s, _ in pts]
+            ax.plot(x, [m["mean"] for _, m in pts], marker="o", markersize=4, color=colours[name], label=name, zorder=3)
+            ax.fill_between(x, [m["lo"] for _, m in pts], [m["hi"] for _, m in pts], color=colours[name], alpha=0.18)
+        ax.axvline(1.0, color=C_GREY, linestyle=":", linewidth=1.0)
+        if metric == "nees_mean":
+            ax.axhline(3.0, color=C_GREY, linestyle="--", linewidth=1.0)
+        if metric == "coverage_2sigma_pct":
+            ax.axhline(expected_cov, color=C_GREY, linestyle="--", linewidth=1.0)
+            ax.set_ylim(0, 105)
+        ax.set_xscale("log")
+        ax.minorticks_off()
+        ax.set_xticks(factors)
+        ax.set_xticklabels([f"{s:g}" for s in factors])
+        if logy:
+            ax.set_yscale("log")
+        _style(ax, "", "assumed noise / true noise", label)
+    axes[0][0].legend(fontsize=7, frameon=False)
+    fig.text(
+        0.01,
+        0.005,
+        "Synthetic fixture. Dashed = calibrated. Dotted = filter told the true noise. Band = bootstrap 95% over seeds.",
+        fontsize=7,
+        color=C_GREY,
+    )
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=160)
+    plt.close(fig)
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--results", type=Path, default=Path("results") / "benchmark.json")

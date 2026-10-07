@@ -210,7 +210,8 @@ that has already been wrong. This track moves detection forward.
 numbers reproduced by `scripts/run_benchmark.py` and checked into the docs
 tables. Currently one fault type (a sustained position step, on either GNSS or
 visual translation) is detected and isolated; the three causes behind it are
-not yet separated.
+not yet separated. The [fault matrix](docs/faults.md) measures this and restates the
+test: it is not met.
 
 ### Track B: Back-end optimisation: sliding-window pose graph `[ ]`
 
