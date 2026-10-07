@@ -7,10 +7,10 @@ the strictest of the four conventions the code supports.
 
 | Scenario | ATE RMSE (m) | Claimed 1σ (m) | Mean NEES (exp. 3) | Coverage @ 2σ | Verdict |
 | --- | ---: | ---: | ---: | ---: | --- |
-| GNSS only (control) | 0.503 | 0.252 | 3.7 | 100.0% | mixed: bulk overconfident, tail underconfident |
-| Dead reckoning (no aiding) | 1.877 | n/a | n/a | n/a | no covariance reported |
-| Anchor as measurement noise (defect) | 1.307 | 0.091 | 387.3 | 16.0% | overconfident |
-| Vision only | 2.309 | 0.156 | 331.0 | 0.7% | overconfident |
+| GNSS only (control) | 0.509 | 0.252 | 4.0 | 100.0% | mixed: bulk overconfident, tail underconfident |
+| Dead reckoning (no aiding) | 2.248 | n/a | n/a | n/a | no covariance reported |
+| Anchor as measurement noise (defect) | 1.310 | 0.091 | 405.0 | 16.2% | overconfident |
+| Vision only | 2.357 | 0.156 | 358.5 | 0.7% | overconfident |
 | GNSS denied 5–20 s, vision off (control) | 3.782 | 0.567 | 4.1 | 100.0% | mixed: bulk overconfident, tail underconfident |
 | GNSS denied 5–20 s, vision on | 2.541 | 0.161 | 419.4 | 20.0% | overconfident |
 | GNSS denied, 30% camera frames dropped | 1.872 | 0.190 | 216.6 | 18.5% | overconfident |
@@ -46,7 +46,7 @@ overconfident almost everywhere while never once producing a tail escape;
 collapsing that into a single "calibrated" boolean discards half the evidence
 and hides the shape of the error distribution.
 
-The `mixed` rows are exactly that case: mean NEES of 3.7 against an expected 3
+The `mixed` rows are exactly that case: mean NEES of 4.0 against an expected 3
 is a real, statistically detectable overconfidence, and yet no epoch escapes
 2σ. Both statements are true and only one of them is usually quoted.
 

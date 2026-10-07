@@ -37,7 +37,7 @@ reference does not grow with the size of the state vector.
 
 The number to be suspicious of is the gap, not the value. The generated
 `outage_visual` case reports a mean NEES of 419.4 against a nominal 3, and
-`vision_only` reports 331.0. Two orders of magnitude, against a nominal 3, is
+`vision_only` reports 358.5. Two orders of magnitude, against a nominal 3, is
 not a filter that is slightly miscalibrated.
 
 Those figures fell from 1996.5 when ADR-0006 stopped the filter discarding the
@@ -49,7 +49,7 @@ repaired. Read NEES and the coverage column together with ATE — see the note i
 
 A 10-seed sweep changes the reading of the digits, not the verdict. `outage_visual`
 gives mean NEES 844 across noise realisations (range 211.7 to 2103.4) and
-`vision_only` 331 to 2660, so 419.4 and 331.0 are individual draws. The
+`vision_only` 231 to 2917, so 419.4 and 358.5 are individual draws. The
 conclusion is unaffected: the minimum over 10 seeds is still 211.7 against a
 nominal 3, and coverage never exceeds 34.8% where 99.3% is required. Two orders
 of magnitude is the right order to write down, but not two orders of magnitude
@@ -100,20 +100,20 @@ mode as the original bug, one level up.
 ## Worked example: reading the defect
 
 From the generated benchmark (`python scripts/run_benchmark.py`, GNSS available
-throughout, 20 s):
+throughout, 30 s):
 
 | Configuration | ATE RMSE | 1-sigma claimed | Mean NEES | Coverage at 2 sigma |
 |---|---:|---:|---:|---:|
-| GNSS only (control) | 0.503 m | 0.252 m | 3.7 | 100.0% |
-| GNSS + vision, anchor as measurement noise (defect) | 1.259 m | 0.091 m | 354.6 | 16.0% |
-| Vision only, anchor as filter state | 2.309 m | 0.156 m | 331.0 | 0.7% |
+| GNSS only (control) | 0.509 m | 0.252 m | 4.0 | 100.0% |
+| GNSS + vision, anchor as measurement noise (defect) | 1.310 m | 0.091 m | 405.0 | 16.2% |
+| Vision only, anchor as filter state | 2.357 m | 0.156 m | 358.5 | 0.7% |
 
 Row 1 is the reference: error and claimed uncertainty are the same order, and
 coverage is complete.
 
 Row 2 is the defect. Note the combination: the claimed 1-sigma is an order of
-magnitude below the error it is attached to, the mean NEES is 355 against a
-nominal 3, and coverage is 16.0% where 99.3% is expected. Any one of these would
+magnitude below the error it is attached to, the mean NEES is 405 against a
+nominal 3, and coverage is 16.2% where 99.3% is expected. Any one of these would
 warrant investigation. Together they say the filter is confidently wrong, and
 the *direction* of the error matters -- it is overconfident, not merely
 inaccurate.

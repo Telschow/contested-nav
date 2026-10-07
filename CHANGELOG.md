@@ -9,6 +9,16 @@ this project uses [semantic versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Every benchmark scenario now goes through the injection layer. The runner skipped it for a scenario
+  with no outage or camera drop, which ran `gnss_only`, `dead_reckoning`,
+  `vision_anchor_in_measurement_noise` and `vision_only` with a noiseless IMU and ignored a scenario
+  that set only a timestamp offset. Those four cases move slightly (ATE by 0.003 m to 0.371 m) and no
+  verdict changes; the three outage cases and the headline result are bit-identical.
+  [ADR-0012](docs/adr/0012-every-scenario-is-injected.md), golden snapshot regenerated.
+  ([#56](https://github.com/Telschow/contested-nav/issues/56))
+
 ### Added
 
 - `navkit` command line: `navkit run`, `navkit sweep seeds|scenes|outages`, `navkit figures`
