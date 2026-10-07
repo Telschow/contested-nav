@@ -9,7 +9,7 @@ PYTHON ?= python
 RESULTS ?= results/benchmark.json
 
 .DEFAULT_GOAL := help
-.PHONY: help install hooks test lint format cov check bench figures docs-check demo repro docker secrets clean
+.PHONY: help install hooks test lint format cov check bench figures docs-check docs docs-serve demo repro docker secrets clean
 
 help: ## list the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -46,6 +46,12 @@ figures: bench ## render docs/figures from a fresh benchmark, with the animation
 docs-check: ## fail if a documented table disagrees with the benchmark
 	$(PYTHON) scripts/check_doc_tables.py --results $(RESULTS)
 
+docs: ## build the documentation site with warnings as errors (needs `pip install -e '.[docs]'`)
+	$(PYTHON) -m mkdocs build --strict
+
+docs-serve: ## serve the site locally with live reload
+	$(PYTHON) -m mkdocs serve
+
 demo: ## generate the demo frames into artifacts/demo
 	$(PYTHON) scripts/generate_demo.py --out artifacts/demo
 
@@ -64,5 +70,5 @@ secrets: ## scan the tracked files and the git history for credential-shaped str
 	$(PYTHON) scripts/scan_secrets.py --history
 
 clean: ## remove caches and generated output
-	rm -rf results artifacts build dist .pytest_cache .ruff_cache .mypy_cache .hypothesis htmlcov
+	rm -rf results artifacts build dist site .pytest_cache .ruff_cache .mypy_cache .hypothesis htmlcov
 	find . -name __pycache__ -type d -prune -exec rm -rf {} +

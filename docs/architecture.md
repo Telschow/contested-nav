@@ -10,13 +10,13 @@ exists to be asked it.
 
 ## Layers
 
-```
-synthetic.py ──► sensors/models.py ──► estimators/eskf.py ──► eval/calibration.py
-   analytic        IMU / GNSS /         21-state ESKF          NEES, coverage
-   trajectory      visual noise          + covariance           verdicts
-                                                             ▲
-                                          degrade/inject.py ───┘
-                                          GNSS outage windows
+```mermaid
+flowchart LR
+    syn["synthetic.py<br/>analytic trajectory (the truth)"] --> sens["sensors/models.py<br/>IMU, GNSS, visual streams"]
+    sens --> deg["degrade/inject.py<br/>outages, drops, noise"]
+    deg --> eskf["estimators/eskf.py<br/>21-state ESKF + covariance"]
+    eskf --> cal["eval/calibration.py<br/>NEES, coverage, verdicts"]
+    syn --> cal
 ```
 
 Supporting layers:

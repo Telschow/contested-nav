@@ -108,7 +108,7 @@ previously produced by ad-hoc scripts that were not in the repository.
       end`, so an outage ending at 20 s leaves the 20 s fix valid. Getting this
       wrong silently benchmarks a different scenario.
 - [x] `scripts/check_doc_tables.py` compares every numeric cell of `README.md`
-      and `docs/index.html` against the generated JSON, so "these numbers are
+      and `docs/results.md` against the generated JSON, so "these numbers are
       generated, not typed" is a checked claim rather than a promise.
 - [x] CI workflow: tests on Python 3.11/3.12/3.13, coverage ratchet, ruff lint
       and format, mypy, sdist/wheel build with a clean-env import, benchmark
@@ -124,7 +124,7 @@ previously produced by ad-hoc scripts that were not in the repository.
       quaternion order), ADR-0005 (chi-square FDIR, and the measured cost of
       it), ADR-0006 (NIS window monitor with adaptive covariance inflation,
       which paid that cost back).
-- [x] `docs/architecture.md`, `docs/calibration.md`, `docs/index.html`.
+- [x] `docs/architecture.md`, `docs/calibration.md`, the documentation site (`mkdocs.yml`).
 - [x] GNSS-denial overconfidence framed explicitly as the headline *negative*
       result rather than a caveat: mean NEES 419.4 against an expected 3, 20.0%
       coverage against 99.3% expected, `vision_enabled = False` shipped as the
