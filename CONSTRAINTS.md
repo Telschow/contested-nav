@@ -5,8 +5,8 @@ or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
 Last measured (2026-10-06): 629 tests collected, 624 passing, 3 skipped, 2 expected
-failures on a fresh clone (625, 2, 2 once `results/benchmark.json` exists), and 91.69%
-line coverage (3816/4162 executable lines) on **CPython 3.13**, measured
+failures on a fresh clone (625, 2, 2 once `results/benchmark.json` exists), and 91.74%
+line coverage (3854/4201 executable lines) on **CPython 3.13**, measured
 with `python scripts/coverage_report.py`. Coverage is quoted from that script alone:
 it is the project's dependency-free tracer (S1 forbids adding `pytest-cov`), and
 a number taken from a different tool is not comparable with the module figures
@@ -82,7 +82,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 |---|---:|---:|---|
 | Tests collected | 405 | 629 | `pytest` |
 | Tests passing | 300 | 624 (3 skipped, 2 xfail, see above) | `pytest -rs` |
-| Line coverage | 75% | 91.69% | `scripts/coverage_report.py` |
+| Line coverage | 75% | 91.74% | `scripts/coverage_report.py` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
 | `analysis/findings.py` coverage | 80% | 99.7% | as above |
 | `config.py` coverage | 80% | 98.4% | as above |
