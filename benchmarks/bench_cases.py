@@ -49,13 +49,16 @@ def _load_benchmark() -> Any:
 
 
 def _cpu_model() -> str:
+    """The CPU model from ``/proc/cpuinfo`` where it exists, else what ``platform`` reports."""
+    fallback = platform.processor() or "unknown"
     try:
-        for line in Path("/proc/cpuinfo").read_text().splitlines():
-            if line.lower().startswith("model name"):
-                return line.split(":", 1)[1].strip()
+        lines = Path("/proc/cpuinfo").read_text().splitlines()
     except OSError:
-        pass
-    return platform.processor() or "unknown"
+        return fallback  # not Linux, or /proc is not mounted
+    for line in lines:
+        if line.lower().startswith("model name"):
+            return line.split(":", 1)[1].strip()
+    return fallback
 
 
 def environment() -> dict[str, Any]:
