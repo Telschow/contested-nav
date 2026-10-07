@@ -1,0 +1,153 @@
+site_name: contested-nav
+site_description: A 21-state error-state Kalman filter for GNSS-denied navigation, and a measured account of where its uncertainty model breaks.
+site_url: https://telschow.github.io/contested-nav/
+repo_url: https://github.com/Telschow/contested-nav
+repo_name: Telschow/contested-nav
+edit_uri: edit/main/docs/
+copyright: MIT licensed. All results are from a synthetic fixture.
+
+docs_dir: docs
+site_dir: site
+strict: true
+
+# Frozen audit snapshots are history, not documentation.
+# Frozen audit snapshots and the early baseline records are history, not documentation: some of
+# their statements predate the work they describe.
+exclude_docs: |
+  audit/0[1-6]-*
+  index.html
+  ENGINEERING_BASELINE.md
+  ML_BASELINE.md
+  PROJECT_STATE.md
+  PUBLICATION_READINESS.md
+  REPOSITORY_MAP.md
+  RESEARCH_BASELINE.md
+  IMPLEMENTATION_PLAN.md
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - content.action.edit
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - toc.follow
+
+plugins:
+  - search
+  - include-markdown
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: numpy
+            show_source: false
+            show_root_heading: true
+            heading_level: 3
+            members_order: source
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+validation:
+  omitted_files: info
+  absolute_links: warn
+  unrecognized_links: warn
+  not_found: warn
+  anchors: warn
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Concepts:
+      - Why it is not a tuning problem: concepts.md
+      - Calibration, read correctly: calibration.md
+      - Architecture: architecture.md
+      - Design constraints: design-constraints.md
+  - Evidence:
+      - Results: results.md
+      - Scenarios: scenarios.md
+      - Performance: PERFORMANCE.md
+      - Demo: demo.md
+  - Reference:
+      - Model and interface contract: MODEL.md
+      - API:
+          - Overview: api/index.md
+          - Estimators: api/estimators.md
+          - Fault detection: api/fdir.md
+          - Evaluation: api/eval.md
+          - Sensors and degradation: api/sensors.md
+          - Geometry and types: api/geometry.md
+          - Benchmark and CLI: api/benchmark.md
+      - Path to real systems: REAL_SYSTEMS.md
+  - Decisions:
+      - ADR index: adr/index.md
+      - "0001 Anchor as filter state": adr/0001-anchor-as-filter-state.md
+      - "0002 Joseph covariance form": adr/0002-joseph-covariance-form.md
+      - "0003 Ship visual fusion disabled": adr/0003-ship-visual-disabled.md
+      - "0004 Quaternion order": adr/0004-quaternion-order.md
+      - "0005 Chi-square FDIR gating": adr/0005-chi-square-fdir-gating.md
+      - "0006 NIS window monitor": adr/0006-nis-window-monitor.md
+      - "0007 Spoof permanence": adr/0007-spoof-permanence-hysteresis.md
+      - "0008 Frozen-anchor cross-check": adr/0008-frozen-anchor-cross-check.md
+      - "0009 Cross-platform numerics": adr/0009-cross-platform-numerics.md
+      - "0010 Determinism and seeding": adr/0010-determinism-and-seeding.md
+      - "0011 CI and supply chain": adr/0011-ci-and-supply-chain.md
+  - Project:
+      - Scope and responsible use: scope.md
+      - Status and limits: status.md
+      - Limitations: defense/LIMITATIONS.md
+      - Roadmap: roadmap.md
+      - Changelog: changelog.md
+      - Constraints: constraints.md
+      - Product management:
+          - Overview: project-management.md
+          - System requirements: product_management/01_system_requirements_spec.md
+          - SWaP-C trade-off: product_management/02_swapc_tradeoff_matrix.md
+          - FDIR and spoofing strategy: product_management/03_fdir_and_spoofing_strategy.md
+      - Defense assessment:
+          - Overview: defense/README.md
+          - Defense relevance: defense/DEFENSE_RELEVANCE.md
+          - Dual-use analysis: defense/DUAL_USE_ANALYSIS.md
+          - Technology mapping: defense/TECHNOLOGY_MAPPING.md
+          - Sources: defense/SOURCES.md
+      - Audit and plan:
+          - Audit: audit/AUDIT.md
+          - Plan: audit/PLAN.md
+          - Index: audit/README.md
+      - Contributing: contributing.md
+      - Security: security.md
+      - Code of conduct: code-of-conduct.md
+      - FAQ: faq.md

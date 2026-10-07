@@ -52,3 +52,6 @@ artifacts/
 *.json.tmp
 coverage.json
 .hypothesis/
+
+# Built documentation site (mkdocs build)
+site/

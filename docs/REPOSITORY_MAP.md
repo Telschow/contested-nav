@@ -95,7 +95,7 @@ contested-nav/
 | `run_benchmark.py` | `python scripts/run_benchmark.py` | 7 cases; **bit-reproducible** across two runs (only `runtime_s`/`wall_s`/`realtime_factor` differ) |
 | `seed_sweep.py` | `python scripts/seed_sweep.py --seeds 10` | 10 seeds × 7 cases |
 | `scene_sweep.py` | `python scripts/scene_sweep.py --seeds 10` | 10 scenes; run twice and compared in CI |
-| `check_doc_tables.py` | `python scripts/check_doc_tables.py` | README + `index.html` tables match `benchmark.json` |
+| `check_doc_tables.py` | `python scripts/check_doc_tables.py` | README + `docs/results.md` tables match `benchmark.json` |
 | `coverage_report.py` | `python scripts/coverage_report.py --ratchet` | 91.62% total on CPython 3.13, ratchet OK; the report prints its own interpreter |
 | `make_figures.py` | `python scripts/make_figures.py` | 4 PNGs, **byte-identical to the committed images**, regenerated and checksummed |
 
@@ -192,7 +192,7 @@ benchmark run.
 | ADRs | 8 | 0001 anchor-as-state · 0002 Joseph form · 0003 ship vision disabled · 0004 quaternion order · 0005 chi-square gating · 0006 NIS window · 0007 spoof permanence *(untracked)* · 0008 frozen-anchor cross-check *(untracked)* |
 | Audit | 6 | `docs/audit/01`–`06` *(untracked)*, from a prior round |
 | Product mgmt | 3 | SRS, SWaP-C trade matrix, FDIR/spoofing strategy |
-| Reference | 3 | `architecture.md`, `calibration.md`, `index.html` |
+| Reference | 3 | `architecture.md`, `calibration.md`, `results.md` |
 | Figures | 4 | PNGs, committed deliberately |
 | Root | 2 | `README.md`, `ROADMAP.md`, plus `CONSTRAINTS.md` |
 
