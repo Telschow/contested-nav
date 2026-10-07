@@ -127,6 +127,7 @@ nav:
       - "0009 Cross-platform numerics": adr/0009-cross-platform-numerics.md
       - "0010 Determinism and seeding": adr/0010-determinism-and-seeding.md
       - "0011 CI and supply chain": adr/0011-ci-and-supply-chain.md
+      - "0012 Every scenario is injected": adr/0012-every-scenario-is-injected.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md
