@@ -15,7 +15,7 @@ The last command prints the three rows that carry the headline result:
 ```text
 | Scenario | ATE RMSE (m) | Claimed 1-sigma (m) | Mean NEES (exp. 3) | Coverage at 2 sigma | Verdict |
 | --- | ---: | ---: | ---: | ---: | --- |
-| gnss_only | 0.503 | 0.252 | 3.7 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
+| gnss_only | 0.509 | 0.252 | 4.0 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
 | outage_control | 3.782 | 0.567 | 4.1 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
 | outage_visual | 2.541 | 0.161 | 419.4 | 20.0% | overconfident |
 ```
