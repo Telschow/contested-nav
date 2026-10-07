@@ -173,6 +173,13 @@ and the OUN roll-up in §2.1 does not average them away.
 
 ### 2.1 Roll-up
 
+The counts below are computed from the verdict column and checked by
+`scripts/check_srs_trace.py` (MET counts as met, NOT MET as not met, NOT VERIFIED and
+CONTRADICTED as not verified or contradicted). That script also checks that every requirement
+and criterion has a test, a checked configuration value or a stated gap in
+`docs/product_management/srs_trace.csv`. It is structural: it does not re-measure a number or
+read prose.
+
 `TR-nn` IDs are grouped **by discipline** (IMU, optical, dependency, gating,
 compute), not by operational user need. An OUN is therefore supported by a
 *non-contiguous* set of requirements, and the mapping is given explicitly
@@ -180,12 +187,12 @@ rather than as an ID range.
 
 | OUN | Supporting requirements | Met | Not met | Not verified / contradicted |
 |---|---|---:|---:|---:|
-| OUN-01 denial tolerance | TR-20…TR-25, TR-28, TR-29, TR-31 (support); **TR-30** | 8 | 0 | 1 (TR-30) |
+| OUN-01 denial tolerance | TR-20…TR-25, TR-28, TR-29, TR-31 (support); **TR-30** | 9 | 0 | 1 (TR-30) |
 | OUN-02 spoofing resilience | TR-14, TR-23, TR-26, TR-27; **TR-13** | 4 | 0 | 1 (TR-13) |
-| OUN-03 embedded SWaP-C | **TR-11** (contradicted), **TR-12** | 0 | 1 | 2 |
+| OUN-03 embedded SWaP-C | **TR-11** (contradicted), **TR-12** | 0 | 1 | 1 (TR-11) |
 
-Three of the thirty-two requirements are not verified and one is contradicted,
-and the distribution matters more than the count. **None of the OUN-01 gaps are
+Four of the thirty-two requirements are not verified, three are not met and one is
+contradicted, and the distribution matters more than the count. **None of the OUN-01 gaps are
 detection gaps**: the mechanism that carries OUN-01 (TR-23) is verified and
 working. The OUN-01 failure is calibration, which is carried by the OUN
 statement itself and measured by AC-03/AC-04 rather than by any `TR-nn` row.
@@ -413,8 +420,8 @@ tier.
 | AC-07 | exact | holds | **PASS** |
 | AC-08 | 0 | 0 of 1212 | **PASS**, but see note |
 | AC-09 | exit 0 | matches `results/benchmark.json` | **PASS** |
-| AC-10 | 0 failures | 652 passed, 3 skipped, 2 xfailed (fresh clone); 653, 2, 2 once `results/benchmark.json` exists | **PASS** |
-| AC-11 | ≥ 75% (script floor) | 91.62% (CPython 3.13) | **PASS** |
+| AC-10 | 0 failures | 0 failures; the current counts are in `CONSTRAINTS.md` | **PASS** |
+| AC-11 | ≥ 75% (script floor) | above the floor; the current value is in `CONSTRAINTS.md` | **PASS** |
 
 **AC-03 and AC-04 are not seed artefacts.** Both were re-measured after this table
 was first written, under two independent sweeps: 10 noise realisations of the
@@ -424,7 +431,9 @@ case verdicts are identical in all 8 scenes, and `outage_visual` is overconfiden
 at every noise seed. The *verdicts* are therefore robust; only the magnitudes are
 single draws. This strengthens the FAILs; it does not soften them.
 
-**AC-08 is the one PASS here that no test enforces.** The 0-of-1212 result is
+**AC-08 is the one PASS here whose measurement no test enforces.** A related test
+(`test_a_clean_run_produces_zero_false_rejections`) checks a clean run of more than 50 fixes, not
+the 1212 the criterion quotes. The 0-of-1212 result is
 recorded in the `fdir/gating.py` module comment, which also documents the
 contrast that justifies the default: at `alpha = 0.01` the same 1212 healthy
 fixes produce 13 rejections (1.07%, matching the nominal rate), and at

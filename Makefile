@@ -9,7 +9,7 @@ PYTHON ?= python
 RESULTS ?= results/benchmark.json
 
 .DEFAULT_GOAL := help
-.PHONY: help install hooks test lint format cov check bench figures docs-check docs docs-serve demo repro docker secrets clean
+.PHONY: help install hooks test lint format cov check bench figures docs-check srs docs docs-serve demo repro docker secrets clean
 
 help: ## list the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -35,7 +35,7 @@ format: ## apply ruff formatting
 cov: ## coverage ratchet (project tracer, not pytest-cov)
 	$(PYTHON) scripts/coverage_report.py --ratchet
 
-check: lint test cov ## the three local gates, in CI order
+check: lint srs test cov ## the local gates, in CI order
 
 bench: ## run the benchmark and write results/benchmark.json
 	$(PYTHON) -m navkit run --out $(RESULTS) --markdown
@@ -45,6 +45,9 @@ figures: bench ## render docs/figures from a fresh benchmark, with the animation
 
 docs-check: ## fail if a documented table disagrees with the benchmark
 	$(PYTHON) scripts/check_doc_tables.py --results $(RESULTS)
+
+srs: ## fail if an SRS requirement has no test, config check or declared gap
+	$(PYTHON) scripts/check_srs_trace.py
 
 docs: ## build the documentation site with warnings as errors (needs `pip install -e '.[docs]'`)
 	$(PYTHON) -m mkdocs build --strict

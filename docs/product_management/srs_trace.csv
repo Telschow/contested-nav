@@ -1,0 +1,44 @@
+id,tests,config,gap
+TR-01,,py:navkit.io.imu:DEFAULT_NOISE.gyro_noise_density=0.0002,
+TR-02,,py:navkit.io.imu:DEFAULT_NOISE.accel_noise_density=0.002,
+TR-03,,py:navkit.io.imu:DEFAULT_NOISE.gyro_bias_rw=2e-06,
+TR-04,,py:navkit.io.imu:DEFAULT_NOISE.accel_bias_rw=0.0001,
+TR-05,,py:navkit.io.imu:DEFAULT_NOISE.gyro_bias_sigma=1e-05,
+TR-06,,yaml:configs/benchmark.yaml:cases.outage_visual.scenario.vision.rate_hz=20.0,
+TR-07,,yaml:configs/benchmark.yaml:cases.outage_visual.scenario.vision.rot_sigma_deg=0.35,
+TR-08,,yaml:configs/benchmark.yaml:cases.outage_visual.scenario.vision.trans_sigma_m=0.05,
+TR-09,tests/test_thresholds_and_injection.py::test_camera_drop_matches_the_requested_fraction,yaml:configs/benchmark.yaml:cases.outage_visual_degraded_camera.scenario.camera_drop.drop_fraction=0.3;yaml:configs/benchmark.yaml:cases.outage_visual_degraded_camera.scenario.camera_drop.burst_period_s=1.0,
+TR-10,,,"No optical hardware exists in this project; resolution, distortion and synchronisation cannot be tested."
+TR-11,,file:pyproject.toml,"The requirement is contradicted as worded (numpy is a compiled dependency); the SRS proposes a rewording, which is a decision, not a test."
+TR-12,,file:pyproject.toml,Not met: matplotlib and pyyaml are unconditional runtime dependencies. Nothing tests the packaging split because the split does not exist.
+TR-13,,,Gradual false-lock pulling is architecturally identified and not verified; fdir_<ch>_mean_nis is logged and nothing acts on it.
+TR-14,tests/test_fdir.py::test_a_clean_run_produces_zero_false_rejections;tests/test_fdir.py::test_a_clean_visual_run_produces_zero_false_rejections,py:navkit.fdir.config:FdirConfig.confidence_level=0.999,
+TR-15,tests/test_fdir.py::test_threshold_table_matches_published_values,,
+TR-16,tests/test_fdir.py::test_threshold_table_matches_published_values,,
+TR-17,tests/test_fdir.py::test_threshold_table_matches_published_values,,
+TR-18,tests/test_fdir.py::test_threshold_table_matches_published_values,,
+TR-19,tests/test_fdir.py::test_threshold_falls_back_to_exact_quantiles_for_untabulated_small_dof;tests/test_fdir.py::test_wilson_hilferty_accuracy_is_bounded_and_improves_with_dof,,
+TR-20,tests/test_nis_monitor.py::TestPersistenceDecision::test_k_rejections_is_persistent,py:navkit.fdir.config:FdirConfig.reacq_consecutive_rejections=3,
+TR-21,tests/test_nis_monitor.py::TestPersistenceDecision::test_window_is_bounded_and_drops_the_oldest,py:navkit.fdir.config:FdirConfig.reacq_window=5,
+TR-22,tests/test_nis_monitor.py::TestInflationBudget::test_factor_is_capped,py:navkit.fdir.config:FdirConfig.max_inflation_factor=100.0,
+TR-23,tests/test_nis_monitor.py::TestInflationBudget::test_drift_bound_binds_when_the_filter_was_actually_blind,py:navkit.fdir.config:FdirConfig.max_drift_sigma_mps=0.5,
+TR-24,tests/test_nis_monitor.py::TestInflationLimits::test_a_large_sustained_offset_is_not_followed,py:navkit.fdir.config:FdirConfig.reaccept_margin=0.25,
+TR-25,tests/test_nis_monitor.py::TestSpoofLockoutEscalates::test_a_second_grant_in_one_episode_escalates_to_a_spoof_lockout;tests/test_nis_monitor.py::TestFdirManagerWiring::test_a_clean_accept_closes_the_episode,py:navkit.fdir.config:FdirConfig.spoof_grant_threshold=2,
+TR-26,tests/test_nis_monitor.py::TestInflationLimits::test_a_consistent_sample_under_a_fault_is_not_eligible_for_relief;tests/test_nis_monitor.py::TestInflationLimits::test_a_genuine_outlier_is_still_eligible,,
+TR-27,tests/test_nis_monitor.py::TestPersistentOffsetIsRelieved::test_the_position_block_is_inflated_and_nothing_else;tests/test_nis_monitor.py::TestInflationLimits::test_inflation_is_not_available_to_the_visual_channels,,
+TR-28,,py:navkit.estimators.eskf:_N_STATES=21,
+TR-29,,fn:navkit.synthetic:synthetic_imu.rate_hz=200.0,The epoch count (6001) is a measurement quoted in the document; no test asserts it.
+TR-30,,,"No compute budget exists to test against. Runtime is recorded in the benchmark JSON and never asserted, so the requirement is not verified."
+TR-31,tests/test_fdir.py::test_a_rejected_update_leaves_the_prediction_untouched,,
+TR-32,,,"No native build or target hardware exists, so target-port determinism cannot be written, let alone tested."
+AC-01,tests/test_golden_benchmark.py::test_case_matches_golden,,
+AC-02,tests/test_golden_benchmark.py::test_case_matches_golden,,
+AC-03,tests/test_estimators.py::test_gnss_denial_still_over_trusts_vision_and_that_is_pinned,,"The criterion fails by design: the test pins the failure, it does not enforce the threshold."
+AC-04,tests/test_estimators.py::test_gnss_denial_still_over_trusts_vision_and_that_is_pinned,,"The criterion fails by design: the test pins the failure, it does not enforce the threshold."
+AC-05,tests/test_nis_monitor.py::TestInflationLimits::test_a_large_sustained_offset_is_not_followed,,Passes at the tested offsets only; a 21 m offset after a 15 s denial is admitted (SRS 2.6).
+AC-06,tests/test_nis_monitor.py::TestInflationLimits::test_a_spoof_small_enough_to_drift_toward_is_still_isolated,,
+AC-07,tests/test_fdir.py::test_a_rejected_update_leaves_the_prediction_untouched,,
+AC-08,tests/test_fdir.py::test_a_clean_run_produces_zero_false_rejections,,"The test covers a clean run of more than 50 fixes. The 0-of-1212 figure the criterion quotes is a module comment in fdir/gating.py, not an assertion."
+AC-09,tests/test_doc_tables.py::test_the_real_documents_match_the_committed_benchmark,file:scripts/check_doc_tables.py,
+AC-10,,file:.github/workflows/ci.yml,The criterion is the whole suite; CI runs it. There is no single test to name.
+AC-11,,file:scripts/coverage_report.py,"The criterion is the coverage ratchet script, which CI runs; there is no test to name."
