@@ -28,7 +28,7 @@ from typing import Any
 
 import numpy as np
 
-from .geometry.rigid import quat_mul, quat_to_matrix, rot_exp, rot_log_batch
+from .geometry.rigid import quat_mul, quat_to_matrix, rot_exp
 from .types import GRAVITY, ImuSample, Trajectory
 
 
@@ -185,30 +185,55 @@ def synthetic_trajectory(cfg: SyntheticConfig | None = None, name: str = "synthe
     return Trajectory(t=t, poses=analytic_pose(cfg, t), name=name, metadata={"synthetic": True})
 
 
+def analytic_kinematics(cfg: SyntheticConfig, t: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """World acceleration and body angular velocity of the closed-form motion, by derivation.
+
+    Position is ``x0 + A (1 - cos(w t))`` per axis, so the acceleration is
+    ``A w^2 cos(w t)``. Attitude is ``R = Rz(yaw) Rx(roll)``, so the angular velocity
+    in the body frame is ``(roll_dot, yaw_dot sin(roll), yaw_dot cos(roll))``. Both are
+    exact, and neither involves a difference of nearly equal numbers.
+
+    This replaces a second finite difference of :func:`analytic_pose` with a step of
+    1e-5 s. That version divided a rounding error of about 1e-16 by 1e-10, so a one-ulp
+    change in ``cos`` (which differs between math libraries) moved the accelerometer by up
+    to 7e-5 m/s^2, and the benchmark disagreed between Linux and macOS or Windows at the
+    1e-7 level. Returns ``(a_world (N, 3), omega_body (N, 3))``.
+    """
+    t = np.asarray(t, dtype=float).reshape(-1)
+    tau = 2.0 * np.pi
+    w_orbit = tau * cfg.circles / cfg.duration_s
+    w_sway = tau * cfg.sway_cycles / cfg.duration_s
+    w_yaw = tau * cfg.yaw_cycles / cfg.duration_s
+    w_roll = tau * cfg.roll_cycles / cfg.duration_s
+
+    ax = cfg.radius_m * w_orbit**2 * np.cos(w_orbit * t) + cfg.sway_amplitude_m * w_sway**2 * np.cos(w_sway * t)
+    ay = 0.6 * cfg.radius_m * (1.5 * w_orbit) ** 2 * np.cos(1.5 * w_orbit * t)
+    az = cfg.height_amplitude_m * (0.7 * w_sway) ** 2 * np.cos(0.7 * w_sway * t)
+    a_world = np.stack([ax, ay, az], axis=1)
+
+    yaw_amp = np.deg2rad(cfg.yaw_amplitude_deg)
+    roll_amp = np.deg2rad(cfg.roll_amplitude_deg)
+    roll = roll_amp * (1.0 - np.cos(w_roll * t))
+    yaw_rate = yaw_amp * w_yaw * np.sin(w_yaw * t)
+    roll_rate = roll_amp * w_roll * np.sin(w_roll * t)
+    omega_body = np.stack([roll_rate, yaw_rate * np.sin(roll), yaw_rate * np.cos(roll)], axis=1)
+    return a_world, omega_body
+
+
 def synthetic_imu(cfg: SyntheticConfig | None = None, rate_hz: float = 200.0):
     """Analytic gyro and specific force for the synthetic motion.
 
-    Differentiating the closed form analytically instead of numerically removes
-    discretisation error from the fixture, so a test that integrates this signal
-    and compares against :func:`analytic_pose` is testing the propagation
-    maths and nothing else.
+    The derivatives come from :func:`analytic_kinematics`, in closed form, so a test that
+    integrates this signal and compares against :func:`analytic_pose` is testing the
+    propagation maths and nothing else, on every platform.
     """
 
     cfg = cfg or SyntheticConfig()
     n = int(round(cfg.duration_s * rate_hz)) + 1
     t = np.arange(n) / rate_hz
-    eps = 1e-5
-    p0 = analytic_pose(cfg, t)
-    p_before = analytic_pose(cfg, t - eps)
-    p_after = analytic_pose(cfg, t + eps)
-    a_world = (p_after[:, :3, 3] - 2.0 * p0[:, :3, 3] + p_before[:, :3, 3]) / eps**2
-    R = p0[:, :3, :3]
-    accel = np.einsum("nji,nj->ni", R, a_world - GRAVITY[None, :])
-
-    R_before = p_before[:, :3, :3]
-    R_after = p_after[:, :3, :3]
-    R_rel = np.einsum("nji,njk->nik", R_before, R_after)
-    gyro = rot_log_batch(R_rel) / (2.0 * eps)
+    pose = analytic_pose(cfg, t)
+    a_world, gyro = analytic_kinematics(cfg, t)
+    accel = np.einsum("nji,nj->ni", pose[:, :3, :3], a_world - GRAVITY[None, :])
     return ImuSample(t=t, accel=accel, gyro=gyro, name="imu_synthetic")
 
 
