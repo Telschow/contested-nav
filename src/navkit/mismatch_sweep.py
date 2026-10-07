@@ -178,9 +178,18 @@ def _fmt(row: dict[str, Any], metric: str, digits: int) -> str:
 
 def markdown_table(rows: list[dict[str, Any]]) -> str:
     """The table shown on the mismatch page, built from CSV-shaped rows."""
+    columns = (
+        "Case",
+        "Assumed noise x",
+        "ATE rmse m [95% CI]",
+        "NEES mean [95% CI]",
+        "Coverage @2σ % [95% CI]",
+        "Claimed 1σ m",
+        "GNSS fixes rejected % [95% CI]",
+        "Verdicts",
+    )
     lines = [
-        "| Case | Assumed noise x | ATE rmse m [95% CI] | NEES mean [95% CI] "
-        "| Coverage @2σ % [95% CI] | Claimed 1σ m | GNSS fixes rejected % [95% CI] | Verdicts |",
+        "| " + " | ".join(columns) + " |",
         "|---|---:|---|---|---|---:|---|---|",
     ]
     for r in rows:
