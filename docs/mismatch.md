@@ -82,6 +82,11 @@ Each statement below is checked against the CSV by `tests/test_mismatch_sweep.py
   noise is mismatched.
 - Only the assumed GNSS and vision sigmas change. IMU noise, the outage window and the
   trajectory do not.
+- `gnss_only` runs with a noiseless IMU and `outage_control` with the default IMU noise, because the
+  benchmark runner skips the injection layer for a case with no outage
+  ([issue 56](https://github.com/Telschow/contested-nav/issues/56)). The two cases differ in more than the
+  outage, and the `gnss_only` rows are for a filter with no IMU noise to contend with. The sweep has not
+  been re-run with the layer forced on.
 - Five seeds per cell, so the intervals are rough. At factor 1 the per-seed verdicts are split
   between `mixed`, `underconfident` and `overconfident`; the verdict column shows the split
   rather than a single label.
