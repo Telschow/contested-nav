@@ -9,7 +9,7 @@ PYTHON ?= python
 RESULTS ?= results/benchmark.json
 
 .DEFAULT_GOAL := help
-.PHONY: help install hooks test lint format cov check bench figures docs-check demo repro docker clean
+.PHONY: help install hooks test lint format cov check bench figures docs-check demo repro docker secrets clean
 
 help: ## list the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -58,6 +58,10 @@ repro: figures ## every number and figure in the docs, from scratch
 docker: ## build the container image and run the CLI smoke test
 	docker build -t navkit .
 	docker run --rm navkit navkit --version
+
+secrets: ## scan the tracked files and the git history for credential-shaped strings
+	$(PYTHON) scripts/scan_secrets.py
+	$(PYTHON) scripts/scan_secrets.py --history
 
 clean: ## remove caches and generated output
 	rm -rf results artifacts build dist .pytest_cache .ruff_cache .mypy_cache .hypothesis htmlcov
