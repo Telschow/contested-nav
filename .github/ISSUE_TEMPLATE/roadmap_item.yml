@@ -1,0 +1,52 @@
+name: Roadmap item
+description: A unit of planned work, scored so it can be ordered
+labels: [roadmap]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What is true when this is done, in terms a reviewer can check.
+    validations:
+      required: true
+  - type: dropdown
+    id: reach
+    attributes:
+      label: Reach
+      description: Who or what does it change?
+      options: [one document or script, one module, the whole pipeline, the published result]
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      options: [minimal, low, medium, high, massive]
+    validations:
+      required: true
+  - type: dropdown
+    id: confidence
+    attributes:
+      label: Confidence in reach and impact
+      options: [low (a guess), medium (some evidence), high (measured)]
+    validations:
+      required: true
+  - type: dropdown
+    id: effort
+    attributes:
+      label: Effort
+      options: [S (under a day), M (a few days), L (a week or more)]
+    validations:
+      required: true
+  - type: textarea
+    id: depends
+    attributes:
+      label: Depends on
+      description: Other items, blockers (B1 to B5 in ROADMAP.md) or decisions.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: One checkable line per criterion.
+    validations:
+      required: true

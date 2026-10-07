@@ -9,7 +9,44 @@ this project uses [semantic versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `navkit` command line: `navkit run`, `navkit sweep seeds|scenes|outages`, `navkit figures`
+  (`--animate`). The scripts under `scripts/` remain as wrappers. The default scenario file
+  ships inside the wheel. ([#16](https://github.com/Telschow/contested-nav/pull/16), [#19](https://github.com/Telschow/contested-nav/pull/19), [#22](https://github.com/Telschow/contested-nav/pull/22), [#25](https://github.com/Telschow/contested-nav/pull/25))
+- Outage sweep: the GNSS outage start and duration swept for the control and the visual case,
+  with bootstrap intervals, a CSV and a figure. ([#22](https://github.com/Telschow/contested-nav/pull/22))
+- Golden snapshot test of the seeded benchmark ([#12](https://github.com/Telschow/contested-nav/pull/12)); Hypothesis property tests for
+  rotations, the filter's covariance and attitude, NEES and the chi-square functions ([#21](https://github.com/Telschow/contested-nav/pull/21)).
+- macOS and Windows test legs, and ADR-0009 on cross-platform numerics. ([#24](https://github.com/Telschow/contested-nav/pull/24))
+- Hero figure and animation of error against the claimed bound. ([#25](https://github.com/Telschow/contested-nav/pull/25))
+- `benchmarks/` timing harness and `docs/PERFORMANCE.md` with measured numbers. ([#17](https://github.com/Telschow/contested-nav/pull/17))
+
+### Changed
+
+- The synthetic IMU is derived analytically instead of by a finite difference whose rounding
+  error moved with the math library. Headline ATE moves by at most 1.1e-5 m and mean NEES by at
+  most 3.6e-3; coverage, counts and verdicts do not change. ([#26](https://github.com/Telschow/contested-nav/pull/26))
+- `interpolate_trajectory` is vectorised: the sum of the seven benchmark case medians fell from
+  about 15.1 s to 11.1 s (1.36x), with 97 of 73,846 numbers differing by at most 3.6e-16. ([#17](https://github.com/Telschow/contested-nav/pull/17))
+- `ErrorStateKalmanFilter._update` and `fdir_manager.py` are split into named pieces with the
+  benchmark output byte-identical to before. ([#14](https://github.com/Telschow/contested-nav/pull/14), [#15](https://github.com/Telschow/contested-nav/pull/15))
+- Third-party GitHub Actions are pinned to commit SHAs. ([#9](https://github.com/Telschow/contested-nav/pull/9))
+- The README headline is qualified: the overconfidence of visual aiding holds for every outage
+  window tried, but the accuracy gain holds only for outages that start early. ([#22](https://github.com/Telschow/contested-nav/pull/22))
+
+### Removed
+
+- `docs/architecture/demo.html` (11 MB) and `demo.workflow.json`: the page embedded a raw pixel
+  buffer labelled as a PNG that a browser cannot render, and typed its headline numbers. ([#27](https://github.com/Telschow/contested-nav/pull/27))
+
 ### Fixed
+
+- The demo reported mean NEES 1.4e10 and a claimed sigma of 7 mm while the README said 419.4 and
+  0.161 m, because it ran its own copy of the filter configuration. It now runs the benchmark case
+  and a test compares its headline with the golden snapshot. ([#27](https://github.com/Telschow/contested-nav/pull/27))
+
+Earlier entries, from the 2026-09-29 audit:
 
 - `read_euroc_imu` raised `AttributeError` on every call. `_NUM` was declared as
   a plain string and invoked with `.fullmatch()`, so no row was ever read. The
