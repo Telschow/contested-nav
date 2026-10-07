@@ -94,6 +94,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 | `fdir/fdir_manager.py` coverage | 70% | 98.5% | as above |
 | `fdir/config.py` coverage | 70% | 100.0% | as above |
 | `fdir/records.py` coverage | 70% | 99.2% | as above |
+| `hero.py` coverage | 80% | 100.0% | as above |
 | `seed_sweep.py` coverage | 75% | 87.0% | as above |
 | `scene_sweep.py` coverage | 80% | 97.4% | as above |
 | `figures.py` coverage | 70% | 81.8% | as above |
