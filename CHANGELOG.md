@@ -22,6 +22,11 @@ this project uses [semantic versioning](https://semver.org/).
   which went stale (860 collected there against 888 measured, 629 in the ratchet table and in `ROADMAP.md`,
   "8 of 8 docs" for twelve ADRs). They quote the collected count, the coverage figure and the ADR count
   from the JSON and say that all collected tests pass except the declared xfails and skips.
+- The revised-roadmap audit snapshot no longer names teams that do not exist (Estimator, Docs, QA, Core, Config,
+  Perf and Research teams, a Release manager) as owners; the owner is the maintainer. The open-item tables in the
+  SRS and the SWaP-C matrix label the column Area, since they name workstreams. The engineering baseline no
+  longer quotes the first characters of a provider key. A test fails if a table names a team or manager as owner
+  or a document quotes the start of a provider key.
 
 ## [0.2.0] - 2026-10-08
 

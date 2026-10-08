@@ -524,7 +524,7 @@ health.
 
 ## 5. Open items for the next revision
 
-| # | Item | Blocks | Owner |
+| # | Item | Blocks | Area |
 |---|---|---|---|
 | 1 | Pose graph for visual anchor error | AC-03, AC-04, B1 | Estimation |
 | 2 | Native ARM build, then WCET and jitter measurement | TR-30, TR-32, OUN-03 | Platform |
