@@ -50,6 +50,11 @@ jobs:
         # while being incapable of failing a build.
         run: python scripts/coverage_report.py --ratchet
 
+      - name: Coverage matches the recorded figure
+        # Compared only on the interpreter the JSON was measured on, because the
+        # executable-line count depends on the bytecode. See scripts/metrics.py.
+        run: python scripts/metrics.py --check-coverage
+
   test-os:
     # The Linux matrix above is the full gate. These legs run the same suite on the
     # other two desktop platforms at one interpreter, to find platform dependence in
@@ -114,6 +119,13 @@ jobs:
         # Every requirement and acceptance criterion in the SRS has a test, a checked configuration
         # value or a declared gap, and the roll-up counts follow from the verdicts. Structural only.
         run: python scripts/check_srs_trace.py
+
+      - name: Quoted counts
+        # The test, ADR and coverage figures in the documents are quoted from
+        # docs/data/metrics.json through metric markers. This fails when a document
+        # or the JSON is stale, or when a count is typed by hand. Collecting the
+        # tests takes a second; the coverage comparison runs in the test job.
+        run: python scripts/metrics.py --check
 
   build:
     name: build

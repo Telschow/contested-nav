@@ -7,6 +7,25 @@
 [![Docs](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml/badge.svg)](https://telschow.github.io/contested-nav/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+## In 60 seconds
+
+**Problem.** A navigation filter has to be right about its own position and also right about how
+sure it is. A drone that has lost GNSS and is steered by a filter that is wrongly confident will
+trust a position it should not.
+
+**Decision.** Should camera-based motion tracking be switched on when GNSS is denied? It makes the
+position error smaller (3.782 m to 2.541 m) but the filter then claims to be within 0.161 m. It
+is accurate and confidently wrong, so it **ships off by default**
+([ADR-0003](docs/adr/0003-ship-visual-disabled.md)).
+
+**Evidence.** The result held for every one of 10 noise seeds and every one of 40 outage runs, and
+the numbers in the table below are regenerated and checked by CI. It is synthetic data, not a field
+test.
+
+**Next step.** The fix is a change to how the filter treats the visual anchor, which the
+[roadmap](ROADMAP.md) calls B1. It is not built. The bar for turning vision on is written down: a
+mean NEES below 10 and a 2σ coverage above 90% with GNSS denied.
+
 ![Position error against the uncertainty the filter claims, through a GNSS outage, without and with vision](docs/figures/hero.png)
 
 A 21-state error-state Kalman filter and an evaluation harness for GNSS-denied navigation.
@@ -86,6 +105,22 @@ code. Interpretation, the four ATE alignments and the figures are on the
 
 All of it, with sources, is in [Status and limits](docs/status.md) and
 [Limitations](docs/defense/LIMITATIONS.md).
+
+## How this was built
+
+- The code was written mostly by an AI coding assistant (Claude Code). The commit trailers and the
+  `claude/*` branch names show which changes.
+- The maintainer sets the scope and the order of work, and decides what ships. Changes land through a
+  pull request that the maintainer merges, and releases are tagged by the maintainer.
+- The assistant's work is not trusted on sight. Gates decide: finite-difference checks on the
+  Jacobians, property tests, a golden snapshot of the benchmark, a coverage ratchet, CI on three
+  Python versions and three operating systems, CodeQL and a secret scan.
+- Every number in the README is generated, and a test fails when a table cell disagrees with the
+  code.
+- Defects found this way are in the [changelog](CHANGELOG.md), including one in this repository's
+  own test setup ([ADR-0012](docs/adr/0012-every-scenario-is-injected.md)).
+- What stays with a person: which claims to make. The headline is a negative result, and it was
+  kept.
 
 ## Scope and responsible use
 
