@@ -46,7 +46,7 @@ chain can be checked before any real file is on disk.
 - The start pose and velocity come from the ground truth. That is an ideal initial alignment.
 - The ground truth is itself an estimate, and the dataset's notes say its synchronisation with the
   sensors is limited.
-- The filter's process noise from IMU white noise is far below the textbook growth (no velocity
-  term, and a `dt^3` term on attitude), which would make any real-data covariance look
-  overconfident for a reason that is not the data. `tests/test_known_gaps.py` holds an `xfail`
-  that states the expected behaviour. Changing it moves the golden snapshot and needs its own ADR.
+- The process-noise form that made real-data covariances look overconfident was found while building
+  this and is handled separately in [ADR-0014](0014-textbook-imu-process-noise-by-default.md).
+- The IMU noise the datasheet gives understates the real error growth of the EuRoC IMU. `navkit euroc run
+  --preset adis16448` inflates it; that is a tuning for one sensor and the Vicon sequences have not been run.

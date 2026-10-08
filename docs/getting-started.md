@@ -15,9 +15,9 @@ The last command prints the three rows that carry the headline result:
 ```text
 | Scenario | ATE RMSE (m) | Claimed 1-sigma (m) | Mean NEES (exp. 3) | Coverage at 2 sigma | Verdict |
 | --- | ---: | ---: | ---: | ---: | --- |
-| gnss_only | 0.509 | 0.252 | 4.0 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
-| outage_control | 3.782 | 0.567 | 4.1 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
-| outage_visual | 2.541 | 0.161 | 419.4 | 20.0% | overconfident |
+| gnss_only | 0.509 | 0.253 | 3.9 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
+| outage_control | 3.783 | 0.567 | 4.1 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
+| outage_visual | 2.506 | 0.161 | 391.2 | 20.0% | overconfident |
 ```
 
 **Timed from a fresh clone** on the machine that wrote this page (Python 3.13, a fast

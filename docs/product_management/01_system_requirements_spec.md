@@ -71,14 +71,14 @@ without discarding the healthy fixes that arrive at the end of it.
 
 | Leg | Criterion | Result | Verdict |
 |---|---|---|---|
-| Accuracy through the gap | ATE RMSE < 3.0 m over `outage_visual` | **2.541 m** [M] | MET |
-| Accuracy, degraded front end | ATE RMSE < 3.0 m over `outage_visual_degraded_camera` | **1.872 m** [M] | MET |
+| Accuracy through the gap | ATE RMSE < 3.0 m over `outage_visual` | **2.506 m** [M] | MET |
+| Accuracy, degraded front end | ATE RMSE < 3.0 m over `outage_visual_degraded_camera` | **1.869 m** [M] | MET |
 | Calibration through the gap | 2σ coverage ≥ 95% | **20.0%** / **18.5%** [M] | **NOT MET** |
-| Calibration, bulk | mean NEES within tolerance of expected 3 | **419.4** / **216.6** [M] | **NOT MET** |
+| Calibration, bulk | mean NEES within tolerance of expected 3 | **391.2** / **210.1** [M] | **NOT MET** |
 
 The accuracy leg passes on both cases. The calibration leg fails by a factor of
 roughly five, and this is the single most important thing in this document. The
-filter reports 0.161 m of 1σ uncertainty while being 2.541 m wrong. It
+filter reports 0.161 m of 1σ uncertainty while being 2.506 m wrong. It
 converges, it runs, and it is confidently wrong. This is `CONSTRAINTS.md`
 blocker **B1**, still open, and it is not fixed by ADR-0005 or ADR-0006.
 
@@ -411,9 +411,9 @@ tier.
 
 | AC | Threshold | Measured | Verdict |
 |---|---|---|---|
-| AC-01 | < 3.0 m | 2.541 m | **PASS** |
-| AC-02 | < 3.0 m | 1.872 m | **PASS** |
-| AC-03 | ratio ≤ 2.0 | 139.8 (419.4 / 3) | **FAIL** |
+| AC-01 | < 3.0 m | 2.506 m | **PASS** |
+| AC-02 | < 3.0 m | 1.869 m | **PASS** |
+| AC-03 | ratio ≤ 2.0 | 130.4 (391.2 / 3) | **FAIL** |
 | AC-04 | ≥ 95% | 20.0%, 18.5%, 0.7%, 16.0% | **FAIL** |
 | AC-05 | 0 grants | 0 grants at 3/5/10/20/40/100 m; **21 m admitted after a 15 s denial** | **PASS at the tested offsets** |
 | AC-06 | 0 grants | 0 grants at 1/2 m | **PASS** |

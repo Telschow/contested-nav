@@ -10,7 +10,7 @@ decision, not a tuning pass:
 
 - **It is a design property, not a bad seed.** Over **10 noise realisations** of
   the same trajectory, `outage_visual` is overconfident at **every** seed: mean
-  NEES **844**, range **211.7 to 2103.4**, coverage **6.8% to 34.8%**. Over **8
+  NEES **742**, range **189.2 to 1965.4**, coverage **6.8% to 34.9%**. Over **8
   scenes** with trajectory geometry varied — path length **17.3 m to 80.6 m**, a
   **4.65×** range — **all seven case verdicts are identical in all eight scenes**,
   and `outage_visual` holds mean NEES **419.7 [414.4, 424.9]** at 20.0% coverage.
