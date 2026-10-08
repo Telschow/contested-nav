@@ -1,7 +1,7 @@
 # API reference
 
 Generated from the docstrings in `src/navkit`. The package has no stable public API yet (it is
-version 0.1.0, development status Alpha); these pages describe what the code does today.
+version 0.2.0, development status Alpha); these pages describe what the code does today.
 
 | Page | Contents |
 |---|---|
