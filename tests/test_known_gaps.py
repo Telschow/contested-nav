@@ -63,18 +63,16 @@ def test_white_imu_noise_grows_the_covariance_as_theory_says():
 
 
 def test_the_textbook_process_noise_form_gives_the_white_noise_growth():
-    """The opt-in form the xfail above asks for. The default stays "legacy" until an ADR changes it."""
+    """The form the xfail above asks for. It is the default since ADR-0014."""
     _assert_white_noise_growth("textbook")
 
 
-def test_the_default_process_noise_form_is_legacy_and_is_serialised():
+def test_the_default_process_noise_form_is_textbook_and_is_serialised():
     cfg = EskfConfig(imu_noise=ImuNoiseModel())
-    assert cfg.process_noise_form == "legacy"
-    assert cfg.as_dict()["process_noise_form"] == "legacy"
-    assert (
-        EskfConfig(imu_noise=ImuNoiseModel(), process_noise_form="textbook").as_dict()["process_noise_form"]
-        == "textbook"
-    )
+    assert cfg.process_noise_form == "textbook"
+    assert cfg.as_dict()["process_noise_form"] == "textbook"
+    legacy = EskfConfig(imu_noise=ImuNoiseModel(), process_noise_form="legacy")
+    assert legacy.as_dict()["process_noise_form"] == "legacy"
 
 
 def test_an_unknown_process_noise_form_is_rejected():

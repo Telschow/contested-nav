@@ -368,12 +368,13 @@ class EskfConfig:
     initial_vel_sigma_m_s: float = 0.5
     initial_rot_sigma_deg: float = 2.0
     initial_bias_sigma: float = 0.0
-    #: How IMU white noise enters the process covariance. ``"legacy"`` is the original form:
+    #: How IMU white noise enters the process covariance. ``"textbook"`` is the default (ADR-0014).
+    #: ``"legacy"`` is the original form, kept so the old behaviour can be reproduced:
     #: ``sigma_a^2 dt^3 / 3`` on position only and ``sigma_g^2 dt^3 / 3`` on attitude. ``"textbook"``
     #: is the discrete form of continuous white noise on the error-state model:
     #: ``sigma_g^2 dt`` on attitude, and ``sigma_a^2 dt`` on velocity with the position terms
     #: ``dt^3 / 3`` and ``dt^2 / 2`` that go with it.
-    process_noise_form: str = "legacy"
+    process_noise_form: str = "textbook"
 
     def as_dict(self) -> dict[str, object]:
         return {

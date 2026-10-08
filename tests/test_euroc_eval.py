@@ -266,6 +266,23 @@ def test_run_writes_a_result_file_and_a_table(root, tmp_path, capsys):
     assert table.startswith("| Sequence |") and NAME in table and "15+10" in table
 
 
+def test_the_preset_sets_noise_scale_and_bias_sigma_and_flags_override_it(root, tmp_path):
+    out = tmp_path / "p.json"
+    assert ee.main(["run", "--root", str(root), "-s", NAME, "--preset", "adis16448", "--out", str(out)]) == 0
+    opts = json.loads(out.read_text())["options"]
+    assert (opts["preset"], opts["noise_scale"], opts["bias_sigma"]) == ("adis16448", 3.0, 0.05)
+    assert (
+        ee.main(
+            ["run", "--root", str(root), "-s", NAME, "--preset", "adis16448", "--noise-scale", "2", "--out", str(out)]
+        )
+        == 0
+    )
+    assert json.loads(out.read_text())["options"]["noise_scale"] == 2.0
+    assert ee.main(["run", "--root", str(root), "-s", NAME, "--out", str(out)]) == 0
+    opts = json.loads(out.read_text())["options"]
+    assert (opts["preset"], opts["noise_scale"], opts["bias_sigma"]) == (None, 1.0, None)
+
+
 def test_run_without_a_fetched_sequence_exits_with_the_fetch_hint(tmp_path, capsys):
     assert ee.main(["run", "--root", str(tmp_path), "-s", "MH_01_easy"]) == 1
     assert "navkit euroc fetch" in capsys.readouterr().err
