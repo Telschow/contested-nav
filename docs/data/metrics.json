@@ -1,0 +1,8 @@
+{
+  "adr_count": 12,
+  "coverage_lines_hit": 5564,
+  "coverage_lines_total": 5992,
+  "coverage_percent": 92.86,
+  "coverage_python": "3.13",
+  "tests_collected": 914
+}

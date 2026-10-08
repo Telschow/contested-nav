@@ -56,11 +56,12 @@ do not invalidate it anywhere it has already been exposed.
 
 ## Before opening a pull request
 
-All five must pass locally. These are the same five CI runs.
+All of these must pass locally. They are what CI runs.
 
 ```bash
-pytest                                    # 883 passed, 3 skipped, 2 xfailed
+pytest                                    # all pass; xfails and skips are expected
 python scripts/coverage_report.py --ratchet
+python scripts/metrics.py --check          # counts quoted in the docs
 ruff check src tests scripts
 ruff format --check src tests scripts
 mypy src --ignore-missing-imports
@@ -69,10 +70,13 @@ mypy src --ignore-missing-imports
 `ruff format src tests scripts` applies formatting; the `--check` form is the
 gate.
 
-The expected suite result on a fresh clone is `883 passed, 3 skipped, 2 xfailed`.
-Two skips need TUM VI reference data that is not vendored (see below). The third
-is the doc-table check, which runs once `python scripts/run_benchmark.py` has
-written `results/benchmark.json` (then `884 passed, 2 skipped, 2 xfailed`). The
+The suite collects <!-- metric:tests_collected -->914<!-- /metric --> tests and all of them pass on a fresh clone, except the deliberate
+xfails and the skips. `pytest -rs` lists the skips: two need TUM VI reference data that is not
+vendored (see below), and the doc-table check runs once `python scripts/run_benchmark.py` has
+written `results/benchmark.json`. The count and the other numbers the docs quote are in
+`docs/data/metrics.json`. After adding a test, run `python scripts/metrics.py --write` (a second);
+after a change that moves coverage by more than half a point, run `python scripts/coverage_report.py`
+and then `python scripts/metrics.py --write --coverage`. The
 two xfails
 are deliberate: they pin ADR-0007's spoof-permanence signal, which is inert for
 every reachable configuration. They are meant to keep failing until Track B

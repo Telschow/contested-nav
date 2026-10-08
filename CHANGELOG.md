@@ -9,6 +9,20 @@ this project uses [semantic versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `docs/data/metrics.json` and `scripts/metrics.py`: the test, ADR and line-coverage figures the documents
+  quote now come from one generated file through `<!-- metric:... -->` markers. CI fails when a marker or the
+  JSON is stale, when a count is typed by hand, when an ADR is missing from the index, or when measured
+  coverage differs from the recorded figure by more than half a point on the recorded interpreter.
+
+### Changed
+
+- `CONSTRAINTS.md`, `ROADMAP.md` and `CONTRIBUTING.md` no longer carry hand-typed passing and skipped counts,
+  which went stale (860 collected there against 888 measured, 629 in the ratchet table and in `ROADMAP.md`,
+  "8 of 8 docs" for twelve ADRs). They quote the collected count, the coverage figure and the ADR count
+  from the JSON and say that all collected tests pass except the declared xfails and skips.
+
 ## [0.2.0] - 2026-10-08
 
 ### Added
