@@ -161,7 +161,8 @@ def open_url(
         delay *= 2.0
     raise FetchError(
         f"{url}: gave up after {attempts} attempts ({last}). HTTP 429 means the server is rate limiting this "
-        "address. Wait some minutes and run the same command again, or fetch from another network."
+        "address and 5xx that it had a problem. Wait some minutes and run the same command again, or fetch from "
+        "another network."
     )
 
 
