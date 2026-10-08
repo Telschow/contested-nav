@@ -4,8 +4,8 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured (2026-10-07): 860 tests collected, 855 passing, 3 skipped, 2 expected
-failures on a fresh clone (856, 2, 2 once `results/benchmark.json` exists), and 92.86%
+Last measured (2026-10-08): 888 tests collected, 883 passing, 3 skipped, 2 expected
+failures on a fresh clone (884, 2, 2 once `results/benchmark.json` exists), and 92.86%
 line coverage (5564/5992 executable lines) on **CPython 3.13**, measured
 with `python scripts/coverage_report.py`. Coverage is quoted from that script alone:
 it is the project's dependency-free tracer (S1 forbids adding `pytest-cov`), and
@@ -83,9 +83,9 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | 629 | `pytest` |
-| Tests passing | 300 | 855 (3 skipped, 2 xfail, see above) | `pytest -rs` |
-| Line coverage | 75% | 91.62% | `scripts/coverage_report.py` |
+| Tests collected | 405 | 888 | `pytest` |
+| Tests passing | 300 | 883 (3 skipped, 2 xfail, see above) | `pytest -rs` |
+| Line coverage | 75% | 92.86% | `scripts/coverage_report.py` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
 | `analysis/findings.py` coverage | 80% | 99.7% | as above |
 | `config.py` coverage | 80% | 98.4% | as above |

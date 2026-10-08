@@ -9,6 +9,8 @@ this project uses [semantic versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-08
+
 ### Added
 
 - A release workflow (`.github/workflows/release.yml`): on a version tag it checks that the tag, the version, the
