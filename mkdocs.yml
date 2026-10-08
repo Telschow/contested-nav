@@ -23,6 +23,7 @@ exclude_docs: |
   REPOSITORY_MAP.md
   RESEARCH_BASELINE.md
   IMPLEMENTATION_PLAN.md
+  releases/*
 
 theme:
   name: material
