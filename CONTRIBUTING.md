@@ -165,6 +165,22 @@ A commit that reformats most of the tree is a separate commit, even when it
 belongs to the same piece of work -- otherwise the behavioural change cannot be
 reviewed on its own.
 
+## Releasing
+
+Only the maintainer releases. A release is a tag, and the workflow in `.github/workflows/release.yml`
+does the rest, as a draft.
+
+1. Re-measure the numbers in `docs/releases/<version>.md` and `CONSTRAINTS.md`.
+2. Remove the DRAFT banner from the notes, rename `## [Unreleased]` in `CHANGELOG.md` to
+   `## [<version>] - <date>` and add a fresh `## [Unreleased]`, and set the version in
+   `pyproject.toml` and `src/navkit/__init__.py`.
+3. Run `python scripts/check_release.py --tag v<version>`. It must print `release check OK`.
+4. Merge that change, then push the tag `v<version>` from `main`.
+5. The workflow checks, builds and attests, and creates a draft release. Read it, then publish it.
+
+A manual run of the Release workflow is a dry run: it builds and checks, and prints what would block a
+release. It publishes and attests nothing.
+
 ## Coverage
 
 Coverage is measured by `scripts/coverage_report.py`, the project's own tracer, because

@@ -3,7 +3,8 @@
 ## Supported versions
 
 `main` is the only supported ref. This is a research library with no release
-cadence, so there is nothing to backport a fix into.
+cadence, so there is nothing to backport a fix into. A tagged release, when there is
+one, carries a build provenance attestation (see ADR-0011); a fix still lands on `main`.
 
 ## Reporting a vulnerability
 
@@ -41,6 +42,8 @@ will be triaged first.
   key. Do not remove that rule, and do not commit the file under another name.
 - CI runs with `contents: read` at the top level. The only job granted more is
   CodeQL, which needs `security-events: write` to upload its results.
+- The Dockerfile base image is pinned by digest, and the release workflow attests the provenance of
+  what it builds. Only its tag-only job has write permissions.
 - Third-party actions are pinned to full commit SHAs, with the release version in a
   trailing comment (`uses: owner/action@<sha> # v1.2.3`). A tag can be moved; a SHA
   cannot. Dependabot updates the SHA and the comment together.
