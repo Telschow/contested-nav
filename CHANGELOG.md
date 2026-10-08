@@ -11,6 +11,10 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Added
 
+- A release workflow (`.github/workflows/release.yml`): on a version tag it checks that the tag, the version, the
+  notes and the changelog agree, builds and attests the sdist and wheel, and creates a draft release with a CycloneDX SBOM
+  and checksums; a manual run is a dry run that publishes nothing. The Dockerfile base image is pinned by digest.
+  ([#51](https://github.com/Telschow/contested-nav/issues/51))
 - `navkit` command line: `navkit run`, `navkit sweep seeds|scenes|outages`, `navkit figures`
   (`--animate`). The scripts under `scripts/` remain as wrappers. The default scenario file
   ships inside the wheel. ([#16](https://github.com/Telschow/contested-nav/pull/16), [#19](https://github.com/Telschow/contested-nav/pull/19), [#22](https://github.com/Telschow/contested-nav/pull/22), [#25](https://github.com/Telschow/contested-nav/pull/25))
