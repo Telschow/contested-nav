@@ -11,6 +11,30 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Added
 
+- `navkit euroc`: `fetch`, `run` and `selftest`. `fetch` reads only the IMU and ground-truth files of an
+  EuRoC sequence out of the Research Collection archives, by HTTP byte range, retrying on 429 with the
+  server's `Retry-After`, and writes a `MANIFEST.json` with the SHA-256 of every file. `run` feeds the recorded
+  IMU to the filter, simulates GNSS from the ground truth, optionally cuts outages, and scores the run with the
+  same ATE, NEES and coverage code as the benchmark. `selftest` runs the whole path on a synthetic sequence in
+  the EuRoC layout. Results are labelled `real_imu_simulated_gnss`. No result from real data exists yet and none
+  is quoted. See [ADR-0013](docs/adr/0013-recorded-imu-with-simulated-gnss.md), proposed, decision section left
+  to the maintainer.
+- `ErrorStateKalmanFilter.run(..., initial=InitialState(...))`: start from a given pose, velocity and biases
+  instead of the origin at rest. The default is unchanged.
+
+### Found, not fixed
+
+- `navkit.types.finite_difference` returns twice the slope at interior samples for a first derivative (a ramp of
+  slope 2 gives 4); the ends and the second derivative are right. `Trajectory.velocities()` inherits it. Nothing
+  in the benchmark calls it. `tests/test_known_gaps.py` holds a strict `xfail`.
+- The ESKF process noise from IMU white noise is far below the textbook growth: there is no velocity term and
+  attitude gets `sigma^2 dt^3 / 3` instead of `sigma^2 dt`. Over a few seconds with no prior, the position,
+  velocity and attitude 1-sigma come out orders of magnitude below the white-noise theory
+  (`tests/test_known_gaps.py` states the expected values as a strict `xfail`). Fixing it changes the golden snapshot and needs an ADR, so it is
+  left for the maintainer.
+- The synthetic IMU uses the opposite gravity sign to a physical z-up accelerometer. The EuRoC path passes
+  gravity explicitly; a test shows the default would be wrong by orders of magnitude on a physical IMU.
+
 - `docs/data/metrics.json` and `scripts/metrics.py`: the test, ADR and line-coverage figures the documents
   quote now come from one generated file through `<!-- metric:... -->` markers. CI fails when a marker or the
   JSON is stale, when a count is typed by hand, when an ADR is missing from the index, or when measured

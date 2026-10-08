@@ -16,6 +16,6 @@ work; see ``docs/roadmap.md`` for how it would slot in and what it would take.
 """
 
 from .dead_reckoning import DeadReckoning, EstimatorResult
-from .eskf import ErrorStateKalmanFilter, EskfConfig
+from .eskf import ErrorStateKalmanFilter, EskfConfig, InitialState
 
-__all__ = ["DeadReckoning", "ErrorStateKalmanFilter", "EstimatorResult", "EskfConfig"]
+__all__ = ["DeadReckoning", "ErrorStateKalmanFilter", "EstimatorResult", "EskfConfig", "InitialState"]
