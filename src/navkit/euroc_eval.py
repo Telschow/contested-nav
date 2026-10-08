@@ -17,7 +17,7 @@ Choices that change the numbers, all recorded in the result:
   gravity is ``(0, 0, -9.80665)``. The synthetic benchmark uses the opposite sign
   convention, because its synthetic accelerometer is built that way; passing the default
   gravity to a real z-up IMU doubles the vertical acceleration and the position error grows by
-  orders of magnitude. :func:`gravity_check` reports how well the first second of the
+  orders of magnitude. :func:`gravity_check` reports how well the quietest second of the
   recording agrees with the ground-truth attitude.
 * **Start state.** Pose and velocity at the first sample come from the ground truth, then are
   perturbed by a seeded draw from the filter's declared initial 1-sigma, so the filter is not
@@ -86,7 +86,7 @@ _TERMS = (
 )
 
 # Looser than the accelerometer bias of the sensor and tighter than a mounting error: a recording
-# whose first second does not reproduce gravity to this much has a frame or attitude problem.
+# whose quietest second does not reproduce gravity to this much has a frame or attitude problem.
 _GRAVITY_ANGLE_WARN_DEG = 5.0
 _GRAVITY_NORM_WARN_M_S2 = 0.5
 
@@ -234,23 +234,46 @@ class RunOptions:
         }
 
 
-def gravity_check(imu: ImuSample, truth: Trajectory, accel_bias: np.ndarray, window_s: float = 1.0) -> dict[str, Any]:
-    """Does the first second reproduce gravity once the ground-truth attitude rotates it into the world?
+def gravity_check(
+    imu: ImuSample,
+    truth: Trajectory,
+    accel_bias: np.ndarray,
+    window_s: float = 1.0,
+    search_s: float = 30.0,
+) -> dict[str, Any]:
+    """Does the quietest second reproduce gravity once the ground-truth attitude rotates it into the world?
 
     The mean specific force in the world frame of a vehicle at rest is ``-g``, which for a z-up
     world is ``(0, 0, +9.8)``. A large angle to +z or a wrong norm points at the frame, the
     quaternion order or the pose convention, and those make every later number meaningless.
-    The vehicle is not necessarily at rest, so this is a warning and not a gate.
+
+    A recording does not have to start at rest (MH_01_easy is being moved in its first second), and a
+    moving vehicle reads more or less than ``g``. So the check uses the window of ``window_s`` seconds,
+    within the first ``search_s``, in which the accelerometer norm varies least, and reports where
+    it was. Even that window may not be at rest, so this is a warning and not a gate.
     """
-    sel = imu.t <= imu.t[0] + window_s
-    ref = interpolate_trajectory(truth, imu.t[sel])
-    f_body = imu.accel[sel] - accel_bias
-    f_world = np.einsum("nij,nj->ni", ref.rotations, f_body).mean(axis=0)
+    t = imu.t
+    stop = np.searchsorted(t, t[0] + search_s)
+    starts = np.arange(0, max(stop, 1), max(1, int(round(0.25 * imu.rate_hz()))))
+    width = max(2, int(round(window_s * imu.rate_hz())))
+    norms = np.linalg.norm(imu.accel - accel_bias, axis=1)
+    best, best_score = 0, np.inf
+    for i in starts:
+        if i + width > len(t):
+            break
+        score = float(np.std(norms[i : i + width]))
+        if score < best_score:
+            best, best_score = int(i), score
+    sel = slice(best, min(best + width, len(t)))
+    ref = interpolate_trajectory(truth, t[sel])
+    f_world = np.einsum("nij,nj->ni", ref.rotations, imu.accel[sel] - accel_bias).mean(axis=0)
     norm = float(np.linalg.norm(f_world))
     angle = float(np.degrees(np.arccos(np.clip(f_world[2] / max(norm, 1e-12), -1.0, 1.0))))
     expected = float(np.linalg.norm(GRAVITY))
     warn = angle > _GRAVITY_ANGLE_WARN_DEG or abs(norm - expected) > _GRAVITY_NORM_WARN_M_S2
     return {
+        "window_start_s": float(t[best] - t[0]),
+        "window_accel_norm_std_m_s2": best_score,
         "mean_world_specific_force_m_s2": f_world.tolist(),
         "norm_m_s2": norm,
         "expected_norm_m_s2": expected,
@@ -554,7 +577,7 @@ def _run(argv: list[str]) -> int:
         gc = record["gravity_check"]
         if gc["warning"]:
             print(
-                f"warning: {name}: the first second does not reproduce gravity once rotated by the ground-truth "
+                f"warning: {name}: the quietest second does not reproduce gravity once rotated by the ground-truth "
                 f"attitude (angle to vertical {gc['angle_to_vertical_deg']:.1f} deg, "
                 f"norm {gc['norm_m_s2']:.2f} m/s^2). "
                 "Check the frame and quaternion order before trusting this result.",

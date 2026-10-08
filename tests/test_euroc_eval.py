@@ -201,6 +201,22 @@ def test_gravity_check_flags_a_frame_that_is_off_by_ninety_degrees(seq):
     assert check["angle_to_vertical_deg"] > 45.0
 
 
+def test_gravity_check_skips_a_shaken_start_and_reports_the_window():
+    from navkit.types import Trajectory
+
+    t = np.arange(0.0, 20.0, 0.005)
+    rng = np.random.default_rng(0)
+    accel = np.tile([0.0, 0.0, 9.80665], (len(t), 1))
+    accel[t < 3.0] += rng.standard_normal(((t < 3.0).sum(), 3)) * 4.0  # being carried
+    imu = ImuSample(t=t, accel=accel, gyro=np.zeros((len(t), 3)))
+    poses = np.tile(np.eye(4), (2, 1, 1))
+    truth = Trajectory(t=np.array([0.0, 20.0]), poses=poses)
+    check = ee.gravity_check(imu, truth, np.zeros(3))
+    assert check["window_start_s"] >= 2.5
+    assert check["warning"] is False
+    assert check["norm_m_s2"] == pytest.approx(9.80665, abs=1e-6)
+
+
 def test_record_scores_against_the_same_reference_as_the_synthetic_benchmark(seq):
     record = _run(seq)
     head = record["headline"]
