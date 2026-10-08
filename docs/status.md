@@ -15,19 +15,20 @@
   [ADR-0006](adr/0006-nis-window-monitor.md): a per-channel NIS window plus
   adaptive GNSS covariance inflation, which re-gates a returning fix once
   under an inflated covariance. ATE 5.059 m to 2.541 m and rejections 51 to 5,
-  with the false-alarm rate unchanged. B1 is still open — see below.
+  with the false-alarm rate unchanged. B1 is still open, see below.
 - **The filter is still overconfident under visual aiding.** Mean NEES 419.4
-  against a nominal 3, 2σ coverage 20.0% where 95% is required. It converges and
+  against a nominal 3, 2σ coverage 20.0% where the SRS requires 95% (AC-04) and the roadmap
+  gate for turning vision on is above 90%. It converges and
   is confidently wrong. This is blocker B1, and it is a pose-graph problem that
   no threshold in the FDIR subsystem will move. Robust across 10 noise seeds
   (worst case NEES 211.7, 6.8% coverage) and across all 8 scenes
   (419.7 [414.4, 424.9], 20.0%).
 
-- **ADR-0008 frozen-anchor cross-check — implemented but unreachable under the
+- **ADR-0008 frozen-anchor cross-check: implemented but unreachable under the
   current state-transition logic; the security gap remains documented as open.**
 - **The published numbers are single draws.** A 10-seed sweep shows NEES varying
   by 4.4x to 45x between cases, and the two controls the tables call calibrated
-  (`gnss_only`, `outage_control`) flip verdict across seeds — `outage_control` is
+  (`gnss_only`, `outage_control`) flip verdict across seeds, and `outage_control` is
   never clean in 10 draws. The shipped tables remain the seed-0 benchmark, which
   is the committed artefact; treat the magnitudes as order-of-magnitude and the
   verdicts as the claim.

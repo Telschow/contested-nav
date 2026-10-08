@@ -1,6 +1,6 @@
 # Reading the calibration numbers
 
-This is the guide to interpreting what `navkit` reports, and — more usefully —
+This is the guide to interpreting what `navkit` reports, and, more usefully,
 to noticing when a result is not what it appears to be.
 
 ## The core idea
@@ -12,7 +12,7 @@ smooth.
 
 Three numbers expose it.
 
-## NEES — normalised estimation error squared
+## NEES: normalised estimation error squared
 
 ```
 NEES = e^T P^-1 e
@@ -32,8 +32,8 @@ reference does not grow with the size of the state vector.
 | NEES vs nominal | Meaning |
 |---|---|
 | near nominal | calibrated |
-| far above | **overconfident** — claims more certainty than it has |
-| far below | underconfident — claims less certainty than it has |
+| far above | **overconfident**: claims more certainty than it has |
+| far below | underconfident: claims less certainty than it has |
 
 The number to be suspicious of is the gap, not the value. The generated
 `outage_visual` case reports a mean NEES of 419.4 against a nominal 3, and
@@ -44,7 +44,7 @@ Those figures fell from 1996.5 when ADR-0006 stopped the filter discarding the
 GNSS fixes that B5 caused it to reject. The remaining gap is the unmodelled
 visual anchor error, which is a separate defect: the filter is more honest now
 because it stopped throwing away evidence, not because the model behind `P` was
-repaired. Read NEES and the coverage column together with ATE — see the note in
+repaired. Read NEES and the coverage column together with ATE, see the note in
 `CONSTRAINTS.md` on why ATE alone stopped flagging this case.
 
 A 10-seed sweep changes the reading of the digits, not the verdict. `outage_visual`
@@ -66,14 +66,16 @@ The fraction of steps where the true error lies inside the claimed 2-sigma
 ellipsoid.
 
 ```
-coverage = mean(||e||^2 <= 2^2 * lambda_max-ish)
+coverage = mean(e^T P^-1 e <= 2^2 * 3)
 ```
 
-evaluated over the scored window. For a 3-D position error at 2 sigma, a
-calibrated filter covers approximately **99.3%** of the time
-(`1 - (2 * erf(2/sqrt(2)) - 1)^3`). The 95% figure belongs to a single axis, and
+evaluated over the scored window, where `e^T P^-1 e` is the squared Mahalanobis
+distance and 3 is the number of position axes. For a 3-D position error at 2 sigma
+per axis, a calibrated filter covers `P(chi2_3 <= 12) = 0.9926`, about **99.3%** of
+the time. The 95% figure belongs to a single axis (`erf(2/sqrt(2)) = 0.9545`), and
 using it here would make a well-calibrated filter look like it is missing a
-quarter of its epochs.
+quarter of its epochs. The same number comes from
+`navkit.eval.statistics.ellipsoid_coverage(2.0, 3)`.
 
 This is the most direct read for a downstream consumer: it is the probability
 that a safety check written against this covariance would have been satisfied
@@ -94,7 +96,7 @@ on the coverage fraction.
 The Wilson interval matters. A naive coverage estimate from 10 steps that
 hits 9/10 looks perfect; a Wilson interval says the 95% interval on that
 proportion still includes 0.5, so no verdict should be declared. Without the
-interval, short runs produce confident nonsense — which is the same failure
+interval, short runs produce confident nonsense, which is the same failure
 mode as the original bug, one level up.
 
 ## Worked example: reading the defect
