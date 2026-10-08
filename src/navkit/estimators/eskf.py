@@ -368,6 +368,12 @@ class EskfConfig:
     initial_vel_sigma_m_s: float = 0.5
     initial_rot_sigma_deg: float = 2.0
     initial_bias_sigma: float = 0.0
+    #: How IMU white noise enters the process covariance. ``"legacy"`` is the original form:
+    #: ``sigma_a^2 dt^3 / 3`` on position only and ``sigma_g^2 dt^3 / 3`` on attitude. ``"textbook"``
+    #: is the discrete form of continuous white noise on the error-state model:
+    #: ``sigma_g^2 dt`` on attitude, and ``sigma_a^2 dt`` on velocity with the position terms
+    #: ``dt^3 / 3`` and ``dt^2 / 2`` that go with it.
+    process_noise_form: str = "legacy"
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -400,6 +406,7 @@ class EskfConfig:
             "initial_vel_sigma_m_s": self.initial_vel_sigma_m_s,
             "initial_rot_sigma_deg": self.initial_rot_sigma_deg,
             "initial_bias_sigma": self.initial_bias_sigma,
+            "process_noise_form": self.process_noise_form,
         }
 
 
@@ -499,10 +506,23 @@ class ErrorStateKalmanFilter:
         Q = np.zeros((_N_STATES, _N_STATES))
         rg = n.gyro_noise_density**2
         ra = n.accel_noise_density**2
-        if rg > 0.0:
-            Q[_IDX_THETA, _IDX_THETA] = np.eye(3) * (rg * d**3 / 3.0)
-        if ra > 0.0:
-            Q[_IDX_P, _IDX_P] = np.eye(3) * (ra * d**3 / 3.0)
+        form = self.cfg.process_noise_form
+        if form not in ("legacy", "textbook"):
+            raise ValueError(f"process_noise_form must be 'legacy' or 'textbook', got {form!r}")
+        if form == "textbook":
+            if rg > 0.0:
+                Q[_IDX_THETA, _IDX_THETA] = np.eye(3) * (rg * d)
+            if ra > 0.0:
+                eye = np.eye(3)
+                Q[_IDX_V, _IDX_V] = eye * (ra * d)
+                Q[_IDX_P, _IDX_P] = eye * (ra * d**3 / 3.0)
+                Q[_IDX_P, _IDX_V] = eye * (ra * d**2 / 2.0)
+                Q[_IDX_V, _IDX_P] = eye * (ra * d**2 / 2.0)
+        else:
+            if rg > 0.0:
+                Q[_IDX_THETA, _IDX_THETA] = np.eye(3) * (rg * d**3 / 3.0)
+            if ra > 0.0:
+                Q[_IDX_P, _IDX_P] = np.eye(3) * (ra * d**3 / 3.0)
         if n.gyro_bias_rw > 0.0:
             Q[_IDX_BG, _IDX_BG] = np.eye(3) * (n.gyro_bias_rw**2 * d)
         if n.accel_bias_rw > 0.0:

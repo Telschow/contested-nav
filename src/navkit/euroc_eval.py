@@ -216,6 +216,7 @@ class RunOptions:
     init_bias: str = "truth"  # "truth" or "zero"
     bias_sigma: float | None = None  # None keeps the filter's declared default
     exact_init: bool = False
+    process_noise: str = "legacy"  # EskfConfig.process_noise_form
     skip_s: float = 0.0
     duration_s: float | None = None
 
@@ -229,6 +230,7 @@ class RunOptions:
             "init_bias": self.init_bias,
             "bias_sigma": self.bias_sigma,
             "exact_init": self.exact_init,
+            "process_noise": self.process_noise,
             "skip_s": self.skip_s,
             "duration_s": self.duration_s,
         }
@@ -336,6 +338,7 @@ def run_sequence(seq: EurocSequence, opts: RunOptions | None = None) -> dict[str
         gnss_position_sigma_m=opts.gnss_sigma_m,
         vision_enabled=False,
         gravity=GRAVITY_Z_UP,
+        process_noise_form=opts.process_noise,
         **cfg_kwargs,
     )
     initial = _initial_state(seq, opts, cfg, float(imu.t[0]))
@@ -535,6 +538,7 @@ def _run_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--exact-init", action="store_true", help="start exactly at the ground truth, with no seeded perturbation"
     )
+    p.add_argument("--process-noise", choices=("legacy", "textbook"), default="legacy", help="IMU white-noise form")
     p.add_argument("--skip", type=float, default=0.0, help="seconds to skip at the start of the recording")
     p.add_argument("--duration", type=float, default=None, help="seconds to evaluate (default: to the end)")
     p.add_argument(
@@ -561,6 +565,7 @@ def _run(argv: list[str]) -> int:
         init_bias=args.init_bias,
         bias_sigma=args.bias_sigma,
         exact_init=args.exact_init,
+        process_noise=args.process_noise,
         skip_s=args.skip,
         duration_s=args.duration,
     )
