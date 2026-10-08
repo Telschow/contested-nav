@@ -55,10 +55,24 @@ and [ADR-0010](adr/0010-determinism-and-seeding.md).
 
 ## Can I run it on my own data?
 
-Not through the benchmark. Readers exist for EuRoC IMU files and several trajectory formats, and
-two tests compare against the TUM VI benchmark when its ground truth is present locally (no dataset
-is vendored). The filter has not been run on real sensor streams. See
-[Path to real systems](REAL_SYSTEMS.md).
+Not through the benchmark. For the EuRoC MAV dataset there is a separate path that uses the
+recorded IMU and the dataset's ground truth, with the GNSS fixes simulated from that ground truth
+(EuRoC has no GNSS):
+
+```
+navkit euroc selftest                          # no download; checks the pipeline
+navkit euroc fetch --sequence MH_01_easy       # IMU and ground truth only, by byte range
+navkit euroc run --sequence MH_01_easy --outage 60:20 --markdown
+```
+
+The data is not vendored. Its rights statement is "In Copyright - Non-Commercial Use Permitted", so
+the files go under `data/raw/`, which git ignores, and only aggregate results may be committed. A
+result from this path is labelled `real_imu_simulated_gnss`. It tests the filter against real
+inertial noise and a known reference. It is not GNSS-denied navigation in the field. The decision
+behind it is [ADR-0013](adr/0013-recorded-imu-with-simulated-gnss.md), still open.
+
+No result from this path is quoted in these pages yet. Two tests compare against the TUM VI
+benchmark when its ground truth is present locally. See [Path to real systems](REAL_SYSTEMS.md).
 
 ## Does the repository implement the known fixes for the overconfidence?
 

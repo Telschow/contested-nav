@@ -1,0 +1,52 @@
+# ADR-0013: Evaluate on recorded IMU data with GNSS simulated from the ground truth
+
+- Status: proposed
+- Date: 2026-10
+
+## Context
+
+Every result so far comes from a synthetic generator. The filter has never run on a recorded
+inertial stream, so nothing here says how its covariance behaves on real noise, real bias drift
+and real vibration.
+
+The EuRoC MAV dataset has a recorded IMU and a ground-truth estimate, and no GNSS. Its rights
+statement is "In Copyright - Non-Commercial Use Permitted", which is not an open licence. The
+repository is MIT. Constraint S2 already forbids vendoring third-party data, so the files are
+fetched locally and results (aggregate figures) are the only thing that may be committed.
+
+Visual fusion stays off (S3), so the images are not used.
+
+## Options
+
+1. **Recorded IMU, GNSS simulated from the ground truth.** The code in `navkit.euroc_eval` does
+   this. It reuses the benchmark's GNSS model and outage mechanism, and the same NEES and
+   coverage scoring. The inertial side is real. The aiding side is not.
+2. **Recorded IMU, no aiding.** Scores drift against the reference. It says nothing about
+   calibration under aiding, which is the question the project asks.
+3. **Recorded IMU and recorded images.** Needs a visual front end this project does not have, and
+   S3 keeps fusion off.
+4. **Wait for a dataset with real GNSS and real outages.** The honest test, and not yet
+   available to this project.
+
+## Decision
+
+_To be written by the maintainer._
+
+## What the code does in the meantime
+
+It implements option 1, labels every result `data_class: real_imu_simulated_gnss`, and lists the
+caveats in the record. Nothing in the README or docs quotes a result from it. `navkit euroc
+selftest` exercises the whole path on a synthetic sequence in the EuRoC file layout, so the tool
+chain can be checked before any real file is on disk.
+
+## What this does not settle
+
+- Simulated fixes have no multipath, no lever arm, and perfect time alignment with the reference.
+  A result is not GNSS-denied performance in the field.
+- The start pose and velocity come from the ground truth. That is an ideal initial alignment.
+- The ground truth is itself an estimate, and the dataset's notes say its synchronisation with the
+  sensors is limited.
+- The filter's process noise from IMU white noise is far below the textbook growth (no velocity
+  term, and a `dt^3` term on attitude), which would make any real-data covariance look
+  overconfident for a reason that is not the data. `tests/test_known_gaps.py` holds an `xfail`
+  that states the expected behaviour. Changing it moves the golden snapshot and needs its own ADR.

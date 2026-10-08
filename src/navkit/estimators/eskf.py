@@ -279,6 +279,34 @@ _SPOOF_CROSS_CHECK_SIGMA = 15.0
 
 
 @dataclass
+class InitialState:
+    """Where a run starts, when it does not start at the origin at rest.
+
+    The default start is the identity pose at rest with zero biases, which is right for the
+    synthetic benchmark and wrong for any recorded sequence. A caller that knows the pose,
+    velocity and biases at the first sample (from a reference trajectory, or from an initial
+    alignment) passes them here. The covariance is not part of it: the declared
+    ``initial_*_sigma`` terms in :class:`EskfConfig` still say how far from the truth the
+    start is allowed to be.
+    """
+
+    R: np.ndarray
+    p: np.ndarray
+    v: np.ndarray = field(default_factory=lambda: np.zeros(3))
+    b_a: np.ndarray = field(default_factory=lambda: np.zeros(3))
+    b_g: np.ndarray = field(default_factory=lambda: np.zeros(3))
+
+    def __post_init__(self) -> None:
+        self.R = np.asarray(self.R, float).reshape(3, 3)
+        self.p = np.asarray(self.p, float).reshape(3)
+        self.v = np.asarray(self.v, float).reshape(3)
+        self.b_a = np.asarray(self.b_a, float).reshape(3)
+        self.b_g = np.asarray(self.b_g, float).reshape(3)
+        if not np.allclose(self.R @ self.R.T, np.eye(3), atol=1e-6):
+            raise ValueError("InitialState.R is not a rotation matrix")
+
+
+@dataclass
 class EskfConfig:
     """Tuning and noise for the filter, in physical units."""
 
@@ -931,6 +959,7 @@ class ErrorStateKalmanFilter:
         vision: VisionUpdate | None = None,
         t0: float | None = None,
         t_end: float | None = None,
+        initial: InitialState | None = None,
     ) -> EstimatorResult:
         wall_start = time.perf_counter()
         if t0 is not None or t_end is not None:
@@ -940,6 +969,9 @@ class ErrorStateKalmanFilter:
             raise ValueError("ESKF needs at least 2 IMU samples")
 
         x = self._initial_state()
+        if initial is not None:
+            x["R"], x["p"], x["v"] = initial.R.copy(), initial.p.copy(), initial.v.copy()
+            x["b_a"], x["b_g"] = initial.b_a.copy(), initial.b_g.copy()
         cfg = self.cfg
         use_gnss = gnss is not None and cfg.gnss_enabled
         use_vision = vision is not None and cfg.vision_enabled
