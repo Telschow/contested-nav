@@ -332,7 +332,7 @@ outcome. **Do not let a platform upgrade be read as closing B1.**
 
 ## 5. Required actions before this document is used for planning
 
-| # | Action | Owner | Blocks |
+| # | Action | Area | Blocks |
 |---|---|---|---|
 | 1 | Replace every [E] cell with a dated quote or datasheet citation | Procurement | All cost rows |
 | 2 | **Derive `max_drift_sigma_mps` per IMU grade from fitted bias instability** | FDIR | §2.5 finding; OUN-02 residual |

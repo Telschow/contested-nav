@@ -8,7 +8,7 @@
 > the current state see `CHANGELOG.md` and re-run the commands quoted
 > above.
 
-Audit date: 2026-09-29. Findings only — **nothing was modified.** Every severity
+Audit date: 2026-09-29. Findings only, **nothing was modified.** Every severity
 below is justified by a command or a file:line reference that can be re-run.
 
 Classification: **CRITICAL** (blocks publication or correctness) · **HIGH**
@@ -37,18 +37,18 @@ gate, and a handful of small correctness-adjacent defects.
 
 ## 2. CRITICAL / HIGH
 
-### F1 — CRITICAL: live API key in the working tree, not gitignored
+### F1: CRITICAL: live API key in the working tree, not gitignored
 
-`opencode.json` holds `apiKey: "freellmapi-e4a9…"` and is **not** covered by
-`.gitignore` (which covers `.opencode/`, the directory — not the root config
+`opencode.json` holds `apiKey` set to a live provider key (prefix not quoted here) and is **not** covered by
+`.gitignore` (which covers `.opencode/`, the directory, not the root config
 file). `git add -An .` confirms `add 'opencode.json'`. The tree has 20 modified
 files, so a broad `git add` is plausible.
 
-Not in any commit — verified across all 4 local commits and both dangling
+Not in any commit, verified across all 4 local commits and both dangling
 commits. Fix: one `.gitignore` line plus token rotation. Full detail and
 remediation in `PUBLICATION_READINESS.md` §1.
 
-### F2 — HIGH: CI lint gate is red, and it gates the build job
+### F2: HIGH: CI lint gate is red, and it gates the build job
 
 `ruff check` → 131 errors. `ruff format --check` → 35 files would be reformatted.
 `mypy src --ignore-missing-imports` → 15 errors in 3 files (11 in `eskf.py`).
@@ -65,7 +65,7 @@ failing on rules that did not exist when the code was written. Fixing this
 properly means declaring explicit `[tool.ruff.lint] select` and pinning versions,
 so the standard is stable rather than "whatever ruff defaults to today".
 
-### F3 — HIGH: the ADR-0008 frozen-anchor cross-check is unreachable
+### F3: HIGH: the ADR-0008 frozen-anchor cross-check is unreachable
 
 `eskf.py:521-548` implements a second-modality spoof check: on an inflated GNSS
 grant, refuse the fix if its Mahalanobis distance from the anchor frozen at
@@ -79,7 +79,7 @@ truthful return and 5/12/20/22/40/100 m of offset.
 Consequence: a documented security mitigation contributes nothing. It is not
 counted as working anywhere in the docs, and the test that pins the gap is
 `strict=True` so it fails loudly when fixed. **The defect is in the guard's
-reachability, not its arithmetic** — in the forced-grant harness the thresholds
+reachability, not its arithmetic**, in the forced-grant harness the thresholds
 separate cleanly (5 m → d² 15.2 accepted; 12.5 m → 236.7 refused; 60 m → 5454.5
 refused) and 7 threshold mutants are killed.
 
@@ -91,13 +91,13 @@ identifies as the hard case.
 roadmap item N1 both track it, and the decision to fix it belongs with the
 pose-graph work because it changes what the filter does with post-outage GNSS.
 
-### F4 — HIGH: documented benchmark numbers are single draws, and the docs now say so
+### F4: HIGH: documented benchmark numbers are single draws, and the docs now say so
 
 `README.md` headline, ADR-0006 and `calibration.md` quote seed-0 values. The
 10-seed sweep (2026-09-29) shows NEES spanning 211.7–2103.4 for `outage_visual`
 and 280–12537 for `vision_anchor_in_measurement_noise`.
 
-The *direction* is robust — overconfidence at every seed, worst case NEES 211.7 —
+The *direction* is robust, overconfidence at every seed, worst case NEES 211.7,
 so B1 stands and the project's central claim survives. The *magnitudes* do not,
 and ADR-0006's "1996.5 → 419.4" reads as a 4.8× improvement where the sweep means
 suggest less. All three documents now carry an explicit single-draw caveat, and
@@ -112,7 +112,7 @@ never clean in 10 draws.
 
 ## 3. MEDIUM
 
-### F5 — `status_rejected_persistent` imported and exported twice
+### F5: `status_rejected_persistent` imported and exported twice
 
 `src/navkit/fdir/__init__.py:29` and `:31` both import
 `STATUS_REJECTED_PERSISTENT`; `:55` and `:57` both export it. Confirmed at
@@ -120,7 +120,7 @@ runtime: `__all__` has 22 entries, 21 unique. Harmless today (Python collapses
 the duplicate) but it is a ruff `F811` and it obscures the module's real API
 surface. Cosmetic in effect, mechanical in fix.
 
-### F6 — mypy cannot narrow `None` through a boolean guard
+### F6: mypy cannot narrow `None` through a boolean guard
 
 `eskf.py:801-803`:
 
@@ -129,34 +129,34 @@ use_gnss = gnss is not None and cfg.gnss_enabled
 gnss_outages = gnss.outage_intervals() if use_gnss else []
 ```
 
-**Verified safe at runtime** — the guard is correct, and mypy simply cannot
+**Verified safe at runtime**, the guard is correct, and mypy simply cannot
 follow the implication. Not a bug. The 15 mypy errors are therefore *not* 15
 defects; they are 1 real annotation problem (F7) plus type-narrowing noise. Worth
 knowing before spending effort on them.
 
-### F7 — the filter state dict is mis-annotated, which is the root of 11 mypy errors
+### F7: the filter state dict is mis-annotated, which is the root of 11 mypy errors
 
 `eskf.py:423,440` annotate state as `dict[str, np.ndarray]`, but it holds
 `int` (`:561,565,752,793,794`), `bool` (`:669`), `None` (`:795`) and a nested
 `dict` (`:824`). `eskf.py:797` needs a `# type: ignore[assignment]` because of
-it. The fix is a `TypedDict` or a small state dataclass — a real improvement in
+it. The fix is a `TypedDict` or a small state dataclass, a real improvement in
 safety on the project's most safety-critical file, and the reason the type
 checker is currently useless there.
 
-### F8 — two untyped seams in the IO layer, lowest coverage in the repo
+### F8: two untyped seams in the IO layer, lowest coverage in the repo
 
-`io/imu.py` is **63.6%** covered — the lowest of any module, and it is below
+`io/imu.py` is **63.6%** covered, the lowest of any module, and it is below
 several other modules' ratchet floors. It is also where the only mypy error
 outside `eskf.py`/`metrics.py` lives. IMU noise models (bias random walk, scale
 factor, axis misalignment) are exactly the kind of code where a silent sign error
 would corrupt every downstream number without failing a test.
 
 `io/trajectory.py` is 90.8% but its 2 TUM VI tests **skip** because reference
-ground truth is not vendored. So the one place that converts quaternion order —
-the project's C1 invariant — is only fully validated by unit round-trips against
+ground truth is not vendored. So the one place that converts quaternion order,
+the project's C1 invariant, is only fully validated by unit round-trips against
 known rotations, not against a real dataset.
 
-### F9 — no `SECURITY.md`, `CONTRIBUTING.md`, or pre-commit hooks
+### F9: no `SECURITY.md`, `CONTRIBUTING.md`, or pre-commit hooks
 
 For a repository whose entire value proposition is auditable, disciplined
 measurement, the absence of a `SECURITY.md` (where to report a vulnerability) and
@@ -194,14 +194,14 @@ Checked and clean. Recording these so their absence is not read as an oversight.
 
 - **No `TODO`/`FIXME`/`HACK`/`XXX` markers** in `src/`, `tests/`, `scripts/`.
   (Hits for the word "bug" are all in prose explaining *historical* bugs and their
-  regression tests — which is the project documenting prior mistakes properly.)
+  regression tests, which is the project documenting prior mistakes properly.)
 - **No debug code**: no `print()`, `breakpoint()`, or `pdb` in `src/`.
 - **No bare `except:` and no `except Exception`.**
 - **No duplicated logic.** The 3 repeated method names are interfaces, not copies.
 - **Stale comments**: none found. Where behaviour changed, ADR-0007/0008 were added
   and the affected docs were corrected.
 - **Test dependency direction is sound**: 3:1 test:source, and the doc-table
-  checker has its own tests (`test_doc_tables.py`) — the thing that enforces
+  checker has its own tests (`test_doc_tables.py`), the thing that enforces
   "no hand-typed numbers" is itself tested.
 - **Benchmark is genuinely reproducible** (CI's strongest gate, and it passes).
 
@@ -230,13 +230,13 @@ for the full picture. Recommended non-destructive sequence, in order:
 
 ## 8. Priority order
 
-1. **F1** — `.gitignore` line + token rotation. Trivial, and gates everything.
-2. **F2** — pin ruff/mypy, declare rule selection, fix the 14 real errors. Makes
+1. **F1**: `.gitignore` line + token rotation. Trivial, and gates everything.
+2. **F2**: pin ruff/mypy, declare rule selection, fix the 14 real errors. Makes
    the portfolio claim ("measured, reproducible, gated") actually true.
-3. **F10/F11** — stale counts and wrong-org URLs. Public-facing.
-4. **F7** — `TypedDict` for filter state. Real safety win on the critical file.
-5. **F5** — duplicate export. One-line mechanical fix.
-6. **F8** — raise `io/imu.py` coverage to the ratchet floor; consider vendoring a
+3. **F10/F11**: stale counts and wrong-org URLs. Public-facing.
+4. **F7**: `TypedDict` for filter state. Real safety win on the critical file.
+5. **F5**: duplicate export. One-line mechanical fix.
+6. **F8**: raise `io/imu.py` coverage to the ratchet floor; consider vendoring a
    small TUM VI subset to un-skip the 2 IO tests.
-7. **F3** — reachability decision, with the pose-graph work (not a drive-by).
-8. **F9** — `SECURITY.md`, `CONTRIBUTING.md`, pre-commit.
+7. **F3**: reachability decision, with the pose-graph work (not a drive-by).
+8. **F9**: `SECURITY.md`, `CONTRIBUTING.md`, pre-commit.
