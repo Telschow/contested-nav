@@ -112,7 +112,7 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 | `initial_vel_sigma_m_s` | m/s | `0.5` | 1-sigma of the initial velocity error. |
 | `initial_rot_sigma_deg` | deg | `2.0` | 1-sigma of the initial attitude error. |
 | `initial_bias_sigma` | rad/s and m/s^2 | `0.0` | One value used for both the gyro-bias and accel-bias states, so its unit differs between them. |
-| `process_noise_form` | none | `'legacy'` | How IMU white noise enters the process covariance. `legacy` puts `sigma_a^2 dt^3/3` on position and `sigma_g^2 dt^3/3` on attitude and has no velocity term. `textbook` uses `sigma_g^2 dt` on attitude and `sigma_a^2 dt` on velocity with the matching position terms. Opt-in; the default is unchanged until an ADR decides. |
+| `process_noise_form` | none | `'textbook'` | How IMU white noise enters the process covariance. `legacy` puts `sigma_a^2 dt^3/3` on position and `sigma_g^2 dt^3/3` on attitude and has no velocity term. `textbook` uses `sigma_g^2 dt` on attitude and `sigma_a^2 dt` on velocity with the matching position terms. `textbook` is the default since [ADR-0014](adr/0014-textbook-imu-process-noise-by-default.md); `legacy` reproduces the earlier numbers. |
 
 ### Fault detection: `FdirConfig`
 

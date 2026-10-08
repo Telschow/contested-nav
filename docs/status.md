@@ -16,12 +16,12 @@
   adaptive GNSS covariance inflation, which re-gates a returning fix once
   under an inflated covariance. ATE 5.059 m to 2.541 m and rejections 51 to 5,
   with the false-alarm rate unchanged. B1 is still open, see below.
-- **The filter is still overconfident under visual aiding.** Mean NEES 419.4
+- **The filter is still overconfident under visual aiding.** Mean NEES 391.2
   against a nominal 3, 2σ coverage 20.0% where the SRS requires 95% (AC-04) and the roadmap
   gate for turning vision on is above 90%. It converges and
   is confidently wrong. This is blocker B1, and it is a pose-graph problem that
   no threshold in the FDIR subsystem will move. Robust across 10 noise seeds
-  (worst case NEES 211.7, 6.8% coverage) and across all 8 scenes
+  (worst case NEES 189.2, 6.8% coverage) and across all 8 scenes
   (419.7 [414.4, 424.9], 20.0%).
 
 - **ADR-0008 frozen-anchor cross-check: implemented but unreachable under the

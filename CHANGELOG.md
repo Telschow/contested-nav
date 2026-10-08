@@ -21,20 +21,10 @@ this project uses [semantic versioning](https://semver.org/).
   to the maintainer.
 - `ErrorStateKalmanFilter.run(..., initial=InitialState(...))`: start from a given pose, velocity and biases
   instead of the origin at rest. The default is unchanged.
-
-### Found, not fixed
-
-- `navkit.types.finite_difference` returns twice the slope at interior samples for a first derivative (a ramp of
-  slope 2 gives 4); the ends and the second derivative are right. `Trajectory.velocities()` inherits it. Nothing
-  in the benchmark calls it. `tests/test_known_gaps.py` holds a strict `xfail`.
-- The ESKF process noise from IMU white noise is far below the textbook growth: there is no velocity term and
-  attitude gets `sigma^2 dt^3 / 3` instead of `sigma^2 dt`. Over a few seconds with no prior, the position,
-  velocity and attitude 1-sigma come out orders of magnitude below the white-noise theory
-  (`tests/test_known_gaps.py` states the expected values as a strict `xfail`). Fixing it changes the golden snapshot and needs an ADR, so it is
-  left for the maintainer.
-- The synthetic IMU uses the opposite gravity sign to a physical z-up accelerometer. The EuRoC path passes
-  gravity explicitly; a test shows the default would be wrong by orders of magnitude on a physical IMU.
-
+- `navkit euroc run --preset adis16448`: scales the filter's assumed IMU noise by 3 and declares a 0.05 initial
+  bias 1-sigma. Chosen on MH_01_easy and checked on the other four Machine Hall sequences, not on the Vicon
+  rooms. Explicit `--noise-scale` and `--bias-sigma` override it. It is a tuning for this sensor, not a filter
+  property.
 - `docs/data/metrics.json` and `scripts/metrics.py`: the test, ADR and line-coverage figures the documents
   quote now come from one generated file through `<!-- metric:... -->` markers. CI fails when a marker or the
   JSON is stale, when a count is typed by hand, when an ADR is missing from the index, or when measured
@@ -42,6 +32,14 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Changed
 
+- `ErrorStateKalmanFilter` now defaults to `process_noise_form="textbook"` ([ADR-0014](docs/adr/0014-textbook-imu-process-noise-by-default.md)):
+  IMU white noise enters the process covariance as `sigma_g^2 dt` on attitude and `sigma_a^2 dt` on velocity
+  with the matching position terms. The earlier form had no velocity term and used `dt^3 / 3` on attitude, and
+  grew the covariance far below the white-noise theory. `"legacy"` reproduces the old behaviour. Every
+  benchmark, sweep, figure and table was regenerated: the synthetic numbers move a little (the headline
+  `outage_visual` case still has mean NEES in the hundreds against an expected 3) and no verdict changes.
+  Numbers in older ADRs, the roadmap's completed items and the dated baselines were measured with the legacy
+  form and were not recomputed. The golden snapshot was regenerated.
 - `CONSTRAINTS.md`, `ROADMAP.md` and `CONTRIBUTING.md` no longer carry hand-typed passing and skipped counts,
   which went stale (860 collected there against 888 measured, 629 in the ratchet table and in `ROADMAP.md`,
   "8 of 8 docs" for twelve ADRs). They quote the collected count, the coverage figure and the ADR count
@@ -51,6 +49,14 @@ this project uses [semantic versioning](https://semver.org/).
   SRS and the SWaP-C matrix label the column Area, since they name workstreams. The engineering baseline no
   longer quotes the first characters of a provider key. A test fails if a table names a team or manager as owner
   or a document quotes the start of a provider key.
+
+### Found, not fixed
+
+- `navkit.types.finite_difference` returns twice the slope at interior samples for a first derivative (a ramp of
+  slope 2 gives 4); the ends and the second derivative are right. `Trajectory.velocities()` inherits it. Nothing
+  in the benchmark calls it. `tests/test_known_gaps.py` holds a strict `xfail`.
+- The synthetic IMU uses the opposite gravity sign to a physical z-up accelerometer. The EuRoC path passes
+  gravity explicitly; a test shows the default would be wrong by orders of magnitude on a physical IMU.
 
 ## [0.2.0] - 2026-10-08
 
