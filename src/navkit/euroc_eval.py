@@ -70,6 +70,13 @@ DEFAULT_ROOT = "data/raw/euroc"
 
 DATA_CLASS = "real_imu_simulated_gnss"
 
+#: Named settings for the EuRoC VI-Sensor IMU (ADIS16448). ``adis16448`` multiplies the IMU noise
+#: the filter assumes by 3 and declares a 0.05 initial bias 1-sigma. The scale was chosen on
+#: MH_01_easy and then checked on the other four Machine Hall sequences; it is a tuning for this
+#: sensor and these recordings, not a property of the filter, and the Vicon room sequences have not
+#: been run with it. An explicit ``--noise-scale`` or ``--bias-sigma`` overrides the preset.
+PRESETS: dict[str, dict[str, float]] = {"adis16448": {"noise_scale": 3.0, "bias_sigma": 0.05}}
+
 CAVEATS = (
     "GNSS fixes are simulated from the ground-truth trajectory, antenna at the IMU origin.",
     "Initial pose and velocity come from the ground truth.",
@@ -213,10 +220,11 @@ class RunOptions:
     outages: tuple[tuple[float, float], ...] = ()  # (start, duration) in seconds after the window start
     seed: int = 0
     noise_scale: float = 1.0
+    preset: str | None = None  # recorded only; the values it set are in the fields around it
     init_bias: str = "truth"  # "truth" or "zero"
     bias_sigma: float | None = None  # None keeps the filter's declared default
     exact_init: bool = False
-    process_noise: str = "legacy"  # EskfConfig.process_noise_form
+    process_noise: str = "textbook"  # EskfConfig.process_noise_form
     skip_s: float = 0.0
     duration_s: float | None = None
 
@@ -227,6 +235,7 @@ class RunOptions:
             "outages": [list(o) for o in self.outages],
             "seed": self.seed,
             "noise_scale": self.noise_scale,
+            "preset": self.preset,
             "init_bias": self.init_bias,
             "bias_sigma": self.bias_sigma,
             "exact_init": self.exact_init,
@@ -530,7 +539,15 @@ def _run_parser() -> argparse.ArgumentParser:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--gnss-rate", type=float, default=5.0, help="Hz (default: %(default)s)")
     p.add_argument("--gnss-sigma", type=float, default=0.8, help="metres, 1-sigma per axis (default: %(default)s)")
-    p.add_argument("--noise-scale", type=float, default=1.0, help="multiplier on the filter's IMU noise model")
+    p.add_argument(
+        "--preset",
+        choices=sorted(PRESETS),
+        default=None,
+        help="named noise-scale and bias-prior settings (see PRESETS); explicit flags override it",
+    )
+    p.add_argument(
+        "--noise-scale", type=float, default=None, help="multiplier on the filter's IMU noise model (default 1)"
+    )
     p.add_argument("--init-bias", choices=("truth", "zero"), default="truth")
     p.add_argument(
         "--bias-sigma", type=float, default=None, help="declared initial bias 1-sigma (filter default if unset)"
@@ -538,7 +555,7 @@ def _run_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--exact-init", action="store_true", help="start exactly at the ground truth, with no seeded perturbation"
     )
-    p.add_argument("--process-noise", choices=("legacy", "textbook"), default="legacy", help="IMU white-noise form")
+    p.add_argument("--process-noise", choices=("legacy", "textbook"), default="textbook", help="IMU white-noise form")
     p.add_argument("--skip", type=float, default=0.0, help="seconds to skip at the start of the recording")
     p.add_argument("--duration", type=float, default=None, help="seconds to evaluate (default: to the end)")
     p.add_argument(
@@ -556,14 +573,16 @@ def _run(argv: list[str]) -> int:
     if args.out and len(args.sequence) > 1:
         print("--out takes one sequence; omit it to write results/euroc_<sequence>.json for each", file=sys.stderr)
         return 2
+    preset = PRESETS.get(args.preset or "", {})
     opts = RunOptions(
         gnss_rate_hz=args.gnss_rate,
         gnss_sigma_m=args.gnss_sigma,
         outages=tuple(args.outage),
         seed=args.seed,
-        noise_scale=args.noise_scale,
+        noise_scale=args.noise_scale if args.noise_scale is not None else preset.get("noise_scale", 1.0),
+        preset=args.preset,
         init_bias=args.init_bias,
-        bias_sigma=args.bias_sigma,
+        bias_sigma=args.bias_sigma if args.bias_sigma is not None else preset.get("bias_sigma"),
         exact_init=args.exact_init,
         process_noise=args.process_noise,
         skip_s=args.skip,

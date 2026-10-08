@@ -148,6 +148,7 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
         anchor_rot_sigma_deg=keys.get("anchor_rot_sigma_deg", 5.0),
         anchor_pos_drift_sigma_m_s=keys.get("anchor_pos_drift_sigma_m_s", 0.0),
         anchor_rot_drift_sigma_deg_s=keys.get("anchor_rot_drift_sigma_deg_s", 0.0),
+        process_noise_form=str(keys.get("process_noise_form", "textbook")),
     )
 
 
