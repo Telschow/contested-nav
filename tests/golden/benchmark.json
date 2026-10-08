@@ -136,7 +136,7 @@
     }
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "b52087d84396360a",
+   "config_hash": "ff4c073bb11b8d11",
    "data_class": "synthetic",
    "description": "Inertial integration with no aiding at all. Reported as the control for \"how much of the result is the filter and how much is the motion model\".",
    "drift": {
@@ -193,6 +193,7 @@
     "initial_pos_sigma_m": 1.0,
     "initial_rot_sigma_deg": 2.0,
     "initial_vel_sigma_m_s": 0.5,
+    "process_noise_form": "legacy",
     "vision_anchor_modelled": true,
     "vision_enabled": false,
     "vision_keyframe_interval": 1,
@@ -547,7 +548,7 @@
     "verdict": "mixed(bulk=overconfident, tail=underconfident)"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "c327078a657d81a3",
+   "config_hash": "3323c697bbe82090",
    "data_class": "synthetic",
    "description": "GNSS at 5 Hz, no outage, no vision. The reference every other case is read against. Its verdict is mixed rather than clean: mean NEES sits slightly above the expected value while no epoch leaves the 2-sigma ellipsoid.",
    "drift": {
@@ -705,6 +706,7 @@
     "initial_pos_sigma_m": 1.0,
     "initial_rot_sigma_deg": 2.0,
     "initial_vel_sigma_m_s": 0.5,
+    "process_noise_form": "legacy",
     "vision_anchor_modelled": true,
     "vision_enabled": false,
     "vision_keyframe_interval": 1,
@@ -1107,7 +1109,7 @@
     "verdict": "mixed(bulk=overconfident, tail=underconfident)"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "197860468d3e6789",
+   "config_hash": "04b742e9c825d237",
    "data_class": "synthetic",
    "description": "15 s GNSS outage, 5 s to 20 s, with vision off. The baseline for a contested receiver: the error grows and so does the claimed uncertainty, and coverage stays at or above nominal. The verdict is mixed because mean NEES is slightly above the expected value.",
    "drift": {
@@ -1265,6 +1267,7 @@
     "initial_pos_sigma_m": 1.0,
     "initial_rot_sigma_deg": 2.0,
     "initial_vel_sigma_m_s": 0.5,
+    "process_noise_form": "legacy",
     "vision_anchor_modelled": true,
     "vision_enabled": false,
     "vision_keyframe_interval": 1,
@@ -1696,7 +1699,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "f8853c18d7b73e02",
+   "config_hash": "f33c2a88a3919323",
    "data_class": "synthetic",
    "description": "The same 15 s outage with vision on. Position error is lower than the control in this window, but the claimed uncertainty stays small and coverage collapses: accurate and confidently wrong. That is why vision_enabled defaults to false. The accuracy gain depends on when the outage starts (see the outage sweep); the overconfidence does not.",
    "drift": {
@@ -1854,6 +1857,7 @@
     "initial_pos_sigma_m": 1.0,
     "initial_rot_sigma_deg": 2.0,
     "initial_vel_sigma_m_s": 0.5,
+    "process_noise_form": "legacy",
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
@@ -2313,7 +2317,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "743faa6f09841e35",
+   "config_hash": "91e1c572a636d5ae",
    "data_class": "synthetic",
    "description": "Visual aiding through the outage with 30% of camera frames dropped in 1 s bursts. Checks whether an intermittent visual stream changes the result. It does not: the filter is still overconfident, with a smaller error than the clean case.",
    "drift": {
@@ -2471,6 +2475,7 @@
     "initial_pos_sigma_m": 1.0,
     "initial_rot_sigma_deg": 2.0,
     "initial_vel_sigma_m_s": 0.5,
+    "process_noise_form": "legacy",
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
@@ -2934,7 +2939,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "a037b9be8ac0d650",
+   "config_hash": "3ce8b629dc3bb02f",
    "data_class": "synthetic",
    "description": "The pre-refactor arrangement, where the visual anchor error is folded into the measurement covariance. Retained as a regression control, not as a supported configuration.",
    "drift": {
@@ -3092,6 +3097,7 @@
     "initial_pos_sigma_m": 1.0,
     "initial_rot_sigma_deg": 2.0,
     "initial_vel_sigma_m_s": 0.5,
+    "process_noise_form": "legacy",
     "vision_anchor_modelled": false,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
@@ -3522,7 +3528,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "94d39ee548927bc5",
+   "config_hash": "674626881e118cb0",
    "data_class": "synthetic",
    "description": "Visual odometry at 20 Hz with no GNSS. In this fixture it is less accurate than dead reckoning and severely overconfident: nothing constrains the absolute pose, and the claimed uncertainty is far smaller than the error.",
    "drift": {
@@ -3680,6 +3686,7 @@
     "initial_pos_sigma_m": 1.0,
     "initial_rot_sigma_deg": 2.0,
     "initial_vel_sigma_m_s": 0.5,
+    "process_noise_form": "legacy",
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
