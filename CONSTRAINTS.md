@@ -4,10 +4,10 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured (2026-10-08): 888 tests collected, 883 passing, 3 skipped, 2 expected
-failures on a fresh clone (884, 2, 2 once `results/benchmark.json` exists), and 92.86%
-line coverage (5564/5992 executable lines) on **CPython 3.13**, measured
-with `python scripts/coverage_report.py`. Coverage is quoted from that script alone:
+Last measured: <!-- metric:tests_collected -->914<!-- /metric --> tests collected, all of which pass except the deliberate
+xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->92.9<!-- /metric -->%
+line coverage (<!-- metric:coverage_lines_hit -->5564<!-- /metric -->/<!-- metric:coverage_lines_total -->5992<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
+with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
 it is the project's dependency-free tracer (S1 forbids adding `pytest-cov`), and
 a number taken from a different tool is not comparable with the module figures
 below. The interpreter is named because it is part of the measurement, not a
@@ -83,9 +83,9 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | 888 | `pytest` |
-| Tests passing | 300 | 883 (3 skipped, 2 xfail, see above) | `pytest -rs` |
-| Line coverage | 75% | 92.86% | `scripts/coverage_report.py` |
+| Tests collected | 405 | <!-- metric:tests_collected -->914<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
+| Line coverage | 75% | <!-- metric:coverage_percent -->92.9<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
 | `analysis/findings.py` coverage | 80% | 99.7% | as above |
 | `config.py` coverage | 80% | 98.4% | as above |
@@ -104,7 +104,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 | `outage_sweep.py` coverage | 80% | 98.4% | as above |
 | `fdir/nis_monitor.py` coverage | 80% | 98.8% | as above |
 | `degrade/` coverage | 50% | 78.0% (`config.py`) / 84.2% (`inject.py`) | as above |
-| Docs | README + architecture + calibration + ADR-0001..0008 | 8 of 8 docs | manual |
+| Docs | README + architecture + calibration + every ADR | <!-- metric:adr_count -->12<!-- /metric --> ADRs, all in the index | `scripts/metrics.py --check` |
 | Documented tables match the generated benchmark | exact | yes | `scripts/check_doc_tables.py` |
 | Open blockers documented | all | see ROADMAP | manual |
 
