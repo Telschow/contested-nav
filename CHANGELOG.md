@@ -34,6 +34,13 @@ this project uses [semantic versioning](https://semver.org/).
   `navkit euroc compare` gains `--first-seed` and a `walk10` configuration, and fills a second page block
   with `--block euroc-validation`. See the follow-up in
   [ADR-0014](docs/adr/0014-textbook-imu-process-noise-by-default.md).
+- `navkit euroc timing` and `docs/product_management/04_sensor_sync_and_calibration_spec.md` (P5-07): the timing
+  model, the calibration assumptions, and what is measured on the recordings versus assumed in simulation. The tool
+  reports each sequence's timestamp regularity, the share of the ground truth lost to dropouts, and the offset
+  between the ground truth and the IMU, from the angular rate (a vector comparison that removes gyroscope bias, with a
+  magnitude comparison as a cross-check). On the 17 sequences the offsets are within a few milliseconds, far below
+  the simulated GNSS noise; the TUM VI motion capture has dropouts of up to a few seconds, which the TUM VI page now
+  states. The table is generated from `docs/data/timing.csv` and a test checks it and six statements.
 - `navkit tumvi fetch` and `--dataset tumvi` on `navkit euroc run` and `navkit euroc compare`: TUM VI room
   sequences (CC BY 4.0, [ADR-0016](docs/adr/0016-tum-vi-as-a-second-recorded-dataset.md), accepted). The archives
   are whole TARs, so the fetcher downloads them (resuming a partial file), checks the publisher's MD5, keeps the

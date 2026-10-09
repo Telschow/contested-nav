@@ -13,6 +13,11 @@ the one of [ADR-0013](adr/0013-recorded-imu-with-simulated-gnss.md).
   starts from biases estimated over the quietest stretch of the first seconds, using the ground-truth attitude, and
   declares a bias prior. Some rooms never rest at the start, so for them the estimate is only a guess. The EuRoC
   runs start from the dataset's own bias estimate, so the two pages differ in this as well as in the sensor.
+- **The motion capture has dropouts.** Its stream is nominally about 120 Hz but has gaps of up to a few seconds, and
+  two rooms spend roughly a tenth of the recording inside them ([timing](product_management/04_sensor_sync_and_calibration_spec.md)).
+  Inside a dropout the simulated GNSS and the scoring reference follow a straight line between the nearest samples.
+  Every setting sees the same data, so the comparison between settings is not a product of the dropouts, but the
+  absolute errors in those two rooms are less trustworthy.
 - **The start pose and velocity come from the ground truth.** Velocity is a local straight-line fit to the
   motion-capture positions.
 - **The settings were not tuned on this dataset.** `file` is the dataset authors' own noise figures. `allan` is the
@@ -86,7 +91,7 @@ Runs still lost with `allan`:
 
 ## What it shows
 
-Each statement below is checked against the CSV by `tests/test_tumvi_page.py`.
+Each statement below is checked against the CSV (and, for statement 5, the timing CSV) by `tests/test_tumvi_page.py`.
 
 1. **The raw figures lose more runs than the authors' inflated figures**, and the inflated figures lose more than
    the bias-walk setting, which loses none.
@@ -96,7 +101,10 @@ Each statement below is checked against the CSV by `tests/test_tumvi_page.py`.
    `file` in the bias random walks alone.
 4. **The bias-walk setting is close to nominal.** Over all runs its median NEES is below the expected 3, and its
    mean 2σ coverage is within a point of the nominal 99.3%.
-5. **The ordering is the one found on EuRoC**, on a different IMU, from different authors and with a different
+5. **The ordering also holds in the rooms with the fewest dropouts.** Leaving out the two rooms that spend most of their
+   time in motion-capture dropouts, the raw figures still lose more runs than the inflated ones, which lose more
+   than the bias-walk setting.
+6. **The ordering is the one found on EuRoC**, on a different IMU, from different authors and with a different
    start. What carries over is the direction: the bias random walk the figures give is too small. The size of
    the factor does not: here the adjustment is applied to figures that were already inflated.
 

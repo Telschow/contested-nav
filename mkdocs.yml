@@ -150,6 +150,7 @@ nav:
           - System requirements: product_management/01_system_requirements_spec.md
           - SWaP-C trade-off: product_management/02_swapc_tradeoff_matrix.md
           - FDIR and spoofing strategy: product_management/03_fdir_and_spoofing_strategy.md
+          - Sensor synchronisation and calibration: product_management/04_sensor_sync_and_calibration_spec.md
       - Defense assessment:
           - Overview: defense/README.md
           - Defense relevance: defense/DEFENSE_RELEVANCE.md
