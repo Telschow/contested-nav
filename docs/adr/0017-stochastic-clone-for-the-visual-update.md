@@ -60,6 +60,32 @@ What the spike found, in words; the figures are in [Results](../results.md) and 
   properties are tested: a new clone is perfectly correlated with the live pose, a measurement taken straight
   after the commit carries no information, and the covariance stays symmetric and positive semidefinite.
 
+## Follow-up: stress tests
+
+The first result used a surrogate front end that is independent, Gaussian and unbiased, which the audit's own
+caveat warned about. The surrogate now has opt-in departures (`vision.noise_corr_s`, `outlier_fraction`,
+`scale_sigma`), all off by default and drawn from a stream of their own, so no existing number moved. What
+they showed, with the rows in [Results](../results.md) and `tests/test_clone_long_run.py`:
+
+- **Observability held over a long run.** With no GNSS for five times the benchmark's length, the claimed
+  uncertainty kept growing and the error stayed inside it in every 30 s block. If the filter had been gaining
+  spurious information about global position, the claimed uncertainty would have flattened while the error grew.
+  After a long denial, GNSS was accepted on return with no rejection and no fault declared, and the error
+  collapsed. In a 300 s run (not committed, as it takes minutes) the claimed uncertainty was conservative late
+  in the run, not overconfident.
+- **Gross outliers are survivable.** A twentieth of the frames carrying a twenty-fold error are rejected by the
+  chi-square gate and the filter stays calibrated.
+- **Scale drift is benign here.** The inertial unit holds the metric scale. On a faster platform, where the
+  per-frame baseline is large against the noise, this could differ.
+- **Correlated errors are not survivable as configured.** When the visual errors are correlated over a second or
+  more, as they are when consecutive frames share features, the clone assumes independence and is overconfident
+  again. The shortfall grows with the correlation time. Telling the filter the visual noise is four times larger
+  restores calibration, with the position error still well inside the no-vision control's. That factor was
+  found by trying a few; it is not derived, and a front end with a different correlation needs a different one.
+
+So the clone closes B1 for a front end whose errors are independent, and for a correlated one only with a noise
+inflation chosen to fit. That is a narrower claim than the first result suggested, and it is the claim to make.
+
 ## What this does not settle
 
 - **It is synthetic.** The visual front end is a surrogate: relative poses with independent Gaussian noise. A real

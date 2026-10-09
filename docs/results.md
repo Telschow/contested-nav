@@ -18,6 +18,10 @@ the strictest of the four conventions the code supports.
 | GNSS denied, 30% frames dropped, re-referenced, single anchor | 1.973 | 0.192 | 191.5 | 17.7% | overconfident |
 | GNSS denied, 30% frames dropped, re-referenced, stochastic clone | 0.503 | 0.307 | 2.2 | 100.0% | underconfident |
 | Vision only, stochastic clone | 1.959 | 1.326 | 2.3 | 100.0% | underconfident |
+| Stochastic clone, 5% gross visual outliers | 0.727 | 0.382 | 2.5 | 100.0% | underconfident |
+| Stochastic clone, drifting translation scale | 0.787 | 0.375 | 2.9 | 100.0% | underconfident |
+| Stochastic clone, visual errors correlated over 2 s | 1.931 | 0.375 | 13.1 | 58.3% | overconfident |
+| Stochastic clone, correlated errors, visual noise assumed 4x | 2.259 | 0.531 | 4.9 | 100.0% | mixed: bulk overconfident, tail underconfident |
 
 Four things deserve more than a glance.
 
@@ -88,3 +92,11 @@ against the last delivered frame; the single-anchor row on that stream is the co
 overconfident, so the generator was not what made the anchor fail. This is a synthetic result with a Gaussian
 surrogate front end. The clone is opt-in: the shipped setting is still the single anchor, with visual fusion
 off.
+
+**What the clone does not survive.** The last four clone rows depart from the ideal front end one way at a time.
+Gross outliers are rejected by the gate and the filter stays calibrated. A drifting translation scale does not
+matter, because the inertial unit holds the metric scale. Visual errors correlated over 2 s do break it: the clone
+assumes independent errors and is overconfident again. Telling the filter the visual noise is four times larger
+restores calibration, at a cost in accuracy. The factor was found by trial, not derived. A 150 s run without GNSS
+(`tests/test_clone_long_run.py`) shows the claimed uncertainty still growing and the error inside it, and GNSS
+accepted when it returns.
