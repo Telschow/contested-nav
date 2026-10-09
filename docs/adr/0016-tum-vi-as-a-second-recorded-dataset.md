@@ -1,6 +1,6 @@
 # ADR-0016: TUM VI as a second recorded dataset
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0013](0013-recorded-imu-with-simulated-gnss.md), [ADR-0014](0014-textbook-imu-process-noise-by-default.md)
 
@@ -27,7 +27,16 @@ understate, the raw set should lose runs and the inflated set should lose fewer.
 
 ## Decision
 
-_To be written by the maintainer._
+Option 2. TUM VI is a second recorded dataset, evaluated with GNSS simulated from its ground truth, under the
+same method and caveats as ADR-0013.
+
+It gives a second sensor, a second set of recordings and a clear licence, and its authors' own noise figures made
+a test that was not designed around the EuRoC finding. The result may be quoted only with the caveats on its page:
+simulated GNSS, an estimated start bias that makes a TUM VI run harder to start than a EuRoC run, and settings that
+were not tuned on it.
+
+This stands until a dataset with real GNSS and real outages can be used. A difference between the two datasets is
+not attributed to the sensor alone, because the start also differs.
 
 ## What the code does in the meantime
 

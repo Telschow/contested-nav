@@ -1,6 +1,6 @@
 # ADR-0015: The initial IMU bias sigmas are read
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0012](0012-every-scenario-is-injected.md), [ADR-0014](0014-textbook-imu-process-noise-by-default.md)
 
@@ -23,7 +23,16 @@ recovered after an outage (ADR-0014).
 
 ## Decision
 
-_To be written by the maintainer._
+Option 3. The generator draws an initial bias from `gyro_bias_sigma` and `accel_bias_sigma`, and the benchmark
+filter is told the same sigmas.
+
+The fields were accepted, scaled and hashed, and read by nothing, which suggested an effect they did not have.
+Removing them would break configs that set them. Reading them makes the noise model say what it means, at the
+price of moving the synthetic numbers once, which was done deliberately and recorded. The initial bias comes from
+a stream of its own, so a scenario with zero sigmas is unchanged.
+
+The default sigmas are order-of-magnitude figures for a consumer IMU and are not measurements of any sensor. Revisit
+the values, not the decision, if a benchmark case is built around a particular sensor.
 
 ## What the code does in the meantime
 

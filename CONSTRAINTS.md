@@ -122,11 +122,13 @@ These are floors, not goals. Each must not regress; raising one is welcome.
   filter's own uncertainty more seriously, not because the anchor is now
   modelled correctly.
 
-  Spike result ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md), proposed): carrying the
+  Spike result ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md), accepted): carrying the
   previous pose as a stochastic clone (`vision_model: clone`) meets the gate on the synthetic fixture. The
   `outage_visual_clone` row is calibrated where `outage_visual` is not, across the seed, trajectory and outage
   sweeps. The default stays `anchor`, `vision_enabled` stays `False`, and this blocker stays open for the
-  shipped configuration until the maintainer decides. The single-anchor rows remain as the control.
+  shipped configuration. The decision (ADR-0017): the clone stays opt-in, because it is calibrated for a front end
+  with independent errors and not for a correlated one, and no data here says which a real front end is. Reconsider
+  when a front end's error correlation is measured. The single-anchor rows remain as the control.
 
 - **B4: The published TUM VI estimate is unavailable.** The two skipped tests compare a published
   Basalt estimate of room1 with a subsampled Plotly ground truth, and neither is fetched. The full
