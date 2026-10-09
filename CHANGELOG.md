@@ -16,9 +16,8 @@ this project uses [semantic versioning](https://semver.org/).
   server's `Retry-After`, and writes a `MANIFEST.json` with the SHA-256 of every file. `run` feeds the recorded
   IMU to the filter, simulates GNSS from the ground truth, optionally cuts outages, and scores the run with the
   same ATE, NEES and coverage code as the benchmark. `selftest` runs the whole path on a synthetic sequence in
-  the EuRoC layout. Results are labelled `real_imu_simulated_gnss`. No result from real data exists yet and none
-  is quoted. See [ADR-0013](docs/adr/0013-recorded-imu-with-simulated-gnss.md), proposed, decision section left
-  to the maintainer.
+  the EuRoC layout. Results are labelled `real_imu_simulated_gnss`. No result from real data is quoted in the
+  README or the docs. See [ADR-0013](docs/adr/0013-recorded-imu-with-simulated-gnss.md), accepted.
 - `ErrorStateKalmanFilter.run(..., initial=InitialState(...))`: start from a given pose, velocity and biases
   instead of the origin at rest. The default is unchanged.
 - `navkit euroc run --preset adis16448`: scales the filter's assumed IMU noise by 3 and declares a 0.05 initial

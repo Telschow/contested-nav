@@ -69,7 +69,7 @@ The data is not vendored. Its rights statement is "In Copyright - Non-Commercial
 the files go under `data/raw/`, which git ignores, and only aggregate results may be committed. A
 result from this path is labelled `real_imu_simulated_gnss`. It tests the filter against real
 inertial noise and a known reference. It is not GNSS-denied navigation in the field. The decision
-behind it is [ADR-0013](adr/0013-recorded-imu-with-simulated-gnss.md), still open.
+behind it is [ADR-0013](adr/0013-recorded-imu-with-simulated-gnss.md).
 
 No result from this path is quoted in these pages yet. Two tests compare against the TUM VI
 benchmark when its ground truth is present locally. See [Path to real systems](REAL_SYSTEMS.md).

@@ -1,6 +1,6 @@
 # ADR-0014: IMU white noise enters the process covariance in the textbook form
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0013](0013-recorded-imu-with-simulated-gnss.md)
 
@@ -47,7 +47,16 @@ These are not in the repository as committed results. The commands below regener
 
 ## Decision
 
-_To be written by the maintainer._
+Option 2. The `textbook` form is the default and `legacy` stays selectable.
+
+The old form fails a test that states plain white-noise theory, and a known-wrong covariance is hard
+to defend as a default. Keeping `legacy` costs nothing and keeps the earlier numbers reproducible.
+
+This fix is not what rescued the EuRoC runs. The IMU noise scale did that, and it is a tuning for one
+sensor, not a filter property. The `textbook` form is the correct model, not a cure.
+
+Reopen this if a real-GNSS dataset shows that inflation like the `adis16448` preset is still needed
+with the `textbook` form, or shows that it is not.
 
 ## What the code does in the meantime
 
