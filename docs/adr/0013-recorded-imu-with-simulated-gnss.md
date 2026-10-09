@@ -49,4 +49,4 @@ chain can be checked before any real file is on disk.
 - The process-noise form that made real-data covariances look overconfident was found while building
   this and is handled separately in [ADR-0014](0014-textbook-imu-process-noise-by-default.md).
 - The IMU noise the datasheet gives understates the real error growth of the EuRoC IMU. `navkit euroc run
-  --preset adis16448` inflates it; that is a tuning for one sensor and the Vicon sequences have not been run.
+  --preset adis16448` inflates it; that is a tuning for one sensor. It was checked on all eleven EuRoC sequences and still fails on a few runs.

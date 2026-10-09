@@ -17,16 +17,23 @@ velocity through gravity, which is physics and not process noise), and shows the
 It was found while running the filter on a recorded EuRoC IMU (ADR-0013). On the synthetic benchmark
 the difference is small, because the synthetic IMU noise is small and the aiding is frequent.
 
-Two measurements on the EuRoC Machine Hall sequences (recorded IMU, GNSS simulated from the ground
-truth, a 20 s outage at several start times, two seeds), reproducible with `navkit euroc run`:
+Measurements on all eleven EuRoC sequences (Machine Hall and Vicon rooms; recorded IMU, GNSS simulated
+from the ground truth, a 20 s outage at up to four start times, two seeds), reproducible with
+`navkit euroc run`. A run counts as lost when the filter rejects more than a fifth of its GNSS fixes:
 
-- The textbook form alone lowers mean NEES and the number of GNSS lockouts after an outage a little. It
-  does not remove the lockouts. The cause of those is that the datasheet IMU noise understates the real
-  error growth: the filter claims several times less uncertainty than the error it has at the end of an
-  outage, so it rejects GNSS when it returns and never recovers. Starting exactly on the ground truth
-  changes nothing. Scaling the assumed IMU noise by 3 removes the lockouts on the sequences it was
-  chosen on and on the others, and is offered as `--preset adis16448`, not as a filter default.
+- With the new default, about half of the runs are lost, and the Vicon rooms are worse than Machine Hall.
+  The textbook form alone lowers mean NEES and the number of losses a little. It does not remove them.
+  The cause is that the datasheet IMU noise understates the real error growth: the filter claims several
+  times less uncertainty than the error it has at the end of an outage, so it rejects GNSS when it returns
+  and does not recover. Starting exactly on the ground truth changes nothing.
+- With `--preset adis16448` (assumed IMU noise x3, 0.05 bias prior) a handful of runs are lost, on MH_04,
+  MH_05 and V1_01, and the median NEES and the 2-sigma coverage are close to nominal. The scale was chosen
+  on MH_01_easy and then checked on the other ten sequences. It is a tuning for this sensor, not a filter
+  default.
 - A declared bias prior on its own helped on the easy sequences and hurt on the difficult ones.
+- The FDIR layer's "channel faulted" flag undercounts these losses. Some runs reject hundreds of GNSS fixes
+  and are never declared faulty, so a measure based on the flag alone looked better than it was. An earlier
+  version of this analysis used the flag and was corrected.
 
 These are not in the repository as committed results. The commands below regenerate them.
 
@@ -63,8 +70,9 @@ navkit euroc run --sequence MH_01_easy --outage 60:20 --preset adis16448 --out r
 ## What this does not settle
 
 - The IMU noise inflation is a property of one sensor and these recordings. It was chosen on one
-  sequence and checked on four others, all of them Machine Hall. The Vicon room sequences have not
-  been run.
+  sequence and checked on ten others from the same dataset, so it has not been tested on another
+  IMU or another vehicle. It still fails on a few runs, and V1_01_easy is the weakest.
+- That the FDIR layer misses a long run of rejections is a separate finding and is not addressed here.
 - GNSS is simulated from the ground truth. Nothing here is GNSS-denied performance in the field.
 - The filter does not model scale-factor error, axis misalignment, or a time-varying bias, which are
   the likely sources of the gap between the datasheet noise and the real error growth. That is a
