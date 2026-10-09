@@ -138,14 +138,19 @@ is being spoofed". No response is selected on the operator's behalf.
 
 **VERIFIED BY REPOSITORY.**
 
-### L8: No accelerometer-bias falsification experiment
+### L8: The accelerometer-bias hypothesis was untested; it is now tested and was wrong
 
-The research baseline raises whether an accelerometer-bias fault is detectable
-under GNSS denial, by injecting a bias and checking whether the innovation gate
-catches it. This is not implemented.
+The research baseline said accelerometer bias is the dominant contributor to the error of a GNSS outage, and asked
+whether a bias fault would be detectable. Both are now run ([Where the outage error comes from](../attribution.md)).
+On the synthetic fixture, removing every inertial error source leaves the peak outage error essentially unchanged,
+and the error grows with outage length at the same exponent with or without them. What dominates is the state error
+the filter has when GNSS is lost. A bias fault is not noticed during the denial, because nothing is measured; a small
+one is not noticed on return either, and a large one makes the filter reject the healthy GNSS and lock it out.
 
-**Consequence:** a specific hypothesis in the project's own research framing
-remains untested. It is listed as open rather than quietly dropped.
+**Consequence:** the repository's mechanism library stated a physical error (constant bias gives linear growth) and a
+hypothesis the fixture falsifies; both are corrected. The result is about the synthetic fixture, whose inertial unit is
+good relative to its GNSS. It says nothing about the dominant source in a recording, where the bias random walk
+turned out to matter ([EuRoC](../euroc.md), [TUM VI](../tumvi.md)).
 
 **VERIFIED BY REPOSITORY.**
 

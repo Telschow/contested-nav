@@ -52,7 +52,7 @@ A tie is broken by the lower effort, then by the id.
 - **P5-05, Rename the per-second drift keys to per-square-root-second with an alias.** Source: MODEL.md finding 2. Units bug in names only. Breaking for configs unless an alias is kept.
 - **P5-09, Rewrite the baseline records and fix stale statements.** Source: Phase 4 decision 2. Records excluded from the public site predate the work. The eskf.py module docstring quotes an old measurement.
 - **P5-11, Comparison against an established consistent estimator.** Source: L3. Needs an external reference implementation and a scene export, which strains the zero-dependency rule (S1).
-- **P5-06, Accelerometer-bias falsification experiment.** Source: L8. Cannot be run honestly while the bias sigma fields are inert.
+- **P5-06, Accelerometer-bias falsification experiment.** Source: L8. Cannot be run honestly while the bias sigma fields are inert. Done: docs/attribution.md. The hypothesis that accelerometer bias dominates the outage error is falsified on the synthetic fixture.
 - **P5-12, Housekeeping: review Dependabot 5, decide on uv.lock, close stale PR 34.** Source: Phase 4 open items. Small but leaves no stale items on the board.
 - **P5-10, Release hygiene: provenance attestation and digest-pinned base image.** Source: ADR-0011 gaps. Closes the not-done list in ADR-0011 before a tagged release.
 - **P5-13, Documented fetch path for the TUM VI reference data.** Source: B4; L9. Two tests skip without it. Must not vendor the data (S2).
