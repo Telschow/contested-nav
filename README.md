@@ -43,9 +43,9 @@ visual fusion ships **off by default**. Across 8 outage windows the overconfiden
 every run; the accuracy gain did not (see [what the sweeps show](#what-the-sweeps-show)).
 
 A stochastic clone of the previous pose (opt-in, `vision_model: clone`,
-[ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)) is calibrated on the same fixture; see the
-clone rows in the table below. It is a synthetic result, the default is unchanged, and visual fusion still ships
-off.
+[ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)) is calibrated on the same fixture when the
+visual errors are independent, and not when they are correlated over a couple of seconds; see the clone rows in the
+table below. It is a synthetic result, the default is unchanged, and visual fusion still ships off.
 
 > **Synthetic evidence only.** Every number comes from a deterministic known-answer fixture: an
 > analytic trajectory with generated sensor streams. No real sensor capture is evaluated and

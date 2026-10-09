@@ -1,6 +1,6 @@
 # ADR-0017: A stochastic clone for the visual update
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0001](0001-anchor-as-filter-state.md), [ADR-0003](0003-ship-visual-disabled.md), blocker B1
 
@@ -32,7 +32,19 @@ outcome would be evidence.
 
 ## Decision
 
-_To be written by the maintainer._
+Option 2, as an opt-in. The stochastic clone stays behind `vision_model: clone`. The default stays `anchor`,
+`vision_enabled` stays `False`, and visual fusion still ships off.
+
+The clone meets the gate on the synthetic fixture and holds over a long run, but it does so for a front end whose
+errors are independent. When the errors are correlated over a second or more it is overconfident again, and it is
+calibrated only with a noise inflation found by trial. A real front end's error correlation is not known from any
+data in this repository, so there is nothing to base a change of the shipped setting on. The single-anchor rows stay
+as the control.
+
+Blocker B1 stays open for the shipped configuration. It can be reconsidered when a front end's error correlation is
+measured on real data, or when a visual front end exists in this project; the options not taken (a sliding window,
+first-estimate Jacobians) wait for the same evidence. A claim in the README or the docs that visual fusion is
+calibrated must name the independence assumption beside it.
 
 ## What the code does in the meantime
 

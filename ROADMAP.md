@@ -228,7 +228,7 @@ this removes it.
 - [x] Decide the formulation. A stochastic clone of the previous pose was tried
       first as the cheaper option with the same key property
       ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md),
-      proposed). A sliding window or pose graph was not needed to meet the gate on
+      accepted as an opt-in). A sliding window or pose graph was not needed to meet the gate on
       the fixture.
 - [x] NumPy-only implementation. S1 holds. `vision_model: clone` reuses the six
       anchor slots as clone error states; the default is unchanged.
@@ -236,9 +236,9 @@ this removes it.
       GNSS-denied scenario, mean NEES below 10 and 2-sigma coverage above 90%.
       The `outage_visual_clone` row meets it, and holds across the seed, trajectory and
       outage sweeps.
-- [~] Hold `vision_enabled = False` until that gate is met. The gate is met by
-      the opt-in clone; the shipped setting stays `False` until the maintainer
-      decides (see ADR-0017 and the ADR on shipping visual fusion off, and constraint S3).
+- [x] Hold `vision_enabled = False` until that gate is met. Decided in ADR-0017: the gate is met by the
+      opt-in clone for a front end with independent errors, `vision_enabled` stays `False`, and it is
+      reconsidered when a front end's error correlation is measured.
 - [x] Keep the overconfident single-anchor case in the benchmark as a control
       row after the fix lands. Deleting the number that motivated the work would
       destroy the evidence that the work mattered.

@@ -35,7 +35,7 @@ this project uses [semantic versioning](https://semver.org/).
   with `--block euroc-validation`. See the follow-up in
   [ADR-0014](docs/adr/0014-textbook-imu-process-noise-by-default.md).
 - `navkit tumvi fetch` and `--dataset tumvi` on `navkit euroc run` and `navkit euroc compare`: TUM VI room
-  sequences (CC BY 4.0, [ADR-0016](docs/adr/0016-tum-vi-as-a-second-recorded-dataset.md), proposed). The archives
+  sequences (CC BY 4.0, [ADR-0016](docs/adr/0016-tum-vi-as-a-second-recorded-dataset.md), accepted). The archives
   are whole TARs, so the fetcher downloads them (resuming a partial file), checks the publisher's MD5, keeps the
   IMU, motion-capture and noise files, and deletes the archive. The ground truth has no velocity or bias, so the
   start velocity is a local line fit and the start biases are estimated from the quietest stretch of the first
@@ -44,7 +44,7 @@ this project uses [semantic versioning](https://semver.org/).
 - `EskfConfig.vision_model = "clone"` (opt-in, default `"anchor"`) and four benchmark cases
   (`outage_visual_clone`, `outage_visual_degraded_camera_rereferenced`, `outage_visual_degraded_camera_clone`,
   `vision_only_clone`): the previous visual pose carried as a stochastic clone, the B1 spike
-  ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md), proposed). On the synthetic fixture the clone
+  ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md), accepted). On the synthetic fixture the clone
   is calibrated under GNSS denial where the single anchor is not, across the seed, trajectory and outage sweeps.
   The default, `vision_enabled` and the single-anchor rows are unchanged. Its Jacobians are checked against
   numerical derivatives.
@@ -69,7 +69,7 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Changed
 
-- The initial IMU bias sigmas are read ([ADR-0015](docs/adr/0015-initial-imu-bias-sigmas-are-read.md), proposed).
+- The initial IMU bias sigmas are read ([ADR-0015](docs/adr/0015-initial-imu-bias-sigmas-are-read.md), accepted).
   `gyro_bias_sigma` and `accel_bias_sigma` were accepted and read by nothing. The generator now draws an initial
   bias from each, on its own random stream, and the benchmark filter is told the same sigmas through the new
   `initial_gyro_bias_sigma` and `initial_accel_bias_sigma`, which fall back to `initial_bias_sigma` when unset.
