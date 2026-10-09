@@ -54,6 +54,7 @@ CONFIGS: dict[str, dict[str, Any]] = {
     "default": {},
     "preset": {"preset": "adis16448", **PRESETS["adis16448"]},
     "legacy": {"process_noise": "legacy"},
+    "walk10": {"preset": "adis16448-walk", **PRESETS["adis16448-walk"]},
 }
 
 DEFAULT_CONFIGS = ("default", "preset")
@@ -166,6 +167,7 @@ def compare(
     seeds: int,
     threshold: float,
     log: Any = None,
+    first_seed: int = 0,
 ) -> tuple[list[Row], dict[str, str]]:
     """Run every combination. Returns the rows and a ``{sequence: reason}`` map of what was skipped."""
     unknown = [c for c in configs if c not in CONFIGS]
@@ -183,7 +185,7 @@ def compare(
             skipped[name] = f"no outage start fits in its {window:.0f} s window"
             continue
         for start in usable:
-            for seed in range(seeds):
+            for seed in range(first_seed, first_seed + seeds):
                 for config in configs:
                     rows.append(run_one(seq, config, start, outage_s, seed, threshold))
         if log:
@@ -281,18 +283,47 @@ def failing_runs_markdown(rows: list[Row], config: str = "preset") -> str:
 
 
 def page_block(rows: list[Row], threshold: float) -> str:
-    """What goes between the markers of ``docs/euroc.md``."""
-    return as_markdown(rows, threshold) + "\n\n" + failing_runs_markdown(rows)
+    """What goes between the ``euroc`` markers of ``docs/euroc.md``."""
+    configs = list(dict.fromkeys(r.config for r in rows))
+    tail = [
+        failing_runs_markdown(rows, c) for c in configs if c != "default" and any(r.lost for r in rows if r.config == c)
+    ]
+    return "\n\n".join([as_markdown(rows, threshold), *tail])
 
 
+def validation_block(rows: list[Row], threshold: float) -> str:
+    """The checks run after the settings were chosen: one line per outage length and configuration."""
+    lines = [
+        f"Lost = more than {100 * threshold:g}% of GNSS fixes rejected.",
+        "",
+        "| Outage s | Config | Runs | Lost | Median NEES (expected 3) | Mean 2σ coverage |",
+        "|---:|---|---:|---:|---:|---:|",
+    ]
+    for length in sorted({r.outage_s for r in rows}):
+        for c in dict.fromkeys(r.config for r in rows):
+            sel = [r for r in rows if r.outage_s == length and r.config == c]
+            if sel:
+                s = _stats(sel)
+                lines.append(
+                    f"| {length:g} | {c} | {s['runs']:.0f} | {s['lost']:.0f} | {s['median_nees']:.2f} | "
+                    f"{100 * s['mean_coverage_2sigma']:.1f}% |"
+                )
+    return "\n".join(lines)
+
+
+PAGE_BLOCKS = ("euroc", "euroc-validation")
 PAGE_MARKERS = ("<!-- euroc:start -->", "<!-- euroc:end -->")
 
 
-def write_page(path: str | Path, block: str) -> None:
-    """Replace the text between the page markers. Refuses a page without them."""
+def markers(name: str) -> tuple[str, str]:
+    return (f"<!-- {name}:start -->", f"<!-- {name}:end -->")
+
+
+def write_page(path: str | Path, block: str, name: str = "euroc") -> None:
+    """Replace the text between a block's markers. Refuses a page without them."""
     page = Path(path)
     text = page.read_text(encoding="utf-8")
-    start, end = PAGE_MARKERS
+    start, end = markers(name)
     if start not in text or end not in text or text.index(start) > text.index(end):
         raise CompareError(f"{page} needs the lines {start} and {end}, in that order")
     head, rest = text.split(start, 1)
@@ -365,6 +396,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--starts", type=_floats, default=DEFAULT_STARTS, help="outage start times in s, comma separated")
     p.add_argument("--outage", type=float, default=DEFAULT_OUTAGE_S, help="outage length in s (default: %(default)s)")
     p.add_argument("--seeds", type=int, default=2, help="noise seeds per case (default: %(default)s)")
+    p.add_argument("--first-seed", type=int, default=0, help="the seeds run are first-seed, first-seed + 1, ...")
     p.add_argument(
         "--lost-threshold",
         type=float,
@@ -374,7 +406,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--from-csv", default=None, help="rebuild the table and page from a saved --csv file; no runs")
     p.add_argument("--csv", default=None, help="write one row per run")
     p.add_argument("--json", default=None, help="write the full record with provenance")
-    p.add_argument("--page", default=None, help="fill the table between the euroc markers of this Markdown page")
+    p.add_argument("--page", default=None, help="fill a table between the markers of this Markdown page")
+    p.add_argument(
+        "--block",
+        choices=PAGE_BLOCKS,
+        default="euroc",
+        help="which block --page fills: the main table, or the checks run after the settings were chosen",
+    )
     p.add_argument("--markdown", action="store_true", help="print the summary table")
     return p
 
@@ -409,6 +447,7 @@ def main(argv: list[str] | None = None) -> int:
                 args.seeds,
                 args.lost_threshold,
                 log=lambda m: print(m, file=sys.stderr, flush=True),
+                first_seed=args.first_seed,
             )
         except (CompareError, SequenceError) as exc:
             print(f"error: {exc}", file=sys.stderr)
@@ -432,6 +471,7 @@ def main(argv: list[str] | None = None) -> int:
             "starts_s": list(args.starts),
             "outage_s": args.outage,
             "seeds": args.seeds,
+            "first_seed": args.first_seed,
         }
         path.write_text(
             json.dumps(build_record(rows, skipped, args.root, options, args.lost_threshold), indent=2) + "\n",
@@ -440,7 +480,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"wrote {path}", file=sys.stderr)
     if args.page:
         try:
-            write_page(args.page, page_block(rows, args.lost_threshold))
+            build = validation_block if args.block == "euroc-validation" else page_block
+            write_page(args.page, build(rows, args.lost_threshold), args.block)
         except CompareError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1

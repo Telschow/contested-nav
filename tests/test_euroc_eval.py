@@ -307,3 +307,43 @@ def test_selftest_runs_without_any_download(capsys):
     assert ee.main(["selftest"]) == 0
     out = capsys.readouterr().out
     assert "FIXTURE_z_up" in out and "not the filter on real data" in out
+
+
+def test_bias_walk_scale_multiplies_only_the_two_walks_on_top_of_the_noise_scale():
+    noise = ee.ImuNoiseModel(1e-4, 2e-3, 3e-5, 4e-3, 0.0, 0.0)
+    plain = ee._filter_noise(noise, ee.RunOptions())
+    assert plain.accel_bias_rw == noise.accel_bias_rw and plain.gyro_noise_density == noise.gyro_noise_density
+    both = ee._filter_noise(noise, ee.RunOptions(noise_scale=2.0, bias_walk_scale=5.0))
+    assert both.gyro_noise_density == pytest.approx(2e-4) and both.accel_noise_density == pytest.approx(4e-3)
+    assert both.gyro_bias_rw == pytest.approx(3e-5 * 2.0 * 5.0) and both.accel_bias_rw == pytest.approx(
+        4e-3 * 2.0 * 5.0
+    )
+
+
+def test_bias_walk_scale_is_recorded_and_changes_the_claimed_uncertainty(seq):
+    base = _run(seq, outages=((15.0, 10.0),))
+    wide = _run(seq, outages=((15.0, 10.0),), bias_walk_scale=10.0)
+    assert wide["options"]["bias_walk_scale"] == 10.0 and base["options"]["bias_walk_scale"] == 1.0
+    assert wide["headline"]["claimed_sigma_p_m"] > base["headline"]["claimed_sigma_p_m"]
+    assert wide["estimator"]["imu_noise"]["accel_bias_rw"] == pytest.approx(
+        10.0 * base["estimator"]["imu_noise"]["accel_bias_rw"]
+    )
+
+
+def test_the_cli_takes_bias_walk_scale(root, tmp_path):
+    out = tmp_path / "w.json"
+    assert ee.main(["run", "--root", str(root), "-s", NAME, "--bias-walk-scale", "4", "--out", str(out)]) == 0
+    assert json.loads(out.read_text())["options"]["bias_walk_scale"] == 4.0
+
+
+def test_the_walk_preset_scales_only_the_bias_walks(root, tmp_path):
+    out = tmp_path / "w.json"
+    assert ee.main(["run", "--root", str(root), "-s", NAME, "--preset", "adis16448-walk", "--out", str(out)]) == 0
+    opts = json.loads(out.read_text())["options"]
+    assert (opts["preset"], opts["noise_scale"], opts["bias_walk_scale"], opts["bias_sigma"]) == (
+        "adis16448-walk",
+        1.0,
+        10.0,
+        0.05,
+    )
+    assert ee.PRESETS["adis16448"] == {"noise_scale": 3.0, "bias_sigma": 0.05}

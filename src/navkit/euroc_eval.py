@@ -71,13 +71,19 @@ DEFAULT_ROOT = "data/raw/euroc"
 
 DATA_CLASS = "real_imu_simulated_gnss"
 
-#: Named settings for the EuRoC VI-Sensor IMU (ADIS16448). ``adis16448`` multiplies the IMU noise
-#: the filter assumes by 3 and declares a 0.05 initial bias 1-sigma. The scale was chosen on
-#: MH_01_easy and then checked on the other four Machine Hall sequences and the six Vicon room
-#: sequences; it is a tuning for this sensor and these recordings, not a property of the filter.
-#: It does not remove every failure: a few runs on MH_04, MH_05 and V1_01 still lose GNSS after an
-#: outage (ADR-0014). An explicit ``--noise-scale`` or ``--bias-sigma`` overrides the preset.
-PRESETS: dict[str, dict[str, float]] = {"adis16448": {"noise_scale": 3.0, "bias_sigma": 0.05}}
+#: Named settings for the EuRoC VI-Sensor IMU (ADIS16448). Both declare a 0.05 initial bias 1-sigma.
+#:
+#: ``adis16448`` multiplies every assumed IMU noise term by 3. ``adis16448-walk`` leaves the white noise
+#: as the sensor file gives it and multiplies only the two bias random walks by 10. The second loses far
+#: fewer runs: the first scales a term that does not matter much for the tail. Neither is a property of
+#: the filter; they are tunings for this sensor and these recordings. The walk scale was chosen on the
+#: runs that failed under the first, then checked on new outage starts, new seeds and a longer outage
+#: (docs/euroc.md). An explicit ``--noise-scale``, ``--bias-walk-scale`` or ``--bias-sigma`` overrides a
+#: preset.
+PRESETS: dict[str, dict[str, float]] = {
+    "adis16448": {"noise_scale": 3.0, "bias_sigma": 0.05},
+    "adis16448-walk": {"noise_scale": 1.0, "bias_walk_scale": 10.0, "bias_sigma": 0.05},
+}
 
 CAVEATS = (
     "GNSS fixes are simulated from the ground-truth trajectory, antenna at the IMU origin.",
@@ -222,6 +228,7 @@ class RunOptions:
     outages: tuple[tuple[float, float], ...] = ()  # (start, duration) in seconds after the window start
     seed: int = 0
     noise_scale: float = 1.0
+    bias_walk_scale: float = 1.0  # on top of noise_scale, for the two bias random walks only
     preset: str | None = None  # recorded only; the values it set are in the fields around it
     init_bias: str = "truth"  # "truth" or "zero"
     bias_sigma: float | None = None  # None keeps the filter's declared default
@@ -237,6 +244,7 @@ class RunOptions:
             "outages": [list(o) for o in self.outages],
             "seed": self.seed,
             "noise_scale": self.noise_scale,
+            "bias_walk_scale": self.bias_walk_scale,
             "preset": self.preset,
             "init_bias": self.init_bias,
             "bias_sigma": self.bias_sigma,
@@ -295,6 +303,21 @@ def gravity_check(
     }
 
 
+def _filter_noise(noise: ImuNoiseModel, opts: RunOptions) -> ImuNoiseModel:
+    """The IMU noise the filter is told: ``noise_scale`` on every term, then ``bias_walk_scale`` on the walks."""
+    scaled = noise.scaled(opts.noise_scale)
+    if opts.bias_walk_scale == 1.0:
+        return scaled
+    return ImuNoiseModel(
+        gyro_noise_density=scaled.gyro_noise_density,
+        accel_noise_density=scaled.accel_noise_density,
+        gyro_bias_rw=scaled.gyro_bias_rw * opts.bias_walk_scale,
+        accel_bias_rw=scaled.accel_bias_rw * opts.bias_walk_scale,
+        gyro_bias_sigma=scaled.gyro_bias_sigma,
+        accel_bias_sigma=scaled.accel_bias_sigma,
+    )
+
+
 def _initial_state(seq: EurocSequence, opts: RunOptions, cfg: EskfConfig, t0: float) -> InitialState:
     ref = interpolate_trajectory(seq.truth, np.array([t0]))
     R0, p0 = ref.rotations[0], ref.positions[0]
@@ -345,7 +368,7 @@ def run_sequence(seq: EurocSequence, opts: RunOptions | None = None) -> dict[str
     if opts.bias_sigma is not None:
         cfg_kwargs["initial_bias_sigma"] = opts.bias_sigma
     cfg = EskfConfig(
-        imu_noise=seq.noise.scaled(opts.noise_scale),
+        imu_noise=_filter_noise(seq.noise, opts),
         gnss_position_sigma_m=opts.gnss_sigma_m,
         vision_enabled=False,
         gravity=GRAVITY_Z_UP,
@@ -550,6 +573,9 @@ def _run_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--noise-scale", type=float, default=None, help="multiplier on the filter's IMU noise model (default 1)"
     )
+    p.add_argument(
+        "--bias-walk-scale", type=float, default=None, help="further multiplier on the two bias random walks only"
+    )
     p.add_argument("--init-bias", choices=("truth", "zero"), default="truth")
     p.add_argument(
         "--bias-sigma", type=float, default=None, help="declared initial bias 1-sigma (filter default if unset)"
@@ -582,6 +608,9 @@ def _run(argv: list[str]) -> int:
         outages=tuple(args.outage),
         seed=args.seed,
         noise_scale=args.noise_scale if args.noise_scale is not None else preset.get("noise_scale", 1.0),
+        bias_walk_scale=args.bias_walk_scale
+        if args.bias_walk_scale is not None
+        else preset.get("bias_walk_scale", 1.0),
         preset=args.preset,
         init_bias=args.init_bias,
         bias_sigma=args.bias_sigma if args.bias_sigma is not None else preset.get("bias_sigma"),

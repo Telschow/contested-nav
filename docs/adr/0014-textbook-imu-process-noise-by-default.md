@@ -76,6 +76,26 @@ navkit euroc run --sequence MH_01_easy --outage 60:20 --out results/textbook.jso
 navkit euroc run --sequence MH_01_easy --outage 60:20 --preset adis16448 --out results/preset.json
 ```
 
+## Follow-up: what the failures are, and a second preset
+
+Three things were tested after the decision above, on the EuRoC runs (numbers in
+[the EuRoC page](../euroc.md), not repeated here).
+
+- **It is not the motion.** Runs that are still lost with the first preset have, on average, lower
+  rotation rates and speeds than the runs that survive. The most dynamic sequence was never lost and the
+  slowest was lost most often. The noise scale a window needs does not correlate with how hard the
+  vehicle moves, so a noise model driven by motion has no support in this data.
+- **It is not mainly the start time.** Early outages are lost somewhat more often, but within one start
+  time the outcome often depends on the seed.
+- **It is the bias random walk.** Scaling only the two bias random walks, and leaving the white noise as
+  the sensor file gives it, removes the lost runs where scaling every term by 3 does not. This is
+  `--preset adis16448-walk`. It was chosen on the runs that failed, then checked on outage starts, seeds
+  and an outage length not used before, and it held. The reading that the sensor file understates the
+  bias random walk is a hypothesis, not a measurement.
+
+The first preset stays, because the numbers above and in the changelog refer to it. Neither preset is a
+filter default.
+
 ## What this does not settle
 
 - The IMU noise inflation is a property of one sensor and these recordings. It was chosen on one
