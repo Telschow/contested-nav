@@ -115,6 +115,7 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 | `initial_gyro_bias_sigma` | rad/s | `None` | Initial 1-sigma of the gyro bias alone. `None` uses `initial_bias_sigma`. |
 | `initial_accel_bias_sigma` | m/s^2 | `None` | Initial 1-sigma of the accelerometer bias alone. `None` uses `initial_bias_sigma`. |
 | `process_noise_form` | none | `'textbook'` | How IMU white noise enters the process covariance. `legacy` puts `sigma_a^2 dt^3/3` on position and `sigma_g^2 dt^3/3` on attitude and has no velocity term. `textbook` uses `sigma_g^2 dt` on attitude and `sigma_a^2 dt` on velocity with the matching position terms. `textbook` is the default since [ADR-0014](adr/0014-textbook-imu-process-noise-by-default.md); `legacy` reproduces the earlier numbers. |
+| `vision_model` | none | `'anchor'` | How the previous visual pose is carried. `anchor` stores a raw copy with a declared uncertainty and no correlation with the live state ([ADR-0001](adr/0001-anchor-as-filter-state.md)). `clone` carries it as a stochastic clone: six error states that start perfectly correlated with the live pose and enter the relative-pose measurement through their own Jacobians ([ADR-0017](adr/0017-stochastic-clone-for-the-visual-update.md)). Opt-in; the default is unchanged. |
 
 ### Fault detection: `FdirConfig`
 
@@ -217,6 +218,7 @@ Every amplitude is a peak-to-trough excursion of a `1 - cos` term.
 | `rot_sigma_deg` | deg | `0.35` | 1-sigma noise on the relative rotation. |
 | `trans_sigma_m` | m | `0.05` | 1-sigma noise on the relative translation. |
 | `noise_multiplier` | ratio | `1.0` | Scale applied to both visual noise terms. |
+| `rereference` | bool | `False` | After frames are dropped, make each delivered measurement relative to the last delivered frame, with a fresh draw of the same per-measurement noise. Off by default, because the generator otherwise measures against a dropped frame, which a filter comparing with its last received frame cannot be consistent with. |
 | `seed` | integer | `0` | Seed of the vision noise stream. |
 
 ### Camera drops: `CameraDropConfig`

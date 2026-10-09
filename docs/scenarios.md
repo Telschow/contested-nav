@@ -1,6 +1,6 @@
 # Scenarios
 
-The benchmark is seven named cases in [`configs/benchmark.yaml`](https://github.com/Telschow/contested-nav/blob/main/configs/benchmark.yaml). They differ only in what is
+The benchmark is eleven named cases in [`configs/benchmark.yaml`](https://github.com/Telschow/contested-nav/blob/main/configs/benchmark.yaml). They differ only in what is
 degraded, so a difference between two rows is a difference in the scenario and not in the initial
 conditions. Every case runs the same 30 s synthetic path at seed 0. The synthetic motion, the
 sensor models and every configuration key are described in the [model reference](MODEL.md), and the
@@ -49,3 +49,27 @@ The same 15 s outage with vision on. Position error is lower than the control in
 Visual aiding through the outage with 30% of camera frames dropped in 1 s bursts. Checks whether an intermittent visual stream changes the result. It does not: the filter is still overconfident, with a smaller error than the clean case.
 
 **Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision 20.0 Hz, fused; GNSS outage 5 s to 20 s; camera drop 30% in 1 s bursts.
+
+## outage_visual_clone
+
+The outage_visual scenario with the previous visual pose carried as a stochastic clone instead of a stored anchor. Same data, same seeds, same gate.
+
+**Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision 20.0 Hz, fused; GNSS outage 5 s to 20 s; previous visual pose as a stochastic clone.
+
+## outage_visual_degraded_camera_rereferenced
+
+The degraded-camera scenario with every delivered measurement taken against the last delivered frame, and the single-anchor model. Separates the effect of the generator from the effect of the clone: the anchor is no better calibrated.
+
+**Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision 20.0 Hz, fused, re-referenced to the last delivered frame; GNSS outage 5 s to 20 s; camera drop 30% in 1 s bursts; single anchor.
+
+## outage_visual_degraded_camera_clone
+
+The degraded-camera scenario with re-referenced measurements and the stochastic clone.
+
+**Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision 20.0 Hz, fused, re-referenced to the last delivered frame; GNSS outage 5 s to 20 s; camera drop 30% in 1 s bursts; stochastic clone.
+
+## vision_only_clone
+
+Visual odometry at 20 Hz with no GNSS, with the stochastic clone. Nothing constrains the absolute pose, so the claimed uncertainty has to grow with the error and not stay small.
+
+**Configuration:** GNSS off; vision 20.0 Hz, fused; stochastic clone.
