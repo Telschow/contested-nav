@@ -103,6 +103,7 @@ nav:
       - Noise mismatch: mismatch.md
       - Fault matrix: faults.md
       - EuRoC, recorded IMU: euroc.md
+      - TUM VI, recorded IMU: tumvi.md
       - Performance: PERFORMANCE.md
       - Demo: demo.md
   - Reference:
@@ -133,6 +134,8 @@ nav:
       - "0013 Recorded IMU, simulated GNSS": adr/0013-recorded-imu-with-simulated-gnss.md
       - "0014 Textbook IMU process noise": adr/0014-textbook-imu-process-noise-by-default.md
       - "0015 Initial IMU bias sigmas": adr/0015-initial-imu-bias-sigmas-are-read.md
+      - "0016 TUM VI as a second dataset": adr/0016-tum-vi-as-a-second-recorded-dataset.md
+      - "0017 Stochastic clone": adr/0017-stochastic-clone-for-the-visual-update.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md

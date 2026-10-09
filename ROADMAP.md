@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1031<!-- /metric --> tests collected and <!-- metric:coverage_percent -->93.6<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1083<!-- /metric --> tests collected and <!-- metric:coverage_percent -->93.6<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -213,35 +213,45 @@ visual translation) is detected and isolated; the three causes behind it are
 not yet separated. The [fault matrix](docs/faults.md) measures this and restates the
 test: it is not met.
 
-### Track B: Back-end optimisation: sliding-window pose graph `[ ]`
+### Track B: Back-end optimisation: sliding-window pose graph `[~]`
 
 This is the structural fix for B1, the only genuine unknown in the project.
 Everything in Milestone 1 makes the limitation reproducible and documented;
 this removes it.
 
-- [!] Blocker, unchanged: a single-anchor ESKF cannot represent correlated
-      visual drift. Mean NEES 286.2 on `outage_visual`, 20.5% coverage against
-      99.3% expected. Not attempted yet, because a pose graph is a piece of
-      engineering rather than a patch. (The figure was 1996.5 before ADR-0006;
-      the number fell because the filter began taking its own uncertainty more
-      seriously, not because the anchor is now modelled correctly. See
-      `CONSTRAINTS.md:B1`.)
-- [ ] Decide the formulation: a factor graph over visual keyframes, a
-      multi-anchor ESKF, or a loosely-coupled inertial/visual filter.
-- [ ] NumPy-only implementation. S1 holds. A sliding window of keyframes with
-      a periodic marginalisation is the intended shape: it bounds the growth of
-      the cross-correlation terms that currently make the filter overconfident
-      the longer the outage runs.
-- [ ] Define "fixed" quantitatively *before* building. Proposed gate: under the
-      15 s GNSS-denied scenario, mean NEES below 10 and 2-sigma coverage above
-      90%, with `vision_enabled` able to default to `True`.
-- [ ] Hold `vision_enabled = False` until that gate is met.
-- [ ] Keep the overconfident single-anchor case in the benchmark as a control
+- [!] Blocker for the shipped configuration: a single-anchor ESKF cannot
+      represent correlated visual drift. Mean NEES 286.2 on `outage_visual`,
+      20.5% coverage against 99.3% expected. (The figure was 1996.5 before
+      ADR-0006; the number fell because the filter began taking its own
+      uncertainty more seriously, not because the anchor is now modelled
+      correctly. See `CONSTRAINTS.md:B1`.)
+- [x] Decide the formulation. A stochastic clone of the previous pose was tried
+      first as the cheaper option with the same key property
+      ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md),
+      proposed). A sliding window or pose graph was not needed to meet the gate on
+      the fixture.
+- [x] NumPy-only implementation. S1 holds. `vision_model: clone` reuses the six
+      anchor slots as clone error states; the default is unchanged.
+- [x] Define "fixed" quantitatively *before* building: under the 15 s
+      GNSS-denied scenario, mean NEES below 10 and 2-sigma coverage above 90%.
+      The `outage_visual_clone` row meets it, and holds across the seed, trajectory and
+      outage sweeps.
+- [~] Hold `vision_enabled = False` until that gate is met. The gate is met by
+      the opt-in clone; the shipped setting stays `False` until the maintainer
+      decides (see ADR-0017 and the ADR on shipping visual fusion off, and constraint S3).
+- [x] Keep the overconfident single-anchor case in the benchmark as a control
       row after the fix lands. Deleting the number that motivated the work would
       destroy the evidence that the work mattered.
+- [ ] Try the first-estimate Jacobian or an observability-constrained update, and
+      a long vision-only run, to look for spurious information about global
+      position and yaw. The spike did not need them on the fixture.
+- [ ] A visual front end with correlated errors, scale ambiguity and outliers.
+      The surrogate is Gaussian and independent; the result is synthetic.
 
 **Exit test:** NEES below 10 with vision enabled and GNSS denied, coverage above
-90%, `vision_enabled = True` as the shipped default. Current value 286.2.
+90%, `vision_enabled = True` as the shipped default. Current value 286.2 for the
+shipped single anchor; the clone row is in the results table and meets the gate.
+The default has not been changed.
 
 ### Track C: TPM / PM deliverables `[~]`
 

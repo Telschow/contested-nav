@@ -4,7 +4,7 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: <!-- metric:tests_collected -->1031<!-- /metric --> tests collected, all of which pass except the deliberate
+Last measured: <!-- metric:tests_collected -->1083<!-- /metric --> tests collected, all of which pass except the deliberate
 xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->93.6<!-- /metric -->%
 line coverage (<!-- metric:coverage_lines_hit -->6448<!-- /metric -->/<!-- metric:coverage_lines_total -->6887<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
@@ -83,7 +83,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | <!-- metric:tests_collected -->1031<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | <!-- metric:tests_collected -->1083<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
 | Line coverage | 75% | <!-- metric:coverage_percent -->93.6<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
@@ -104,7 +104,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 | `outage_sweep.py` coverage | 80% | 98.4% | as above |
 | `fdir/nis_monitor.py` coverage | 80% | 98.8% | as above |
 | `degrade/` coverage | 50% | 78.0% (`config.py`) / 84.2% (`inject.py`) | as above |
-| Docs | README + architecture + calibration + every ADR | <!-- metric:adr_count -->15<!-- /metric --> ADRs, all in the index | `scripts/metrics.py --check` |
+| Docs | README + architecture + calibration + every ADR | <!-- metric:adr_count -->17<!-- /metric --> ADRs, all in the index | `scripts/metrics.py --check` |
 | Documented tables match the generated benchmark | exact | yes | `scripts/check_doc_tables.py` |
 | Open blockers documented | all | see ROADMAP | manual |
 
@@ -122,11 +122,17 @@ These are floors, not goals. Each must not regress; raising one is welcome.
   filter's own uncertainty more seriously, not because the anchor is now
   modelled correctly.
 
-- **B4: Full TUM VI room1 ground truth is unavailable.** The published
-  mocap trajectory was not obtained, so the ATE comparison uses a subsampled
-  Plotly ground truth and the ATE figure is not a verified reproduction of the
-  published 0.069 m. The claim is typed accordingly. This is also why two tests
-  skip when the data is absent.
+  Spike result ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md), proposed): carrying the
+  previous pose as a stochastic clone (`vision_model: clone`) meets the gate on the synthetic fixture. The
+  `outage_visual_clone` row is calibrated where `outage_visual` is not, across the seed, trajectory and outage
+  sweeps. The default stays `anchor`, `vision_enabled` stays `False`, and this blocker stays open for the
+  shipped configuration until the maintainer decides. The single-anchor rows remain as the control.
+
+- **B4: The published TUM VI estimate is unavailable.** The two skipped tests compare a published
+  Basalt estimate of room1 with a subsampled Plotly ground truth, and neither is fetched. The full
+  motion-capture ground truth of the room sequences can now be fetched (`navkit tumvi fetch`), but the ATE
+  figure is still not a verified reproduction of the published 0.069 m, and the claim is typed accordingly.
+  That is why two tests skip when the data is absent.
 
 ## Resolved engineering blockers
 
