@@ -20,6 +20,10 @@ CASES = [
     "outage_control",
     "outage_visual",
     "outage_visual_degraded_camera",
+    "outage_visual_clone",
+    "outage_visual_degraded_camera_rereferenced",
+    "outage_visual_degraded_camera_clone",
+    "vision_only_clone",
 ]
 
 

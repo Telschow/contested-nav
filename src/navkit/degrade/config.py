@@ -225,6 +225,7 @@ def scenario_from_dict(d: dict[str, Any], problems: list[str] | None = None) -> 
         trans_sigma_m=float(v_raw.get("trans_sigma_m", 0.05)),
         noise_multiplier=float(v_raw.get("noise_multiplier", 1.0)),
         seed=int(v_raw.get("seed", 0)),
+        rereference=bool(v_raw.get("rereference", False)),
     )
     noise_raw = dict(d.get("imu_noise") or {})
     unknown = set(noise_raw) - set(DEFAULT_NOISE.as_dict())
