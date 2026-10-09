@@ -103,6 +103,11 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Fixed
 
+- Two CodeQL findings on the recorded-dataset code: `navkit euroc compare` read a variable it had not set on the
+  `--from-csv` path (unreachable, since `--json` is refused there, but fragile), and `euroc_eval`, `tumvi_data` and
+  `euroc_compare` imported one another. The shared sequence type, its error and the z-up gravity vector moved to
+  `navkit.recorded`, and the `navkit euroc` router to `navkit.euroc_cli`. A test now fails on any import cycle,
+  lazy imports included.
 - `navkit.types.finite_difference` returned twice the slope at interior samples for a first derivative (a ramp of
   slope 2 gave 4). Interior points now use the central difference over their two neighbours, exact for a line on
   a non-uniform grid. `Trajectory.velocities()` inherited the defect; nothing in the benchmark called it.
