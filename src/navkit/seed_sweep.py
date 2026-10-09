@@ -1,7 +1,7 @@
 """Repeat a benchmark across independent seeds and report the spread.
 
 Every number in README.md and docs/ comes from a single draw. ``configs/benchmark.yaml``
-pins each case to ``seed: 0``, so a result like mean NEES 419.4 is one sample of a
+pins each case to ``seed: 0``, so a result like mean NEES 286.2 is one sample of a
 stochastic process, not a measured property of the filter. This script re-runs the
 selected cases over N seeds and reports the distribution, so the difference between
 "this configuration overconfidently collapses coverage" and "this one fixture
