@@ -164,3 +164,44 @@ def test_the_command_is_routed_from_navkit_euroc(root, capsys):
     assert "| all | default | 1 |" in capsys.readouterr().out
     assert ee.main(["--help"]) == 0
     assert "compare" in capsys.readouterr().err
+
+
+# ------------------------------------------------------------- page and saved CSV
+
+
+def test_the_csv_round_trips_through_rows_from_csv(root, tmp_path, table):
+    out = tmp_path / "r.csv"
+    assert ec.main(["--root", str(root), *ARGS, "--csv", str(out)]) == 0
+    back = ec.rows_from_csv(out)
+    direct, _ = table
+    assert [r.as_dict() for r in back] == [r.as_dict() for r in direct]
+    assert ec.as_markdown(back, 0.2) == ec.as_markdown(direct, 0.2)
+
+
+def test_from_csv_rebuilds_the_page_without_running_anything(root, tmp_path, capsys):
+    out, page = tmp_path / "r.csv", tmp_path / "page.md"
+    page.write_text("before\n<!-- euroc:start -->\nold\n<!-- euroc:end -->\nafter\n")
+    assert ec.main(["--root", str(root), *ARGS, "--csv", str(out)]) == 0
+    assert ec.main(["--from-csv", str(out), "--page", str(page)]) == 0
+    text = page.read_text()
+    assert text.startswith("before\n<!-- euroc:start -->") and text.endswith("<!-- euroc:end -->\nafter\n")
+    assert "old" not in text and "| all | default | 2 |" in text
+    assert ec.main(["--from-csv", str(out), "--json", str(tmp_path / "x.json")]) == 1
+
+
+def test_a_page_without_the_markers_is_refused(tmp_path):
+    page = tmp_path / "p.md"
+    page.write_text("no markers here")
+    with pytest.raises(ec.CompareError, match="euroc:start"):
+        ec.write_page(page, "x")
+    page.write_text("<!-- euroc:end -->\n<!-- euroc:start -->")
+    with pytest.raises(ec.CompareError):
+        ec.write_page(page, "x")
+
+
+def test_the_failing_runs_list_names_each_lost_run_or_says_there_are_none(table):
+    rows, _ = table
+    assert ec.failing_runs_markdown(rows) == "No run was lost with `preset`."
+    forced = [ec.Row(**{**r.__dict__, "lost": True, "rejected_fraction": 0.5}) for r in rows if r.config == "preset"]
+    text = ec.failing_runs_markdown(forced)
+    assert text.startswith("Runs still lost with `preset`:") and "| 50% |" in text
