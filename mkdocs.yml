@@ -132,6 +132,7 @@ nav:
       - "0012 Every scenario is injected": adr/0012-every-scenario-is-injected.md
       - "0013 Recorded IMU, simulated GNSS": adr/0013-recorded-imu-with-simulated-gnss.md
       - "0014 Textbook IMU process noise": adr/0014-textbook-imu-process-noise-by-default.md
+      - "0015 Initial IMU bias sigmas": adr/0015-initial-imu-bias-sigmas-are-read.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md

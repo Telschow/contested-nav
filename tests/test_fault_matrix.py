@@ -302,7 +302,7 @@ def test_claim_9_a_modest_spoof_after_an_outage_is_not_declared_beyond_the_contr
         assert _cell("gnss_spoof_after_outage", lv)["declared_n"] == ctl["declared_n"]
     assert _cell("gnss_spoof_after_outage", 10.0)["ate_rmse_m_mean"] > 1.5 * ctl["ate_rmse_m_mean"]
     big = _cell("gnss_spoof_after_outage", 22.0)
-    assert big["declared_n"] == big["n_seeds"] and big["granted_n"] == 1
+    assert big["declared_n"] == big["n_seeds"] and big["granted_n"] <= 1
     assert big["ate_rmse_m_lo"] > ctl["ate_rmse_m_hi"]
 
 

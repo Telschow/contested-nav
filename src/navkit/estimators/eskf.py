@@ -368,6 +368,10 @@ class EskfConfig:
     initial_vel_sigma_m_s: float = 0.5
     initial_rot_sigma_deg: float = 2.0
     initial_bias_sigma: float = 0.0
+    #: Initial 1-sigma of the gyro bias (rad/s) and of the accelerometer bias (m/s^2) on their own.
+    #: ``None`` uses ``initial_bias_sigma`` for that bias, which is one number for two units.
+    initial_gyro_bias_sigma: float | None = None
+    initial_accel_bias_sigma: float | None = None
     #: How IMU white noise enters the process covariance. ``"textbook"`` is the default (ADR-0014).
     #: ``"legacy"`` is the original form, kept so the old behaviour can be reproduced:
     #: ``sigma_a^2 dt^3 / 3`` on position only and ``sigma_g^2 dt^3 / 3`` on attitude. ``"textbook"``
@@ -407,6 +411,8 @@ class EskfConfig:
             "initial_vel_sigma_m_s": self.initial_vel_sigma_m_s,
             "initial_rot_sigma_deg": self.initial_rot_sigma_deg,
             "initial_bias_sigma": self.initial_bias_sigma,
+            "initial_gyro_bias_sigma": self.initial_gyro_bias_sigma,
+            "initial_accel_bias_sigma": self.initial_accel_bias_sigma,
             "process_noise_form": self.process_noise_form,
         }
 
@@ -452,8 +458,10 @@ class ErrorStateKalmanFilter:
         P[_IDX_THETA, _IDX_THETA] = np.eye(3) * r
         P[_IDX_P, _IDX_P] = np.eye(3) * cfg.initial_pos_sigma_m**2
         P[_IDX_V, _IDX_V] = np.eye(3) * cfg.initial_vel_sigma_m_s**2
-        P[_IDX_BG, _IDX_BG] = np.eye(3) * cfg.initial_bias_sigma**2
-        P[_IDX_BA, _IDX_BA] = np.eye(3) * cfg.initial_bias_sigma**2
+        gyro_sigma = cfg.initial_bias_sigma if cfg.initial_gyro_bias_sigma is None else cfg.initial_gyro_bias_sigma
+        accel_sigma = cfg.initial_bias_sigma if cfg.initial_accel_bias_sigma is None else cfg.initial_accel_bias_sigma
+        P[_IDX_BG, _IDX_BG] = np.eye(3) * gyro_sigma**2
+        P[_IDX_BA, _IDX_BA] = np.eye(3) * accel_sigma**2
         # The anchor exists only once a visual update has committed one, and its
         # uncertainty then comes from the commit itself (see
         # _commit_anchor_covariance) plus the drift random walk. Seeding it here

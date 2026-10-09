@@ -1,8 +1,8 @@
-"""Two defects found while building the EuRoC evaluation. Each test states the correct behaviour
-and is `xfail(strict=True)`, so it fails the day the defect is fixed and the marker must go.
+"""Defects found while building the EuRoC evaluation. A test here states the correct behaviour and is
+`xfail(strict=True)` while the defect is open, so it fails the day the defect is fixed and the marker must go.
 
-Neither was fixed in the change that found them: both move numbers the golden snapshot pins, and
-the process-noise change needs an ADR. See the changelog entry for the EuRoC evaluation.
+The legacy process-noise form is the one that remains: it is kept on purpose (ADR-0014), so its
+test is still an expected failure. `finite_difference` was fixed and its test is an ordinary one now.
 """
 
 from __future__ import annotations
@@ -15,11 +15,22 @@ from navkit.io.imu import ImuNoiseModel
 from navkit.types import finite_difference
 
 
-@pytest.mark.xfail(strict=True, reason="first derivative is the sum of the two one-sided differences, not their mean")
 def test_finite_difference_first_derivative_of_a_ramp_is_its_slope():
     t = np.arange(6) * 0.1
     v = finite_difference(t, 2.0 * t).ravel()
     assert np.allclose(v, 2.0)
+
+
+def test_finite_difference_is_exact_for_a_line_on_a_non_uniform_grid_and_for_a_parabola_on_a_uniform_one():
+    t = np.array([0.0, 0.1, 0.25, 0.3, 0.5, 0.6])
+    assert np.allclose(finite_difference(t, 3.0 * t - 1.0).ravel(), 3.0)
+    u = np.arange(7) * 0.2
+    assert np.allclose(finite_difference(u, u**2).ravel()[1:-1], 2.0 * u[1:-1])
+
+
+def test_finite_difference_of_two_samples_is_the_one_sided_slope():
+    assert np.allclose(finite_difference(np.array([0.0, 2.0]), np.array([1.0, 7.0])).ravel(), 3.0)
+    assert finite_difference(np.array([0.0]), np.array([1.0])).ravel() == [0.0]
 
 
 def _sigmas(form: str, accel_noise: float, gyro_noise: float, dt: float = 0.005, horizon: float = 10.0):
