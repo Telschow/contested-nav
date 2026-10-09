@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1083<!-- /metric --> tests collected and <!-- metric:coverage_percent -->93.6<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1087<!-- /metric --> tests collected and <!-- metric:coverage_percent -->93.6<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -242,11 +242,15 @@ this removes it.
 - [x] Keep the overconfident single-anchor case in the benchmark as a control
       row after the fix lands. Deleting the number that motivated the work would
       destroy the evidence that the work mattered.
-- [ ] Try the first-estimate Jacobian or an observability-constrained update, and
-      a long vision-only run, to look for spurious information about global
-      position and yaw. The spike did not need them on the fixture.
-- [ ] A visual front end with correlated errors, scale ambiguity and outliers.
-      The surrogate is Gaussian and independent; the result is synthetic.
+- [x] A long vision-only run, to look for spurious information about global
+      position and yaw: none on the fixture. The claimed uncertainty keeps growing
+      and GNSS is accepted on return (`tests/test_clone_long_run.py`). The
+      first-estimate Jacobian or an observability-constrained update was not
+      needed there.
+- [~] A visual front end with correlated errors, scale ambiguity and outliers.
+      Outliers and scale drift are survived. Correlated errors are not, unless the
+      assumed visual noise is inflated by a factor found by trial. A real front end
+      is still untested.
 
 **Exit test:** NEES below 10 with vision enabled and GNSS denied, coverage above
 90%, `vision_enabled = True` as the shipped default. Current value 286.2 for the

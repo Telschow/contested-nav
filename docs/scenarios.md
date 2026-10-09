@@ -1,6 +1,6 @@
 # Scenarios
 
-The benchmark is eleven named cases in [`configs/benchmark.yaml`](https://github.com/Telschow/contested-nav/blob/main/configs/benchmark.yaml). They differ only in what is
+The benchmark is fifteen named cases in [`configs/benchmark.yaml`](https://github.com/Telschow/contested-nav/blob/main/configs/benchmark.yaml). They differ only in what is
 degraded, so a difference between two rows is a difference in the scenario and not in the initial
 conditions. Every case runs the same 30 s synthetic path at seed 0. The synthetic motion, the
 sensor models and every configuration key are described in the [model reference](MODEL.md), and the
@@ -73,3 +73,27 @@ The degraded-camera scenario with re-referenced measurements and the stochastic 
 Visual odometry at 20 Hz with no GNSS, with the stochastic clone. Nothing constrains the absolute pose, so the claimed uncertainty has to grow with the error and not stay small.
 
 **Configuration:** GNSS off; vision 20.0 Hz, fused; stochastic clone.
+
+## outage_visual_clone_outliers
+
+The clone with 5% of visual frames carrying an error twenty times the nominal one, as with a wrong feature match. The chi-square gate rejects them and the filter stays calibrated.
+
+**Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision 20.0 Hz, fused, 5% of frames with a twenty-fold error; GNSS outage 5 s to 20 s; stochastic clone.
+
+## outage_visual_clone_scale_drift
+
+The clone with a slowly drifting error of up to 10% on the translation scale, as monocular scale drifts. The inertial unit holds the metric scale, so the filter stays calibrated.
+
+**Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision 20.0 Hz, fused, translation scale drifting up to 10% (correlation time 30 s); GNSS outage 5 s to 20 s; stochastic clone.
+
+## outage_visual_clone_correlated
+
+The clone with visual errors correlated over 2 s, as they are when consecutive frames share features. The clone assumes independent errors, so it is overconfident again. This is the case the clone does not survive.
+
+**Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision 20.0 Hz, fused, errors correlated over 2 s; GNSS outage 5 s to 20 s; stochastic clone.
+
+## outage_visual_clone_correlated_inflated
+
+The same correlated errors with the filter told the visual noise is four times larger than the generator drew. Calibration is restored, at a cost in accuracy that still leaves the position error well inside the no-vision control's.
+
+**Configuration:** As the previous case, with the filter assuming four times the visual noise; stochastic clone.

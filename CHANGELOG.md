@@ -48,6 +48,12 @@ this project uses [semantic versioning](https://semver.org/).
   is calibrated under GNSS denial where the single anchor is not, across the seed, trajectory and outage sweeps.
   The default, `vision_enabled` and the single-anchor rows are unchanged. Its Jacobians are checked against
   numerical derivatives.
+- `vision.noise_corr_s`, `outlier_fraction`, `outlier_scale`, `scale_sigma`, `scale_tau_s` (scenario settings, all off
+  by default, drawn from a stream of their own so no existing number moves) and four benchmark cases
+  (`outage_visual_clone_outliers`, `_scale_drift`, `_correlated`, `_correlated_inflated`): stress tests of the
+  clone. It survives gross outliers and scale drift. It does not survive visual errors correlated over a couple of
+  seconds unless the assumed visual noise is inflated (4x restores calibration here; found by trial). A 150 s run
+  without GNSS keeps a growing claimed uncertainty and accepts GNSS on return (`tests/test_clone_long_run.py`).
 - `vision.rereference` (scenario setting, default off): after frames are dropped, each delivered measurement is
   taken against the last delivered frame, as a front end tracking against its last keyframe would report. The
   generator otherwise measures against a dropped frame, which a filter comparing with its last received frame

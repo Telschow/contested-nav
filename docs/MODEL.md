@@ -219,6 +219,11 @@ Every amplitude is a peak-to-trough excursion of a `1 - cos` term.
 | `trans_sigma_m` | m | `0.05` | 1-sigma noise on the relative translation. |
 | `noise_multiplier` | ratio | `1.0` | Scale applied to both visual noise terms. |
 | `rereference` | bool | `False` | After frames are dropped, make each delivered measurement relative to the last delivered frame, with a fresh draw of the same per-measurement noise. Off by default, because the generator otherwise measures against a dropped frame, which a filter comparing with its last received frame cannot be consistent with. |
+| `noise_corr_s` | s | `0.0` | Correlation time of the per-measurement errors. `0` draws them independently. Above `0` they are filtered across frames with the marginal spread unchanged, as errors are when consecutive frames share features. A stress option. |
+| `outlier_fraction` | ratio | `0.0` | Share of frames whose error is multiplied by `outlier_scale`, as with a wrong feature match. A stress option. |
+| `outlier_scale` | ratio | `20.0` | Factor on the error of an outlier frame. |
+| `scale_sigma` | ratio | `0.0` | Fractional error on the translation scale, a slowly drifting Gauss-Markov process, as monocular scale drifts. A stress option. |
+| `scale_tau_s` | s | `30.0` | Correlation time of that scale error. |
 | `seed` | integer | `0` | Seed of the vision noise stream. |
 
 ### Camera drops: `CameraDropConfig`
