@@ -17,5 +17,5 @@ what it cost, and what was rejected.
 | [ADR-0010](0010-determinism-and-seeding.md) | Determinism and seeding policy | accepted |
 | [ADR-0011](0011-ci-and-supply-chain.md) | CI and supply-chain strategy | accepted |
 | [ADR-0012](0012-every-scenario-is-injected.md) | Every scenario goes through the injection layer | accepted |
-| [ADR-0013](0013-recorded-imu-with-simulated-gnss.md) | Evaluate on recorded IMU data with GNSS simulated from the ground truth | proposed |
-| [ADR-0014](0014-textbook-imu-process-noise-by-default.md) | IMU white noise enters the process covariance in the textbook form | proposed |
+| [ADR-0013](0013-recorded-imu-with-simulated-gnss.md) | Evaluate on recorded IMU data with GNSS simulated from the ground truth | accepted |
+| [ADR-0014](0014-textbook-imu-process-noise-by-default.md) | IMU white noise enters the process covariance in the textbook form | accepted |

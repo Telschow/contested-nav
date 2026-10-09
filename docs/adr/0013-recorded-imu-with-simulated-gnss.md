@@ -1,6 +1,6 @@
 # ADR-0013: Evaluate on recorded IMU data with GNSS simulated from the ground truth
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 
 ## Context
@@ -30,7 +30,16 @@ Visual fusion stays off (S3), so the images are not used.
 
 ## Decision
 
-_To be written by the maintainer._
+Option 1. The filter is evaluated on recorded EuRoC IMU data with GNSS simulated from the
+ground truth. It is the only option available now that tests calibration under aiding, which is the
+question the project asks. Options 2 and 3 do not test it or need a front end that constraint S3
+keeps off, and option 4 needs a dataset that is not usable yet.
+
+Results from this path may appear in the README or the docs only if the simulated GNSS, the preset
+and the runs that still fail are stated next to them. A median alone would hide the failures.
+
+This stands until a dataset with real GNSS and real outages can be used. UrbanNav is the intended
+next step if its licence allows it. If it does not, this record is unchanged.
 
 ## What the code does in the meantime
 
