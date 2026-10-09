@@ -2,6 +2,7 @@
 
     navkit euroc fetch --sequence MH_01_easy           # once; see navkit.io.euroc_fetch
     navkit euroc run --sequence MH_01_easy --outage 60:20 --markdown
+    navkit euroc compare --markdown                    # default vs preset over every fetched sequence
     navkit euroc selftest                              # no download; checks the pipeline
 
 What is real and what is not. The IMU stream is the recorded one. The reference is the
@@ -640,12 +641,15 @@ def _selftest(argv: list[str]) -> int:
 def main(argv: list[str] | None = None) -> int:
     """Route ``navkit euroc fetch|run|selftest``."""
     args = list(sys.argv[1:] if argv is None else argv)
-    commands = {"fetch": fetch_main, "run": _run, "selftest": _selftest}
+    from .euroc_compare import main as compare_main  # here, not at the top: it imports this module
+
+    commands = {"fetch": fetch_main, "run": _run, "compare": compare_main, "selftest": _selftest}
     if not args or args[0] in ("-h", "--help") or args[0] not in commands:
-        usage = "usage: navkit euroc {fetch,run,selftest} [options]"
+        usage = "usage: navkit euroc {fetch,run,compare,selftest} [options]"
         kinds = (
             "  fetch     download the IMU and ground-truth files of a sequence (needs network)",
             "  run       run the filter on a fetched sequence, GNSS simulated from its ground truth",
+            "  compare   run several filter settings over the fetched sequences and count lost runs",
             "  selftest  run the whole pipeline on a synthetic sequence in the EuRoC layout",
         )
         print("\n".join((usage, *kinds)), file=sys.stderr)
