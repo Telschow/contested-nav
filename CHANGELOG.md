@@ -22,8 +22,8 @@ this project uses [semantic versioning](https://semver.org/).
 - `ErrorStateKalmanFilter.run(..., initial=InitialState(...))`: start from a given pose, velocity and biases
   instead of the origin at rest. The default is unchanged.
 - `navkit euroc run --preset adis16448`: scales the filter's assumed IMU noise by 3 and declares a 0.05 initial
-  bias 1-sigma. Chosen on MH_01_easy and checked on the other four Machine Hall sequences, not on the Vicon
-  rooms. Explicit `--noise-scale` and `--bias-sigma` override it. It is a tuning for this sensor, not a filter
+  bias 1-sigma. Chosen on MH_01_easy and checked on the other ten EuRoC sequences (Machine Hall and Vicon
+  rooms); a few runs on MH_04, MH_05 and V1_01 still lose GNSS after an outage. Explicit `--noise-scale` and `--bias-sigma` override it. It is a tuning for this sensor, not a filter
   property.
 - `docs/data/metrics.json` and `scripts/metrics.py`: the test, ADR and line-coverage figures the documents
   quote now come from one generated file through `<!-- metric:... -->` markers. CI fails when a marker or the

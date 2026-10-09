@@ -72,9 +72,10 @@ DATA_CLASS = "real_imu_simulated_gnss"
 
 #: Named settings for the EuRoC VI-Sensor IMU (ADIS16448). ``adis16448`` multiplies the IMU noise
 #: the filter assumes by 3 and declares a 0.05 initial bias 1-sigma. The scale was chosen on
-#: MH_01_easy and then checked on the other four Machine Hall sequences; it is a tuning for this
-#: sensor and these recordings, not a property of the filter, and the Vicon room sequences have not
-#: been run with it. An explicit ``--noise-scale`` or ``--bias-sigma`` overrides the preset.
+#: MH_01_easy and then checked on the other four Machine Hall sequences and the six Vicon room
+#: sequences; it is a tuning for this sensor and these recordings, not a property of the filter.
+#: It does not remove every failure: a few runs on MH_04, MH_05 and V1_01 still lose GNSS after an
+#: outage (ADR-0014). An explicit ``--noise-scale`` or ``--bias-sigma`` overrides the preset.
 PRESETS: dict[str, dict[str, float]] = {"adis16448": {"noise_scale": 3.0, "bias_sigma": 0.05}}
 
 CAVEATS = (
