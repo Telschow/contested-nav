@@ -323,3 +323,125 @@ cases:
         rot_sigma_deg: 0.35
         trans_sigma_m: 0.05
         seed: 0
+
+  # --- stress tests of the clone (ADR-0017) -----------------------------------
+  #
+  # The visual surrogate is otherwise independent, Gaussian and unbiased. These cases depart from that one way at
+  # a time, with the clone. They exist so that what the clone does not survive is pinned as well as what it does.
+
+  outage_visual_clone_outliers:
+    name: outage_visual_clone_outliers
+    description: >-
+      The clone with 5% of visual frames carrying an error twenty times the nominal one, as
+      with a wrong feature match. The chi-square gate rejects them and the filter stays calibrated.
+    estimator:
+      vision_fuse: true
+      vision_model: clone
+    scenario:
+      name: outage_visual_clone_outliers
+      description: Stochastic clone, 5% gross outliers.
+      gnss:
+        enabled: true
+        rate_hz: 5.0
+        sigma_m: 0.8
+        seed: 0
+      vision:
+        enabled: true
+        rate_hz: 20.0
+        rot_sigma_deg: 0.35
+        trans_sigma_m: 0.05
+        seed: 0
+        outlier_fraction: 0.05
+        outlier_scale: 20.0
+      gnss_outages:
+        - start_s: 5.0
+          duration_s: 15.0
+          reason: contested
+
+  outage_visual_clone_scale_drift:
+    name: outage_visual_clone_scale_drift
+    description: >-
+      The clone with a slowly drifting error of up to 10% on the translation scale, as monocular
+      scale drifts. The inertial unit holds the metric scale, so the filter stays calibrated.
+    estimator:
+      vision_fuse: true
+      vision_model: clone
+    scenario:
+      name: outage_visual_clone_scale_drift
+      description: Stochastic clone, drifting translation scale.
+      gnss:
+        enabled: true
+        rate_hz: 5.0
+        sigma_m: 0.8
+        seed: 0
+      vision:
+        enabled: true
+        rate_hz: 20.0
+        rot_sigma_deg: 0.35
+        trans_sigma_m: 0.05
+        seed: 0
+        scale_sigma: 0.10
+        scale_tau_s: 30.0
+      gnss_outages:
+        - start_s: 5.0
+          duration_s: 15.0
+          reason: contested
+
+  outage_visual_clone_correlated:
+    name: outage_visual_clone_correlated
+    description: >-
+      The clone with visual errors correlated over 2 s, as they are when consecutive frames share
+      features. The clone assumes independent errors, so it is overconfident again. This is the
+      case the clone does not survive.
+    estimator:
+      vision_fuse: true
+      vision_model: clone
+    scenario:
+      name: outage_visual_clone_correlated
+      description: Stochastic clone, errors correlated over 2 s.
+      gnss:
+        enabled: true
+        rate_hz: 5.0
+        sigma_m: 0.8
+        seed: 0
+      vision:
+        enabled: true
+        rate_hz: 20.0
+        rot_sigma_deg: 0.35
+        trans_sigma_m: 0.05
+        seed: 0
+        noise_corr_s: 2.0
+      gnss_outages:
+        - start_s: 5.0
+          duration_s: 15.0
+          reason: contested
+
+  outage_visual_clone_correlated_inflated:
+    name: outage_visual_clone_correlated_inflated
+    description: >-
+      The same correlated errors with the filter told the visual noise is four times larger than the
+      generator drew. Calibration is restored, at a cost in accuracy that still leaves the position error
+      well inside the no-vision control's.
+    estimator:
+      vision_fuse: true
+      vision_model: clone
+      vision_sigma_scale: 4.0
+    scenario:
+      name: outage_visual_clone_correlated_inflated
+      description: Stochastic clone, errors correlated over 2 s, visual noise inflated.
+      gnss:
+        enabled: true
+        rate_hz: 5.0
+        sigma_m: 0.8
+        seed: 0
+      vision:
+        enabled: true
+        rate_hz: 20.0
+        rot_sigma_deg: 0.35
+        trans_sigma_m: 0.05
+        seed: 0
+        noise_corr_s: 2.0
+      gnss_outages:
+        - start_s: 5.0
+          duration_s: 15.0
+          reason: contested
