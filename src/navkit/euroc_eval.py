@@ -40,6 +40,7 @@ import hashlib
 import json
 import sys
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -85,6 +86,12 @@ PRESETS: dict[str, dict[str, float]] = {
     "adis16448-walk": {"noise_scale": 1.0, "bias_walk_scale": 10.0, "bias_sigma": 0.05},
 }
 
+#: Added to a result whose initial biases were estimated and not taken from the ground truth.
+STATIC_BIAS_CAVEAT = (
+    "Initial gyro and accelerometer biases are estimated from the quietest stretch of the first seconds, "
+    "using the ground-truth attitude."
+)
+
 CAVEATS = (
     "GNSS fixes are simulated from the ground-truth trajectory, antenna at the IMU origin.",
     "Initial pose and velocity come from the ground truth.",
@@ -127,6 +134,13 @@ class EurocSequence:
     noise_source: str
     sha256: dict[str, str] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
+    #: Which dataset this is, and the short name used in result file names.
+    dataset: str = "EuRoC MAV"
+    slug: str = "euroc"
+    #: False when the ground truth carries no bias columns, so the start bias cannot come from it.
+    bias_known: bool = True
+    #: Other noise figures the dataset supplies, selectable with ``RunOptions.noise_source``.
+    noise_variants: dict[str, ImuNoiseModel] = field(default_factory=dict)
 
 
 def _sha256(path: Path) -> str:
@@ -230,7 +244,8 @@ class RunOptions:
     noise_scale: float = 1.0
     bias_walk_scale: float = 1.0  # on top of noise_scale, for the two bias random walks only
     preset: str | None = None  # recorded only; the values it set are in the fields around it
-    init_bias: str = "truth"  # "truth" or "zero"
+    init_bias: str | None = None  # "truth", "zero" or "static"; None picks truth when the dataset has it, else static
+    noise_source: str = "file"  # "file" is the sensor's own figures; a dataset may offer others
     bias_sigma: float | None = None  # None keeps the filter's declared default
     exact_init: bool = False
     process_noise: str = "textbook"  # EskfConfig.process_noise_form
@@ -247,6 +262,7 @@ class RunOptions:
             "bias_walk_scale": self.bias_walk_scale,
             "preset": self.preset,
             "init_bias": self.init_bias,
+            "noise_source": self.noise_source,
             "bias_sigma": self.bias_sigma,
             "exact_init": self.exact_init,
             "process_noise": self.process_noise,
@@ -318,17 +334,76 @@ def _filter_noise(noise: ImuNoiseModel, opts: RunOptions) -> ImuNoiseModel:
     )
 
 
-def _initial_state(seq: EurocSequence, opts: RunOptions, cfg: EskfConfig, t0: float) -> InitialState:
+def static_bias_estimate(
+    imu: ImuSample, truth: Trajectory, window_s: float = 2.0, search_s: float = 5.0
+) -> dict[str, Any]:
+    """Initial gyro and accelerometer bias from the quietest stretch at the start.
+
+    At rest a gyroscope reads its bias, and an accelerometer reads the gravity that the attitude rotates
+    into the body frame, plus its bias. The stretch is the ``window_s`` seconds, within the first
+    ``search_s``, in which both sensors vary least, judged by the spread of each axis. The spread of the
+    accelerometer *norm* is not enough: a rig turning at a steady rate keeps that norm constant. The
+    attitude is the ground truth's, so this is an ideal alignment, like the rest of the start state.
+    ``quiet`` is False when even the best stretch does not look like rest, in which case the estimate is
+    only a guess.
+    """
+    t = imu.t
+    rate = imu.rate_hz()
+    width = max(2, int(round(window_s * rate)))
+    stop = max(int(np.searchsorted(t, t[0] + search_s)), width + 1)
+    best, best_score, best_acc, best_gyro = 0, np.inf, np.inf, np.inf
+    for i in range(0, min(stop, len(t) - width), max(1, int(round(0.25 * rate)))):
+        acc_spread = float(np.linalg.norm(imu.accel[i : i + width].std(axis=0)))
+        gyro_spread = float(np.linalg.norm(imu.gyro[i : i + width].std(axis=0)))
+        score = acc_spread + 10.0 * gyro_spread
+        if score < best_score:
+            best, best_score, best_acc, best_gyro = i, score, acc_spread, gyro_spread
+    sel = slice(best, best + width)
+    ref = interpolate_trajectory(truth, t[sel])
+    g_body = np.einsum("nji,j->ni", ref.rotations, np.array([0.0, 0.0, float(np.linalg.norm(GRAVITY))]))
+    b_a = (imu.accel[sel] - g_body).mean(axis=0)
+    b_g = imu.gyro[sel].mean(axis=0)
+    quiet = best_acc < 0.15 and best_gyro < 0.02
+    return {
+        "gyro_bias": b_g,
+        "accel_bias": b_a,
+        "window_start_s": float(t[best] - t[0]),
+        "accel_spread_m_s2": best_acc,
+        "gyro_spread_rad_s": best_gyro,
+        "quiet": bool(quiet),
+    }
+
+
+def _static_summary(imu: ImuSample, truth: Trajectory) -> dict[str, Any]:
+    est = static_bias_estimate(imu, truth)
+    return {
+        "gyro_bias_rad_s": est["gyro_bias"].tolist(),
+        "accel_bias_m_s2": est["accel_bias"].tolist(),
+        "window_start_s": est["window_start_s"],
+        "accel_spread_m_s2": est["accel_spread_m_s2"],
+        "gyro_spread_rad_s": est["gyro_spread_rad_s"],
+        "quiet": est["quiet"],
+    }
+
+
+def _initial_state(
+    seq: EurocSequence, opts: RunOptions, cfg: EskfConfig, t0: float, mode: str, imu: ImuSample
+) -> InitialState:
     ref = interpolate_trajectory(seq.truth, np.array([t0]))
     R0, p0 = ref.rotations[0], ref.positions[0]
     v0 = np.array([np.interp(t0, seq.truth.t, seq.velocity[:, k]) for k in range(3)])
-    if opts.init_bias == "truth":
+    if mode == "truth":
+        if not seq.bias_known:
+            raise SequenceError(f"{seq.name}: the ground truth has no bias columns; use --init-bias static or zero")
         b_g = np.array([np.interp(t0, seq.truth.t, seq.gyro_bias[:, k]) for k in range(3)])
         b_a = np.array([np.interp(t0, seq.truth.t, seq.accel_bias[:, k]) for k in range(3)])
-    elif opts.init_bias == "zero":
+    elif mode == "zero":
         b_g, b_a = np.zeros(3), np.zeros(3)
+    elif mode == "static":
+        est = static_bias_estimate(imu, seq.truth)
+        b_g, b_a = est["gyro_bias"], est["accel_bias"]
     else:
-        raise ValueError(f"init_bias must be 'truth' or 'zero', got {opts.init_bias!r}")
+        raise ValueError(f"init_bias must be 'truth', 'zero' or 'static', got {mode!r}")
     if not opts.exact_init:
         # A stream of its own, so changing the GNSS seed does not move the start and vice versa.
         rng = np.random.default_rng(np.random.SeedSequence([opts.seed, 1]))
@@ -341,7 +416,8 @@ def _initial_state(seq: EurocSequence, opts: RunOptions, cfg: EskfConfig, t0: fl
 def run_sequence(seq: EurocSequence, opts: RunOptions | None = None) -> dict[str, Any]:
     """Run the ESKF on one sequence and return a result record shaped like the benchmark's."""
     opts = opts or RunOptions()
-    if opts.init_bias == "zero" and not (opts.bias_sigma and opts.bias_sigma > 0):
+    mode = opts.init_bias or ("truth" if seq.bias_known else "static")
+    if mode == "zero" and not (opts.bias_sigma and opts.bias_sigma > 0):
         # With a bias prior of zero the filter takes the zero start as exact and never estimates the
         # bias, so a real offset turns into a large, confident position error. Refuse instead.
         raise SequenceError("--init-bias zero needs a declared --bias-sigma greater than 0")
@@ -367,15 +443,19 @@ def run_sequence(seq: EurocSequence, opts: RunOptions | None = None) -> dict[str
     cfg_kwargs: dict[str, Any] = {}
     if opts.bias_sigma is not None:
         cfg_kwargs["initial_bias_sigma"] = opts.bias_sigma
+    base_noise = seq.noise if opts.noise_source == "file" else seq.noise_variants.get(opts.noise_source)
+    if base_noise is None:
+        known = ", ".join(["file", *seq.noise_variants])
+        raise SequenceError(f"{seq.name} has no noise source {opts.noise_source!r}; known: {known}")
     cfg = EskfConfig(
-        imu_noise=_filter_noise(seq.noise, opts),
+        imu_noise=_filter_noise(base_noise, opts),
         gnss_position_sigma_m=opts.gnss_sigma_m,
         vision_enabled=False,
         gravity=GRAVITY_Z_UP,
         process_noise_form=opts.process_noise,
         **cfg_kwargs,
     )
-    initial = _initial_state(seq, opts, cfg, float(imu.t[0]))
+    initial = _initial_state(seq, opts, cfg, float(imu.t[0]), mode, imu)
     result = ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, initial=initial)
     est = result.trajectory
 
@@ -384,15 +464,21 @@ def run_sequence(seq: EurocSequence, opts: RunOptions | None = None) -> dict[str
     ref_on_est = interpolate_trajectory(reference, est.t)
 
     record: dict[str, Any] = {
-        "name": f"euroc_{seq.name}",
-        "description": f"EuRoC {seq.name}: recorded IMU, ground-truth-derived GNSS",
+        "name": f"{seq.slug}_{seq.name}",
+        "description": f"{seq.dataset} {seq.name}: recorded IMU, ground-truth-derived GNSS",
+        "dataset": seq.dataset,
         "claim_type": MEASUREMENT,
         "data_class": DATA_CLASS,
-        "caveats": list(CAVEATS),
+        "caveats": [*CAVEATS, *([STATIC_BIAS_CAVEAT] if mode == "static" else [])],
         "navkit_version": __version__,
         "sequence": seq.name,
-        "inputs": {"sha256": seq.sha256, "noise_source": seq.noise_source, "notes": seq.notes},
-        "options": opts.as_dict(),
+        "inputs": {
+            "sha256": seq.sha256,
+            "noise_source": seq.noise_source,
+            "notes": seq.notes,
+            **({"static_bias": _static_summary(imu, seq.truth)} if mode == "static" else {}),
+        },
+        "options": {**opts.as_dict(), "init_bias": mode},
         "window_s": {"start": t_start - float(seq.imu.t[0]), "end": t_end - float(seq.imu.t[0])},
         "imu_samples": len(imu),
         "estimator": {"class": "ErrorStateKalmanFilter", **cfg.as_dict()},
@@ -549,6 +635,21 @@ def as_markdown(records: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+DATASETS = ("euroc", "tumvi")
+
+
+def dataset_loader(dataset: str) -> tuple[Callable[[str | Path, str], EurocSequence], str]:
+    """The sequence reader and the default data root for ``euroc`` or ``tumvi``."""
+    if dataset == "tumvi":
+        from .io.tumvi_fetch import DEFAULT_DEST
+        from .tumvi_data import load_sequence as load_tumvi  # here, not at the top: it imports this module
+
+        return load_tumvi, DEFAULT_DEST
+    if dataset == "euroc":
+        return load_sequence, DEFAULT_ROOT
+    raise SequenceError(f"unknown dataset {dataset!r}; known: {', '.join(DATASETS)}")
+
+
 def _run_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="navkit euroc run",
@@ -557,8 +658,9 @@ def _run_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--sequence", "-s", action="append", default=[], metavar="NAME", help=f"one of {', '.join(SEQUENCES)}"
     )
+    p.add_argument("--dataset", choices=DATASETS, default="euroc", help="which dataset the sequences belong to")
     p.add_argument(
-        "--root", default=DEFAULT_ROOT, help="where `navkit euroc fetch` wrote the files (default: %(default)s)"
+        "--root", default=None, help="where the fetch command wrote the files (default: the dataset's folder)"
     )
     p.add_argument("--outage", action="append", default=[], type=_parse_outage, metavar="START:DURATION")
     p.add_argument("--seed", type=int, default=0)
@@ -571,12 +673,17 @@ def _run_parser() -> argparse.ArgumentParser:
         help="named noise-scale and bias-prior settings (see PRESETS); explicit flags override it",
     )
     p.add_argument(
+        "--noise-source", default="file", help="which noise figures the dataset offers (TUM VI: file or allan)"
+    )
+    p.add_argument(
         "--noise-scale", type=float, default=None, help="multiplier on the filter's IMU noise model (default 1)"
     )
     p.add_argument(
         "--bias-walk-scale", type=float, default=None, help="further multiplier on the two bias random walks only"
     )
-    p.add_argument("--init-bias", choices=("truth", "zero"), default="truth")
+    p.add_argument(
+        "--init-bias", choices=("truth", "zero", "static"), default=None, help="default: truth if the data has it"
+    )
     p.add_argument(
         "--bias-sigma", type=float, default=None, help="declared initial bias 1-sigma (filter default if unset)"
     )
@@ -613,6 +720,7 @@ def _run(argv: list[str]) -> int:
         else preset.get("bias_walk_scale", 1.0),
         preset=args.preset,
         init_bias=args.init_bias,
+        noise_source=args.noise_source,
         bias_sigma=args.bias_sigma if args.bias_sigma is not None else preset.get("bias_sigma"),
         exact_init=args.exact_init,
         process_noise=args.process_noise,
@@ -620,13 +728,18 @@ def _run(argv: list[str]) -> int:
         duration_s=args.duration,
     )
     records: list[dict[str, Any]] = []
+    try:
+        loader, default_root = dataset_loader(args.dataset)
+    except SequenceError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
     for name in args.sequence:
         try:
-            record = run_sequence(load_sequence(args.root, name), opts)
+            record = run_sequence(loader(args.root or default_root, name), opts)
         except (SequenceError, FileNotFoundError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
-        out = Path(args.out) if args.out else Path("results") / f"euroc_{name}.json"
+        out = Path(args.out) if args.out else Path("results") / f"{record['name']}.json"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
         gc = record["gravity_check"]
