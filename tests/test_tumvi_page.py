@@ -16,6 +16,7 @@ from navkit import euroc_compare as ec
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = ROOT / "docs" / "tumvi.md"
 CSV = ROOT / "docs" / "data" / "tumvi_compare.csv"
+TIMING = ROOT / "docs" / "data" / "timing.csv"
 NOMINAL_COVERAGE = 0.9926
 
 
@@ -77,6 +78,18 @@ def test_claim_4_the_bias_walk_setting_is_close_to_nominal(rows):
     assert abs(_coverage(walk) - NOMINAL_COVERAGE) < 0.01
 
 
+def test_claim_5_the_ordering_also_holds_in_the_rooms_with_the_fewest_dropouts(rows):
+    import csv
+
+    with TIMING.open(newline="", encoding="utf-8") as fh:
+        gap = {r["sequence"]: float(r["truth_gap_fraction"]) for r in csv.DictReader(fh) if r["dataset"] == "TUM VI"}
+    gappy = {room for room, share in gap.items() if share > 0.05}
+    assert len(gappy) == 2  # the two rooms the page names
+    kept = [r for r in rows if r.sequence not in gappy]
+    assert len({r.sequence for r in kept}) == 4
+    assert _lost(_sel(kept, "allan")) > _lost(_sel(kept, "file")) > _lost(_sel(kept, "file-walk10"))
+
+
 def test_every_lost_run_of_a_non_baseline_setting_is_listed_on_the_page(rows):
     text = PAGE.read_text(encoding="utf-8")
     for r in rows:
@@ -91,6 +104,7 @@ def test_the_page_states_the_caveats_the_adr_requires():
         "not gnss-denied navigation",
         "start bias is estimated",
         "were not tuned on this dataset",
+        "motion capture has dropouts",
         "cc by 4.0",
         "runs can still fail",
     ):

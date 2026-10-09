@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1089<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.1<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1115<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.1<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -269,14 +269,14 @@ a technical one.
 - [x] System Requirements Specification (SRS) (`docs/product_management/01_system_requirements_spec.md`): the interface, the failure
       modes, the detection requirements from Track A, and the acceptance
       thresholds from Track B, written as testable requirements.
-- [ ] Sensor synchronisation and calibration specification: the timing model
-      between IMU, GNSS and camera streams; the time-offset handling; the
-      intrinsic and extrinsic calibration assumptions; what is measured on the
-      bench versus what is assumed in simulation.
+- [x] Sensor synchronisation and calibration specification
+      ([`docs/product_management/04_sensor_sync_and_calibration_spec.md`](docs/product_management/04_sensor_sync_and_calibration_spec.md)):
+      the timing model between IMU, GNSS and camera streams; the time-offset handling; the intrinsic and
+      extrinsic calibration assumptions; what is measured on the recordings versus what is assumed in simulation.
+      The recordings' timestamp regularity and ground-truth-to-IMU offset are measured, not assumed.
 - [x] The documents above live in `docs/product_management/`, together with the FDIR
       and spoofing strategy (`03_fdir_and_spoofing_strategy.md`). The risk log is
-      [`RISKS.md`](RISKS.md). Still missing: the sensor synchronisation specification
-      above and a work breakdown.
+      [`RISKS.md`](RISKS.md). Still missing: a work breakdown.
 
 **Exit test:** a reviewer can trace every requirement in the SRS to a test, a
 configuration, or an explicitly declared gap. The SRS has a traceability matrix
@@ -290,15 +290,15 @@ The next work is ordered by RICE score in [docs/prioritisation.md](docs/prioriti
 
 Where each item stands:
 
-- **Done:** P5-01 (noise-mismatch sweep), P5-02 (fault matrix), P5-04 (velocity process noise, bias sigmas), P5-08
-  (SRS traceability check), P5-10 (release hygiene), P5-13 (a TUM VI fetch path).
+- **Done:** P5-01 (noise-mismatch sweep), P5-02 (fault matrix), P5-04 (velocity process noise, bias sigmas), P5-07
+  (sensor synchronisation and calibration specification), P5-08 (SRS traceability check), P5-10 (release hygiene),
+  P5-13 (a TUM VI fetch path).
 - **Spike done, opt-in:** P5-03 (the stochastic clone, [ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)).
   Calibrated for independent visual errors, not for correlated ones. The shipped configuration is unchanged.
 - **Partly done:** P5-09 (the stale figures in docstrings are fixed; the baseline records are excluded from the site
   and not rewritten), P5-12 (the pull requests it names are closed; whether `uv.lock` stays is undecided).
 - **Not started:** P5-05 (rename the per-second drift keys, with an alias), P5-06 (the accelerometer-bias
-  falsification experiment, unblocked since P5-04), P5-07 (the sensor synchronisation specification; the EuRoC
-  and TUM VI recordings are now real evidence for it), P5-11 (a comparison with an established consistent
+  falsification experiment, unblocked since P5-04), P5-11 (a comparison with an established consistent
   estimator, which strains constraint S1).
 
 ---
