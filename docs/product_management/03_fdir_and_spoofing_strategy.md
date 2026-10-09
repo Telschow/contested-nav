@@ -62,7 +62,7 @@ an assumption.
 
 Jamming is also the only class that is a **benign** failure. A jammed receiver
 is telling the truth by being silent, and the correct response is to coast and
-then re-acquire. This is what OUN-01 covers and it is measured: 2.506 m ATE
+then re-acquire. This is what OUN-01 covers and it is measured: 2.322 m ATE
 through a 15 s denial.
 
 ### 1.2 Step-bias spoofing
@@ -378,7 +378,7 @@ success is not useful to the person deciding whether to rely on it.
 
 | # | Limitation | Impact | Status |
 |---|---|---|---|
-| L-1 | Calibration fails under visual aiding: NEES 391.2, 2σ coverage 20.0% against 95% required | The filter is confidently wrong through an outage. **Not an FDIR defect** — B1, needs a pose graph. | Open |
+| L-1 | Calibration fails under visual aiding: NEES 286.2, 2σ coverage 20.5% against 95% required | The filter is confidently wrong through an outage. **Not an FDIR defect** — B1, needs a pose graph. | Open |
 | L-2 | Gradual false-lock pulling is not detected | The most dangerous threat class is invisible to the current architecture | Open, ROADMAP |
 | L-3 | Jam-then-inject spoof is untested; after 15 s silence the bound admits 7.5 m against ~0.2 m of real platform drift | A provably-fake offset could be admitted | Open, highest priority probe |
 | L-4 | `max_drift_sigma_mps` = 0.5 is a single default, 33× loose for consumer MEMS and 7 500× for FOG | Spoof resistance is not matched to the installed hardware | Open, PM-SWAPC-002 action 2 |

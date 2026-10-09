@@ -16,13 +16,13 @@
   adaptive GNSS covariance inflation, which re-gates a returning fix once
   under an inflated covariance. ATE 5.059 m to 2.541 m and rejections 51 to 5,
   with the false-alarm rate unchanged. B1 is still open, see below.
-- **The filter is still overconfident under visual aiding.** Mean NEES 391.2
-  against a nominal 3, 2σ coverage 20.0% where the SRS requires 95% (AC-04) and the roadmap
+- **The filter is still overconfident under visual aiding.** Mean NEES 286.2
+  against a nominal 3, 2σ coverage 20.5% where the SRS requires 95% (AC-04) and the roadmap
   gate for turning vision on is above 90%. It converges and
   is confidently wrong. This is blocker B1, and it is a pose-graph problem that
   no threshold in the FDIR subsystem will move. Robust across 10 noise seeds
-  (worst case NEES 189.2, 6.8% coverage) and across all 8 scenes
-  (419.7 [414.4, 424.9], 20.0%).
+  (worst case NEES 113.5, 6.8% coverage) and across all 8 scenes
+  (286.4 [282.4, 290.2], 20.5%).
 
 - **ADR-0008 frozen-anchor cross-check: implemented but unreachable under the
   current state-transition logic; the security gap remains documented as open.**
@@ -41,13 +41,13 @@
   bound its behaviour on real imagery. Scenario duration remains fixed at 30 s.
 - **The outage window matters for accuracy, not for calibration.** The outage
   sweep (`navkit sweep outages`, 8 windows, 5 seeds each, one synthetic path)
-  gives `outage_visual` a 2-sigma coverage of 10.4% to 39.2% and a mean NEES of
-  61.5 to 10 322 in **all 40 runs**, including 5 s outages; `outage_control`
-  stays at 97.3% to 100.0% coverage in all 40. Accuracy is different. With the
+  gives `outage_visual` a 2-sigma coverage of 10.4% to 39.0% and a mean NEES of
+  40.0 to 8 353 in **all 40 runs**, including 5 s outages; `outage_control`
+  stays at 98.0% to 100.0% coverage in all 40. Accuracy is different. With the
   outage starting at 5 s, vision beats the control in all 5 seeds for 10 s, 15 s
-  and 20 s outages (ATE ratio 0.14 to 0.96) and in 2 of 5 for 5 s. With the outage
+  and 20 s outages (ATE ratio 0.14 to 0.89) and in 2 of 5 for 5 s. With the outage
   starting at 10 s, vision is **worse** than the control in all 20 runs (ATE
-  ratio 1.26 to 7.11). The cause is not tested here. So "vision improves ATE"
+  ratio 1.54 to 7.30). The cause is not tested here. So "vision improves ATE"
   is a property of the benchmark's early outage, not a general result.
 
   ![Outage sweep](figures/outage-sweep.png)

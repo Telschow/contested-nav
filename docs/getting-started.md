@@ -16,8 +16,8 @@ The last command prints the three rows that carry the headline result:
 | Scenario | ATE RMSE (m) | Claimed 1-sigma (m) | Mean NEES (exp. 3) | Coverage at 2 sigma | Verdict |
 | --- | ---: | ---: | ---: | ---: | --- |
 | gnss_only | 0.509 | 0.253 | 3.9 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
-| outage_control | 3.783 | 0.567 | 4.1 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
-| outage_visual | 2.506 | 0.161 | 391.2 | 20.0% | overconfident |
+| outage_control | 3.760 | 0.567 | 4.1 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
+| outage_visual | 2.322 | 0.162 | 286.2 | 20.5% | overconfident |
 ```
 
 **Timed from a fresh clone** on the machine that wrote this page (Python 3.13, a fast

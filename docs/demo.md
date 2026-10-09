@@ -35,7 +35,7 @@ frame), `results.json` (the benchmark record plus `trajectory_est` and `trajecto
 
 ## What the final frame must show
 
-ATE RMSE 2.506 m, claimed 1-sigma 0.161 m, mean NEES 391.2, coverage 20.0%, verdict
+ATE RMSE 2.322 m, claimed 1-sigma 0.162 m, mean NEES 286.2, coverage 20.5%, verdict
 overconfident. `tests/test_demo_generation.py` compares the demo's headline with the
 committed benchmark snapshot and fails on any difference.
 

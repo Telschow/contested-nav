@@ -14,14 +14,14 @@ an analytic trajectory. No number here is a field measurement.
 
 ## Why is visual fusion off by default?
 
-Because with GNSS denied it makes the filter confidently wrong: mean NEES 391.2 against an
-expected 3, and 20.0% coverage where 99.3% is expected. A caller who did not ask for that should
+Because with GNSS denied it makes the filter confidently wrong: mean NEES 286.2 against an
+expected 3, and 20.5% coverage where 99.3% is expected. A caller who did not ask for that should
 not receive it ([ADR-0003](adr/0003-ship-visual-disabled.md)).
 
 ## So does vision make the estimate more accurate or not?
 
 It depends on when the outage starts. In the benchmark's outage (5 s to 20 s) it lowers the
-error from 3.783 m to 2.506 m. In an outage sweep, vision beat the no-vision control in every seed
+error from 3.760 m to 2.322 m. In an outage sweep, vision beat the no-vision control in every seed
 for outages of 10 s or longer starting at 5 s, and was worse than the control in all 20 runs
 starting at 10 s. The overconfidence did not depend on the window at all. The cause of the
 timing dependence has not been tested. See [Results](results.md).
