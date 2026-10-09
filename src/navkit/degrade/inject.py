@@ -329,6 +329,11 @@ def inject(
                 name=vision.name,
             )
 
+    if scenario.vision.rereference and reference is not None:
+        from ..sensors.models import rereference_visual_updates
+
+        vision = rereference_visual_updates(vision, reference, scenario.vision, scenario.vision_time_offset_s)
+
     manifest = build_manifest(scenario, imu, gnss_off, vision, gyro_bias, accel_bias)
     return InjectedStreams(imu=imu, gnss=gnss_off, vision=vision, manifest=manifest)
 

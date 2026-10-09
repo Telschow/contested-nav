@@ -144,7 +144,7 @@ def golden() -> dict[str, Any]:
 
 
 def test_the_golden_file_covers_the_documented_cases(golden: dict[str, Any]) -> None:
-    assert len(golden["cases"]) == 7
+    assert len(golden["cases"]) == 11
 
 
 def test_the_same_cases_are_produced(snapshot: dict[str, Any], golden: dict[str, Any]) -> None:

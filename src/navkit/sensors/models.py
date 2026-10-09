@@ -70,6 +70,11 @@ class VisionConfig:
     # not a rendering-based model.
     noise_multiplier: float = 1.0
     seed: int = 0
+    # After frames are dropped, make each delivered measurement relative to the last *delivered* frame, as a
+    # front end tracking against its last keyframe would report. Off by default: the generator otherwise
+    # measures against the immediately preceding grid frame even when that frame was dropped, so a filter
+    # that compares with its last received frame is handed a measurement of a different transform.
+    rereference: bool = False
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -79,6 +84,7 @@ class VisionConfig:
             "trans_sigma_m": self.trans_sigma_m,
             "noise_multiplier": self.noise_multiplier,
             "seed": self.seed,
+            "rereference": self.rereference,
         }
 
 
@@ -221,3 +227,49 @@ def angular_rate_between(a: Trajectory, b: Trajectory) -> np.ndarray:
     out[:-1] = w
     out[-1] = w[-1]
     return out
+
+
+def rereference_visual_updates(
+    vision: VisionUpdate, reference: Trajectory, cfg: VisionConfig, time_offset_s: float = 0.0
+) -> VisionUpdate:
+    """Make each delivered measurement relative to the last delivered frame.
+
+    :func:`visual_updates` measures frame ``i`` against frame ``i - 1`` of the sampling grid. When frames
+    are dropped, the next delivered measurement is still against the dropped one, so a filter that compares
+    with the last frame it received is handed a measurement of a different transform. A front end that
+    tracks against its last keyframe would report the transform from that keyframe. This re-derives such a
+    measurement from the reference trajectory with a fresh draw of the same per-measurement noise, so its
+    error does not grow with the gap. A measurement whose predecessor was delivered is left untouched.
+    """
+    n = len(vision)
+    dropped = np.zeros(n, dtype=bool) if vision.dropped is None else vision.dropped.copy()
+    if n < 2 or not dropped.any():
+        return vision
+    t_grid = vision.t - float(time_offset_s)
+    poses = interpolate_trajectory(reference, t_grid).poses
+    rng = np.random.default_rng(cfg.seed + 7919)  # a stream of its own: the original draws are not disturbed
+    rot_sigma = np.deg2rad(cfg.rot_sigma_deg) * cfg.noise_multiplier
+    trans_sigma = cfg.trans_sigma_m * cfg.noise_multiplier
+    R_rel, t_rel = vision.R_rel.copy(), vision.t_rel.copy()
+    previous: int | None = None
+    for i in range(n):
+        if dropped[i]:
+            continue
+        if previous is not None and previous != i - 1:
+            R_j, R_i = poses[previous][:3, :3], poses[i][:3, :3]
+            p_j, p_i = poses[previous][:3, 3], poses[i][:3, 3]
+            R_rel[i] = (R_j.T @ R_i) @ rot_exp(rng.standard_normal(3) * rot_sigma)
+            direction = rng.standard_normal(3)
+            norm = float(np.linalg.norm(direction))
+            direction = direction / norm if norm > 1e-9 else np.array([1.0, 0.0, 0.0])
+            t_rel[i] = R_j.T @ (p_i - p_j) + direction * (rng.standard_normal() * trans_sigma)
+        previous = i
+    return VisionUpdate(
+        t=vision.t.copy(),
+        R_rel=R_rel,
+        t_rel=t_rel,
+        rot_cov=vision.rot_cov,
+        trans_cov=vision.trans_cov,
+        dropped=dropped,
+        name=vision.name,
+    )
