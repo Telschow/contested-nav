@@ -102,6 +102,7 @@ nav:
       - Scenarios: scenarios.md
       - Noise mismatch: mismatch.md
       - Fault matrix: faults.md
+      - EuRoC, recorded IMU: euroc.md
       - Performance: PERFORMANCE.md
       - Demo: demo.md
   - Reference:

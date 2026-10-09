@@ -1,6 +1,7 @@
 """Compare filter settings across fetched EuRoC sequences, one GNSS outage at a time.
 
     navkit euroc compare --markdown
+    navkit euroc compare --csv docs/data/euroc_compare.csv --page docs/euroc.md
     navkit euroc compare --sequence MH_01_easy --sequence V1_01_easy --starts 15,35 --seeds 2 \\
         --csv results/euroc_compare.csv --json results/euroc_compare.json
 
@@ -236,6 +237,69 @@ def as_markdown(rows: list[Row], threshold: float) -> str:
     return "\n".join(lines)
 
 
+def rows_from_csv(path: str | Path) -> list[Row]:
+    """Read the per-run CSV written by ``--csv``. Used to check a page against the committed copy."""
+    rows: list[Row] = []
+    with Path(path).open(newline="", encoding="utf-8") as fh:
+        for rec in csv.DictReader(fh):
+            rows.append(
+                Row(
+                    sequence=rec["sequence"],
+                    config=rec["config"],
+                    start_s=float(rec["start_s"]),
+                    outage_s=float(rec["outage_s"]),
+                    seed=int(rec["seed"]),
+                    gnss_fixes_seen=float(rec["gnss_fixes_seen"]),
+                    gnss_rejected=float(rec["gnss_rejected"]),
+                    rejected_fraction=float(rec["rejected_fraction"]),
+                    lost=rec["lost"] == "True",
+                    fdir_faulted=rec["fdir_faulted"] == "True",
+                    nees_mean=float(rec["nees_mean"]),
+                    coverage_2sigma=float(rec["coverage_2sigma"]),
+                    ate_rmse_m=float(rec["ate_rmse_m"]),
+                    max_position_error_m=float(rec["max_position_error_m"]),
+                )
+            )
+    return rows
+
+
+def failing_runs_markdown(rows: list[Row], config: str = "preset") -> str:
+    """The runs of one configuration that were lost. Listing them is part of quoting the result."""
+    lost = [r for r in rows if r.config == config and r.lost]
+    if not lost:
+        return f"No run was lost with `{config}`."
+    lines = [
+        f"Runs still lost with `{config}`:",
+        "",
+        "| Sequence | Outage start s | Seed | GNSS fixes rejected | Max position error m |",
+        "|---|---:|---:|---:|---:|",
+    ]
+    for r in lost:
+        rejected = f"{100 * r.rejected_fraction:.0f}%"
+        lines.append(f"| {r.sequence} | {r.start_s:g} | {r.seed} | {rejected} | {r.max_position_error_m:.1f} |")
+    return "\n".join(lines)
+
+
+def page_block(rows: list[Row], threshold: float) -> str:
+    """What goes between the markers of ``docs/euroc.md``."""
+    return as_markdown(rows, threshold) + "\n\n" + failing_runs_markdown(rows)
+
+
+PAGE_MARKERS = ("<!-- euroc:start -->", "<!-- euroc:end -->")
+
+
+def write_page(path: str | Path, block: str) -> None:
+    """Replace the text between the page markers. Refuses a page without them."""
+    page = Path(path)
+    text = page.read_text(encoding="utf-8")
+    start, end = PAGE_MARKERS
+    if start not in text or end not in text or text.index(start) > text.index(end):
+        raise CompareError(f"{page} needs the lines {start} and {end}, in that order")
+    head, rest = text.split(start, 1)
+    _, tail = rest.split(end, 1)
+    page.write_text(f"{head}{start}\n\n{block}\n\n{end}{tail}", encoding="utf-8")
+
+
 def provenance(root: str | Path, sequences: list[str]) -> dict[str, Any]:
     """The input hashes of every sequence used, read from the fetch manifest when it has them."""
     path = Path(root) / "MANIFEST.json"
@@ -307,36 +371,48 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_LOST_THRESHOLD,
         help="fraction of GNSS fixes rejected above which a run counts as lost (default: %(default)s)",
     )
+    p.add_argument("--from-csv", default=None, help="rebuild the table and page from a saved --csv file; no runs")
     p.add_argument("--csv", default=None, help="write one row per run")
     p.add_argument("--json", default=None, help="write the full record with provenance")
+    p.add_argument("--page", default=None, help="fill the table between the euroc markers of this Markdown page")
     p.add_argument("--markdown", action="store_true", help="print the summary table")
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    sequences = args.sequence or fetched_sequences(args.root)
-    if not sequences:
-        print(
-            f"error: no EuRoC sequences under {args.root}. Fetch some with: navkit euroc fetch --sequence MH_01_easy",
-            file=sys.stderr,
-        )
-        return 1
-    configs = tuple(c.strip() for c in args.configs.split(",") if c.strip())
-    try:
-        rows, skipped = compare(
-            args.root,
-            sequences,
-            configs,
-            args.starts,
-            args.outage,
-            args.seeds,
-            args.lost_threshold,
-            log=lambda m: print(m, file=sys.stderr, flush=True),
-        )
-    except (CompareError, SequenceError) as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
+    skipped: dict[str, str] = {}
+    sequences: list[str] = []
+    if args.from_csv:
+        if args.json:
+            print("error: --json needs a real run, not --from-csv", file=sys.stderr)
+            return 1
+        rows = rows_from_csv(args.from_csv)
+        if not rows:
+            print(f"error: {args.from_csv} has no rows", file=sys.stderr)
+            return 1
+        configs: tuple[str, ...] = ()
+    else:
+        sequences = args.sequence or fetched_sequences(args.root)
+        if not sequences:
+            hint = "navkit euroc fetch --sequence MH_01_easy"
+            print(f"error: no EuRoC sequences under {args.root}. Fetch some with: {hint}", file=sys.stderr)
+            return 1
+        configs = tuple(c.strip() for c in args.configs.split(",") if c.strip())
+        try:
+            rows, skipped = compare(
+                args.root,
+                sequences,
+                configs,
+                args.starts,
+                args.outage,
+                args.seeds,
+                args.lost_threshold,
+                log=lambda m: print(m, file=sys.stderr, flush=True),
+            )
+        except (CompareError, SequenceError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
     for name, reason in skipped.items():
         print(f"skipped {name}: {reason}", file=sys.stderr)
     if args.csv:
@@ -362,7 +438,14 @@ def main(argv: list[str] | None = None) -> int:
             encoding="utf-8",
         )
         print(f"wrote {path}", file=sys.stderr)
-    if args.markdown or not (args.csv or args.json):
+    if args.page:
+        try:
+            write_page(args.page, page_block(rows, args.lost_threshold))
+        except CompareError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"wrote {args.page}", file=sys.stderr)
+    if args.markdown or not (args.csv or args.json or args.page):
         print(as_markdown(rows, args.lost_threshold))
     return 0
 

@@ -314,11 +314,12 @@ snapshot.
    second, and the dimensionally correct unit is m/sqrt(s) and deg/sqrt(s).
 3. **`initial_bias_sigma` is one number for two units.** It sets the initial standard
    deviation of the gyro bias (rad/s) and of the accelerometer bias (m/s^2).
-4. **No process noise on velocity.** `_process_noise` adds the rate-noise terms to the
-   attitude and position blocks only, in a `dt^3/3` form, and the bias random walks as
-   `sigma^2 dt`. The velocity block receives none. In Phase 1 the golden snapshot was found insensitive to
-   the accelerometer and gyro terms at the 5 ms step, so benchmark results do not depend
-   on them; a different IMU or step could.
+4. **Process noise on velocity was missing, and the default now has it.** The `legacy` form of
+   `_process_noise` added the rate-noise terms to the attitude and position blocks only, in a `dt^3/3`
+   form, and none to velocity. The default `textbook` form adds `sigma_a^2 dt` to velocity with the
+   matching position terms, and `sigma_g^2 dt` to attitude ([ADR-0014](adr/0014-textbook-imu-process-noise-by-default.md)).
+   The bias random walks are `sigma^2 dt` in both. The benchmark results move little between the two
+   forms because the synthetic IMU noise is small and the aiding is frequent.
 5. **The filter is told the true sensor noise** unless the scale keys are set. The
    scenario's GNSS and vision sigmas feed both the generator and the filter. Mismatched
    noise is not exercised by any benchmark case; `navkit sweep mismatch` measures it
