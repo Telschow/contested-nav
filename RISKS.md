@@ -43,12 +43,15 @@ deliberate decision to live with it). A risk's status changes only with evidence
 
 ### R2. Visual fusion is overconfident under GNSS denial
 - **Cause and effect.** The single-anchor filter cannot represent correlated visual drift, so
-  it reports a small uncertainty while being wrong (headline case: NEES 419.4 against an
-  expected 3, coverage 20.0%).
+  it reports a small uncertainty while being wrong (headline case: the `outage_visual` row in
+  [Results](docs/results.md), mean NEES in the hundreds against an expected 3).
 - **In place.** `vision_enabled` ships off ([ADR-0003](docs/adr/0003-ship-visual-disabled.md));
   the failing case is a benchmark row and a pinned test, not a hidden one.
-- **Status reason.** Accepted: it is the project's subject. The fix is P5-03 and is not
-  scheduled, because its confidence is low and its effort high.
+- **Status reason.** Accepted: it is the project's subject. A stochastic clone of the previous pose is
+  calibrated on the fixture when the visual errors are independent, and is kept opt-in
+  ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)): it is not calibrated when they are
+  correlated over a couple of seconds, and no data here says which a real front end has. So the shipped
+  configuration is unchanged and the risk stays accepted.
 - **Early warning.** Any change that moves the NEES or coverage of `outage_visual`.
 
 ### R3. Estimator and generator share a conceptual error
@@ -58,7 +61,10 @@ deliberate decision to live with it). A risk's status changes only with evidence
   kinematics; Jacobians are checked against finite differences; the filter is told the true
   noise, which is itself a weakness (MODEL.md finding 5).
 - **Next.** P5-01 breaks the "filter knows the true noise" assumption. P5-11 would add an
-  independent estimator. Neither is done.
+  independent estimator; it is not done. The stochastic clone is a live example: it is calibrated against a
+  visual surrogate whose errors are independent, the assumption the filter makes, and it fails when the
+  generator's errors are correlated. The stress cases in the benchmark push on that; a real front end would
+  settle it.
 
 ### R4. A secret reaches the repository history
 - **What happened.** A provider API key was committed in an early commit. It was rotated by

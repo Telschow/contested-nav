@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+from navkit import euroc_cli
 from navkit import euroc_compare as ec
 from navkit import euroc_eval as ee
 
@@ -160,9 +161,9 @@ def test_cli_rejects_an_unknown_config_and_bad_numbers(root, capsys):
 
 
 def test_the_command_is_routed_from_navkit_euroc(root, capsys):
-    assert ee.main(["compare", "--root", str(root), "-s", MH, *ARGS, "--configs", "default"]) == 0
+    assert euroc_cli.main(["compare", "--root", str(root), "-s", MH, *ARGS, "--configs", "default"]) == 0
     assert "| all | default | 1 |" in capsys.readouterr().out
-    assert ee.main(["--help"]) == 0
+    assert euroc_cli.main(["--help"]) == 0
     assert "compare" in capsys.readouterr().err
 
 

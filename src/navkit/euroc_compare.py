@@ -459,6 +459,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     skipped: dict[str, str] = {}
     sequences: list[str] = []
+    root = args.root or ""  # replaced by the dataset's folder when a real run starts; unused with --from-csv
     if args.from_csv:
         if args.json:
             print("error: --json needs a real run, not --from-csv", file=sys.stderr)

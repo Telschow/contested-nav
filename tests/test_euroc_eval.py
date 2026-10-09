@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from navkit import euroc_cli
 from navkit import euroc_eval as ee
 from navkit.cli import main as cli_main
 from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig, InitialState
@@ -258,7 +259,9 @@ def test_run_without_initial_still_starts_at_the_origin():
 
 def test_run_writes_a_result_file_and_a_table(root, tmp_path, capsys):
     out = tmp_path / "r.json"
-    code = ee.main(["run", "--root", str(root), "-s", NAME, "--outage", "15:10", "--out", str(out), "--markdown"])
+    code = euroc_cli.main(
+        ["run", "--root", str(root), "-s", NAME, "--outage", "15:10", "--out", str(out), "--markdown"]
+    )
     assert code == 0
     record = json.loads(out.read_text())
     assert record["options"]["outages"] == [[15.0, 10.0]]
@@ -268,43 +271,43 @@ def test_run_writes_a_result_file_and_a_table(root, tmp_path, capsys):
 
 def test_the_preset_sets_noise_scale_and_bias_sigma_and_flags_override_it(root, tmp_path):
     out = tmp_path / "p.json"
-    assert ee.main(["run", "--root", str(root), "-s", NAME, "--preset", "adis16448", "--out", str(out)]) == 0
+    assert euroc_cli.main(["run", "--root", str(root), "-s", NAME, "--preset", "adis16448", "--out", str(out)]) == 0
     opts = json.loads(out.read_text())["options"]
     assert (opts["preset"], opts["noise_scale"], opts["bias_sigma"]) == ("adis16448", 3.0, 0.05)
     assert (
-        ee.main(
+        euroc_cli.main(
             ["run", "--root", str(root), "-s", NAME, "--preset", "adis16448", "--noise-scale", "2", "--out", str(out)]
         )
         == 0
     )
     assert json.loads(out.read_text())["options"]["noise_scale"] == 2.0
-    assert ee.main(["run", "--root", str(root), "-s", NAME, "--out", str(out)]) == 0
+    assert euroc_cli.main(["run", "--root", str(root), "-s", NAME, "--out", str(out)]) == 0
     opts = json.loads(out.read_text())["options"]
     assert (opts["preset"], opts["noise_scale"], opts["bias_sigma"]) == (None, 1.0, None)
 
 
 def test_run_without_a_fetched_sequence_exits_with_the_fetch_hint(tmp_path, capsys):
-    assert ee.main(["run", "--root", str(tmp_path), "-s", "MH_01_easy"]) == 1
+    assert euroc_cli.main(["run", "--root", str(tmp_path), "-s", "MH_01_easy"]) == 1
     assert "navkit euroc fetch" in capsys.readouterr().err
 
 
 def test_bad_outage_syntax_is_a_usage_error(root):
     with pytest.raises(SystemExit):
-        ee.main(["run", "--root", str(root), "-s", NAME, "--outage", "15"])
+        euroc_cli.main(["run", "--root", str(root), "-s", NAME, "--outage", "15"])
 
 
 def test_out_with_two_sequences_is_refused(root, capsys):
-    assert ee.main(["run", "--root", str(root), "-s", NAME, "-s", "MH_01_easy", "--out", "x.json"]) == 2
+    assert euroc_cli.main(["run", "--root", str(root), "-s", NAME, "-s", "MH_01_easy", "--out", "x.json"]) == 2
 
 
 def test_euroc_command_is_routed_from_the_cli(capsys):
     assert cli_main(["euroc"]) == 2
     assert "fetch" in capsys.readouterr().err
-    assert ee.main(["--help"]) == 0
+    assert euroc_cli.main(["--help"]) == 0
 
 
 def test_selftest_runs_without_any_download(capsys):
-    assert ee.main(["selftest"]) == 0
+    assert euroc_cli.main(["selftest"]) == 0
     out = capsys.readouterr().out
     assert "FIXTURE_z_up" in out and "not the filter on real data" in out
 
@@ -332,13 +335,15 @@ def test_bias_walk_scale_is_recorded_and_changes_the_claimed_uncertainty(seq):
 
 def test_the_cli_takes_bias_walk_scale(root, tmp_path):
     out = tmp_path / "w.json"
-    assert ee.main(["run", "--root", str(root), "-s", NAME, "--bias-walk-scale", "4", "--out", str(out)]) == 0
+    assert euroc_cli.main(["run", "--root", str(root), "-s", NAME, "--bias-walk-scale", "4", "--out", str(out)]) == 0
     assert json.loads(out.read_text())["options"]["bias_walk_scale"] == 4.0
 
 
 def test_the_walk_preset_scales_only_the_bias_walks(root, tmp_path):
     out = tmp_path / "w.json"
-    assert ee.main(["run", "--root", str(root), "-s", NAME, "--preset", "adis16448-walk", "--out", str(out)]) == 0
+    assert (
+        euroc_cli.main(["run", "--root", str(root), "-s", NAME, "--preset", "adis16448-walk", "--out", str(out)]) == 0
+    )
     opts = json.loads(out.read_text())["options"]
     assert (opts["preset"], opts["noise_scale"], opts["bias_walk_scale"], opts["bias_sigma"]) == (
         "adis16448-walk",

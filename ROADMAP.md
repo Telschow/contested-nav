@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1087<!-- /metric --> tests collected and <!-- metric:coverage_percent -->93.6<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1089<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.1<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -274,8 +274,9 @@ a technical one.
       intrinsic and extrinsic calibration assumptions; what is measured on the
       bench versus what is assumed in simulation.
 - [x] The documents above live in `docs/product_management/`, together with the FDIR
-      and spoofing strategy (`03_fdir_and_spoofing_strategy.md`). Still missing: the
-      sensor synchronisation specification above, a risk log, and a work breakdown.
+      and spoofing strategy (`03_fdir_and_spoofing_strategy.md`). The risk log is
+      [`RISKS.md`](RISKS.md). Still missing: the sensor synchronisation specification
+      above and a work breakdown.
 
 **Exit test:** a reviewer can trace every requirement in the SRS to a test, a
 configuration, or an explicitly declared gap. The SRS has a traceability matrix
@@ -286,6 +287,19 @@ roll-up counts follow from the verdicts. The check is structural; it does not re
 ## Phase 5 backlog
 
 The next work is ordered by RICE score in [docs/prioritisation.md](docs/prioritisation.md). The inputs are judgements, and the page shows how stable the order is.
+
+Where each item stands:
+
+- **Done:** P5-01 (noise-mismatch sweep), P5-02 (fault matrix), P5-04 (velocity process noise, bias sigmas), P5-08
+  (SRS traceability check), P5-10 (release hygiene), P5-13 (a TUM VI fetch path).
+- **Spike done, opt-in:** P5-03 (the stochastic clone, [ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)).
+  Calibrated for independent visual errors, not for correlated ones. The shipped configuration is unchanged.
+- **Partly done:** P5-09 (the stale figures in docstrings are fixed; the baseline records are excluded from the site
+  and not rewritten), P5-12 (the pull requests it names are closed; whether `uv.lock` stays is undecided).
+- **Not started:** P5-05 (rename the per-second drift keys, with an alias), P5-06 (the accelerometer-bias
+  falsification experiment, unblocked since P5-04), P5-07 (the sensor synchronisation specification; the EuRoC
+  and TUM VI recordings are now real evidence for it), P5-11 (a comparison with an established consistent
+  estimator, which strains constraint S1).
 
 ---
 

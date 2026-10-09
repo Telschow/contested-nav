@@ -28,10 +28,10 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from .euroc_eval import EurocSequence, SequenceError, _sha256
 from .io.imu import DEFAULT_NOISE, ImuNoiseModel, read_euroc_imu
 from .io.trajectory import read_trajectory
 from .io.tumvi_fetch import IMU_CSV, NOISE_YAML, SEQUENCES, TRUTH_CSV
+from .recorded import GRAVITY_Z_UP, EurocSequence, SequenceError, sha256_of
 from .types import ImuSample, Trajectory
 
 DATASET = "TUM VI"
@@ -131,7 +131,7 @@ def load_sequence(root: str | Path, name: str) -> EurocSequence:
         notes.append("imu_config.yaml missing or incomplete; the project default noise is used")
     else:
         source = "imu_config.yaml (inflated by its authors: white noise x2, bias random walk x10)"
-    hashes = {rel: _sha256(base / rel) for rel in (IMU_CSV, TRUTH_CSV) if (base / rel).is_file()}
+    hashes = {rel: sha256_of(base / rel) for rel in (IMU_CSV, TRUTH_CSV) if (base / rel).is_file()}
     return EurocSequence(
         name=name,
         imu=imu,
@@ -170,7 +170,6 @@ def write_fixture(
     of the real one: inflated active figures, with the raw figures in the comments. It says nothing about
     the filter on real data.
     """
-    from .euroc_eval import GRAVITY_Z_UP
     from .geometry.rigid import matrix_to_quat
     from .synthetic import SyntheticConfig, analytic_kinematics, analytic_pose
 

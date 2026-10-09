@@ -29,7 +29,7 @@ from collections.abc import Callable
 from . import (
     __version__,
     benchmark,
-    euroc_eval,
+    euroc_cli,
     fault_matrix,
     figures,
     mismatch_sweep,
@@ -86,7 +86,7 @@ _COMMANDS: dict[str, tuple[Callable[[list[str] | None], int], str]] = {
     ),
     "figures": (figures.main, "render the benchmark figures from a result JSON"),
     "tumvi": (_tumvi, "fetch TUM VI room sequences (CC BY 4.0); run them with `navkit euroc run --dataset tumvi`"),
-    "euroc": (euroc_eval.main, "fetch EuRoC sequences and run the filter on them (recorded IMU, simulated GNSS)"),
+    "euroc": (euroc_cli.main, "fetch EuRoC sequences and run the filter on them (recorded IMU, simulated GNSS)"),
 }
 
 

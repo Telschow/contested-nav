@@ -36,12 +36,11 @@ field performance.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import sys
 import tempfile
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -57,16 +56,12 @@ from .eval.calibration import normalized_error_squared, summarise
 from .eval.metrics import ate_bundle, outage_summary, relative_pose_error
 from .geometry.rigid import matrix_to_quat, quat_to_matrix, rot_exp
 from .io.euroc_fetch import IMU_CSV, IMU_SENSOR, SEQUENCES, TRUTH_CSV
-from .io.euroc_fetch import main as fetch_main
 from .io.imu import DEFAULT_NOISE, ImuNoiseModel, read_euroc_imu
 from .io.trajectory import _read_rows
+from .recorded import GRAVITY_Z_UP, EurocSequence, SequenceError, sha256_of
 from .sensors.models import GnssConfig, gnss_fixes
 from .synthetic import SyntheticConfig, analytic_kinematics, analytic_pose
 from .types import GRAVITY, ImuSample, Trajectory, interpolate_trajectory
-
-#: Gravity vector of a z-up world, in the sign convention of ``ErrorStateKalmanFilter``
-#: (``a_world = R @ specific_force + g``).
-GRAVITY_Z_UP = -GRAVITY
 
 DEFAULT_ROOT = "data/raw/euroc"
 
@@ -113,42 +108,7 @@ _GRAVITY_ANGLE_WARN_DEG = 5.0
 _GRAVITY_NORM_WARN_M_S2 = 0.5
 
 
-class SequenceError(ValueError):
-    """The files of a sequence are missing or do not look like EuRoC data."""
-
-
 # ------------------------------------------------------------------------ loading
-
-
-@dataclass
-class EurocSequence:
-    """One sequence in memory. Time is in seconds from the first IMU sample."""
-
-    name: str
-    imu: ImuSample
-    truth: Trajectory
-    velocity: np.ndarray  # (N, 3) world frame, on truth.t
-    gyro_bias: np.ndarray  # (N, 3), on truth.t
-    accel_bias: np.ndarray  # (N, 3), on truth.t
-    noise: ImuNoiseModel
-    noise_source: str
-    sha256: dict[str, str] = field(default_factory=dict)
-    notes: list[str] = field(default_factory=list)
-    #: Which dataset this is, and the short name used in result file names.
-    dataset: str = "EuRoC MAV"
-    slug: str = "euroc"
-    #: False when the ground truth carries no bias columns, so the start bias cannot come from it.
-    bias_known: bool = True
-    #: Other noise figures the dataset supplies, selectable with ``RunOptions.noise_source``.
-    noise_variants: dict[str, ImuNoiseModel] = field(default_factory=dict)
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as fh:
-        while chunk := fh.read(1 << 20):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def read_noise(sensor_yaml: Path) -> tuple[ImuNoiseModel, str]:
@@ -215,7 +175,7 @@ def load_sequence(root: str | Path, name: str) -> EurocSequence:
         raise SequenceError(f"{name}: the IMU and ground-truth time spans do not overlap")
 
     noise, source = read_noise(base / IMU_SENSOR)
-    hashes = {rel: _sha256(base / rel) for rel in (IMU_CSV, TRUTH_CSV)}
+    hashes = {rel: sha256_of(base / rel) for rel in (IMU_CSV, TRUTH_CSV)}
     return EurocSequence(
         name=name,
         imu=imu,
@@ -700,7 +660,7 @@ def _run_parser() -> argparse.ArgumentParser:
     return p
 
 
-def _run(argv: list[str]) -> int:
+def run_command(argv: list[str]) -> int:
     args = _run_parser().parse_args(argv)
     if not args.sequence:
         print("give at least one --sequence NAME", file=sys.stderr)
@@ -764,9 +724,9 @@ def _run(argv: list[str]) -> int:
     return 0
 
 
-def _selftest(argv: list[str]) -> int:
+def selftest_command(argv: list[str]) -> int:
     """Write a synthetic sequence in the EuRoC layout and run the whole pipeline on it."""
-    parser = argparse.ArgumentParser(prog="navkit euroc selftest", description=_selftest.__doc__)
+    parser = argparse.ArgumentParser(prog="navkit euroc selftest", description=selftest_command.__doc__)
     parser.add_argument("--keep", metavar="DIR", help="write the fixture here and keep it")
     args = parser.parse_args(argv)
     with tempfile.TemporaryDirectory() as tmp:
@@ -778,26 +738,3 @@ def _selftest(argv: list[str]) -> int:
         print(f"gravity check: angle to vertical {gc['angle_to_vertical_deg']:.2f} deg, warning={gc['warning']}")
         print("This is a synthetic sequence in the EuRoC layout. It checks the pipeline, not the filter on real data.")
     return 0
-
-
-def main(argv: list[str] | None = None) -> int:
-    """Route ``navkit euroc fetch|run|selftest``."""
-    args = list(sys.argv[1:] if argv is None else argv)
-    from .euroc_compare import main as compare_main  # here, not at the top: it imports this module
-
-    commands = {"fetch": fetch_main, "run": _run, "compare": compare_main, "selftest": _selftest}
-    if not args or args[0] in ("-h", "--help") or args[0] not in commands:
-        usage = "usage: navkit euroc {fetch,run,compare,selftest} [options]"
-        kinds = (
-            "  fetch     download the IMU and ground-truth files of a sequence (needs network)",
-            "  run       run the filter on a fetched sequence, GNSS simulated from its ground truth",
-            "  compare   run several filter settings over the fetched sequences and count lost runs",
-            "  selftest  run the whole pipeline on a synthetic sequence in the EuRoC layout",
-        )
-        print("\n".join((usage, *kinds)), file=sys.stderr)
-        return 0 if args and args[0] in ("-h", "--help") else 2
-    return commands[args[0]](args[1:])
-
-
-if __name__ == "__main__":  # pragma: no cover
-    raise SystemExit(main())

@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from navkit import euroc_cli
 from navkit import euroc_compare as ec
 from navkit import euroc_eval as ee
 from navkit import tumvi_data as td
@@ -172,12 +173,12 @@ def test_euroc_sequences_have_no_allan_figures(tmp_path):
 
 def test_the_run_command_takes_the_dataset_and_writes_a_tumvi_named_file(root, tmp_path, capsys):
     out = tmp_path / "r.json"
-    code = ee.main(
+    code = euroc_cli.main(
         ["run", "--dataset", "tumvi", "--root", str(root), "-s", NAME, "--bias-sigma", "0.05", "--out", str(out)]
     )
     assert code == 0 and json.loads(out.read_text())["dataset"] == "TUM VI"
     assert "room1: ATE RMSE" in capsys.readouterr().out
-    assert ee.main(["run", "--dataset", "tumvi", "--root", str(root), "-s", "room3"]) == 1
+    assert euroc_cli.main(["run", "--dataset", "tumvi", "--root", str(root), "-s", "room3"]) == 1
 
 
 def test_an_unknown_dataset_is_an_error():
