@@ -40,6 +40,13 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Changed
 
+- The initial IMU bias sigmas are read ([ADR-0015](docs/adr/0015-initial-imu-bias-sigmas-are-read.md), proposed).
+  `gyro_bias_sigma` and `accel_bias_sigma` were accepted and read by nothing. The generator now draws an initial
+  bias from each, on its own random stream, and the benchmark filter is told the same sigmas through the new
+  `initial_gyro_bias_sigma` and `initial_accel_bias_sigma`, which fall back to `initial_bias_sigma` when unset.
+  The synthetic numbers move, most for the vision cases, and no verdict changes. The golden snapshot, the
+  tables, the sweeps and the figures were regenerated. One fault-matrix count moved: the 22 m GNSS spoof after an
+  outage earned an inflation grant in one seed of five before and in none after.
 - `ErrorStateKalmanFilter` now defaults to `process_noise_form="textbook"` ([ADR-0014](docs/adr/0014-textbook-imu-process-noise-by-default.md)):
   IMU white noise enters the process covariance as `sigma_g^2 dt` on attitude and `sigma_a^2 dt` on velocity
   with the matching position terms. The earlier form had no velocity term and used `dt^3 / 3` on attitude, and
@@ -60,11 +67,16 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Found, not fixed
 
-- `navkit.types.finite_difference` returns twice the slope at interior samples for a first derivative (a ramp of
-  slope 2 gives 4); the ends and the second derivative are right. `Trajectory.velocities()` inherits it. Nothing
-  in the benchmark calls it. `tests/test_known_gaps.py` holds a strict `xfail`.
 - The synthetic IMU uses the opposite gravity sign to a physical z-up accelerometer. The EuRoC path passes
   gravity explicitly; a test shows the default would be wrong by orders of magnitude on a physical IMU.
+- The FDIR layer's "channel faulted" flag misses long runs of rejected GNSS fixes: some EuRoC runs reject hundreds
+  of fixes and are never declared faulty (ADR-0014).
+
+### Fixed
+
+- `navkit.types.finite_difference` returned twice the slope at interior samples for a first derivative (a ramp of
+  slope 2 gave 4). Interior points now use the central difference over their two neighbours, exact for a line on
+  a non-uniform grid. `Trajectory.velocities()` inherited the defect; nothing in the benchmark called it.
 
 ## [0.2.0] - 2026-10-08
 

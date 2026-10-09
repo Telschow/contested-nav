@@ -111,7 +111,9 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 | `initial_pos_sigma_m` | m | `1.0` | 1-sigma of the initial position error. |
 | `initial_vel_sigma_m_s` | m/s | `0.5` | 1-sigma of the initial velocity error. |
 | `initial_rot_sigma_deg` | deg | `2.0` | 1-sigma of the initial attitude error. |
-| `initial_bias_sigma` | rad/s and m/s^2 | `0.0` | One value used for both the gyro-bias and accel-bias states, so its unit differs between them. |
+| `initial_bias_sigma` | rad/s and m/s^2 | `0.0` | One value used for both the gyro-bias and accel-bias states, so its unit differs between them. Used for a bias whose own key below is unset. |
+| `initial_gyro_bias_sigma` | rad/s | `None` | Initial 1-sigma of the gyro bias alone. `None` uses `initial_bias_sigma`. |
+| `initial_accel_bias_sigma` | m/s^2 | `None` | Initial 1-sigma of the accelerometer bias alone. `None` uses `initial_bias_sigma`. |
 | `process_noise_form` | none | `'textbook'` | How IMU white noise enters the process covariance. `legacy` puts `sigma_a^2 dt^3/3` on position and `sigma_g^2 dt^3/3` on attitude and has no velocity term. `textbook` uses `sigma_g^2 dt` on attitude and `sigma_a^2 dt` on velocity with the matching position terms. `textbook` is the default since [ADR-0014](adr/0014-textbook-imu-process-noise-by-default.md); `legacy` reproduces the earlier numbers. |
 
 ### Fault detection: `FdirConfig`
@@ -150,8 +152,8 @@ accelerometer bias walk 1e-4, in the units below).
 | `accel_noise_density` | m/s^2/sqrt(Hz) | `0.0` | Accelerometer white noise. |
 | `gyro_bias_rw` | rad/s per sqrt(s) | `0.0` | Gyro bias random walk. Q adds rw^2 dt per step. |
 | `accel_bias_rw` | m/s^2 per sqrt(s) | `0.0` | Accelerometer bias random walk. Q adds rw^2 dt per step. |
-| `gyro_bias_sigma` | rad/s | `0.0` | Accepted, scaled and hashed, but read by nothing: no code draws an initial bias from it. The realised bias starts at zero. |
-| `accel_bias_sigma` | m/s^2 | `0.0` | Same as gyro_bias_sigma: accepted but unused. |
+| `gyro_bias_sigma` | rad/s | `0.0` | 1-sigma of the initial gyro bias the generator draws, per axis, on its own random stream. The benchmark filter is told the same value as its initial gyro-bias uncertainty. |
+| `accel_bias_sigma` | m/s^2 | `0.0` | The same for the accelerometer bias. |
 
 ### Synthetic motion: `SyntheticConfig`
 
@@ -301,19 +303,20 @@ contract for the seeded benchmark.
 ## As implemented: things a reader should know
 
 These are observations of the code as it stands, recorded so that nobody has to
-rediscover them. None is changed here, because changing any of them moves the golden
-snapshot.
+rediscover them. Items 1, 3 and 4 were changed since; the others are still as described.
 
-1. **`gyro_bias_sigma` and `accel_bias_sigma` do nothing.** `ImuNoiseModel` accepts,
-   scales, serialises and hashes them; no code reads them. The injected bias is a random
-   walk that starts at zero, and the benchmark filter's initial bias covariance is also
-   zero, because `initial_bias_sigma` keeps its default of 0.
+1. **`gyro_bias_sigma` and `accel_bias_sigma` are now read.** The generator draws an initial bias
+   from each, per axis, on a separate random stream, so the white noise and the random walk of every
+   scenario are drawn as before. The benchmark filter is told the same sigmas as its initial bias
+   uncertainty. Before this, both were accepted, scaled and hashed but read by nothing.
 2. **Two drift keys are named per second and are per square-root second.**
    `anchor_pos_drift_sigma_m_s` and `anchor_rot_drift_sigma_deg_s` enter the process
    noise as `sigma^2 dt`, so a value of 0.01 means a variance that grows by 1e-4 per
    second, and the dimensionally correct unit is m/sqrt(s) and deg/sqrt(s).
 3. **`initial_bias_sigma` is one number for two units.** It sets the initial standard
-   deviation of the gyro bias (rad/s) and of the accelerometer bias (m/s^2).
+   deviation of the gyro bias (rad/s) and of the accelerometer bias (m/s^2). The two keys
+   `initial_gyro_bias_sigma` and `initial_accel_bias_sigma` now set them separately, and either
+   falls back to `initial_bias_sigma` when unset.
 4. **Process noise on velocity was missing, and the default now has it.** The `legacy` form of
    `_process_noise` added the rate-noise terms to the attitude and position blocks only, in a `dt^3/3`
    form, and none to velocity. The default `textbook` form adds `sigma_a^2 dt` to velocity with the

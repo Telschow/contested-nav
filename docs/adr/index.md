@@ -19,3 +19,4 @@ what it cost, and what was rejected.
 | [ADR-0012](0012-every-scenario-is-injected.md) | Every scenario goes through the injection layer | accepted |
 | [ADR-0013](0013-recorded-imu-with-simulated-gnss.md) | Evaluate on recorded IMU data with GNSS simulated from the ground truth | accepted |
 | [ADR-0014](0014-textbook-imu-process-noise-by-default.md) | IMU white noise enters the process covariance in the textbook form | accepted |
+| [ADR-0015](0015-initial-imu-bias-sigmas-are-read.md) | The initial IMU bias sigmas are read | proposed |
