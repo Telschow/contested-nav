@@ -110,7 +110,7 @@ anchor model is doing real work rather than only muting the symptom.
 The limit that remains
 ----------------------
 Under a 15 s GNSS denial the same filter still over-trusts vision
-(mean NEES 419.4, 2.541 m error against a claimed 0.161 m),
+(mean NEES 286.2, 2.322 m error against a claimed 0.162 m),
 and the cause is structural rather than a matter of tuning. The information a
 visual measurement carries about *absolute* position is the Schur complement
 
@@ -128,7 +128,7 @@ single-anchor ESKF, and it is the change this project has not made.
 
 So the visual channel ships disabled by default. The failure above is not a
 reason to hide it, and the numbers stay in this docstring; it is a reason not to
-hand a caller a filter that silently reports 0.161 m while being 2.54 m wrong.
+hand a caller a filter that silently reports 0.162 m while being 2.32 m wrong.
 ``vision_anchor_modelled`` is exposed only so the regression tests can reproduce
 the middle row.
 
@@ -279,6 +279,34 @@ _SPOOF_CROSS_CHECK_SIGMA = 15.0
 
 
 @dataclass
+class InitialState:
+    """Where a run starts, when it does not start at the origin at rest.
+
+    The default start is the identity pose at rest with zero biases, which is right for the
+    synthetic benchmark and wrong for any recorded sequence. A caller that knows the pose,
+    velocity and biases at the first sample (from a reference trajectory, or from an initial
+    alignment) passes them here. The covariance is not part of it: the declared
+    ``initial_*_sigma`` terms in :class:`EskfConfig` still say how far from the truth the
+    start is allowed to be.
+    """
+
+    R: np.ndarray
+    p: np.ndarray
+    v: np.ndarray = field(default_factory=lambda: np.zeros(3))
+    b_a: np.ndarray = field(default_factory=lambda: np.zeros(3))
+    b_g: np.ndarray = field(default_factory=lambda: np.zeros(3))
+
+    def __post_init__(self) -> None:
+        self.R = np.asarray(self.R, float).reshape(3, 3)
+        self.p = np.asarray(self.p, float).reshape(3)
+        self.v = np.asarray(self.v, float).reshape(3)
+        self.b_a = np.asarray(self.b_a, float).reshape(3)
+        self.b_g = np.asarray(self.b_g, float).reshape(3)
+        if not np.allclose(self.R @ self.R.T, np.eye(3), atol=1e-6):
+            raise ValueError("InitialState.R is not a rotation matrix")
+
+
+@dataclass
 class EskfConfig:
     """Tuning and noise for the filter, in physical units."""
 
@@ -340,6 +368,17 @@ class EskfConfig:
     initial_vel_sigma_m_s: float = 0.5
     initial_rot_sigma_deg: float = 2.0
     initial_bias_sigma: float = 0.0
+    #: Initial 1-sigma of the gyro bias (rad/s) and of the accelerometer bias (m/s^2) on their own.
+    #: ``None`` uses ``initial_bias_sigma`` for that bias, which is one number for two units.
+    initial_gyro_bias_sigma: float | None = None
+    initial_accel_bias_sigma: float | None = None
+    #: How IMU white noise enters the process covariance. ``"textbook"`` is the default (ADR-0014).
+    #: ``"legacy"`` is the original form, kept so the old behaviour can be reproduced:
+    #: ``sigma_a^2 dt^3 / 3`` on position only and ``sigma_g^2 dt^3 / 3`` on attitude. ``"textbook"``
+    #: is the discrete form of continuous white noise on the error-state model:
+    #: ``sigma_g^2 dt`` on attitude, and ``sigma_a^2 dt`` on velocity with the position terms
+    #: ``dt^3 / 3`` and ``dt^2 / 2`` that go with it.
+    process_noise_form: str = "textbook"
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -372,6 +411,9 @@ class EskfConfig:
             "initial_vel_sigma_m_s": self.initial_vel_sigma_m_s,
             "initial_rot_sigma_deg": self.initial_rot_sigma_deg,
             "initial_bias_sigma": self.initial_bias_sigma,
+            "initial_gyro_bias_sigma": self.initial_gyro_bias_sigma,
+            "initial_accel_bias_sigma": self.initial_accel_bias_sigma,
+            "process_noise_form": self.process_noise_form,
         }
 
 
@@ -416,8 +458,10 @@ class ErrorStateKalmanFilter:
         P[_IDX_THETA, _IDX_THETA] = np.eye(3) * r
         P[_IDX_P, _IDX_P] = np.eye(3) * cfg.initial_pos_sigma_m**2
         P[_IDX_V, _IDX_V] = np.eye(3) * cfg.initial_vel_sigma_m_s**2
-        P[_IDX_BG, _IDX_BG] = np.eye(3) * cfg.initial_bias_sigma**2
-        P[_IDX_BA, _IDX_BA] = np.eye(3) * cfg.initial_bias_sigma**2
+        gyro_sigma = cfg.initial_bias_sigma if cfg.initial_gyro_bias_sigma is None else cfg.initial_gyro_bias_sigma
+        accel_sigma = cfg.initial_bias_sigma if cfg.initial_accel_bias_sigma is None else cfg.initial_accel_bias_sigma
+        P[_IDX_BG, _IDX_BG] = np.eye(3) * gyro_sigma**2
+        P[_IDX_BA, _IDX_BA] = np.eye(3) * accel_sigma**2
         # The anchor exists only once a visual update has committed one, and its
         # uncertainty then comes from the commit itself (see
         # _commit_anchor_covariance) plus the drift random walk. Seeding it here
@@ -471,10 +515,23 @@ class ErrorStateKalmanFilter:
         Q = np.zeros((_N_STATES, _N_STATES))
         rg = n.gyro_noise_density**2
         ra = n.accel_noise_density**2
-        if rg > 0.0:
-            Q[_IDX_THETA, _IDX_THETA] = np.eye(3) * (rg * d**3 / 3.0)
-        if ra > 0.0:
-            Q[_IDX_P, _IDX_P] = np.eye(3) * (ra * d**3 / 3.0)
+        form = self.cfg.process_noise_form
+        if form not in ("legacy", "textbook"):
+            raise ValueError(f"process_noise_form must be 'legacy' or 'textbook', got {form!r}")
+        if form == "textbook":
+            if rg > 0.0:
+                Q[_IDX_THETA, _IDX_THETA] = np.eye(3) * (rg * d)
+            if ra > 0.0:
+                eye = np.eye(3)
+                Q[_IDX_V, _IDX_V] = eye * (ra * d)
+                Q[_IDX_P, _IDX_P] = eye * (ra * d**3 / 3.0)
+                Q[_IDX_P, _IDX_V] = eye * (ra * d**2 / 2.0)
+                Q[_IDX_V, _IDX_P] = eye * (ra * d**2 / 2.0)
+        else:
+            if rg > 0.0:
+                Q[_IDX_THETA, _IDX_THETA] = np.eye(3) * (rg * d**3 / 3.0)
+            if ra > 0.0:
+                Q[_IDX_P, _IDX_P] = np.eye(3) * (ra * d**3 / 3.0)
         if n.gyro_bias_rw > 0.0:
             Q[_IDX_BG, _IDX_BG] = np.eye(3) * (n.gyro_bias_rw**2 * d)
         if n.accel_bias_rw > 0.0:
@@ -931,6 +988,7 @@ class ErrorStateKalmanFilter:
         vision: VisionUpdate | None = None,
         t0: float | None = None,
         t_end: float | None = None,
+        initial: InitialState | None = None,
     ) -> EstimatorResult:
         wall_start = time.perf_counter()
         if t0 is not None or t_end is not None:
@@ -940,6 +998,9 @@ class ErrorStateKalmanFilter:
             raise ValueError("ESKF needs at least 2 IMU samples")
 
         x = self._initial_state()
+        if initial is not None:
+            x["R"], x["p"], x["v"] = initial.R.copy(), initial.p.copy(), initial.v.copy()
+            x["b_a"], x["b_g"] = initial.b_a.copy(), initial.b_g.copy()
         cfg = self.cfg
         use_gnss = gnss is not None and cfg.gnss_enabled
         use_vision = vision is not None and cfg.vision_enabled

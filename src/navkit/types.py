@@ -159,10 +159,11 @@ def finite_difference(t: np.ndarray, x: np.ndarray, second: bool = False) -> np.
         return v
     dt = np.diff(t).reshape(-1, 1)
     d = (x[1:] - x[:-1]) / dt
-    v[:-1] += d
-    v[1:] += d
-    v[0] = (x[1] - x[0]) / dt[0]
-    v[-1] = (x[-1] - x[-2]) / dt[-1]
+    v[0] = d[0]
+    v[-1] = d[-1]
+    if n > 2:
+        # Central difference over the two neighbours, exact for a straight line on a non-uniform grid.
+        v[1:-1] = (x[2:] - x[:-2]) / (t[2:] - t[:-2]).reshape(-1, 1)
     if not second:
         return v
     a = np.zeros_like(x)

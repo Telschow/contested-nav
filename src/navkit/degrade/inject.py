@@ -231,7 +231,12 @@ def apply_imu_noise(imu: ImuSample, scenario: Scenario) -> tuple[ImuSample, np.n
         zeros = np.zeros((len(imu), 3))
         return imu, zeros, zeros.copy()
     rng = np.random.default_rng(_derive_seed(scenario, "imu"))
-    return add_imu_noise(imu, model, rng)
+    # The initial bias comes from its own stream, so the white noise and the random walk of every
+    # existing scenario are drawn exactly as before. It is zero when the sigma is zero.
+    rng0 = np.random.default_rng(_derive_seed(scenario, "imu_bias0"))
+    gyro_0 = model.gyro_bias_sigma * rng0.standard_normal(3)
+    accel_0 = model.accel_bias_sigma * rng0.standard_normal(3)
+    return add_imu_noise(imu, model, rng, bias_gyro_0=gyro_0, bias_accel_0=accel_0)
 
 
 def inject(

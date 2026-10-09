@@ -266,6 +266,9 @@ def test_eskf_overconfident_measurement_is_not_a_valid_test_configuration() -> N
     The filter then diverges. This is a property of an inconsistent
     configuration, not a defect, and it is pinned here so the behaviour is not
     rediscovered as a "bug" later.
+
+    Pinned with the ``legacy`` process noise (ADR-0014). The default ``textbook`` form carries more
+    process noise, so this configuration no longer rejects a single fix there.
     """
     noise = ImuNoiseModel(2e-4, 2e-3, 2e-6, 1e-4, 1e-5, 2e-3)
     cfg = SyntheticConfig(duration_s=DURATION_S, rate_hz=100.0)
@@ -273,7 +276,12 @@ def test_eskf_overconfident_measurement_is_not_a_valid_test_configuration() -> N
     gt = gt.transformed(la.inv(gt.poses[0]))
     imu = synthetic_imu(cfg, rate_hz=200.0)
     result = ErrorStateKalmanFilter(
-        EskfConfig(imu_noise=noise, gnss_position_sigma_m=1e-6, initial_bias_sigma=0.01)
+        EskfConfig(
+            imu_noise=noise,
+            gnss_position_sigma_m=1e-6,
+            initial_bias_sigma=0.01,
+            process_noise_form="legacy",
+        )
     ).run(imu, gnss=gnss_fixes(gt, GnssConfig(sigma_m=1e-6, rate_hz=5.0)), vision=None)
     assert result.stats["gnss_updates_rejected"] > 0
 

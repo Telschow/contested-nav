@@ -14,14 +14,14 @@ an analytic trajectory. No number here is a field measurement.
 
 ## Why is visual fusion off by default?
 
-Because with GNSS denied it makes the filter confidently wrong: mean NEES 419.4 against an
-expected 3, and 20.0% coverage where 99.3% is expected. A caller who did not ask for that should
+Because with GNSS denied it makes the filter confidently wrong: mean NEES 286.2 against an
+expected 3, and 20.5% coverage where 99.3% is expected. A caller who did not ask for that should
 not receive it ([ADR-0003](adr/0003-ship-visual-disabled.md)).
 
 ## So does vision make the estimate more accurate or not?
 
 It depends on when the outage starts. In the benchmark's outage (5 s to 20 s) it lowers the
-error from 3.782 m to 2.541 m. In an outage sweep, vision beat the no-vision control in every seed
+error from 3.760 m to 2.322 m. In an outage sweep, vision beat the no-vision control in every seed
 for outages of 10 s or longer starting at 5 s, and was worse than the control in all 20 runs
 starting at 10 s. The overconfidence did not depend on the window at all. The cause of the
 timing dependence has not been tested. See [Results](results.md).
@@ -55,10 +55,25 @@ and [ADR-0010](adr/0010-determinism-and-seeding.md).
 
 ## Can I run it on my own data?
 
-Not through the benchmark. Readers exist for EuRoC IMU files and several trajectory formats, and
-two tests compare against the TUM VI benchmark when its ground truth is present locally (no dataset
-is vendored). The filter has not been run on real sensor streams. See
-[Path to real systems](REAL_SYSTEMS.md).
+Not through the benchmark. For the EuRoC MAV dataset there is a separate path that uses the
+recorded IMU and the dataset's ground truth, with the GNSS fixes simulated from that ground truth
+(EuRoC has no GNSS):
+
+```
+navkit euroc selftest                          # no download; checks the pipeline
+navkit euroc fetch --sequence MH_01_easy       # IMU and ground truth only, by byte range
+navkit euroc run --sequence MH_01_easy --outage 60:20 --markdown
+navkit euroc compare --markdown               # default vs preset over every fetched sequence
+```
+
+The data is not vendored. Its rights statement is "In Copyright - Non-Commercial Use Permitted", so
+the files go under `data/raw/`, which git ignores, and only aggregate results may be committed. A
+result from this path is labelled `real_imu_simulated_gnss`. It tests the filter against real
+inertial noise and a known reference. It is not GNSS-denied navigation in the field. The decision
+behind it is [ADR-0013](adr/0013-recorded-imu-with-simulated-gnss.md).
+
+No result from this path is quoted in these pages yet. Two tests compare against the TUM VI
+benchmark when its ground truth is present locally. See [Path to real systems](REAL_SYSTEMS.md).
 
 ## Does the repository implement the known fixes for the overconfidence?
 
