@@ -24,6 +24,10 @@ CASES = [
     "outage_visual_degraded_camera_rereferenced",
     "outage_visual_degraded_camera_clone",
     "vision_only_clone",
+    "outage_visual_clone_outliers",
+    "outage_visual_clone_scale_drift",
+    "outage_visual_clone_correlated",
+    "outage_visual_clone_correlated_inflated",
 ]
 
 
