@@ -34,6 +34,14 @@ this project uses [semantic versioning](https://semver.org/).
   `navkit euroc compare` gains `--first-seed` and a `walk10` configuration, and fills a second page block
   with `--block euroc-validation`. See the follow-up in
   [ADR-0014](docs/adr/0014-textbook-imu-process-noise-by-default.md).
+- `navkit sweep attribution` and [`docs/attribution.md`](docs/attribution.md) (P5-06): the falsification experiments the
+  research baseline listed and never ran, plus the bias-fault question from limitation L8. On the synthetic fixture,
+  removing every inertial error source leaves the peak outage error within two percent, the error grows with the
+  same exponent with or without them, and what dominates is the state error the filter has when GNSS is lost (making
+  the start exact cuts it by about nine tenths). A source has to be about thirty to a hundred times the unit's before
+  it matters. A small or moderate accelerometer bias fault is not noticed; a large one makes the filter reject the
+  healthy GNSS on its return and declare it faulty, the lockout behind the lost runs on the recordings.
+  `run_case` gains an `imu_hook`, and the benchmark runner accepts the initial-uncertainty keys.
 - `navkit euroc timing` and `docs/product_management/04_sensor_sync_and_calibration_spec.md` (P5-07): the timing
   model, the calibration assumptions, and what is measured on the recordings versus assumed in simulation. The tool
   reports each sequence's timestamp regularity, the share of the ground truth lost to dropouts, and the offset
@@ -110,6 +118,10 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Fixed
 
+- The mechanism library said that a constant accelerometer bias gives linear error growth. It gives quadratic growth;
+  linear growth is a velocity error. The `gnss_denied` entries now state the textbook exponents, name the experiment
+  that tests them, and record that the accelerometer-bias explanation is falsified on the fixture. Limitation L8 is
+  rewritten to match.
 - Two CodeQL findings on the recorded-dataset code: `navkit euroc compare` read a variable it had not set on the
   `--from-csv` path (unreachable, since `--json` is refused there, but fragile), and `euroc_eval`, `tumvi_data` and
   `euroc_compare` imported one another. The shared sequence type, its error and the z-up gravity vector moved to

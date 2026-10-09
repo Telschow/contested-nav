@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1115<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.1<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1141<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.1<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -290,15 +290,15 @@ The next work is ordered by RICE score in [docs/prioritisation.md](docs/prioriti
 
 Where each item stands:
 
-- **Done:** P5-01 (noise-mismatch sweep), P5-02 (fault matrix), P5-04 (velocity process noise, bias sigmas), P5-07
+- **Done:** P5-01 (noise-mismatch sweep), P5-02 (fault matrix), P5-04 (velocity process noise, bias sigmas), P5-06
+  (the accelerometer-bias falsification experiment, which falsified the hypothesis on the fixture), P5-07
   (sensor synchronisation and calibration specification), P5-08 (SRS traceability check), P5-10 (release hygiene),
   P5-13 (a TUM VI fetch path).
 - **Spike done, opt-in:** P5-03 (the stochastic clone, [ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)).
   Calibrated for independent visual errors, not for correlated ones. The shipped configuration is unchanged.
 - **Partly done:** P5-09 (the stale figures in docstrings are fixed; the baseline records are excluded from the site
   and not rewritten), P5-12 (the pull requests it names are closed; whether `uv.lock` stays is undecided).
-- **Not started:** P5-05 (rename the per-second drift keys, with an alias), P5-06 (the accelerometer-bias
-  falsification experiment, unblocked since P5-04), P5-11 (a comparison with an established consistent
+- **Not started:** P5-05 (rename the per-second drift keys, with an alias), P5-11 (a comparison with an established consistent
   estimator, which strains constraint S1).
 
 ---

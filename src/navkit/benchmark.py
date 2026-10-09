@@ -68,7 +68,7 @@ from .eval.metrics import (
 )
 from .sensors.models import gnss_fixes, visual_updates
 from .synthetic import SyntheticConfig, seeded_scene, synthetic_imu, synthetic_trajectory
-from .types import GnssFix
+from .types import GnssFix, ImuSample
 
 #: How the shipped scenario file is named in a result. It is a label for the canonical
 #: source, so a result made from the packaged copy of the file reads the same as one made
@@ -135,6 +135,12 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
     noise = scenario.imu_noise.scaled(scenario.imu_noise_scale)
     gnss_scale = _sigma_scale(keys, "gnss_sigma_scale")
     vision_scale = _sigma_scale(keys, "vision_sigma_scale")
+    # The declared uncertainty of the starting state, when a case sets it (an ablation can set it to zero).
+    initial: dict[str, Any] = {
+        k: float(keys[k])
+        for k in ("initial_pos_sigma_m", "initial_vel_sigma_m_s", "initial_rot_sigma_deg")
+        if k in keys
+    }
     return EskfConfig(
         imu_noise=noise,
         initial_gyro_bias_sigma=noise.gyro_bias_sigma,
@@ -151,6 +157,7 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
         anchor_pos_drift_sigma_m_s=keys.get("anchor_pos_drift_sigma_m_s", 0.0),
         anchor_rot_drift_sigma_deg_s=keys.get("anchor_rot_drift_sigma_deg_s", 0.0),
         process_noise_form=str(keys.get("process_noise_form", "textbook")),
+        **initial,
         vision_model=str(keys.get("vision_model", "anchor")),
     )
 
@@ -163,6 +170,7 @@ def run_case(
     scene_seed: int | None = None,
     trajectories: bool = False,
     gnss_hook: Callable[[GnssFix], GnssFix] | None = None,
+    imu_hook: Callable[[ImuSample], ImuSample] | None = None,
     fdir_events: bool = False,
 ) -> dict[str, Any]:
     """Run one scenario end to end and return its result record.
@@ -185,6 +193,10 @@ def run_case(
     stream the filter sees. It is for a fault the scenario schema does not describe, such as a
     position offset (a spoof); the fault matrix uses it. The hook is not part of the scenario,
     so it is not in ``config_hash``: a caller that uses it must record the fault itself.
+
+    ``imu_hook`` is the same for the inertial stream: it receives the IMU after the scenario's noise and bias are
+    applied and returns what the filter sees. It is for a fault the scenario schema does not describe, such as a
+    bias that appears part-way through. Like ``gnss_hook`` it is not in ``config_hash``.
 
     ``fdir_events`` adds the FDIR event log (declarations, lockouts, inflation grants) to the record
     as ``fdir_events``. It is off by default so the benchmark JSON is unchanged.
@@ -220,6 +232,8 @@ def run_case(
 
     if gnss_hook is not None:
         gnss = gnss_hook(gnss)
+    if imu_hook is not None:
+        imu = imu_hook(imu)
 
     cfg = _eskf_config(scenario, keys)
 
