@@ -66,7 +66,7 @@ actual error.
 
 **VERIFIED BY REPOSITORY** — with GNSS denied for 15 s and visual odometry on,
 the filter reports 0.161 m of 1σ position uncertainty while being 2.54 m wrong;
-mean NEES 391.2 against an expected 3; 2σ coverage 20.0% where 99.3% is
+mean NEES 286.2 against an expected 3; 2σ coverage 20.5% where 99.3% is
 expected. The result holds at all 10 noise realisations and in all 8 scenes
 tested, with a 4.65× range of path length.
 

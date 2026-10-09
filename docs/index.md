@@ -10,8 +10,8 @@ filter reports is honest.
 
 | Configuration | ATE RMSE | Claimed 1σ | Mean NEES (expected 3) | 2σ-per-axis coverage (expected 99.3%) |
 |---|---:|---:|---:|---:|
-| GNSS denied, vision off | 3.783 m | 0.567 m | 4.1 | 100.0% |
-| GNSS denied, vision on | **2.506 m** | **0.161 m** | **391.2** | **20.0%** |
+| GNSS denied, vision off | 3.760 m | 0.567 m | 4.1 | 100.0% |
+| GNSS denied, vision on | **2.322 m** | **0.162 m** | **286.2** | **20.5%** |
 
 **Accuracy improved. Calibration failed.** The filter converges and is confidently wrong, so visual
 fusion ships off by default. The overconfidence held in every run of every sweep; the accuracy gain

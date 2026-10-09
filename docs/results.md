@@ -7,13 +7,13 @@ the strictest of the four conventions the code supports.
 
 | Scenario | ATE RMSE (m) | Claimed 1σ (m) | Mean NEES (exp. 3) | Coverage @ 2σ | Verdict |
 | --- | ---: | ---: | ---: | ---: | --- |
-| GNSS only (control) | 0.509 | 0.253 | 3.9 | 100.0% | mixed: bulk overconfident, tail underconfident |
-| Dead reckoning (no aiding) | 2.248 | n/a | n/a | n/a | no covariance reported |
-| Anchor as measurement noise (defect) | 1.248 | 0.092 | 320.2 | 16.2% | overconfident |
-| Vision only | 2.349 | 0.157 | 324.2 | 0.7% | overconfident |
-| GNSS denied 5–20 s, vision off (control) | 3.783 | 0.567 | 4.1 | 100.0% | mixed: bulk overconfident, tail underconfident |
-| GNSS denied 5–20 s, vision on | 2.506 | 0.161 | 391.2 | 20.0% | overconfident |
-| GNSS denied, 30% camera frames dropped | 1.869 | 0.191 | 210.1 | 18.5% | overconfident |
+| GNSS only (control) | 0.528 | 0.254 | 4.3 | 100.0% | mixed: bulk overconfident, tail underconfident |
+| Dead reckoning (no aiding) | 2.359 | n/a | n/a | n/a | no covariance reported |
+| Anchor as measurement noise (defect) | 1.063 | 0.094 | 163.7 | 16.3% | overconfident |
+| Vision only | 2.321 | 0.158 | 264.2 | 0.7% | overconfident |
+| GNSS denied 5–20 s, vision off (control) | 3.760 | 0.567 | 4.1 | 100.0% | mixed: bulk overconfident, tail underconfident |
+| GNSS denied 5–20 s, vision on | 2.322 | 0.162 | 286.2 | 20.5% | overconfident |
+| GNSS denied, 30% camera frames dropped | 2.008 | 0.192 | 203.7 | 17.8% | overconfident |
 
 Three rows deserve more than a glance.
 

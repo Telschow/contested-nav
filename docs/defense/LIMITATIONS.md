@@ -30,8 +30,8 @@ ATE, so the reader side is not the obstacle; the data is.
 
 ### L2: The documented failure is not fixed
 
-Visual aiding under GNSS denial is badly overconfident: mean NEES 391.2 against
-an expected 3, 2σ coverage 20.0%. The configuration ships disabled.
+Visual aiding under GNSS denial is badly overconfident: mean NEES 286.2 against
+an expected 3, 2σ coverage 20.5%. The configuration ships disabled.
 
 **Consequence:** the repository demonstrates a problem rather than solving it.
 
