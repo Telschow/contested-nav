@@ -15,6 +15,7 @@ only routes arguments.
     navkit sweep faults --markdown
     navkit figures --results results/benchmark.json
     navkit euroc fetch --sequence MH_01_easy
+    navkit tumvi fetch --sequence room1
     navkit euroc run --sequence MH_01_easy --outage 60:20 --markdown
     python -m navkit run --list
 """
@@ -36,6 +37,7 @@ from . import (
     scene_sweep,
     seed_sweep,
 )
+from .io import tumvi_fetch
 
 _SWEEPS: dict[str, Callable[[list[str] | None], int]] = {
     "seeds": seed_sweep.main,
@@ -64,6 +66,17 @@ def _sweep(argv: list[str] | None) -> int:
     return _SWEEPS[args[0]](args[1:])
 
 
+def _tumvi(argv: list[str] | None) -> int:
+    """Route ``navkit tumvi fetch``. Running on TUM VI goes through ``navkit euroc run --dataset tumvi``."""
+    args = list(argv or [])
+    if not args or args[0] in ("-h", "--help") or args[0] != "fetch":
+        usage = "usage: navkit tumvi fetch [options]"
+        note = "  fetch  download TUM VI room sequences (CC BY 4.0) and keep the IMU, ground-truth and noise files"
+        print("\n".join((usage, note)), file=sys.stderr)
+        return 0 if args and args[0] in ("-h", "--help") else 2
+    return tumvi_fetch.main(args[1:])
+
+
 #: Subcommand name to ``main(argv) -> int``, with a one-line summary for ``--help``.
 _COMMANDS: dict[str, tuple[Callable[[list[str] | None], int], str]] = {
     "run": (benchmark.main, "run the seeded benchmark scenarios and write a result JSON"),
@@ -72,6 +85,7 @@ _COMMANDS: dict[str, tuple[Callable[[list[str] | None], int], str]] = {
         "repeat the benchmark over noise seeds, trajectories, outage windows, a wrong noise model or injected faults",
     ),
     "figures": (figures.main, "render the benchmark figures from a result JSON"),
+    "tumvi": (_tumvi, "fetch TUM VI room sequences (CC BY 4.0); run them with `navkit euroc run --dataset tumvi`"),
     "euroc": (euroc_eval.main, "fetch EuRoC sequences and run the filter on them (recorded IMU, simulated GNSS)"),
 }
 
