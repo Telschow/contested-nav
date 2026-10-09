@@ -4,9 +4,9 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: <!-- metric:tests_collected -->917<!-- /metric --> tests collected, all of which pass except the deliberate
-xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->92.9<!-- /metric -->%
-line coverage (<!-- metric:coverage_lines_hit -->5564<!-- /metric -->/<!-- metric:coverage_lines_total -->5992<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
+Last measured: <!-- metric:tests_collected -->1017<!-- /metric --> tests collected, all of which pass except the deliberate
+xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->93.6<!-- /metric -->%
+line coverage (<!-- metric:coverage_lines_hit -->6448<!-- /metric -->/<!-- metric:coverage_lines_total -->6887<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
 it is the project's dependency-free tracer (S1 forbids adding `pytest-cov`), and
 a number taken from a different tool is not comparable with the module figures
@@ -83,9 +83,9 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | <!-- metric:tests_collected -->917<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | <!-- metric:tests_collected -->1017<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
-| Line coverage | 75% | <!-- metric:coverage_percent -->92.9<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
+| Line coverage | 75% | <!-- metric:coverage_percent -->93.6<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
 | `analysis/findings.py` coverage | 80% | 99.7% | as above |
 | `config.py` coverage | 80% | 98.4% | as above |
@@ -104,14 +104,14 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 | `outage_sweep.py` coverage | 80% | 98.4% | as above |
 | `fdir/nis_monitor.py` coverage | 80% | 98.8% | as above |
 | `degrade/` coverage | 50% | 78.0% (`config.py`) / 84.2% (`inject.py`) | as above |
-| Docs | README + architecture + calibration + every ADR | <!-- metric:adr_count -->12<!-- /metric --> ADRs, all in the index | `scripts/metrics.py --check` |
+| Docs | README + architecture + calibration + every ADR | <!-- metric:adr_count -->15<!-- /metric --> ADRs, all in the index | `scripts/metrics.py --check` |
 | Documented tables match the generated benchmark | exact | yes | `scripts/check_doc_tables.py` |
 | Open blockers documented | all | see ROADMAP | manual |
 
 ## Known blockers
 
-- **B1: Visual fusion is overconfident under GNSS denial.** Mean NEES 419.4
-  over a 15 s outage (`outage_visual`), with 20.0% of epochs inside 2 sigma
+- **B1: Visual fusion is overconfident under GNSS denial.** Mean NEES 286.2
+  over a 15 s outage (`outage_visual`), with 20.5% of epochs inside 2 sigma
   against 99.3% expected. A single anchor cannot represent correlated visual
   drift. Requires a pose graph. Pinned by
   `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`. B2 did not
@@ -183,14 +183,14 @@ residual numerically.
   Measured: `outage_visual` 5.059 m to 2.541 m, 51 rejections to 5, mean NEES
   1996.5 to 419.4. `outage_visual_degraded_camera` 3.339 m to 2.005 m, 931.4
   to 264.8 (20% drop; the config key was misspelled, see ADR-0006 correction).
-  Re-measured at the intended 30%: 1.872 m and 216.6. Pinned by
+  Re-measured at the intended 30%: 2.008 m and 203.7. Pinned by
   `test_adaptive_inflation_recovers_the_fixes_that_the_plain_gate_threw_away`,
   which asserts the improvement *and* the old value, so a regression to it
   fails even while the new assertions pass.
 
   Two limits, both stated in the ADR rather than left to the reader:
 
-  - **This is not calibration.** 2.541 m of error against 0.161 m claimed is
+  - **This is not calibration.** 2.322 m of error against 0.162 m claimed is
     still overconfident. B1 is untouched and remains the open blocker. What is
     closed is the filter's refusal to hear a working sensor, not the modelled
     visual anchor error that made the covariance wrong.
@@ -198,7 +198,7 @@ residual numerically.
     fix the dishonest aided case was also the more inaccurate one, so sorting
     by error happened to separate them. Recovering the error put the dishonest
     filter back on top of the table, and `outage_visual` now reports a
-    *lower* ATE than the honest 3.782 m control while being less calibrated.
+    *lower* ATE than the honest 3.760 m control while being less calibrated.
     Any comparison in this repository must read the coverage and NEES columns
     too, and a table sorted on ATE alone is not evidence of a good filter.
 

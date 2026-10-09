@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->917<!-- /metric --> tests collected and <!-- metric:coverage_percent -->92.9<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1017<!-- /metric --> tests collected and <!-- metric:coverage_percent -->93.6<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -126,7 +126,7 @@ previously produced by ad-hoc scripts that were not in the repository.
       which paid that cost back).
 - [x] `docs/architecture.md`, `docs/calibration.md`, the documentation site (`mkdocs.yml`).
 - [x] GNSS-denial overconfidence framed explicitly as the headline *negative*
-      result rather than a caveat: mean NEES 419.4 against an expected 3, 20.0%
+      result rather than a caveat: mean NEES 286.2 against an expected 3, 20.5%
       coverage against 99.3% expected, `vision_enabled = False` shipped as the
       default, and the failure pinned by
       `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`.
@@ -189,10 +189,10 @@ that has already been wrong. This track moves detection forward.
       offset earns no silence, so it earns no budget: verified at 40 m and
       100 m with zero grants and no movement of the estimate.
 - [!] B5's closure is not B1's. The aided case still over-trusts vision
-      (NEES 419.4, 20.0% coverage) because the anchor error is still
+      (NEES 286.2, 20.5% coverage) because the anchor error is still
       unmodelled, and recovering the GNSS fixes shrank the symptom without
       repairing the cause. Related side effect worth watching: the ATE column
-      no longer separates this case from the honest 3.782 m control, so
+      no longer separates this case from the honest 3.760 m control, so
       `CONSTRAINTS.md` now requires the coverage and NEES columns to be read
       alongside it.
 - [ ] Per-sensor detection of multipath (elevated innovation variance without
@@ -220,7 +220,7 @@ Everything in Milestone 1 makes the limitation reproducible and documented;
 this removes it.
 
 - [!] Blocker, unchanged: a single-anchor ESKF cannot represent correlated
-      visual drift. Mean NEES 419.4 on `outage_visual`, 20.0% coverage against
+      visual drift. Mean NEES 286.2 on `outage_visual`, 20.5% coverage against
       99.3% expected. Not attempted yet, because a pose graph is a piece of
       engineering rather than a patch. (The figure was 1996.5 before ADR-0006;
       the number fell because the filter began taking its own uncertainty more
@@ -241,7 +241,7 @@ this removes it.
       destroy the evidence that the work mattered.
 
 **Exit test:** NEES below 10 with vision enabled and GNSS denied, coverage above
-90%, `vision_enabled = True` as the shipped default. Current value 419.4.
+90%, `vision_enabled = True` as the shipped default. Current value 286.2.
 
 ### Track C: TPM / PM deliverables `[~]`
 

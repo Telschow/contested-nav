@@ -132,11 +132,13 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
     alone, so the same data can be filtered with a wrong noise model. A value below 1 makes
     the filter more confident in the sensor than it should be; above 1, less.
     """
-    noise = scenario.imu_noise
+    noise = scenario.imu_noise.scaled(scenario.imu_noise_scale)
     gnss_scale = _sigma_scale(keys, "gnss_sigma_scale")
     vision_scale = _sigma_scale(keys, "vision_sigma_scale")
     return EskfConfig(
-        imu_noise=noise.scaled(scenario.imu_noise_scale),
+        imu_noise=noise,
+        initial_gyro_bias_sigma=noise.gyro_bias_sigma,
+        initial_accel_bias_sigma=noise.accel_bias_sigma,
         gnss_enabled=scenario.gnss.enabled,
         gnss_position_sigma_m=scenario.gnss.sigma_m * gnss_scale,
         vision_enabled=scenario.vision.enabled and bool(keys.get("vision_fuse", False)),
@@ -148,6 +150,7 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
         anchor_rot_sigma_deg=keys.get("anchor_rot_sigma_deg", 5.0),
         anchor_pos_drift_sigma_m_s=keys.get("anchor_pos_drift_sigma_m_s", 0.0),
         anchor_rot_drift_sigma_deg_s=keys.get("anchor_rot_drift_sigma_deg_s", 0.0),
+        process_noise_form=str(keys.get("process_noise_form", "textbook")),
     )
 
 

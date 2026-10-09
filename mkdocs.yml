@@ -102,6 +102,7 @@ nav:
       - Scenarios: scenarios.md
       - Noise mismatch: mismatch.md
       - Fault matrix: faults.md
+      - EuRoC, recorded IMU: euroc.md
       - Performance: PERFORMANCE.md
       - Demo: demo.md
   - Reference:
@@ -129,6 +130,9 @@ nav:
       - "0010 Determinism and seeding": adr/0010-determinism-and-seeding.md
       - "0011 CI and supply chain": adr/0011-ci-and-supply-chain.md
       - "0012 Every scenario is injected": adr/0012-every-scenario-is-injected.md
+      - "0013 Recorded IMU, simulated GNSS": adr/0013-recorded-imu-with-simulated-gnss.md
+      - "0014 Textbook IMU process noise": adr/0014-textbook-imu-process-noise-by-default.md
+      - "0015 Initial IMU bias sigmas": adr/0015-initial-imu-bias-sigmas-are-read.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md

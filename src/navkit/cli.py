@@ -2,8 +2,9 @@
 
 ``navkit run`` runs the reproducible benchmark, ``navkit sweep`` repeats it over
 seeds or scenes, ``navkit figures`` renders the committed plots from a result file,
-and ``navkit --version`` prints the package version. The implementation of each
-subcommand lives in its own module, so this file only routes arguments.
+``navkit euroc`` fetches and runs recorded sequences, and ``navkit --version`` prints the
+package version. The implementation of each subcommand lives in its own module, so this file
+only routes arguments.
 
     navkit run --markdown
     navkit run --only gnss_only outage_visual --out results/two_cases.json
@@ -13,6 +14,8 @@ subcommand lives in its own module, so this file only routes arguments.
     navkit sweep mismatch --markdown
     navkit sweep faults --markdown
     navkit figures --results results/benchmark.json
+    navkit euroc fetch --sequence MH_01_easy
+    navkit euroc run --sequence MH_01_easy --outage 60:20 --markdown
     python -m navkit run --list
 """
 
@@ -25,6 +28,7 @@ from collections.abc import Callable
 from . import (
     __version__,
     benchmark,
+    euroc_eval,
     fault_matrix,
     figures,
     mismatch_sweep,
@@ -68,6 +72,7 @@ _COMMANDS: dict[str, tuple[Callable[[list[str] | None], int], str]] = {
         "repeat the benchmark over noise seeds, trajectories, outage windows, a wrong noise model or injected faults",
     ),
     "figures": (figures.main, "render the benchmark figures from a result JSON"),
+    "euroc": (euroc_eval.main, "fetch EuRoC sequences and run the filter on them (recorded IMU, simulated GNSS)"),
 }
 
 

@@ -36,8 +36,8 @@ reference does not grow with the size of the state vector.
 | far below | underconfident: claims less certainty than it has |
 
 The number to be suspicious of is the gap, not the value. The generated
-`outage_visual` case reports a mean NEES of 419.4 against a nominal 3, and
-`vision_only` reports 358.5. Two orders of magnitude, against a nominal 3, is
+`outage_visual` case reports a mean NEES of 286.2 against a nominal 3, and
+`vision_only` reports 264.2. Two orders of magnitude, against a nominal 3, is
 not a filter that is slightly miscalibrated.
 
 Those figures fell from 1996.5 when ADR-0006 stopped the filter discarding the
@@ -48,10 +48,10 @@ repaired. Read NEES and the coverage column together with ATE, see the note in
 `CONSTRAINTS.md` on why ATE alone stopped flagging this case.
 
 A 10-seed sweep changes the reading of the digits, not the verdict. `outage_visual`
-gives mean NEES 844 across noise realisations (range 211.7 to 2103.4) and
-`vision_only` 231 to 2917, so 419.4 and 358.5 are individual draws. The
-conclusion is unaffected: the minimum over 10 seeds is still 211.7 against a
-nominal 3, and coverage never exceeds 34.8% where 99.3% is required. Two orders
+gives mean NEES 656 across noise realisations (range 113.5 to 1589.1) and
+`vision_only` 264 to 2629, so 286.2 and 264.2 are individual draws. The
+conclusion is unaffected: the minimum over 10 seeds is still 113.5 against a
+nominal 3, and coverage never exceeds 35.2% where 99.3% is required. Two orders
 of magnitude is the right order to write down, but not two orders of magnitude
 *specifically*.
 
@@ -106,16 +106,16 @@ throughout, 30 s):
 
 | Configuration | ATE RMSE | 1-sigma claimed | Mean NEES | Coverage at 2 sigma |
 |---|---:|---:|---:|---:|
-| GNSS only (control) | 0.509 m | 0.252 m | 4.0 | 100.0% |
-| GNSS + vision, anchor as measurement noise (defect) | 1.310 m | 0.091 m | 405.0 | 16.2% |
-| Vision only, anchor as filter state | 2.357 m | 0.156 m | 358.5 | 0.7% |
+| GNSS only (control) | 0.509 m | 0.253 m | 3.9 | 100.0% |
+| GNSS + vision, anchor as measurement noise (defect) | 1.063 m | 0.094 m | 163.7 | 16.3% |
+| Vision only, anchor as filter state | 2.321 m | 0.158 m | 264.2 | 0.7% |
 
 Row 1 is the reference: error and claimed uncertainty are the same order, and
 coverage is complete.
 
 Row 2 is the defect. Note the combination: the claimed 1-sigma is an order of
 magnitude below the error it is attached to, the mean NEES is 405 against a
-nominal 3, and coverage is 16.2% where 99.3% is expected. Any one of these would
+nominal 3, and coverage is 16.3% where 99.3% is expected. Any one of these would
 warrant investigation. Together they say the filter is confidently wrong, and
 the *direction* of the error matters -- it is overconfident, not merely
 inaccurate.
