@@ -63,6 +63,7 @@ recorded IMU and the dataset's ground truth, with the GNSS fixes simulated from 
 navkit euroc selftest                          # no download; checks the pipeline
 navkit euroc fetch --sequence MH_01_easy       # IMU and ground truth only, by byte range
 navkit euroc run --sequence MH_01_easy --outage 60:20 --markdown
+navkit euroc compare --markdown               # default vs preset over every fetched sequence
 ```
 
 The data is not vendored. Its rights statement is "In Copyright - Non-Commercial Use Permitted", so

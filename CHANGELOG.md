@@ -24,6 +24,11 @@ this project uses [semantic versioning](https://semver.org/).
   bias 1-sigma. Chosen on MH_01_easy and checked on the other ten EuRoC sequences (Machine Hall and Vicon
   rooms); a few runs on MH_04, MH_05 and V1_01 still lose GNSS after an outage. Explicit `--noise-scale` and `--bias-sigma` override it. It is a tuning for this sensor, not a filter
   property.
+- `navkit euroc compare`: runs the default, the `adis16448` preset and optionally the `legacy` form over every
+  fetched EuRoC sequence, one 20 s GNSS outage at a time, and counts the runs that lose GNSS (more than a fifth
+  of the fixes rejected). It writes one CSV row per run and a JSON record with the input hashes from the fetch
+  manifest, and prints a summary table. The FDIR "faulted" flag is reported next to the count and not used for
+  it, since it misses some losses. This is how the statements in ADR-0014 are regenerated.
 - `docs/data/metrics.json` and `scripts/metrics.py`: the test, ADR and line-coverage figures the documents
   quote now come from one generated file through `<!-- metric:... -->` markers. CI fails when a marker or the
   JSON is stale, when a count is typed by hand, when an ADR is missing from the index, or when measured
