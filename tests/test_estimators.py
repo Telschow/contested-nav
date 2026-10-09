@@ -972,13 +972,13 @@ def test_eskf_config_dict_includes_the_anchor_prior_and_drift() -> None:
         vision_enabled=True,
         anchor_pos_sigma_m=2.5,
         anchor_rot_sigma_deg=7.0,
-        anchor_pos_drift_sigma_m_s=0.03,
-        anchor_rot_drift_sigma_deg_s=0.11,
+        anchor_pos_drift_sigma_m_sqrt_s=0.03,
+        anchor_rot_drift_sigma_deg_sqrt_s=0.11,
     ).as_dict()
     assert d["anchor_pos_sigma_m"] == 2.5
     assert d["anchor_rot_sigma_deg"] == 7.0
-    assert d["anchor_pos_drift_sigma_m_s"] == 0.03
-    assert d["anchor_rot_drift_sigma_deg_s"] == 0.11
+    assert d["anchor_pos_drift_sigma_m_sqrt_s"] == 0.03
+    assert d["anchor_rot_drift_sigma_deg_sqrt_s"] == 0.11
     assert d["vision_enabled"] is True
     assert d["imu_noise"]["gyro_noise_density"] == 0.01
 

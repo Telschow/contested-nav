@@ -103,8 +103,8 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 | `vision_anchor_modelled` | flag | `True` | Carry the anchor error as filter state (true) or fold it into measurement noise (false, kept to reproduce the failure). |
 | `anchor_pos_sigma_m` | m | `1.0` | Declared 1-sigma of a stored anchor position. |
 | `anchor_rot_sigma_deg` | deg | `5.0` | Declared 1-sigma of a stored anchor attitude. |
-| `anchor_pos_drift_sigma_m_s` | m per sqrt(s) | `0.0` | Random-walk strength on the anchor position. Named m/s; it enters Q as sigma^2 dt, so the unit is m/sqrt(s). |
-| `anchor_rot_drift_sigma_deg_s` | deg per sqrt(s) | `0.0` | Random-walk strength on the anchor attitude. Same convention as the position term. |
+| `anchor_pos_drift_sigma_m_sqrt_s` | m per sqrt(s) | `0.0` | Random-walk strength on the anchor position. It enters Q as sigma^2 dt, so the variance grows by its square each second and the unit is m/sqrt(s). Called `anchor_pos_drift_sigma_m_s` until P5-05; the old name is accepted with a deprecation warning. |
+| `anchor_rot_drift_sigma_deg_sqrt_s` | deg per sqrt(s) | `0.0` | Random-walk strength on the anchor attitude. Same convention as the position term. Old name `anchor_rot_drift_sigma_deg_s`, accepted with a warning. |
 | `gate_sigma` | multiples of predicted sigma | `5.0` | Per-component residual gate. |
 | `fdir_config` | see FdirConfig | `factory` | Chi-square fault detection, isolation and recovery policy. |
 | `gravity` | m/s^2, world frame | `None` | Gravity vector; None uses (0, 0, 9.80665). |
@@ -257,7 +257,7 @@ default in the benchmark:
 | `vision_fuse` | fuse visual updates; the scenario's `vision.enabled` alone is not enough |
 | `vision_keyframe_interval`, `vision_anchor_modelled` | as in `EskfConfig` |
 | `anchor_pos_sigma_m`, `anchor_rot_sigma_deg` | as in `EskfConfig` |
-| `anchor_pos_drift_sigma_m_s`, `anchor_rot_drift_sigma_deg_s` | as in `EskfConfig` |
+| `anchor_pos_drift_sigma_m_sqrt_s`, `anchor_rot_drift_sigma_deg_sqrt_s` | as in `EskfConfig`; the old `_m_s` and `_deg_s` names are accepted with a deprecation warning |
 | `rpe_delta_s` | spacing of the relative-pose-error metric, s |
 | `gnss_sigma_scale`, `vision_sigma_scale` | multiply the GNSS or vision noise the *filter* assumes (default 1); the generator keeps the true noise |
 
@@ -310,16 +310,18 @@ contract for the seeded benchmark.
 ## As implemented: things a reader should know
 
 These are observations of the code as it stands, recorded so that nobody has to
-rediscover them. Items 1, 3 and 4 were changed since; the others are still as described.
+rediscover them. Items 1 to 4 were changed since; the others are still as described.
 
 1. **`gyro_bias_sigma` and `accel_bias_sigma` are now read.** The generator draws an initial bias
    from each, per axis, on a separate random stream, so the white noise and the random walk of every
    scenario are drawn as before. The benchmark filter is told the same sigmas as its initial bias
    uncertainty. Before this, both were accepted, scaled and hashed but read by nothing.
-2. **Two drift keys are named per second and are per square-root second.**
-   `anchor_pos_drift_sigma_m_s` and `anchor_rot_drift_sigma_deg_s` enter the process
-   noise as `sigma^2 dt`, so a value of 0.01 means a variance that grows by 1e-4 per
-   second, and the dimensionally correct unit is m/sqrt(s) and deg/sqrt(s).
+2. **Two drift keys were named per second and are per square-root second.**
+   They enter the process noise as `sigma^2 dt`, so a value of 0.01 means a variance that
+   grows by 1e-4 per second, and the unit is m/sqrt(s) and deg/sqrt(s). They are now
+   `anchor_pos_drift_sigma_m_sqrt_s` and `anchor_rot_drift_sigma_deg_sqrt_s`. The old names are
+   accepted by the constructor and as estimator keys, with a deprecation warning; the value is
+   unchanged. Reading an old name from a config object returns `None`.
 3. **`initial_bias_sigma` is one number for two units.** It sets the initial standard
    deviation of the gyro bias (rad/s) and of the accelerometer bias (m/s^2). The two keys
    `initial_gyro_bias_sigma` and `initial_accel_bias_sigma` now set them separately, and either

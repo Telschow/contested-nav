@@ -155,7 +155,8 @@ Known simplifications
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+import warnings
+from dataclasses import InitVar, dataclass, field
 from typing import TypedDict
 
 import numpy as np
@@ -344,13 +345,15 @@ class EskfConfig:
     anchor_pos_sigma_m: float = 1.0
     #: Declared 1-sigma on a stored anchor attitude, in degrees.
     anchor_rot_sigma_deg: float = 5.0
-    #: 1-sigma random walk on the stored anchor, in m/s and deg/s. Zero by
-    #: default: an anchor held for a short run is best modelled as a constant
-    #: error. Raise it when the anchor is held long enough for front-end drift
-    #: to dominate, which is what makes a long vision-only run grow its
-    #: position uncertainty instead of holding it frozen.
-    anchor_pos_drift_sigma_m_s: float = 0.0
-    anchor_rot_drift_sigma_deg_s: float = 0.0
+    #: Random-walk strength on the stored anchor, in m per square-root second and deg per square-root
+    #: second: the variance of the drift grows by this squared every second (``sigma^2 dt`` in Q), so
+    #: the unit is not per second. Zero by default: an anchor held for a short run is best modelled
+    #: as a constant error. Raise it when the anchor is held long enough for front-end drift to
+    #: dominate, which is what makes a long vision-only run grow its position uncertainty instead of
+    #: holding it frozen. These were named ``anchor_pos_drift_sigma_m_s`` and
+    #: ``anchor_rot_drift_sigma_deg_s`` until the rename (P5-05); the old names are still accepted.
+    anchor_pos_drift_sigma_m_sqrt_s: float = 0.0
+    anchor_rot_drift_sigma_deg_sqrt_s: float = 0.0
     gate_sigma: float = 5.0
     #: Chi-square fault detection, isolation and recovery (ADR-0005).
     #:
@@ -385,6 +388,25 @@ class EskfConfig:
     #: pose, propagate with it, and enter the relative-pose measurement through their own Jacobians. It is
     #: behind a flag so the anchor model stays as the control.
     vision_model: str = "anchor"
+    #: Deprecated names of the two drift strengths above. The constructor accepts them and does not store them, so
+    #: reading them gives ``None``: use the new names.
+    anchor_pos_drift_sigma_m_s: InitVar[float | None] = None
+    anchor_rot_drift_sigma_deg_s: InitVar[float | None] = None
+
+    def __post_init__(
+        self, anchor_pos_drift_sigma_m_s: float | None, anchor_rot_drift_sigma_deg_s: float | None
+    ) -> None:
+        for old, new, value in (
+            ("anchor_pos_drift_sigma_m_s", "anchor_pos_drift_sigma_m_sqrt_s", anchor_pos_drift_sigma_m_s),
+            ("anchor_rot_drift_sigma_deg_s", "anchor_rot_drift_sigma_deg_sqrt_s", anchor_rot_drift_sigma_deg_s),
+        ):
+            if value is None:
+                continue
+            current = getattr(self, new)
+            if current != 0.0 and float(value) != current:
+                raise TypeError(f"{old} is the old name of {new}; they were given different values")
+            warnings.warn(f"{old} is deprecated; use {new}", DeprecationWarning, stacklevel=3)
+            setattr(self, new, float(value))
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -402,8 +424,8 @@ class EskfConfig:
             # agree with each other while both disagree with the filter.
             "anchor_pos_sigma_m": self.anchor_pos_sigma_m,
             "anchor_rot_sigma_deg": self.anchor_rot_sigma_deg,
-            "anchor_pos_drift_sigma_m_s": self.anchor_pos_drift_sigma_m_s,
-            "anchor_rot_drift_sigma_deg_s": self.anchor_rot_drift_sigma_deg_s,
+            "anchor_pos_drift_sigma_m_sqrt_s": self.anchor_pos_drift_sigma_m_sqrt_s,
+            "anchor_rot_drift_sigma_deg_sqrt_s": self.anchor_rot_drift_sigma_deg_sqrt_s,
             "gate_sigma": self.gate_sigma,
             # FDIR belongs in the serialised config: it decides which updates
             # enter the filter, so a config hash that omits it describes a
@@ -563,8 +585,8 @@ class ErrorStateKalmanFilter:
         # position -- the filter would coast on the IMU alone no matter how many
         # visual updates arrived.
         if self.cfg.vision_anchor_modelled and self.cfg.vision_model != "clone":
-            sp = self.cfg.anchor_pos_drift_sigma_m_s
-            st = np.deg2rad(self.cfg.anchor_rot_drift_sigma_deg_s)
+            sp = self.cfg.anchor_pos_drift_sigma_m_sqrt_s
+            st = np.deg2rad(self.cfg.anchor_rot_drift_sigma_deg_sqrt_s)
             if sp > 0.0:
                 Q[_IDX_CP, _IDX_CP] += np.eye(3) * (sp**2 * d)
             if st > 0.0:

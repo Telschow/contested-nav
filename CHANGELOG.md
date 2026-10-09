@@ -118,6 +118,12 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Fixed
 
+- The two anchor drift strengths were named per second and are per square-root second (P5-05). They are now
+  `anchor_pos_drift_sigma_m_sqrt_s` and `anchor_rot_drift_sigma_deg_sqrt_s`. The old names
+  (`anchor_pos_drift_sigma_m_s`, `anchor_rot_drift_sigma_deg_s`) are still accepted by the `EskfConfig` constructor and
+  as benchmark estimator keys, with a `DeprecationWarning`; giving an old and a new name with different values is an
+  error. The value and the filter are unchanged. The serialised config uses the new names, so every `config_hash`
+  changes and the golden snapshot was regenerated: the diff is the hashes and the two key names, and no number moves.
 - The mechanism library said that a constant accelerometer bias gives linear error growth. It gives quadratic growth;
   linear growth is a velocity error. The `gnss_denied` entries now state the textbook exponents, name the experiment
   that tests them, and record that the accelerometer-bias explanation is falsified on the fixture. Limitation L8 is

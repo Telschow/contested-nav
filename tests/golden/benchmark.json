@@ -136,7 +136,7 @@
     }
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "e81a61499c92f094",
+   "config_hash": "7a8c27ef759ce1af",
    "data_class": "synthetic",
    "description": "Inertial integration with no aiding at all. Reported as the control for \"how much of the result is the filter and how much is the motion model\".",
    "drift": {
@@ -157,9 +157,9 @@
     "total_path_length_m": 34.2431698923743
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "DeadReckoning",
     "fdir_config": {
@@ -552,7 +552,7 @@
     "verdict": "mixed(bulk=overconfident, tail=underconfident)"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "6d0e36cb5abd31bb",
+   "config_hash": "df5e5fdd37329645",
    "data_class": "synthetic",
    "description": "GNSS at 5 Hz, no outage, no vision. The reference every other case is read against. Its verdict is mixed rather than clean: mean NEES sits slightly above the expected value while no epoch leaves the 2-sigma ellipsoid.",
    "drift": {
@@ -674,9 +674,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -1117,7 +1117,7 @@
     "verdict": "mixed(bulk=overconfident, tail=underconfident)"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "97fe704ca4cb1b35",
+   "config_hash": "b6e8c9e4456528f2",
    "data_class": "synthetic",
    "description": "15 s GNSS outage, 5 s to 20 s, with vision off. The baseline for a contested receiver: the error grows and so does the claimed uncertainty, and coverage stays at or above nominal. The verdict is mixed because mean NEES is slightly above the expected value.",
    "drift": {
@@ -1239,9 +1239,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -1711,7 +1711,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "8a8dced4b7b2c619",
+   "config_hash": "2f3bf3c60e6a89f0",
    "data_class": "synthetic",
    "description": "The same 15 s outage with vision on. Position error is lower than the control in this window, but the claimed uncertainty stays small and coverage collapses: accurate and confidently wrong. That is why vision_enabled defaults to false. The accuracy gain depends on when the outage starts (see the outage sweep); the overconfidence does not.",
    "drift": {
@@ -1833,9 +1833,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -2333,7 +2333,7 @@
     "verdict": "underconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "68d615153843e882",
+   "config_hash": "ff0079b56841d69b",
    "data_class": "synthetic",
    "description": "The outage_visual scenario with the previous visual pose carried as a stochastic clone instead of a stored anchor. Same data, same seeds, same gate.",
    "drift": {
@@ -2455,9 +2455,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -2955,7 +2955,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "88dd632e883c70b3",
+   "config_hash": "bf71f78426b12849",
    "data_class": "synthetic",
    "description": "The clone with visual errors correlated over 2 s, as they are when consecutive frames share features. The clone assumes independent errors, so it is overconfident again. This is the case the clone does not survive.",
    "drift": {
@@ -3077,9 +3077,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -3582,7 +3582,7 @@
     "verdict": "mixed(bulk=overconfident, tail=underconfident)"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "58dd4f723c0140e5",
+   "config_hash": "d4366bbf173fa08f",
    "data_class": "synthetic",
    "description": "The same correlated errors with the filter told the visual noise is four times larger than the generator drew. Calibration is restored, at a cost in accuracy that still leaves the position error well inside the no-vision control's.",
    "drift": {
@@ -3704,9 +3704,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -4209,7 +4209,7 @@
     "verdict": "underconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "99b7f146e6608d86",
+   "config_hash": "978563e99dfa0d5b",
    "data_class": "synthetic",
    "description": "The clone with 5% of visual frames carrying an error twenty times the nominal one, as with a wrong feature match. The chi-square gate rejects them and the filter stays calibrated.",
    "drift": {
@@ -4331,9 +4331,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -4836,7 +4836,7 @@
     "verdict": "underconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "0801de683815119a",
+   "config_hash": "426d6b6ffacabf5e",
    "data_class": "synthetic",
    "description": "The clone with a slowly drifting error of up to 10% on the translation scale, as monocular scale drifts. The inertial unit holds the metric scale, so the filter stays calibrated.",
    "drift": {
@@ -4958,9 +4958,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -5463,7 +5463,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "c071f26cee76cea0",
+   "config_hash": "7ba371a3c4934932",
    "data_class": "synthetic",
    "description": "Visual aiding through the outage with 30% of camera frames dropped in 1 s bursts. Checks whether an intermittent visual stream changes the result. It does not: the filter is still overconfident, with a smaller error than the clean case.",
    "drift": {
@@ -5585,9 +5585,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -6089,7 +6089,7 @@
     "verdict": "underconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "c5cae68742099f7c",
+   "config_hash": "dff90828af0487d2",
    "data_class": "synthetic",
    "description": "The degraded-camera scenario with re-referenced measurements and the stochastic clone.",
    "drift": {
@@ -6211,9 +6211,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -6715,7 +6715,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "51b974c8e06a4867",
+   "config_hash": "07e69d62140dc115",
    "data_class": "synthetic",
    "description": "The degraded-camera scenario with every delivered measurement taken against the last delivered frame, and the single-anchor model. Separates the effect of the generator from the effect of the clone: the anchor is no better calibrated.",
    "drift": {
@@ -6837,9 +6837,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -7341,7 +7341,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "510c60635ef1539e",
+   "config_hash": "1ebd1dc2c35efe51",
    "data_class": "synthetic",
    "description": "The pre-refactor arrangement, where the visual anchor error is folded into the measurement covariance. Retained as a regression control, not as a supported configuration.",
    "drift": {
@@ -7463,9 +7463,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -7934,7 +7934,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "2c23bf37cfd1d02b",
+   "config_hash": "79d93429ce741c54",
    "data_class": "synthetic",
    "description": "Visual odometry at 20 Hz with no GNSS. In this fixture it is less accurate than dead reckoning and severely overconfident: nothing constrains the absolute pose, and the claimed uncertainty is far smaller than the error.",
    "drift": {
@@ -8056,9 +8056,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
@@ -8518,7 +8518,7 @@
     "verdict": "underconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "304e9dd10a252ba0",
+   "config_hash": "bd5e0aa3581613cd",
    "data_class": "synthetic",
    "description": "Visual odometry at 20 Hz with no GNSS, with the stochastic clone. Nothing constrains the absolute pose, so the claimed uncertainty has to grow with the error and not stay small.",
    "drift": {
@@ -8640,9 +8640,9 @@
     ]
    },
    "estimator": {
-    "anchor_pos_drift_sigma_m_s": 0.0,
+    "anchor_pos_drift_sigma_m_sqrt_s": 0.0,
     "anchor_pos_sigma_m": 1.0,
-    "anchor_rot_drift_sigma_deg_s": 0.0,
+    "anchor_rot_drift_sigma_deg_sqrt_s": 0.0,
     "anchor_rot_sigma_deg": 5.0,
     "class": "ErrorStateKalmanFilter",
     "fdir_config": {
