@@ -105,5 +105,5 @@ A slow ramp is not detectable with an IMU and GNSS alone, and the FDIR layer's l
 being led away. This is a limit of the sensor set, not a tuning problem: a drift rate below what the IMU can
 distinguish from its own error growth cannot be seen. The consequence for Track A's exit test is that detection of
 spoofing is not met and cannot be met without a second independent source (vision, a barometer, a map). The shipped
-configuration is unchanged. The decision is for
-[ADR-0019](adr/0019-slow-ramp-spoofing.md).
+configuration is unchanged. The decision is
+[ADR-0019](adr/0019-slow-ramp-spoofing.md): document the limit.

@@ -1,6 +1,6 @@
 # ADR-0019: Slow-ramp GNSS spoofing is not detectable with IMU and GNSS alone
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0007](0007-spoof-permanence-hysteresis.md), [ADR-0018](0018-honest-return-separability.md), [slow ramp](../slow_ramp.md)
 
@@ -19,7 +19,13 @@ does not stop the capture.
 
 ## Decision
 
-To be written by the maintainer.
+Option 1. The limit is documented: with an IMU and GNSS alone, a slow-ramp spoof is not detectable, and the
+filter follows it. Track A's exit test is stated as not meetable for spoofing without a second independent source.
+No rate check is added, because the data show the ramps that matter sit below what the IMU can distinguish from its
+own error growth. Option 3, a second source as a requirement, is the follow-up experiment and is not started.
+
+The limit is recorded in the limitations ([L6](../defense/LIMITATIONS.md)), the risk log (R10) and the roadmap.
+The shipped configuration is unchanged.
 
 ## Consequences
 

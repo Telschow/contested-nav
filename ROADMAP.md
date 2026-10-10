@@ -196,7 +196,7 @@ that has already been wrong. This track moves detection forward.
       `CONSTRAINTS.md` now requires the coverage and NEES columns to be read
       alongside it.
 - [!] Slow-ramp spoofing is not detectable with an IMU and GNSS alone: the filter followed every ramp from 0.05
-      to 2 m/s on two datasets ([slow ramp](docs/slow_ramp.md), ADR-0019 proposed). The exit test below cannot be
+      to 2 m/s on two datasets ([slow ramp](docs/slow_ramp.md), ADR-0019 accepted). The exit test below cannot be
       met for spoofing without a second independent source.
 - [ ] Per-sensor detection of multipath (elevated innovation variance without
       a mean shift), spoofing (innovation consistent but GNSS-internally
