@@ -18,6 +18,7 @@ import pytest
 
 from navkit import euroc_eval as ee
 from navkit.geometry.rigid import make_pose, quat_to_matrix
+from navkit.io import euroc_fetch, tumvi_fetch
 from navkit.timing_check import estimate_offset
 from navkit.types import Trajectory
 
@@ -48,22 +49,21 @@ def test_the_check_separates_the_right_order_from_the_wrong_one_on_a_synthetic_s
     _check(ee.load_sequence(tmp_path, "MH_01_easy"))
 
 
-def _fetched(dataset: str) -> list[str]:
-    base = RAW / dataset
-    return sorted(d.name for d in base.iterdir() if d.is_dir()) if base.is_dir() else []
+# The parameters are the fixed lists of known sequences, not whatever is on disk, so the number of collected tests
+# does not depend on which datasets a machine has fetched.
 
 
-@pytest.mark.parametrize("name", _fetched("tumvi") or [None])
+@pytest.mark.parametrize("name", tumvi_fetch.SEQUENCES)
 def test_tum_vi_ground_truth_orientation_matches_the_gyroscope(name):
-    if name is None:
-        pytest.skip("TUM VI is not fetched (navkit tumvi fetch)")
+    if not (RAW / "tumvi" / name).is_dir():
+        pytest.skip(f"{name} is not fetched (navkit tumvi fetch)")
     from navkit.tumvi_data import load_sequence
 
     _check(load_sequence(RAW / "tumvi", name))
 
 
-@pytest.mark.parametrize("name", _fetched("euroc") or [None])
+@pytest.mark.parametrize("name", euroc_fetch.SEQUENCES)
 def test_euroc_ground_truth_orientation_matches_the_gyroscope(name):
-    if name is None:
-        pytest.skip("EuRoC is not fetched (navkit euroc fetch)")
+    if not (RAW / "euroc" / name).is_dir():
+        pytest.skip(f"{name} is not fetched (navkit euroc fetch)")
     _check(ee.load_sequence(RAW / "euroc", name))
