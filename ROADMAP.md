@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1170<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.0<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1196<!-- /metric --> tests collected and <!-- metric:coverage_percent -->93.9<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -197,7 +197,9 @@ that has already been wrong. This track moves detection forward.
       alongside it.
 - [!] Slow-ramp spoofing is not detectable with an IMU and GNSS alone: the filter followed every ramp from 0.05
       to 2 m/s on two datasets ([slow ramp](docs/slow_ramp.md), ADR-0019 accepted). The exit test below cannot be
-      met for spoofing without a second independent source.
+      met for spoofing without a second independent source. A simulated visual source with independent errors
+      lowers the floor to about 2 m/s, and not at all with correlated errors ([vision ramp](docs/vision_ramp.md),
+      ADR-0020 proposed).
 - [ ] Per-sensor detection of multipath (elevated innovation variance without
       a mean shift), spoofing (innovation consistent but GNSS-internally
       inconsistent, e.g. against the IMU-predicted position), and sensor
@@ -279,7 +281,8 @@ a technical one.
       The recordings' timestamp regularity and ground-truth-to-IMU offset are measured, not assumed.
 - [x] The documents above live in `docs/product_management/`, together with the FDIR
       and spoofing strategy (`03_fdir_and_spoofing_strategy.md`). The risk log is
-      [`RISKS.md`](https://github.com/Telschow/contested-nav/blob/main/RISKS.md). Still missing: a work breakdown.
+      [`RISKS.md`](https://github.com/Telschow/contested-nav/blob/main/RISKS.md). The work breakdown is
+      [`05_work_breakdown.md`](docs/product_management/05_work_breakdown.md).
 
 **Exit test:** a reviewer can trace every requirement in the SRS to a test, a
 configuration, or an explicitly declared gap. The SRS has a traceability matrix

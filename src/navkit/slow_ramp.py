@@ -57,7 +57,9 @@ def _first(times: list[float]) -> str:
     return f"{min(times):.3f}" if times else ""
 
 
-def run_case(seq: Any, config: str, arm: str, rate: float, seed: int) -> dict[str, Any] | None:
+def run_case(
+    seq: Any, config: str, arm: str, rate: float, seed: int, extra: dict[str, Any] | None = None
+) -> dict[str, Any] | None:
     t_start = max(float(seq.imu.t[0]), float(seq.truth.t[0]))
     duration = float(min(seq.imu.t[-1], seq.truth.t[-1])) - t_start
     if duration < ONSET_S + MIN_AFTER_S:
@@ -66,7 +68,7 @@ def run_case(seq: Any, config: str, arm: str, rate: float, seed: int) -> dict[st
     spoof = (ONSET_S, rate) if rate > 0.0 else None
     inn: list[tuple[float, np.ndarray, np.ndarray]] = []
     events: list[dict[str, Any]] = []
-    opts = RunOptions(seed=seed, outages=outages, spoof=spoof, **_ALL_CONFIGS[config])
+    opts = RunOptions(seed=seed, outages=outages, spoof=spoof, **{**_ALL_CONFIGS[config], **(extra or {})})
     rec = run_sequence(seq, opts, innovations_out=inn, events_out=events)
     onset = t_start + ONSET_S
     gate = shipped_gate()
