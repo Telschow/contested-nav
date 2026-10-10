@@ -44,6 +44,8 @@ docs = [
     "mkdocs-material==9.7.7",
     "mkdocstrings[python]==1.0.6",
     "mkdocs-include-markdown-plugin==7.3.0",
+    # 12.2 breaks mkdocstrings: Highlight.__init__() missing the argument "md" (strict docs build fails).
+    "pymdown-extensions==12.1",
 ]
 
 [project.scripts]
