@@ -51,7 +51,12 @@ CASES: tuple[tuple[str, str, float], ...] = (
     ("degradation", "gyro_bias", 0.05),
 )
 SETTINGS = {"euroc": "walk10", "tumvi": "file-walk10"}
-FEATURES = ("nis", "mean_shift", "drift_m_s", "bias_accel", "bias_gyro")
+#: The first five features of the original study, then the ones added to see whether richer innovations help.
+BASE_FEATURES = ("nis", "mean_shift", "drift_m_s", "bias_accel", "bias_gyro")
+EXTRA_FEATURES = ("ac1", "axis_conc", "decay", "bias_accel_30", "bias_gyro_30")
+FEATURES = BASE_FEATURES + EXTRA_FEATURES
+LONG_WINDOW_S = 30.0
+EDGE_S = 5.0
 CSV_COLUMNS = ("dataset", "sequence", "seed", "cls", "kind", "level", *FEATURES)
 TREE_DEPTH = 3
 
@@ -72,7 +77,16 @@ def features(inn: list[Any], bias: list[Any], onset_abs: float) -> dict[str, flo
     inside = [b for b in bias if onset_abs <= b[0] < onset_abs + WINDOW_S]
     ref = before[-1] if before else inside[0]
     last = inside[-1]
+    first, last_s = d2[t < t[0] + EDGE_S], d2[t >= t[-1] - EDGE_S]
+    moment = (r.T @ r) / n
+    long_bias = [b for b in bias if onset_abs <= b[0] < onset_abs + LONG_WINDOW_S]
+    last_long = long_bias[-1] if long_bias else last
     return {
+        "ac1": float((z[:-1] * z[1:]).sum() / max(float((z * z).sum()), 1e-12)),
+        "axis_conc": float(np.linalg.eigvalsh(moment)[-1] / max(float(np.trace(moment)), 1e-12)),
+        "decay": float(last_s.mean() / max(float(first.mean()), 1e-12)),
+        "bias_accel_30": float(np.linalg.norm(last_long[2] - ref[2])),
+        "bias_gyro_30": float(np.linalg.norm(last_long[1] - ref[1])),
         "nis": float(d2.mean() / 3.0),
         "mean_shift": float(np.linalg.norm(z.mean(axis=0)) * np.sqrt(n)),
         "drift_m_s": float(np.linalg.norm(slope)),
@@ -165,8 +179,8 @@ def predict(tree: dict[str, Any], row: np.ndarray) -> int:
 FAULT_CLASSES = CLASSES[1:]
 
 
-def _matrix(rows: list[dict[str, Any]]) -> tuple[np.ndarray, np.ndarray]:
-    x = np.array([[float(r[f]) for f in FEATURES] for r in rows])
+def _matrix(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES) -> tuple[np.ndarray, np.ndarray]:
+    x = np.array([[float(r[f]) for f in feats] for r in rows])
     y = np.array([CLASSES.index(r["cls"]) for r in rows])
     return x, y
 
@@ -176,14 +190,14 @@ def _balanced(y: np.ndarray, k: int) -> np.ndarray:
     return 1.0 / counts[y]
 
 
-def fit_detector(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def fit_detector(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES) -> dict[str, Any]:
     """Stage 1 thresholds (the largest value of each feature on the controls) and the stage 2 tree."""
-    x, y = _matrix(rows)
+    x, y = _matrix(rows, feats)
     ctrl = y == 0
     faults = ~ctrl
     yf = y[faults] - 1
     tree = fit_tree(x[faults], yf, _balanced(yf, len(FAULT_CLASSES)), len(FAULT_CLASSES))
-    return {"threshold": x[ctrl].max(axis=0), "tree": tree}
+    return {"threshold": x[ctrl].max(axis=0), "tree": tree, "features": feats}
 
 
 def call(model: dict[str, Any], row: np.ndarray) -> str:
@@ -192,30 +206,30 @@ def call(model: dict[str, Any], row: np.ndarray) -> str:
     return FAULT_CLASSES[predict(model["tree"], row)]
 
 
-def cross_validate(rows: list[dict[str, Any]]) -> list[str]:
+def cross_validate(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES) -> list[str]:
     """The called class per row, each from a model fitted without that row's sequence."""
-    x, _ = _matrix(rows)
+    x, _ = _matrix(rows, feats)
     seqs = np.array([f"{r['dataset']}/{r['sequence']}" for r in rows])
     out = [""] * len(rows)
     for s in np.unique(seqs):
         test = seqs == s
-        model = fit_detector([r for r, t in zip(rows, test, strict=True) if not t])
+        model = fit_detector([r for r, t in zip(rows, test, strict=True) if not t], feats)
         for i in np.flatnonzero(test):
             out[i] = call(model, x[i])
     return out
 
 
-def with_predictions(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [{**r, "predicted": p} for r, p in zip(rows, cross_validate(rows), strict=True)]
+def with_predictions(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES) -> list[dict[str, Any]]:
+    return [{**r, "predicted": p} for r, p in zip(rows, cross_validate(rows, feats), strict=True)]
 
 
-def model_text(rows: list[dict[str, Any]]) -> str:
-    model = fit_detector(rows)
+def model_text(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES) -> str:
+    model = fit_detector(rows, feats)
 
     def walk(t: dict[str, Any], pad: str) -> list[str]:
         if "leaf" in t:
             return [f"{pad}-> {FAULT_CLASSES[t['leaf']]}"]
-        name = FEATURES[t["f"]]
+        name = feats[t["f"]]
         return [
             f"{pad}{name} <= {t['thr']:.4g}:",
             *walk(t["lo"], pad + "  "),
@@ -225,7 +239,7 @@ def model_text(rows: list[dict[str, Any]]) -> str:
 
     head = [
         "stage 1: a fault if any feature exceeds its control maximum: "
-        + str({n: round(float(v), 4) for n, v in zip(FEATURES, model["threshold"], strict=True)})
+        + str({n: round(float(v), 4) for n, v in zip(feats, model["threshold"], strict=True)})
     ]
     return "\n".join([*head, "stage 2:", *walk(model["tree"], "  ")])
 
@@ -274,7 +288,37 @@ def feature_markdown(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def compare_markdown(rows: list[dict[str, Any]]) -> str:
+    """The same cross-validation with the original five features and with all ten."""
+    lines = [
+        "| Features | Control called a fault | Multipath called multipath | Spoofing called spoofing "
+        "| Degradation called degradation | 10 m step called multipath | 0.5 m/s ramp detected |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for label, feats in (("original five", BASE_FEATURES), ("all ten", FEATURES)):
+        sc = with_predictions(rows, feats)
+
+        def share(pick: Any, called: Any, sc: list[dict[str, Any]] = sc) -> float:
+            sel = [r for r in sc if pick(r)]
+            return sum(called(r) for r in sel) / len(sel)
+
+        def is_(kind: str, level: float) -> Any:
+            return lambda r: r["kind"] == kind and float(r["level"]) == level
+
+        cells = [
+            share(lambda r: r["cls"] == "control", lambda r: r["predicted"] != "control"),
+            share(lambda r: r["cls"] == "multipath", lambda r: r["predicted"] == "multipath"),
+            share(lambda r: r["cls"] == "spoofing", lambda r: r["predicted"] == "spoofing"),
+            share(lambda r: r["cls"] == "degradation", lambda r: r["predicted"] == "degradation"),
+            share(is_("step", 10.0), lambda r: r["predicted"] == "multipath"),
+            share(is_("ramp", 0.5), lambda r: r["predicted"] != "control"),
+        ]
+        lines.append(f"| {label} | " + " | ".join(_pct(c) for c in cells) + " |")
+    return "\n".join(lines)
+
+
 BLOCKS = {
+    "faultclass-compare": compare_markdown,
     "faultclass-features": lambda rows: feature_markdown(rows),
     "faultclass-confusion": lambda rows: confusion_markdown(with_predictions(rows)),
     "faultclass-levels": lambda rows: level_markdown(with_predictions(rows)),

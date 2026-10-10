@@ -26,6 +26,11 @@ def scored(rows):
     return fc.with_predictions(rows)
 
 
+@pytest.fixture(scope="module")
+def scored_five(rows):
+    return fc.with_predictions(rows, fc.BASE_FEATURES)
+
+
 def _share(scored, pick, called):
     sel = [r for r in scored if pick(r)]
     return sum(r["predicted"] == called(r) for r in sel) / len(sel)
@@ -37,24 +42,41 @@ def test_blocks_match_csv(rows):
         assert fn(rows) in text
 
 
-def test_multipath_is_called_correctly_at_every_size(scored):
-    for level in (3.0, 10.0, 30.0):
-        pick = lambda r, level=level: r["kind"] == "multipath" and float(r["level"]) == level  # noqa: E731
-        assert _share(scored, pick, lambda r: "multipath") >= 0.95
+def test_multipath_is_called_correctly_at_every_size(scored, scored_five):
+    for sc in (scored, scored_five):
+        for level in (3.0, 10.0, 30.0):
+            pick = lambda r, level=level: r["kind"] == "multipath" and float(r["level"]) == level  # noqa: E731
+            assert _share(sc, pick, lambda r: "multipath") >= 0.95
+    assert _share(scored, lambda r: r["cls"] == "multipath", lambda r: "multipath") >= 0.985
 
 
-def test_the_control_false_alarm_rate_is_not_zero(scored):
-    far = 1.0 - _share(scored, lambda r: r["cls"] == "control", lambda r: "control")
-    assert 0.0 < far < 0.2
+def test_the_control_false_alarm_rate_is_not_zero_and_did_not_improve(scored, scored_five):
+    far = {
+        n: 1.0 - _share(sc, lambda r: r["cls"] == "control", lambda r: "control")
+        for n, sc in (("five", scored_five), ("ten", scored))
+    }
+    assert 0.0 < far["five"] < 0.2 and 0.0 < far["ten"] < 0.2
+    assert far["ten"] >= far["five"]
 
 
-def test_fewer_than_half_the_spoofs_are_called_spoofing(scored):
-    assert _share(scored, lambda r: r["cls"] == "spoofing", lambda r: "spoofing") < 0.5
+def test_the_added_features_raise_spoofing_from_under_half_to_about_three_quarters(scored, scored_five):
+    spoof = lambda r: r["cls"] == "spoofing"  # noqa: E731
+    assert _share(scored_five, spoof, lambda r: "spoofing") < 0.5
+    assert 0.7 < _share(scored, spoof, lambda r: "spoofing") < 0.8
 
 
-def test_a_ten_metre_step_is_mostly_called_multipath(scored):
+def test_the_added_features_fix_the_ten_metre_step(scored, scored_five):
     pick = lambda r: r["kind"] == "step" and float(r["level"]) == 10.0  # noqa: E731
-    assert _share(scored, pick, lambda r: "multipath") > 0.5
+    assert _share(scored_five, pick, lambda r: "multipath") > 0.5
+    assert _share(scored, pick, lambda r: "multipath") == 0.0
+    step = lambda r: r["kind"] == "step"  # noqa: E731
+    assert _share(scored, step, lambda r: "spoofing") == 1.0
+
+
+def test_a_five_metre_ramp_goes_from_missed_to_mostly_called(scored, scored_five):
+    pick = lambda r: r["kind"] == "ramp" and float(r["level"]) == 5.0  # noqa: E731
+    assert _share(scored_five, pick, lambda r: "spoofing") < 0.15
+    assert _share(scored, pick, lambda r: "spoofing") > 0.85
 
 
 def test_weak_faults_are_often_missed_and_strong_ones_are_not(scored):
@@ -69,8 +91,9 @@ def test_weak_faults_are_often_missed_and_strong_ones_are_not(scored):
 
 
 def test_large_degradation_is_called_degradation(scored):
-    pick = lambda r: r["cls"] == "degradation" and not (r["kind"] == "accel_bias" and float(r["level"]) == 0.2)  # noqa: E731
-    assert _share(scored, pick, lambda r: "degradation") >= 0.94
+    weak = {("accel_bias", 0.2), ("gyro_bias", 0.01)}
+    pick = lambda r: r["cls"] == "degradation" and (r["kind"], float(r["level"])) not in weak  # noqa: E731
+    assert _share(scored, pick, lambda r: "degradation") >= 0.98
 
 
 def test_the_track_a_exit_test_is_not_met(scored):
@@ -83,6 +106,28 @@ def test_predictions_never_use_the_held_out_sequence(rows):
     one = fc.cross_validate(rows)
     assert len(one) == len(rows)
     assert set(one) <= set(fc.CLASSES)
+
+
+def test_the_new_features_separate_a_persistent_offset_from_white_noise():
+    rng = np.random.default_rng(1)
+    s = np.eye(3)
+    bias = [(34.0, np.zeros(3), np.zeros(3)), (54.0, np.zeros(3), np.zeros(3))]
+    noise = [(35.0 + i * 0.2, rng.standard_normal(3) * 5.0, s) for i in range(100)]
+    offset = [(35.0 + i * 0.2, np.array([10.0, 0.0, 0.0]) + rng.standard_normal(3), s) for i in range(100)]
+    fn, fo = fc.features(noise, bias, 35.0), fc.features(offset, bias, 35.0)
+    assert fn is not None and fo is not None
+    assert fn["ac1"] < 0.2 < 0.8 < fo["ac1"]
+    assert fn["axis_conc"] < 0.5 < fo["axis_conc"]
+
+
+def test_a_transient_decays_and_a_constant_offset_does_not():
+    s = np.eye(3)
+    bias = [(34.0, np.zeros(3), np.zeros(3)), (54.0, np.zeros(3), np.zeros(3))]
+    transient = [(35.0 + i * 0.2, np.array([10.0 * np.exp(-i * 0.2), 0.0, 0.0]), s) for i in range(100)]
+    constant = [(35.0 + i * 0.2, np.array([10.0, 0.0, 0.0]), s) for i in range(100)]
+    ft, fk = fc.features(transient, bias, 35.0), fc.features(constant, bias, 35.0)
+    assert ft is not None and fk is not None
+    assert ft["decay"] < 0.1 and fk["decay"] == pytest.approx(1.0)
 
 
 def test_the_tree_separates_a_toy_problem():
