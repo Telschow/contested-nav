@@ -54,7 +54,7 @@ are the visual anchor from ADR-0001.
 Standard error-state IMU propagation with a 21x21 transition matrix. The
 anchor states are constant in the body frame and therefore carry no process
 noise by default. Optional drift terms
-(`anchor_pos_drift_sigma_m_s`, `anchor_rot_drift_sigma_deg_s`) exist but
+(`anchor_pos_drift_sigma_m_sqrt_s`, `anchor_rot_drift_sigma_deg_sqrt_s`) exist but
 default to `0.0`; see ADR-0003 for why they are not the fix.
 
 ### Visual update

@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+from navkit import euroc_cli
 from navkit import euroc_compare as ec
 from navkit import euroc_eval as ee
 
@@ -160,9 +161,9 @@ def test_cli_rejects_an_unknown_config_and_bad_numbers(root, capsys):
 
 
 def test_the_command_is_routed_from_navkit_euroc(root, capsys):
-    assert ee.main(["compare", "--root", str(root), "-s", MH, *ARGS, "--configs", "default"]) == 0
+    assert euroc_cli.main(["compare", "--root", str(root), "-s", MH, *ARGS, "--configs", "default"]) == 0
     assert "| all | default | 1 |" in capsys.readouterr().out
-    assert ee.main(["--help"]) == 0
+    assert euroc_cli.main(["--help"]) == 0
     assert "compare" in capsys.readouterr().err
 
 
@@ -205,3 +206,46 @@ def test_the_failing_runs_list_names_each_lost_run_or_says_there_are_none(table)
     forced = [ec.Row(**{**r.__dict__, "lost": True, "rejected_fraction": 0.5}) for r in rows if r.config == "preset"]
     text = ec.failing_runs_markdown(forced)
     assert text.startswith("Runs still lost with `preset`:") and "| 50% |" in text
+
+
+def test_first_seed_shifts_the_seeds_that_run(root):
+    rows, _ = ec.compare(root, [MH], ("default",), (5.0,), 10.0, 2, 0.2, first_seed=3)
+    assert sorted(r.seed for r in rows) == [3, 4]
+    base, _ = ec.compare(root, [MH], ("default",), (5.0,), 10.0, 1, 0.2)
+    assert rows[0].as_dict() != base[0].as_dict()
+
+
+def test_the_validation_block_has_one_line_per_outage_length_and_config(table):
+    rows, _ = table
+    longer = [ec.Row(**{**r.__dict__, "outage_s": 30.0}) for r in rows]
+    text = ec.validation_block(rows + longer, 0.2)
+    assert text.count("\n| 10 | ") == 2 and text.count("\n| 30 | ") == 2
+    assert "| 10 | default | 2 |" in text and "| 30 | preset | 2 |" in text
+
+
+def test_the_page_block_names_for_each_config_the_runs_it_lost(table):
+    rows, _ = table
+    forced = [
+        ec.Row(**{**r.__dict__, "lost": True, "rejected_fraction": 0.4}) if r.config == "preset" else r for r in rows
+    ]
+    text = ec.page_block(forced, 0.2)
+    assert "Runs still lost with `preset`:" in text and "with `default`" not in text
+
+
+def test_the_block_option_fills_the_named_block_only(root, tmp_path):
+    out, page = tmp_path / "r.csv", tmp_path / "p.md"
+    page.write_text(
+        "<!-- euroc:start -->\nA\n<!-- euroc:end -->\n"
+        "<!-- euroc-validation:start -->\nB\n<!-- euroc-validation:end -->\n"
+    )
+    assert ec.main(["--root", str(root), *ARGS, "--csv", str(out)]) == 0
+    assert ec.main(["--from-csv", str(out), "--page", str(page), "--block", "euroc-validation"]) == 0
+    text = page.read_text()
+    assert "\nA\n" in text and "\nB\n" not in text and "| Outage s | Config |" in text
+    assert ec.main(["--from-csv", str(out), "--page", str(page)]) == 0
+    assert "\nA\n" not in page.read_text()
+
+
+def test_the_walk_config_is_the_adis16448_walk_preset():
+    assert ec.CONFIGS["walk10"]["preset"] == "adis16448-walk"
+    assert ec.CONFIGS["walk10"]["bias_walk_scale"] == 10.0 and ec.CONFIGS["walk10"]["noise_scale"] == 1.0

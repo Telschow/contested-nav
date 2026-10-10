@@ -102,7 +102,10 @@ nav:
       - Scenarios: scenarios.md
       - Noise mismatch: mismatch.md
       - Fault matrix: faults.md
+      - Where the outage error comes from: attribution.md
+      - Honest returns and spoofs: separability.md
       - EuRoC, recorded IMU: euroc.md
+      - TUM VI, recorded IMU: tumvi.md
       - Performance: PERFORMANCE.md
       - Demo: demo.md
   - Reference:
@@ -133,6 +136,9 @@ nav:
       - "0013 Recorded IMU, simulated GNSS": adr/0013-recorded-imu-with-simulated-gnss.md
       - "0014 Textbook IMU process noise": adr/0014-textbook-imu-process-noise-by-default.md
       - "0015 Initial IMU bias sigmas": adr/0015-initial-imu-bias-sigmas-are-read.md
+      - "0016 TUM VI as a second dataset": adr/0016-tum-vi-as-a-second-recorded-dataset.md
+      - "0017 Stochastic clone": adr/0017-stochastic-clone-for-the-visual-update.md
+      - "0018 Honest return separability": adr/0018-honest-return-separability.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md
@@ -147,6 +153,7 @@ nav:
           - System requirements: product_management/01_system_requirements_spec.md
           - SWaP-C trade-off: product_management/02_swapc_tradeoff_matrix.md
           - FDIR and spoofing strategy: product_management/03_fdir_and_spoofing_strategy.md
+          - Sensor synchronisation and calibration: product_management/04_sensor_sync_and_calibration_spec.md
       - Defense assessment:
           - Overview: defense/README.md
           - Defense relevance: defense/DEFENSE_RELEVANCE.md

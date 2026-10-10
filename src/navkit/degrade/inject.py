@@ -296,17 +296,10 @@ def inject(
         # Regenerate the vision stream with the inflated noise rather than
         # scaling the existing realisation: scaling would leave the two
         # channels correlated in a way no real sensor is.
-        from ..sensors.models import VisionConfig, visual_updates
+        from ..sensors.models import visual_updates
 
         assert reference is not None, "vision noise scaling needs the reference trajectory"
-        cfg = VisionConfig(
-            enabled=scenario.vision.enabled,
-            rate_hz=scenario.vision.rate_hz,
-            rot_sigma_deg=scenario.vision.rot_sigma_deg,
-            trans_sigma_m=scenario.vision.trans_sigma_m,
-            noise_multiplier=scenario.vision.noise_multiplier,
-            seed=scenario.vision.seed,
-        )
+        cfg = scenario.vision
         vision = visual_updates(reference, cfg)
         if scenario.camera_drop is not None:
             vision = apply_camera_drop(
@@ -328,6 +321,11 @@ def inject(
                 dropped=d | mark_outages(vision.t, scenario.vision_outages),
                 name=vision.name,
             )
+
+    if scenario.vision.rereference and reference is not None:
+        from ..sensors.models import rereference_visual_updates
+
+        vision = rereference_visual_updates(vision, reference, scenario.vision, scenario.vision_time_offset_s)
 
     manifest = build_manifest(scenario, imu, gnss_off, vision, gyro_bias, accel_bias)
     return InjectedStreams(imu=imu, gnss=gnss_off, vision=vision, manifest=manifest)

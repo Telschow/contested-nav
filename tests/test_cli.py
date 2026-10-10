@@ -20,6 +20,14 @@ CASES = [
     "outage_control",
     "outage_visual",
     "outage_visual_degraded_camera",
+    "outage_visual_clone",
+    "outage_visual_degraded_camera_rereferenced",
+    "outage_visual_degraded_camera_clone",
+    "vision_only_clone",
+    "outage_visual_clone_outliers",
+    "outage_visual_clone_scale_drift",
+    "outage_visual_clone_correlated",
+    "outage_visual_clone_correlated_inflated",
 ]
 
 
@@ -86,7 +94,9 @@ def test_python_dash_m_navkit_is_an_alias() -> None:
 
 def test_sweep_without_a_kind_prints_usage_and_fails(capsys: pytest.CaptureFixture[str]) -> None:
     assert cli.main(["sweep"]) == 2
-    assert "navkit sweep {seeds, scenes, outages, mismatch, faults}" in capsys.readouterr().err
+    assert (
+        "navkit sweep {seeds, scenes, outages, mismatch, faults, attribution, separability}" in capsys.readouterr().err
+    )
 
 
 def test_sweep_help_succeeds(capsys: pytest.CaptureFixture[str]) -> None:

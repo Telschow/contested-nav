@@ -16,7 +16,7 @@ updates:
 
   # pip: the runtime and test dependencies. Grouped so a transitive bump does
   # not open a separate pull request for every package in the tree, and so the
-  # group is reviewed as a unit with uv.lock regenerated alongside it.
+  # group is reviewed as a unit.
   - package-ecosystem: pip
     directory: /
     schedule:

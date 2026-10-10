@@ -103,8 +103,8 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 | `vision_anchor_modelled` | flag | `True` | Carry the anchor error as filter state (true) or fold it into measurement noise (false, kept to reproduce the failure). |
 | `anchor_pos_sigma_m` | m | `1.0` | Declared 1-sigma of a stored anchor position. |
 | `anchor_rot_sigma_deg` | deg | `5.0` | Declared 1-sigma of a stored anchor attitude. |
-| `anchor_pos_drift_sigma_m_s` | m per sqrt(s) | `0.0` | Random-walk strength on the anchor position. Named m/s; it enters Q as sigma^2 dt, so the unit is m/sqrt(s). |
-| `anchor_rot_drift_sigma_deg_s` | deg per sqrt(s) | `0.0` | Random-walk strength on the anchor attitude. Same convention as the position term. |
+| `anchor_pos_drift_sigma_m_sqrt_s` | m per sqrt(s) | `0.0` | Random-walk strength on the anchor position. It enters Q as sigma^2 dt, so the variance grows by its square each second and the unit is m/sqrt(s). Called `anchor_pos_drift_sigma_m_s` until P5-05; the old name is accepted with a deprecation warning. |
+| `anchor_rot_drift_sigma_deg_sqrt_s` | deg per sqrt(s) | `0.0` | Random-walk strength on the anchor attitude. Same convention as the position term. Old name `anchor_rot_drift_sigma_deg_s`, accepted with a warning. |
 | `gate_sigma` | multiples of predicted sigma | `5.0` | Per-component residual gate. |
 | `fdir_config` | see FdirConfig | `factory` | Chi-square fault detection, isolation and recovery policy. |
 | `gravity` | m/s^2, world frame | `None` | Gravity vector; None uses (0, 0, 9.80665). |
@@ -115,6 +115,7 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 | `initial_gyro_bias_sigma` | rad/s | `None` | Initial 1-sigma of the gyro bias alone. `None` uses `initial_bias_sigma`. |
 | `initial_accel_bias_sigma` | m/s^2 | `None` | Initial 1-sigma of the accelerometer bias alone. `None` uses `initial_bias_sigma`. |
 | `process_noise_form` | none | `'textbook'` | How IMU white noise enters the process covariance. `legacy` puts `sigma_a^2 dt^3/3` on position and `sigma_g^2 dt^3/3` on attitude and has no velocity term. `textbook` uses `sigma_g^2 dt` on attitude and `sigma_a^2 dt` on velocity with the matching position terms. `textbook` is the default since [ADR-0014](adr/0014-textbook-imu-process-noise-by-default.md); `legacy` reproduces the earlier numbers. |
+| `vision_model` | none | `'anchor'` | How the previous visual pose is carried. `anchor` stores a raw copy with a declared uncertainty and no correlation with the live state ([ADR-0001](adr/0001-anchor-as-filter-state.md)). `clone` carries it as a stochastic clone: six error states that start perfectly correlated with the live pose and enter the relative-pose measurement through their own Jacobians ([ADR-0017](adr/0017-stochastic-clone-for-the-visual-update.md)). Opt-in; the default is unchanged. |
 
 ### Fault detection: `FdirConfig`
 
@@ -217,6 +218,12 @@ Every amplitude is a peak-to-trough excursion of a `1 - cos` term.
 | `rot_sigma_deg` | deg | `0.35` | 1-sigma noise on the relative rotation. |
 | `trans_sigma_m` | m | `0.05` | 1-sigma noise on the relative translation. |
 | `noise_multiplier` | ratio | `1.0` | Scale applied to both visual noise terms. |
+| `rereference` | bool | `False` | After frames are dropped, make each delivered measurement relative to the last delivered frame, with a fresh draw of the same per-measurement noise. Off by default, because the generator otherwise measures against a dropped frame, which a filter comparing with its last received frame cannot be consistent with. |
+| `noise_corr_s` | s | `0.0` | Correlation time of the per-measurement errors. `0` draws them independently. Above `0` they are filtered across frames with the marginal spread unchanged, as errors are when consecutive frames share features. A stress option. |
+| `outlier_fraction` | ratio | `0.0` | Share of frames whose error is multiplied by `outlier_scale`, as with a wrong feature match. A stress option. |
+| `outlier_scale` | ratio | `20.0` | Factor on the error of an outlier frame. |
+| `scale_sigma` | ratio | `0.0` | Fractional error on the translation scale, a slowly drifting Gauss-Markov process, as monocular scale drifts. A stress option. |
+| `scale_tau_s` | s | `30.0` | Correlation time of that scale error. |
 | `seed` | integer | `0` | Seed of the vision noise stream. |
 
 ### Camera drops: `CameraDropConfig`
@@ -250,7 +257,7 @@ default in the benchmark:
 | `vision_fuse` | fuse visual updates; the scenario's `vision.enabled` alone is not enough |
 | `vision_keyframe_interval`, `vision_anchor_modelled` | as in `EskfConfig` |
 | `anchor_pos_sigma_m`, `anchor_rot_sigma_deg` | as in `EskfConfig` |
-| `anchor_pos_drift_sigma_m_s`, `anchor_rot_drift_sigma_deg_s` | as in `EskfConfig` |
+| `anchor_pos_drift_sigma_m_sqrt_s`, `anchor_rot_drift_sigma_deg_sqrt_s` | as in `EskfConfig`; the old `_m_s` and `_deg_s` names are accepted with a deprecation warning |
 | `rpe_delta_s` | spacing of the relative-pose-error metric, s |
 | `gnss_sigma_scale`, `vision_sigma_scale` | multiply the GNSS or vision noise the *filter* assumes (default 1); the generator keeps the true noise |
 
@@ -303,16 +310,18 @@ contract for the seeded benchmark.
 ## As implemented: things a reader should know
 
 These are observations of the code as it stands, recorded so that nobody has to
-rediscover them. Items 1, 3 and 4 were changed since; the others are still as described.
+rediscover them. Items 1 to 4 were changed since; the others are still as described.
 
 1. **`gyro_bias_sigma` and `accel_bias_sigma` are now read.** The generator draws an initial bias
    from each, per axis, on a separate random stream, so the white noise and the random walk of every
    scenario are drawn as before. The benchmark filter is told the same sigmas as its initial bias
    uncertainty. Before this, both were accepted, scaled and hashed but read by nothing.
-2. **Two drift keys are named per second and are per square-root second.**
-   `anchor_pos_drift_sigma_m_s` and `anchor_rot_drift_sigma_deg_s` enter the process
-   noise as `sigma^2 dt`, so a value of 0.01 means a variance that grows by 1e-4 per
-   second, and the dimensionally correct unit is m/sqrt(s) and deg/sqrt(s).
+2. **Two drift keys were named per second and are per square-root second.**
+   They enter the process noise as `sigma^2 dt`, so a value of 0.01 means a variance that
+   grows by 1e-4 per second, and the unit is m/sqrt(s) and deg/sqrt(s). They are now
+   `anchor_pos_drift_sigma_m_sqrt_s` and `anchor_rot_drift_sigma_deg_sqrt_s`. The old names are
+   accepted by the constructor and as estimator keys, with a deprecation warning; the value is
+   unchanged. Reading an old name from a config object returns `None`.
 3. **`initial_bias_sigma` is one number for two units.** It sets the initial standard
    deviation of the gyro bias (rad/s) and of the accelerometer bias (m/s^2). The two keys
    `initial_gyro_bias_sigma` and `initial_accel_bias_sigma` now set them separately, and either

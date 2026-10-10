@@ -39,14 +39,14 @@ from . import __version__
 from .euroc_eval import (
     CAVEATS,
     DATA_CLASS,
-    DEFAULT_ROOT,
     PRESETS,
     EurocSequence,
     RunOptions,
     SequenceError,
-    load_sequence,
+    dataset_loader,
     run_sequence,
 )
+from .io import tumvi_fetch
 from .io.euroc_fetch import IMU_CSV, SEQUENCES, TRUTH_CSV
 
 #: Named settings. Each maps to keyword arguments of :class:`RunOptions`.
@@ -54,9 +54,27 @@ CONFIGS: dict[str, dict[str, Any]] = {
     "default": {},
     "preset": {"preset": "adis16448", **PRESETS["adis16448"]},
     "legacy": {"process_noise": "legacy"},
+    "walk10": {"preset": "adis16448-walk", **PRESETS["adis16448-walk"]},
+}
+
+#: TUM VI: ``file`` is the dataset's own figures (inflated by its authors: white noise x2, bias random walk
+#: x10), ``allan`` the raw figures from their Allan plots, ``file-walk10`` the file's figures with the bias
+#: walks multiplied by a further 10. All declare a bias prior, because the start bias is only estimated.
+TUMVI_CONFIGS: dict[str, dict[str, Any]] = {
+    "file": {"bias_sigma": 0.05},
+    "allan": {"noise_source": "allan", "bias_sigma": 0.05},
+    "file-walk10": {"bias_sigma": 0.05, "bias_walk_scale": 10.0},
 }
 
 DEFAULT_CONFIGS = ("default", "preset")
+DEFAULT_TUMVI_CONFIGS = ("file", "allan")
+_ALL_CONFIGS = {**CONFIGS, **TUMVI_CONFIGS}
+
+
+def configs_for(dataset: str) -> dict[str, dict[str, Any]]:
+    return TUMVI_CONFIGS if dataset == "tumvi" else CONFIGS
+
+
 DEFAULT_STARTS = (15.0, 35.0, 60.0, 90.0)
 DEFAULT_OUTAGE_S = 20.0
 DEFAULT_LOST_THRESHOLD = 0.2
@@ -94,13 +112,19 @@ def group_of(sequence: str) -> str:
         return "Machine Hall"
     if sequence.startswith(("V1_", "V2_")):
         return "Vicon room"
+    if sequence.startswith("room"):
+        return "TUM VI room"
     return "other"
 
 
-def fetched_sequences(root: str | Path) -> list[str]:
+def fetched_sequences(root: str | Path, dataset: str = "euroc") -> list[str]:
     """Known sequences whose IMU and ground-truth files are under ``root``, in dataset order."""
     base = Path(root)
-    return [name for name in SEQUENCES if (base / name / IMU_CSV).is_file() and (base / name / TRUTH_CSV).is_file()]
+    if dataset == "tumvi":
+        names, imu, truth = tumvi_fetch.SEQUENCES, tumvi_fetch.IMU_CSV, tumvi_fetch.TRUTH_CSV
+    else:
+        names, imu, truth = tuple(SEQUENCES), IMU_CSV, TRUTH_CSV
+    return [name for name in names if (base / name / imu).is_file() and (base / name / truth).is_file()]
 
 
 def fitting_starts(duration_s: float, starts: tuple[float, ...], outage_s: float) -> list[float]:
@@ -131,7 +155,7 @@ class Row:
 
 
 def run_one(seq: EurocSequence, config: str, start_s: float, outage_s: float, seed: int, threshold: float) -> Row:
-    kwargs = dict(CONFIGS[config])
+    kwargs = dict(_ALL_CONFIGS[config])
     record = run_sequence(seq, RunOptions(seed=seed, outages=((start_s, outage_s),), **kwargs))
     stats = record["stats"]
     seen = float(stats["gnss_fixes_seen"])
@@ -166,24 +190,28 @@ def compare(
     seeds: int,
     threshold: float,
     log: Any = None,
+    first_seed: int = 0,
+    dataset: str = "euroc",
 ) -> tuple[list[Row], dict[str, str]]:
     """Run every combination. Returns the rows and a ``{sequence: reason}`` map of what was skipped."""
-    unknown = [c for c in configs if c not in CONFIGS]
+    table = configs_for(dataset)
+    unknown = [c for c in configs if c not in table]
     if unknown:
-        raise CompareError(f"unknown configuration {unknown[0]!r}; known: {', '.join(CONFIGS)}")
+        raise CompareError(f"unknown configuration {unknown[0]!r} for {dataset}; known: {', '.join(table)}")
     if seeds < 1 or outage_s <= 0 or not 0.0 <= threshold < 1.0:
         raise CompareError("need --seeds >= 1, --outage > 0 and 0 <= --lost-threshold < 1")
+    loader, _ = dataset_loader(dataset)
     rows: list[Row] = []
     skipped: dict[str, str] = {}
     for name in sequences:
-        seq = load_sequence(root, name)
+        seq = loader(root, name)
         window = float(min(seq.imu.t[-1], seq.truth.t[-1]) - max(seq.imu.t[0], seq.truth.t[0]))
         usable = fitting_starts(window, starts, outage_s)
         if not usable:
             skipped[name] = f"no outage start fits in its {window:.0f} s window"
             continue
         for start in usable:
-            for seed in range(seeds):
+            for seed in range(first_seed, first_seed + seeds):
                 for config in configs:
                     rows.append(run_one(seq, config, start, outage_s, seed, threshold))
         if log:
@@ -208,7 +236,8 @@ def breakdown(rows: list[Row]) -> list[dict[str, Any]]:
     """Statistics for every (scope, config): all sequences, each group, each sequence."""
     configs = list(dict.fromkeys(r.config for r in rows))
     scopes: list[tuple[str, list[Row]]] = [("all", rows)]
-    for g in dict.fromkeys(group_of(r.sequence) for r in rows):
+    groups = list(dict.fromkeys(group_of(r.sequence) for r in rows))
+    for g in groups if len(groups) > 1 else []:  # a lone environment would only repeat the "all" row
         scopes.append((g, [r for r in rows if group_of(r.sequence) == g]))
     for s in dict.fromkeys(r.sequence for r in rows):
         scopes.append((s, [r for r in rows if r.sequence == s]))
@@ -281,18 +310,51 @@ def failing_runs_markdown(rows: list[Row], config: str = "preset") -> str:
 
 
 def page_block(rows: list[Row], threshold: float) -> str:
-    """What goes between the markers of ``docs/euroc.md``."""
-    return as_markdown(rows, threshold) + "\n\n" + failing_runs_markdown(rows)
+    """What goes between the ``euroc`` markers of ``docs/euroc.md``."""
+    configs = list(dict.fromkeys(r.config for r in rows))
+    tail = [
+        failing_runs_markdown(rows, c)
+        for c in configs
+        if c not in BASELINE_CONFIGS and any(r.lost for r in rows if r.config == c)
+    ]
+    return "\n\n".join([as_markdown(rows, threshold), *tail])
 
 
+def validation_block(rows: list[Row], threshold: float) -> str:
+    """The checks run after the settings were chosen: one line per outage length and configuration."""
+    lines = [
+        f"Lost = more than {100 * threshold:g}% of GNSS fixes rejected.",
+        "",
+        "| Outage s | Config | Runs | Lost | Median NEES (expected 3) | Mean 2σ coverage |",
+        "|---:|---|---:|---:|---:|---:|",
+    ]
+    for length in sorted({r.outage_s for r in rows}):
+        for c in dict.fromkeys(r.config for r in rows):
+            sel = [r for r in rows if r.outage_s == length and r.config == c]
+            if sel:
+                s = _stats(sel)
+                lines.append(
+                    f"| {length:g} | {c} | {s['runs']:.0f} | {s['lost']:.0f} | {s['median_nees']:.2f} | "
+                    f"{100 * s['mean_coverage_2sigma']:.1f}% |"
+                )
+    return "\n".join(lines)
+
+
+PAGE_BLOCKS = ("euroc", "euroc-validation", "tumvi")
+#: Configurations whose lost runs are counted in a table but not listed under it: the as-shipped baseline.
+BASELINE_CONFIGS = ("default", "file")
 PAGE_MARKERS = ("<!-- euroc:start -->", "<!-- euroc:end -->")
 
 
-def write_page(path: str | Path, block: str) -> None:
-    """Replace the text between the page markers. Refuses a page without them."""
+def markers(name: str) -> tuple[str, str]:
+    return (f"<!-- {name}:start -->", f"<!-- {name}:end -->")
+
+
+def write_page(path: str | Path, block: str, name: str = "euroc") -> None:
+    """Replace the text between a block's markers. Refuses a page without them."""
     page = Path(path)
     text = page.read_text(encoding="utf-8")
-    start, end = PAGE_MARKERS
+    start, end = markers(name)
     if start not in text or end not in text or text.index(start) > text.index(end):
         raise CompareError(f"{page} needs the lines {start} and {end}, in that order")
     head, rest = text.split(start, 1)
@@ -321,6 +383,7 @@ def build_record(
     root: str | Path,
     args: dict[str, Any],
     threshold: float,
+    dataset: str = "euroc",
 ) -> dict[str, Any]:
     sequences = list(dict.fromkeys(r.sequence for r in rows))
     return {
@@ -328,10 +391,10 @@ def build_record(
         "data_class": DATA_CLASS,
         "caveats": list(CAVEATS),
         "navkit_version": __version__,
-        "dataset": "EuRoC MAV",
+        "dataset": "TUM VI" if dataset == "tumvi" else "EuRoC MAV",
         "options": args,
         "lost_threshold": threshold,
-        "configs": {name: CONFIGS[name] for name in dict.fromkeys(r.config for r in rows)},
+        "configs": {name: _ALL_CONFIGS[name] for name in dict.fromkeys(r.config for r in rows)},
         "inputs": provenance(root, sequences),
         "skipped": skipped,
         "summary": breakdown(rows),
@@ -357,14 +420,21 @@ def build_parser() -> argparse.ArgumentParser:
             "and count the runs that lose GNSS. GNSS is simulated from the ground truth."
         ),
     )
+    p.add_argument("--dataset", choices=("euroc", "tumvi"), default="euroc", help="which dataset to compare on")
     p.add_argument(
-        "--root", default=DEFAULT_ROOT, help="where `navkit euroc fetch` wrote the files (default: %(default)s)"
+        "--root", default=None, help="where the fetch command wrote the files (default: the dataset's folder)"
     )
     p.add_argument("--sequence", "-s", action="append", default=[], metavar="NAME", help="default: every fetched one")
-    p.add_argument("--configs", default=",".join(DEFAULT_CONFIGS), help=f"comma separated, from {', '.join(CONFIGS)}")
+    p.add_argument(
+        "--configs",
+        default=None,
+        help=f"comma separated. EuRoC: {', '.join(CONFIGS)} (default {','.join(DEFAULT_CONFIGS)}). "
+        f"TUM VI: {', '.join(TUMVI_CONFIGS)} (default {','.join(DEFAULT_TUMVI_CONFIGS)})",
+    )
     p.add_argument("--starts", type=_floats, default=DEFAULT_STARTS, help="outage start times in s, comma separated")
     p.add_argument("--outage", type=float, default=DEFAULT_OUTAGE_S, help="outage length in s (default: %(default)s)")
     p.add_argument("--seeds", type=int, default=2, help="noise seeds per case (default: %(default)s)")
+    p.add_argument("--first-seed", type=int, default=0, help="the seeds run are first-seed, first-seed + 1, ...")
     p.add_argument(
         "--lost-threshold",
         type=float,
@@ -374,7 +444,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--from-csv", default=None, help="rebuild the table and page from a saved --csv file; no runs")
     p.add_argument("--csv", default=None, help="write one row per run")
     p.add_argument("--json", default=None, help="write the full record with provenance")
-    p.add_argument("--page", default=None, help="fill the table between the euroc markers of this Markdown page")
+    p.add_argument("--page", default=None, help="fill a table between the markers of this Markdown page")
+    p.add_argument(
+        "--block",
+        choices=PAGE_BLOCKS,
+        default="euroc",
+        help="which block --page fills: the main table, or the checks run after the settings were chosen",
+    )
     p.add_argument("--markdown", action="store_true", help="print the summary table")
     return p
 
@@ -383,6 +459,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     skipped: dict[str, str] = {}
     sequences: list[str] = []
+    root = args.root or ""  # replaced by the dataset's folder when a real run starts; unused with --from-csv
     if args.from_csv:
         if args.json:
             print("error: --json needs a real run, not --from-csv", file=sys.stderr)
@@ -393,15 +470,22 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         configs: tuple[str, ...] = ()
     else:
-        sequences = args.sequence or fetched_sequences(args.root)
+        _, default_root = dataset_loader(args.dataset)
+        root = args.root or default_root
+        sequences = args.sequence or fetched_sequences(root, args.dataset)
         if not sequences:
-            hint = "navkit euroc fetch --sequence MH_01_easy"
-            print(f"error: no EuRoC sequences under {args.root}. Fetch some with: {hint}", file=sys.stderr)
+            hint = (
+                "navkit tumvi fetch --sequence room1"
+                if args.dataset == "tumvi"
+                else "navkit euroc fetch --sequence MH_01_easy"
+            )
+            print(f"error: no sequences under {root}. Fetch some with: {hint}", file=sys.stderr)
             return 1
-        configs = tuple(c.strip() for c in args.configs.split(",") if c.strip())
+        defaults = DEFAULT_TUMVI_CONFIGS if args.dataset == "tumvi" else DEFAULT_CONFIGS
+        configs = tuple(c.strip() for c in (args.configs or ",".join(defaults)).split(",") if c.strip())
         try:
             rows, skipped = compare(
-                args.root,
+                root,
                 sequences,
                 configs,
                 args.starts,
@@ -409,6 +493,8 @@ def main(argv: list[str] | None = None) -> int:
                 args.seeds,
                 args.lost_threshold,
                 log=lambda m: print(m, file=sys.stderr, flush=True),
+                first_seed=args.first_seed,
+                dataset=args.dataset,
             )
         except (CompareError, SequenceError) as exc:
             print(f"error: {exc}", file=sys.stderr)
@@ -432,15 +518,17 @@ def main(argv: list[str] | None = None) -> int:
             "starts_s": list(args.starts),
             "outage_s": args.outage,
             "seeds": args.seeds,
+            "first_seed": args.first_seed,
         }
         path.write_text(
-            json.dumps(build_record(rows, skipped, args.root, options, args.lost_threshold), indent=2) + "\n",
+            json.dumps(build_record(rows, skipped, root, options, args.lost_threshold, args.dataset), indent=2) + "\n",
             encoding="utf-8",
         )
         print(f"wrote {path}", file=sys.stderr)
     if args.page:
         try:
-            write_page(args.page, page_block(rows, args.lost_threshold))
+            build = validation_block if args.block == "euroc-validation" else page_block
+            write_page(args.page, build(rows, args.lost_threshold), args.block)
         except CompareError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1

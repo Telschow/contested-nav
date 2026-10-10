@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ..io.imu import DEFAULT_NOISE, ImuNoiseModel
-from ..sensors.models import GnssConfig, VisionConfig
+from ..sensors.models import VISION_STRESS_KEYS, GnssConfig, VisionConfig
 
 VALID_SCENARIOS = (
     "normal",
@@ -217,7 +217,9 @@ def scenario_from_dict(d: dict[str, Any], problems: list[str] | None = None) -> 
         seed=int(g_raw.get("seed", 0)),
     )
     v_raw = d.get("vision") or {}
-    _reject_unknown(v_raw, VisionConfig().as_dict(), "scenario.vision", problems)
+    _reject_unknown(
+        v_raw, {**VisionConfig().as_dict(), **dict.fromkeys(VISION_STRESS_KEYS, 0)}, "scenario.vision", problems
+    )
     v = VisionConfig(
         enabled=bool(v_raw.get("enabled", True)),
         rate_hz=float(v_raw.get("rate_hz", 20.0)),
@@ -225,6 +227,12 @@ def scenario_from_dict(d: dict[str, Any], problems: list[str] | None = None) -> 
         trans_sigma_m=float(v_raw.get("trans_sigma_m", 0.05)),
         noise_multiplier=float(v_raw.get("noise_multiplier", 1.0)),
         seed=int(v_raw.get("seed", 0)),
+        rereference=bool(v_raw.get("rereference", False)),
+        noise_corr_s=float(v_raw.get("noise_corr_s", 0.0)),
+        outlier_fraction=float(v_raw.get("outlier_fraction", 0.0)),
+        outlier_scale=float(v_raw.get("outlier_scale", 20.0)),
+        scale_sigma=float(v_raw.get("scale_sigma", 0.0)),
+        scale_tau_s=float(v_raw.get("scale_tau_s", 30.0)),
     )
     noise_raw = dict(d.get("imu_noise") or {})
     unknown = set(noise_raw) - set(DEFAULT_NOISE.as_dict())
@@ -285,6 +293,13 @@ def _validate_scenario(s: Scenario, problems: list[str]) -> None:
         problems.append(f"scenario.vision.rot_sigma_deg must be > 0, got {s.vision.rot_sigma_deg}")
     if s.vision.trans_sigma_m <= 0.0:
         problems.append(f"scenario.vision.trans_sigma_m must be > 0, got {s.vision.trans_sigma_m}")
+    v = s.vision
+    if v.noise_corr_s < 0.0 or v.scale_sigma < 0.0 or v.scale_tau_s <= 0.0 or v.outlier_scale < 0.0:
+        problems.append("scenario.vision: noise_corr_s, scale_sigma and outlier_scale must be >= 0 and scale_tau_s > 0")
+    if not 0.0 <= v.outlier_fraction <= 1.0:
+        problems.append(f"scenario.vision.outlier_fraction must be in [0, 1], got {v.outlier_fraction}")
+    if v.rereference and v.stress():
+        problems.append("scenario.vision: rereference does not model correlation, outliers or scale error; use one")
     if s.vision.noise_multiplier < 0.0:
         problems.append(f"scenario.vision.noise_multiplier must be >= 0, got {s.vision.noise_multiplier}")
     if s.imu_noise_scale < 0.0:
