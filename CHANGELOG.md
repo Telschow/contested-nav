@@ -86,8 +86,8 @@ this project uses [semantic versioning](https://semver.org/).
   simulated GNSS. The spoof population is derived from the honest innovations, so no spoof is injected into a
   running filter. With the default noise the two overlap. With a calibrated bias walk they separate, but only for
   spoofs larger than the claimed uncertainty. The filter now records each GNSS innovation before gating, and
-  `run_sequence` can return them. [ADR-0018](docs/adr/0018-honest-return-separability.md) is proposed; the
-  decision section is for the maintainer to write.
+  `run_sequence` can return them. [ADR-0018](docs/adr/0018-honest-return-separability.md) is accepted: use the
+  calibrated bias walk on recorded IMUs, leave the gate alone, and state the limit.
 
 ### Changed
 
@@ -115,8 +115,7 @@ this project uses [semantic versioning](https://semver.org/).
   SRS and the SWaP-C matrix label the column Area, since they name workstreams. The engineering baseline no
   longer quotes the first characters of a provider key. A test fails if a table names a team or manager as owner
   or a document quotes the start of a provider key.
-- `uv.lock` is removed. ADR-0011 called it stale, and CI never used it. The CI and Dependabot comments that mention
-  it are not yet updated.
+- `uv.lock` is removed. ADR-0011 called it stale, and CI never used it.
 
 ### Found, not fixed
 

@@ -276,7 +276,7 @@ a technical one.
       The recordings' timestamp regularity and ground-truth-to-IMU offset are measured, not assumed.
 - [x] The documents above live in `docs/product_management/`, together with the FDIR
       and spoofing strategy (`03_fdir_and_spoofing_strategy.md`). The risk log is
-      [`RISKS.md`](RISKS.md). Still missing: a work breakdown.
+      [`RISKS.md`](https://github.com/Telschow/contested-nav/blob/main/RISKS.md). Still missing: a work breakdown.
 
 **Exit test:** a reviewer can trace every requirement in the SRS to a test, a
 configuration, or an explicitly declared gap. The SRS has a traceability matrix
@@ -298,7 +298,7 @@ Where each item stands:
 - **Spike done, opt-in:** P5-03 (the stochastic clone, [ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)).
   Calibrated for independent visual errors, not for correlated ones. The shipped configuration is unchanged.
 - **Partly done:** P5-09 (the stale figures in docstrings are fixed; the baseline records are excluded from the site
-  and not rewritten), P5-12 (the pull requests it names are closed; whether `uv.lock` stays is undecided).
+  and not rewritten), P5-12 (the pull requests it names are closed; `uv.lock` was removed).
 - **Not started:** P5-11 (a comparison with an established consistent
   estimator, which strains constraint S1).
 

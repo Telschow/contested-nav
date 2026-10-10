@@ -66,4 +66,4 @@ rejects many honest returns. This is the lockout of the [attribution](attributio
 The fix for the lockout is the calibrated covariance, not a looser or tighter gate. A spoof smaller than the
 honest uncertainty cannot be told from an honest return by the first fix. That is a limit of the measurement,
 not of the tuning. The shipped configuration is unchanged. The decision is recorded in
-[ADR-0018](adr/0018-honest-return-separability.md), whose decision section the maintainer writes.
+[ADR-0018](adr/0018-honest-return-separability.md).
