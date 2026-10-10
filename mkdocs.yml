@@ -105,6 +105,7 @@ nav:
       - Where the outage error comes from: attribution.md
       - Honest returns and spoofs: separability.md
       - Slow-ramp spoofing: slow_ramp.md
+      - A second source against a ramp: vision_ramp.md
       - EuRoC, recorded IMU: euroc.md
       - TUM VI, recorded IMU: tumvi.md
       - Performance: PERFORMANCE.md
@@ -141,6 +142,7 @@ nav:
       - "0017 Stochastic clone": adr/0017-stochastic-clone-for-the-visual-update.md
       - "0018 Honest return separability": adr/0018-honest-return-separability.md
       - "0019 Slow-ramp spoofing": adr/0019-slow-ramp-spoofing.md
+      - "0020 Second source against a ramp": adr/0020-second-source-against-a-ramp.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md
@@ -156,6 +158,7 @@ nav:
           - SWaP-C trade-off: product_management/02_swapc_tradeoff_matrix.md
           - FDIR and spoofing strategy: product_management/03_fdir_and_spoofing_strategy.md
           - Sensor synchronisation and calibration: product_management/04_sensor_sync_and_calibration_spec.md
+          - Work breakdown and the B4 estimate: product_management/05_work_breakdown.md
       - Defense assessment:
           - Overview: defense/README.md
           - Defense relevance: defense/DEFENSE_RELEVANCE.md

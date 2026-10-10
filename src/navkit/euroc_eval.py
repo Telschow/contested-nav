@@ -59,7 +59,7 @@ from .io.euroc_fetch import IMU_CSV, IMU_SENSOR, SEQUENCES, TRUTH_CSV
 from .io.imu import DEFAULT_NOISE, ImuNoiseModel, read_euroc_imu
 from .io.trajectory import _read_rows
 from .recorded import GRAVITY_Z_UP, EurocSequence, SequenceError, sha256_of
-from .sensors.models import GnssConfig, gnss_fixes
+from .sensors.models import GnssConfig, VisionConfig, gnss_fixes, visual_updates
 from .synthetic import SyntheticConfig, analytic_kinematics, analytic_pose
 from .types import GRAVITY, ImuSample, Trajectory, interpolate_trajectory
 
@@ -214,9 +214,21 @@ class RunOptions:
     #: (start in s after the window start, rate in m/s): from the start on, every GNSS position is shifted along the
     #: world x axis by rate * (t - start). A slow-ramp spoof. None leaves the GNSS honest.
     spoof: tuple[float, float] | None = None
+    #: A simulated visual front end, generated from the ground truth: None (off), "anchor" or "clone" (the filter's
+    #: ``vision_model``). ``vision_corr_s`` makes its errors correlated over that many seconds; ``vision_noise_scale``
+    #: multiplies the noise the filter assumes. Never images; see ADR-0017.
+    vision: str | None = None
+    vision_corr_s: float = 0.0
+    vision_noise_scale: float = 1.0
 
     def as_dict(self) -> dict[str, Any]:
-        extra = {"spoof": list(self.spoof)} if self.spoof is not None else {}
+        extra: dict[str, Any] = {"spoof": list(self.spoof)} if self.spoof is not None else {}
+        if self.vision is not None:
+            extra["vision"] = {
+                "model": self.vision,
+                "corr_s": self.vision_corr_s,
+                "noise_scale": self.vision_noise_scale,
+            }
         return {
             "gnss_rate_hz": self.gnss_rate_hz,
             "gnss_sigma_m": self.gnss_sigma_m,
@@ -419,6 +431,20 @@ def run_sequence(
         gnss.positions = gnss.positions.copy()
         gnss.positions[:, 0] += opts.spoof[1] * np.clip(gnss.t - onset, 0.0, None)
 
+    vision = None
+    vision_kwargs: dict[str, Any] = {}
+    if opts.vision is not None:
+        if opts.vision not in ("anchor", "clone"):
+            raise SequenceError(f"unknown vision model {opts.vision!r}; known: anchor, clone")
+        vcfg = VisionConfig(seed=opts.seed, noise_corr_s=opts.vision_corr_s)
+        vision = visual_updates(reference, vcfg)
+        vision_kwargs = {
+            "vision_enabled": True,
+            "vision_model": opts.vision,
+            "vision_rot_sigma_deg": vcfg.rot_sigma_deg * opts.vision_noise_scale,
+            "vision_trans_sigma_m": vcfg.trans_sigma_m * opts.vision_noise_scale,
+        }
+
     cfg_kwargs: dict[str, Any] = {}
     if opts.bias_sigma is not None:
         cfg_kwargs["initial_bias_sigma"] = opts.bias_sigma
@@ -429,13 +455,12 @@ def run_sequence(
     cfg = EskfConfig(
         imu_noise=_filter_noise(base_noise, opts),
         gnss_position_sigma_m=opts.gnss_sigma_m,
-        vision_enabled=False,
         gravity=GRAVITY_Z_UP,
         process_noise_form=opts.process_noise,
-        **cfg_kwargs,
+        **{"vision_enabled": False, **cfg_kwargs, **vision_kwargs},
     )
     initial = _initial_state(seq, opts, cfg, float(imu.t[0]), mode, imu)
-    result = ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, initial=initial)
+    result = ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, vision=vision, initial=initial)
     est = result.trajectory
     if innovations_out is not None:
         innovations_out.extend(est.metadata.get("gnss_innovations", []))
