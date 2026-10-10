@@ -24,4 +24,4 @@ what it cost, and what was rejected.
 | [ADR-0017](0017-stochastic-clone-for-the-visual-update.md) | A stochastic clone for the visual update | accepted |
 | [ADR-0018](0018-honest-return-separability.md) | Honest returns after an outage and the GNSS gate | accepted |
 | [ADR-0019](0019-slow-ramp-spoofing.md) | Slow-ramp GNSS spoofing is not detectable with IMU and GNSS alone | accepted |
-| [ADR-0020](0020-second-source-against-a-ramp.md) | A second source against a slow-ramp spoof | proposed |
+| [ADR-0020](0020-second-source-against-a-ramp.md) | A second source against a slow-ramp spoof | accepted |
