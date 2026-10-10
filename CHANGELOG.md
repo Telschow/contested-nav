@@ -95,6 +95,16 @@ this project uses [semantic versioning](https://semver.org/).
   EuRoC. `RunOptions.spoof` applies the ramp. [ADR-0019](docs/adr/0019-slow-ramp-spoofing.md) is accepted: the limit is
   documented in the limitations, the risk log and the roadmap.
 
+- [`docs/product_management/05_work_breakdown.md`](docs/product_management/05_work_breakdown.md): the remaining work
+  as packages with a deliverable, a dependency and an exit test, and three options for closing blocker B4 with a
+  recommendation. Sizes are judgements, and the page says so.
+
+- `navkit sweep vision-ramp` and [`docs/vision_ramp.md`](docs/vision_ramp.md): the slow-ramp runs with a simulated visual
+  source fused by the stochastic clone. With independent visual errors a 2 m/s ramp is caught and not followed. A
+  1 m/s ramp is seen and still followed. With correlated errors nothing is caught. `RunOptions.vision` adds the
+  source. [ADR-0020](docs/adr/0020-second-source-against-a-ramp.md) is proposed; the decision section is for the
+  maintainer to write.
+
 ### Changed
 
 - The initial IMU bias sigmas are read ([ADR-0015](docs/adr/0015-initial-imu-bias-sigmas-are-read.md), accepted).
