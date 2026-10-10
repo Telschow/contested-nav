@@ -38,7 +38,8 @@ is unit tested"; the module sat at 10.6% coverage.
 - Make the per-format layout a documented, tested property of each reader.
 - Test against *specific known rotations*, not structural invariants.
 - Add an end-to-end check against the published TUM VI room1/512/16 ATE
-  (0.069 m), skipped when the dataset is absent.
+  (0.069 m), skipped when the dataset is absent. (Replaced later: the reference files could not be fetched, so the
+  test always skipped. A gyroscope check on recorded data took its place; see R5 in `CONSTRAINTS.md`.)
 
 ## Consequences
 
