@@ -155,7 +155,8 @@ Known simplifications
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+import warnings
+from dataclasses import InitVar, dataclass, field
 from typing import TypedDict
 
 import numpy as np
@@ -344,13 +345,15 @@ class EskfConfig:
     anchor_pos_sigma_m: float = 1.0
     #: Declared 1-sigma on a stored anchor attitude, in degrees.
     anchor_rot_sigma_deg: float = 5.0
-    #: 1-sigma random walk on the stored anchor, in m/s and deg/s. Zero by
-    #: default: an anchor held for a short run is best modelled as a constant
-    #: error. Raise it when the anchor is held long enough for front-end drift
-    #: to dominate, which is what makes a long vision-only run grow its
-    #: position uncertainty instead of holding it frozen.
-    anchor_pos_drift_sigma_m_s: float = 0.0
-    anchor_rot_drift_sigma_deg_s: float = 0.0
+    #: Random-walk strength on the stored anchor, in m per square-root second and deg per square-root
+    #: second: the variance of the drift grows by this squared every second (``sigma^2 dt`` in Q), so
+    #: the unit is not per second. Zero by default: an anchor held for a short run is best modelled
+    #: as a constant error. Raise it when the anchor is held long enough for front-end drift to
+    #: dominate, which is what makes a long vision-only run grow its position uncertainty instead of
+    #: holding it frozen. These were named ``anchor_pos_drift_sigma_m_s`` and
+    #: ``anchor_rot_drift_sigma_deg_s`` until the rename (P5-05); the old names are still accepted.
+    anchor_pos_drift_sigma_m_sqrt_s: float = 0.0
+    anchor_rot_drift_sigma_deg_sqrt_s: float = 0.0
     gate_sigma: float = 5.0
     #: Chi-square fault detection, isolation and recovery (ADR-0005).
     #:
@@ -379,6 +382,31 @@ class EskfConfig:
     #: ``sigma_g^2 dt`` on attitude, and ``sigma_a^2 dt`` on velocity with the position terms
     #: ``dt^3 / 3`` and ``dt^2 / 2`` that go with it.
     process_noise_form: str = "textbook"
+    #: How the previous visual pose is carried. ``"anchor"`` (the default) stores a raw copy with a declared
+    #: uncertainty and zero correlation with the live state (ADR-0001). ``"clone"`` is a spike for blocker B1:
+    #: the previous pose is a stochastic clone, six error states that start perfectly correlated with the live
+    #: pose, propagate with it, and enter the relative-pose measurement through their own Jacobians. It is
+    #: behind a flag so the anchor model stays as the control.
+    vision_model: str = "anchor"
+    #: Deprecated names of the two drift strengths above. The constructor accepts them and does not store them, so
+    #: reading them gives ``None``: use the new names.
+    anchor_pos_drift_sigma_m_s: InitVar[float | None] = None
+    anchor_rot_drift_sigma_deg_s: InitVar[float | None] = None
+
+    def __post_init__(
+        self, anchor_pos_drift_sigma_m_s: float | None, anchor_rot_drift_sigma_deg_s: float | None
+    ) -> None:
+        for old, new, value in (
+            ("anchor_pos_drift_sigma_m_s", "anchor_pos_drift_sigma_m_sqrt_s", anchor_pos_drift_sigma_m_s),
+            ("anchor_rot_drift_sigma_deg_s", "anchor_rot_drift_sigma_deg_sqrt_s", anchor_rot_drift_sigma_deg_s),
+        ):
+            if value is None:
+                continue
+            current = getattr(self, new)
+            if current != 0.0 and float(value) != current:
+                raise TypeError(f"{old} is the old name of {new}; they were given different values")
+            warnings.warn(f"{old} is deprecated; use {new}", DeprecationWarning, stacklevel=3)
+            setattr(self, new, float(value))
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -396,8 +424,8 @@ class EskfConfig:
             # agree with each other while both disagree with the filter.
             "anchor_pos_sigma_m": self.anchor_pos_sigma_m,
             "anchor_rot_sigma_deg": self.anchor_rot_sigma_deg,
-            "anchor_pos_drift_sigma_m_s": self.anchor_pos_drift_sigma_m_s,
-            "anchor_rot_drift_sigma_deg_s": self.anchor_rot_drift_sigma_deg_s,
+            "anchor_pos_drift_sigma_m_sqrt_s": self.anchor_pos_drift_sigma_m_sqrt_s,
+            "anchor_rot_drift_sigma_deg_sqrt_s": self.anchor_rot_drift_sigma_deg_sqrt_s,
             "gate_sigma": self.gate_sigma,
             # FDIR belongs in the serialised config: it decides which updates
             # enter the filter, so a config hash that omits it describes a
@@ -414,6 +442,7 @@ class EskfConfig:
             "initial_gyro_bias_sigma": self.initial_gyro_bias_sigma,
             "initial_accel_bias_sigma": self.initial_accel_bias_sigma,
             "process_noise_form": self.process_noise_form,
+            "vision_model": self.vision_model,
         }
 
 
@@ -427,6 +456,8 @@ class ErrorStateKalmanFilter:
         self.g = GRAVITY.copy() if config.gravity is None else np.asarray(config.gravity, float)
         self.fdir = FdirManager(config.fdir_config)
         self.fdir_inflations = 0
+        #: (t, residual, S) for every GNSS fix, before any gating (separability study).
+        self.gnss_innovations: list[tuple[float, np.ndarray, np.ndarray]] = []
 
     # -- state ---------------------------------------------------------------
 
@@ -496,6 +527,17 @@ class ErrorStateKalmanFilter:
         structural limitation of single-anchor ESKF relative-pose fusion, and it
         is why the remaining vision-only overconfidence is not a tuning problem.
         """
+        if self.cfg.vision_model == "clone":
+            # A clone is a copy of the live pose, so its error is the live pose's error: the clone blocks take the
+            # rows and columns of the position and attitude blocks, cross terms with every other state included.
+            # P' = T P T^T with T copying rows 3:6 to 15:18 and rows 0:3 to 18:21.
+            T = np.eye(_N_STATES)
+            T[_IDX_CP, :] = 0.0
+            T[_IDX_CT, :] = 0.0
+            T[_IDX_CP, _IDX_P] = np.eye(3)
+            T[_IDX_CT, _IDX_THETA] = np.eye(3)
+            P[:, :] = T @ P @ T.T
+            return
         for blk in (_IDX_CP, _IDX_CT):
             P[blk, :] = 0.0
             P[:, blk] = 0.0
@@ -515,6 +557,8 @@ class ErrorStateKalmanFilter:
         Q = np.zeros((_N_STATES, _N_STATES))
         rg = n.gyro_noise_density**2
         ra = n.accel_noise_density**2
+        if self.cfg.vision_model not in ("anchor", "clone"):
+            raise ValueError(f"vision_model must be 'anchor' or 'clone', got {self.cfg.vision_model!r}")
         form = self.cfg.process_noise_form
         if form not in ("legacy", "textbook"):
             raise ValueError(f"process_noise_form must be 'legacy' or 'textbook', got {form!r}")
@@ -542,9 +586,9 @@ class ErrorStateKalmanFilter:
         # the relative measurements never regain any power over absolute
         # position -- the filter would coast on the IMU alone no matter how many
         # visual updates arrived.
-        if self.cfg.vision_anchor_modelled:
-            sp = self.cfg.anchor_pos_drift_sigma_m_s
-            st = np.deg2rad(self.cfg.anchor_rot_drift_sigma_deg_s)
+        if self.cfg.vision_anchor_modelled and self.cfg.vision_model != "clone":
+            sp = self.cfg.anchor_pos_drift_sigma_m_sqrt_s
+            st = np.deg2rad(self.cfg.anchor_rot_drift_sigma_deg_sqrt_s)
             if sp > 0.0:
                 Q[_IDX_CP, _IDX_CP] += np.eye(3) * (sp**2 * d)
             if st > 0.0:
@@ -621,6 +665,8 @@ class ErrorStateKalmanFilter:
         """
         P = x["P"]
         S = H @ P @ H.T + Rcov
+        if sensor == "gnss":
+            self.gnss_innovations.append((t_s, residual.copy(), S.copy()))
 
         decision = self._fdir_decision(sensor, residual, S, P, H, t_s)
         if not decision.accepted:
@@ -776,6 +822,8 @@ class ErrorStateKalmanFilter:
         # injected rotation, otherwise P is inconsistent with the new R.
         G = np.eye(_N_STATES)
         G[:3, :3] = np.eye(3) + 0.5 * _skew(dtheta)
+        if self.cfg.vision_model == "clone":
+            G[_IDX_CT, _IDX_CT] = np.eye(3) + 0.5 * _skew(dx[_IDX_CT])
         # Joseph form, then the reset, in that order. The reset is the reason
         # this must happen after the covariance update and not before: the
         # injected rotation changes the linearisation point, and G acting on the
@@ -799,6 +847,10 @@ class ErrorStateKalmanFilter:
         x["v"] = x["v"] + dx[_IDX_V]
         x["b_g"] = x["b_g"] + dx[_IDX_BG]
         x["b_a"] = x["b_a"] + dx[_IDX_BA]
+        if self.cfg.vision_model == "clone":
+            # The clone is a stored pose with a real error state: correct it like the live pose.
+            x["R_vk"] = x["R_vk"] @ rot_exp(dx[_IDX_CT])
+            x["p_vk"] = x["p_vk"] + dx[_IDX_CP]
         # The anchor nuisance corrections dx[_IDX_CP] and dx[_IDX_CT] are
         # computed above and deliberately NOT applied. This is not an oversight;
         # it is a recorded limitation, tracked as CN-003 and described in ADR-0001.
@@ -865,7 +917,7 @@ class ErrorStateKalmanFilter:
 
         Returns ``(ok, normalised innovation, rotation_part_accepted)``.
         """
-        if not self.cfg.vision_anchor_modelled:
+        if not self.cfg.vision_anchor_modelled and self.cfg.vision_model != "clone":
             # Reproduce the historical filter exactly: the nuisance blocks are
             # present in the state vector but never observed and carry no
             # uncertainty, so they are inert and cannot influence the estimate.
@@ -887,6 +939,9 @@ class ErrorStateKalmanFilter:
             self._commit_anchor_covariance(P)
             x["vision_keyframe_set"] = True
             return True, 0.0, True
+
+        if self.cfg.vision_model == "clone":
+            return self._vision_update_clone(x, R_rel_meas, t_rel_meas, rot_sigma_deg, trans_sigma_m, t_s)
 
         R_prev, p_prev = x["R_vk"], x["p_vk"]
         R_cur = x["R"]
@@ -977,6 +1032,61 @@ class ErrorStateKalmanFilter:
             x["c_t"] = np.zeros(3)
             P = x["P"]
             self._commit_anchor_covariance(P)
+        return (ok_rot and ok_trans), innov_rot + innov_trans, ok_rot
+
+    def _vision_update_clone(
+        self,
+        x: FilterState,
+        R_rel_meas: np.ndarray,
+        t_rel_meas: np.ndarray,
+        rot_sigma_deg: float,
+        trans_sigma_m: float,
+        t_s: float,
+    ) -> tuple[bool, float, bool]:
+        """The relative-pose fix against a stochastic clone of the previous pose (blocker B1 spike).
+
+        The clone is the stored pose ``(R_vk, p_vk)`` with six error states, ``c_t`` (attitude, right
+        perturbation like the live attitude) and ``c_p`` (position, world frame). Writing the true previous pose
+        as ``R_vk Exp(c_t)`` and ``p_vk + c_p``, and the live pose as ``R Exp(theta)`` and ``p + dp``:
+
+            rotation:     z = Log(R_meas R_rel^T)  ~  R_rel theta - c_t,          R_rel = R_vk^T R
+            translation:  z = t_meas - R_vk^T (p - p_vk)  ~  R_vk^T (dp - c_p) + [t_pred]x c_t
+
+        so the Jacobians are ``[R_rel on theta, -I on c_t]`` and ``[R_vk^T on dp, -R_vk^T on c_p, [t_pred]x on
+        c_t]``. The clone starts perfectly correlated with the live pose and the correlation is kept by the
+        ordinary propagation (the clone rows of the transition are the identity), which is what the anchor model
+        discards at every commit. After an update the corrections to the clone are injected into ``R_vk`` and
+        ``p_vk``. Whether this closes B1 is the question; it is not assumed.
+        """
+        R_prev, R_cur = x["R_vk"], x["R"]
+        R_rel_pred = R_prev.T @ R_cur
+        z_rot = rot_log(R_rel_meas @ R_rel_pred.T)
+        H_rot = np.zeros((3, _N_STATES))
+        H_rot[:, _IDX_THETA] = R_rel_pred
+        H_rot[:, _IDX_CT] = -np.eye(3)
+        Rcov_rot = np.eye(3) * np.deg2rad(rot_sigma_deg) ** 2
+        ok_rot, innov_rot = self._update(x, z_rot, H_rot, Rcov_rot, sensor="vision_rot", t_s=t_s)
+
+        # The rotation update may have corrected the live pose and the clone; the translation half is built from
+        # the state as it now stands.
+        R_prev, p_prev = x["R_vk"], x["p_vk"]
+        t_pred = R_prev.T @ (x["p"] - p_prev)
+        z_trans = t_rel_meas - t_pred
+        H_trans = np.zeros((3, _N_STATES))
+        H_trans[:, _IDX_P] = R_prev.T
+        H_trans[:, _IDX_CP] = -R_prev.T
+        H_trans[:, _IDX_CT] = _skew(t_pred)
+        Rcov_trans = np.eye(3) * trans_sigma_m**2
+        ok_trans, innov_trans = self._update(x, z_trans, H_trans, Rcov_trans, sensor="vision_trans", t_s=t_s)
+
+        x["vision_updates"] = int(x["vision_updates"]) + 1
+        interval = self.cfg.vision_keyframe_interval
+        if interval is not None and x["vision_updates"] % int(interval) == 0:
+            x["R_vk"] = x["R"].copy()
+            x["p_vk"] = x["p"].copy()
+            x["c_p"] = np.zeros(3)
+            x["c_t"] = np.zeros(3)
+            self._commit_anchor_covariance(x["P"])
         return (ok_rot and ok_trans), innov_rot + innov_trans, ok_rot
 
     # -- main loop -----------------------------------------------------------
@@ -1111,6 +1221,7 @@ class ErrorStateKalmanFilter:
         stats.update(self.fdir.stats())
         stats["fdir_inflations"] = float(self.fdir_inflations)
         traj.metadata["sigma_p"] = sigma_p
+        traj.metadata["gnss_innovations"] = self.gnss_innovations
         traj.metadata["fdir_events"] = [e.as_dict() for e in self.fdir.events]
         return EstimatorResult(
             trajectory=traj,

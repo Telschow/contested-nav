@@ -29,18 +29,69 @@ this project uses [semantic versioning](https://semver.org/).
   of the fixes rejected). It writes one CSV row per run and a JSON record with the input hashes from the fetch
   manifest, and prints a summary table. The FDIR "faulted" flag is reported next to the count and not used for
   it, since it misses some losses. This is how the statements in ADR-0014 are regenerated.
+- `navkit euroc run --preset adis16448-walk` and `--bias-walk-scale`: the second preset leaves the white noise as
+  the sensor file gives it and scales only the two bias random walks by 10, with the same bias prior.
+  `navkit euroc compare` gains `--first-seed` and a `walk10` configuration, and fills a second page block
+  with `--block euroc-validation`. See the follow-up in
+  [ADR-0014](docs/adr/0014-textbook-imu-process-noise-by-default.md).
+- `navkit sweep attribution` and [`docs/attribution.md`](docs/attribution.md) (P5-06): the falsification experiments the
+  research baseline listed and never ran, plus the bias-fault question from limitation L8. On the synthetic fixture,
+  removing every inertial error source leaves the peak outage error within two percent, the error grows with the
+  same exponent with or without them, and what dominates is the state error the filter has when GNSS is lost (making
+  the start exact cuts it by about nine tenths). A source has to be about thirty to a hundred times the unit's before
+  it matters. A small or moderate accelerometer bias fault is not noticed; a large one makes the filter reject the
+  healthy GNSS on its return and declare it faulty, the lockout behind the lost runs on the recordings.
+  `run_case` gains an `imu_hook`, and the benchmark runner accepts the initial-uncertainty keys.
+- `navkit euroc timing` and `docs/product_management/04_sensor_sync_and_calibration_spec.md` (P5-07): the timing
+  model, the calibration assumptions, and what is measured on the recordings versus assumed in simulation. The tool
+  reports each sequence's timestamp regularity, the share of the ground truth lost to dropouts, and the offset
+  between the ground truth and the IMU, from the angular rate (a vector comparison that removes gyroscope bias, with a
+  magnitude comparison as a cross-check). On the 17 sequences the offsets are within a few milliseconds, far below
+  the simulated GNSS noise; the TUM VI motion capture has dropouts of up to a few seconds, which the TUM VI page now
+  states. The table is generated from `docs/data/timing.csv` and a test checks it and six statements.
+- `navkit tumvi fetch` and `--dataset tumvi` on `navkit euroc run` and `navkit euroc compare`: TUM VI room
+  sequences (CC BY 4.0, [ADR-0016](docs/adr/0016-tum-vi-as-a-second-recorded-dataset.md), accepted). The archives
+  are whole TARs, so the fetcher downloads them (resuming a partial file), checks the publisher's MD5, keeps the
+  IMU, motion-capture and noise files, and deletes the archive. The ground truth has no velocity or bias, so the
+  start velocity is a local line fit and the start biases are estimated from the quietest stretch of the first
+  seconds; a result says so. The dataset's own noise file is read twice: its inflated active figures and the raw
+  figures from its comments.
+- `EskfConfig.vision_model = "clone"` (opt-in, default `"anchor"`) and four benchmark cases
+  (`outage_visual_clone`, `outage_visual_degraded_camera_rereferenced`, `outage_visual_degraded_camera_clone`,
+  `vision_only_clone`): the previous visual pose carried as a stochastic clone, the B1 spike
+  ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md), accepted). On the synthetic fixture the clone
+  is calibrated under GNSS denial where the single anchor is not, across the seed, trajectory and outage sweeps.
+  The default, `vision_enabled` and the single-anchor rows are unchanged. Its Jacobians are checked against
+  numerical derivatives.
+- `vision.noise_corr_s`, `outlier_fraction`, `outlier_scale`, `scale_sigma`, `scale_tau_s` (scenario settings, all off
+  by default, drawn from a stream of their own so no existing number moves) and four benchmark cases
+  (`outage_visual_clone_outliers`, `_scale_drift`, `_correlated`, `_correlated_inflated`): stress tests of the
+  clone. It survives gross outliers and scale drift. It does not survive visual errors correlated over a couple of
+  seconds unless the assumed visual noise is inflated (4x restores calibration here; found by trial). A 150 s run
+  without GNSS keeps a growing claimed uncertainty and accepts GNSS on return (`tests/test_clone_long_run.py`).
+- `vision.rereference` (scenario setting, default off): after frames are dropped, each delivered measurement is
+  taken against the last delivered frame, as a front end tracking against its last keyframe would report. The
+  generator otherwise measures against a dropped frame, which a filter comparing with its last received frame
+  cannot be consistent with.
 - `docs/euroc.md` and `docs/data/euroc_compare.csv`: the comparison of the default and the preset over all eleven
   EuRoC sequences, with the failing runs listed and the caveats of ADR-0013 beside the table. The table is
-  generated by `navkit euroc compare --page` and a test checks it, and five statements in the prose, against the
-  committed CSV. `--from-csv` rebuilds the page without rerunning. The dataset itself is not in the repository.
+  generated by `navkit euroc compare --page` and a test checks it, and the statements in the prose, against the
+  committed CSV files, including `docs/data/euroc_validation.csv` for the runs made after the settings were chosen. `--from-csv` rebuilds the page without rerunning. The dataset itself is not in the repository.
 - `docs/data/metrics.json` and `scripts/metrics.py`: the test, ADR and line-coverage figures the documents
   quote now come from one generated file through `<!-- metric:... -->` markers. CI fails when a marker or the
   JSON is stale, when a count is typed by hand, when an ADR is missing from the index, or when measured
   coverage differs from the recorded figure by more than half a point on the recorded interpreter.
+- `navkit sweep separability` and [`docs/separability.md`](docs/separability.md): whether the first GNSS gate can tell
+  an honest return after a 20 s outage from a spoofed one, on real recorded IMU data (EuRoC, TUM VI) with
+  simulated GNSS. The spoof population is derived from the honest innovations, so no spoof is injected into a
+  running filter. With the default noise the two overlap. With a calibrated bias walk they separate, but only for
+  spoofs larger than the claimed uncertainty. The filter now records each GNSS innovation before gating, and
+  `run_sequence` can return them. [ADR-0018](docs/adr/0018-honest-return-separability.md) is accepted: use the
+  calibrated bias walk on recorded IMUs, leave the gate alone, and state the limit.
 
 ### Changed
 
-- The initial IMU bias sigmas are read ([ADR-0015](docs/adr/0015-initial-imu-bias-sigmas-are-read.md), proposed).
+- The initial IMU bias sigmas are read ([ADR-0015](docs/adr/0015-initial-imu-bias-sigmas-are-read.md), accepted).
   `gyro_bias_sigma` and `accel_bias_sigma` were accepted and read by nothing. The generator now draws an initial
   bias from each, on its own random stream, and the benchmark filter is told the same sigmas through the new
   `initial_gyro_bias_sigma` and `initial_accel_bias_sigma`, which fall back to `initial_bias_sigma` when unset.
@@ -64,6 +115,7 @@ this project uses [semantic versioning](https://semver.org/).
   SRS and the SWaP-C matrix label the column Area, since they name workstreams. The engineering baseline no
   longer quotes the first characters of a provider key. A test fails if a table names a team or manager as owner
   or a document quotes the start of a provider key.
+- `uv.lock` is removed. ADR-0011 called it stale, and CI never used it.
 
 ### Found, not fixed
 
@@ -74,6 +126,21 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Fixed
 
+- The two anchor drift strengths were named per second and are per square-root second (P5-05). They are now
+  `anchor_pos_drift_sigma_m_sqrt_s` and `anchor_rot_drift_sigma_deg_sqrt_s`. The old names
+  (`anchor_pos_drift_sigma_m_s`, `anchor_rot_drift_sigma_deg_s`) are still accepted by the `EskfConfig` constructor and
+  as benchmark estimator keys, with a `DeprecationWarning`; giving an old and a new name with different values is an
+  error. The value and the filter are unchanged. The serialised config uses the new names, so every `config_hash`
+  changes and the golden snapshot was regenerated: the diff is the hashes and the two key names, and no number moves.
+- The mechanism library said that a constant accelerometer bias gives linear error growth. It gives quadratic growth;
+  linear growth is a velocity error. The `gnss_denied` entries now state the textbook exponents, name the experiment
+  that tests them, and record that the accelerometer-bias explanation is falsified on the fixture. Limitation L8 is
+  rewritten to match.
+- Two CodeQL findings on the recorded-dataset code: `navkit euroc compare` read a variable it had not set on the
+  `--from-csv` path (unreachable, since `--json` is refused there, but fragile), and `euroc_eval`, `tumvi_data` and
+  `euroc_compare` imported one another. The shared sequence type, its error and the z-up gravity vector moved to
+  `navkit.recorded`, and the `navkit euroc` router to `navkit.euroc_cli`. A test now fails on any import cycle,
+  lazy imports included.
 - `navkit.types.finite_difference` returned twice the slope at interior samples for a first derivative (a ramp of
   slope 2 gave 4). Interior points now use the central difference over their two neighbours, exact for a line on
   a non-uniform grid. `Trajectory.velocities()` inherited the defect; nothing in the benchmark called it.

@@ -19,4 +19,7 @@ what it cost, and what was rejected.
 | [ADR-0012](0012-every-scenario-is-injected.md) | Every scenario goes through the injection layer | accepted |
 | [ADR-0013](0013-recorded-imu-with-simulated-gnss.md) | Evaluate on recorded IMU data with GNSS simulated from the ground truth | accepted |
 | [ADR-0014](0014-textbook-imu-process-noise-by-default.md) | IMU white noise enters the process covariance in the textbook form | accepted |
-| [ADR-0015](0015-initial-imu-bias-sigmas-are-read.md) | The initial IMU bias sigmas are read | proposed |
+| [ADR-0015](0015-initial-imu-bias-sigmas-are-read.md) | The initial IMU bias sigmas are read | accepted |
+| [ADR-0016](0016-tum-vi-as-a-second-recorded-dataset.md) | TUM VI as a second recorded dataset | accepted |
+| [ADR-0017](0017-stochastic-clone-for-the-visual-update.md) | A stochastic clone for the visual update | accepted |
+| [ADR-0018](0018-honest-return-separability.md) | Honest returns after an outage and the GNSS gate | accepted |

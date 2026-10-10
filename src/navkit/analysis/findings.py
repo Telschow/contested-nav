@@ -141,21 +141,27 @@ class Analysis:
 MECHANISM_LIBRARY: dict[str, list[tuple[str, str, str]]] = {
     "gnss_denied": [
         (
-            "Removing GNSS position fixes leaves inertial propagation as the only "
-            "source of absolute position, so error accumulates from accelerometer "
-            "bias and unmodelled dynamics rather than from any single bad measurement.",
+            "Removing GNSS position fixes leaves inertial propagation as the only source of absolute position, "
+            "so the outage error is the state error the filter had when GNSS was lost, carried forward by the "
+            "inertial equations, plus whatever the inertial unit adds on top. In a synthetic fixture with a good "
+            "inertial unit the first part dominates: it is set by the GNSS noise and by how uncertain the filter "
+            "declares its starting state to be. With a poorer unit the second part, bias and noise, can.",
             "high",
-            "Run the same outage with a known zero initial bias. If peak drift is "
-            "unchanged, accelerometer bias is not the dominant contributor and the "
-            "explanation above is wrong.",
+            "Remove each inertial error source in turn and compare the peak error inside the outage "
+            "(`navkit sweep attribution`). If the peak is unchanged, that source is not dominant. Measured on the "
+            "fixture: removing all of them changes it by under one percent, so accelerometer bias is not "
+            "dominant there. This does not say what a recording's dominant source is.",
         ),
         (
-            "Error growth during the outage should be close to linear in time if the "
-            "dominant error source is a constant bias, and super-linear if it is a "
-            "rate error or an unmodelled rotation.",
+            "The way the error grows with the length of the outage points to its source, because each source "
+            "has its own power of time: a velocity error at the start grows as t, accelerometer white noise as "
+            "t^1.5, a constant accelerometer bias as t^2 (not t), an attitude error at the start as t^2 through "
+            "gravity, gyroscope white noise as t^2.5 and a constant gyroscope bias as t^3.",
             "medium",
-            "Plot error against time over outages of 5, 15, 45 and 90 s. Linear "
-            "growth supports a bias-dominated explanation; convex growth refutes it.",
+            "Fit the exponent of peak error against outage length over outages of 5, 15, 45 and 90 s. Compare it "
+            "with the list above; a mixture lands between. An exponent of 2 does not by itself mean an "
+            "accelerometer bias, since an attitude error at the start gives the same one: remove the inertial "
+            "errors and see whether the exponent moves.",
         ),
     ],
     "camera_drop": [

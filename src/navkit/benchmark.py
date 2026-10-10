@@ -43,6 +43,7 @@ import json
 import platform
 import sys
 import time
+import warnings
 from collections.abc import Callable
 from dataclasses import asdict, is_dataclass
 from importlib import resources
@@ -68,7 +69,7 @@ from .eval.metrics import (
 )
 from .sensors.models import gnss_fixes, visual_updates
 from .synthetic import SyntheticConfig, seeded_scene, synthetic_imu, synthetic_trajectory
-from .types import GnssFix
+from .types import GnssFix, ImuSample
 
 #: How the shipped scenario file is named in a result. It is a label for the canonical
 #: source, so a result made from the packaged copy of the file reads the same as one made
@@ -124,6 +125,18 @@ def _sigma_scale(keys: dict[str, Any], key: str) -> float:
     return scale
 
 
+def _renamed(keys: dict[str, Any], new: str, old: str, default: float) -> float:
+    """An estimator key under its new name, or under the deprecated one it replaced.
+
+    Giving both with different values is an error rather than a silent choice.
+    """
+    if old in keys:
+        warnings.warn(f"estimator key {old!r} is deprecated; use {new!r}", DeprecationWarning, stacklevel=2)
+        if new in keys and float(keys[new]) != float(keys[old]):
+            raise ValueError(f"estimator keys {new!r} and {old!r} (the old name) were given different values")
+    return float(keys.get(new, keys.get(old, default)))
+
+
 def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
     """Build the filter config from a scenario plus estimator overrides.
 
@@ -135,6 +148,12 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
     noise = scenario.imu_noise.scaled(scenario.imu_noise_scale)
     gnss_scale = _sigma_scale(keys, "gnss_sigma_scale")
     vision_scale = _sigma_scale(keys, "vision_sigma_scale")
+    # The declared uncertainty of the starting state, when a case sets it (an ablation can set it to zero).
+    initial: dict[str, Any] = {
+        k: float(keys[k])
+        for k in ("initial_pos_sigma_m", "initial_vel_sigma_m_s", "initial_rot_sigma_deg")
+        if k in keys
+    }
     return EskfConfig(
         imu_noise=noise,
         initial_gyro_bias_sigma=noise.gyro_bias_sigma,
@@ -148,9 +167,15 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
         vision_anchor_modelled=bool(keys.get("vision_anchor_modelled", True)),
         anchor_pos_sigma_m=keys.get("anchor_pos_sigma_m", 1.0),
         anchor_rot_sigma_deg=keys.get("anchor_rot_sigma_deg", 5.0),
-        anchor_pos_drift_sigma_m_s=keys.get("anchor_pos_drift_sigma_m_s", 0.0),
-        anchor_rot_drift_sigma_deg_s=keys.get("anchor_rot_drift_sigma_deg_s", 0.0),
+        anchor_pos_drift_sigma_m_sqrt_s=_renamed(
+            keys, "anchor_pos_drift_sigma_m_sqrt_s", "anchor_pos_drift_sigma_m_s", 0.0
+        ),
+        anchor_rot_drift_sigma_deg_sqrt_s=_renamed(
+            keys, "anchor_rot_drift_sigma_deg_sqrt_s", "anchor_rot_drift_sigma_deg_s", 0.0
+        ),
         process_noise_form=str(keys.get("process_noise_form", "textbook")),
+        **initial,
+        vision_model=str(keys.get("vision_model", "anchor")),
     )
 
 
@@ -162,6 +187,7 @@ def run_case(
     scene_seed: int | None = None,
     trajectories: bool = False,
     gnss_hook: Callable[[GnssFix], GnssFix] | None = None,
+    imu_hook: Callable[[ImuSample], ImuSample] | None = None,
     fdir_events: bool = False,
 ) -> dict[str, Any]:
     """Run one scenario end to end and return its result record.
@@ -184,6 +210,10 @@ def run_case(
     stream the filter sees. It is for a fault the scenario schema does not describe, such as a
     position offset (a spoof); the fault matrix uses it. The hook is not part of the scenario,
     so it is not in ``config_hash``: a caller that uses it must record the fault itself.
+
+    ``imu_hook`` is the same for the inertial stream: it receives the IMU after the scenario's noise and bias are
+    applied and returns what the filter sees. It is for a fault the scenario schema does not describe, such as a
+    bias that appears part-way through. Like ``gnss_hook`` it is not in ``config_hash``.
 
     ``fdir_events`` adds the FDIR event log (declarations, lockouts, inflation grants) to the record
     as ``fdir_events``. It is off by default so the benchmark JSON is unchanged.
@@ -219,6 +249,8 @@ def run_case(
 
     if gnss_hook is not None:
         gnss = gnss_hook(gnss)
+    if imu_hook is not None:
+        imu = imu_hook(imu)
 
     cfg = _eskf_config(scenario, keys)
 

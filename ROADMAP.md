@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1017<!-- /metric --> tests collected and <!-- metric:coverage_percent -->93.6<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1159<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.2<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -213,35 +213,49 @@ visual translation) is detected and isolated; the three causes behind it are
 not yet separated. The [fault matrix](docs/faults.md) measures this and restates the
 test: it is not met.
 
-### Track B: Back-end optimisation: sliding-window pose graph `[ ]`
+### Track B: Back-end optimisation: sliding-window pose graph `[~]`
 
 This is the structural fix for B1, the only genuine unknown in the project.
 Everything in Milestone 1 makes the limitation reproducible and documented;
 this removes it.
 
-- [!] Blocker, unchanged: a single-anchor ESKF cannot represent correlated
-      visual drift. Mean NEES 286.2 on `outage_visual`, 20.5% coverage against
-      99.3% expected. Not attempted yet, because a pose graph is a piece of
-      engineering rather than a patch. (The figure was 1996.5 before ADR-0006;
-      the number fell because the filter began taking its own uncertainty more
-      seriously, not because the anchor is now modelled correctly. See
-      `CONSTRAINTS.md:B1`.)
-- [ ] Decide the formulation: a factor graph over visual keyframes, a
-      multi-anchor ESKF, or a loosely-coupled inertial/visual filter.
-- [ ] NumPy-only implementation. S1 holds. A sliding window of keyframes with
-      a periodic marginalisation is the intended shape: it bounds the growth of
-      the cross-correlation terms that currently make the filter overconfident
-      the longer the outage runs.
-- [ ] Define "fixed" quantitatively *before* building. Proposed gate: under the
-      15 s GNSS-denied scenario, mean NEES below 10 and 2-sigma coverage above
-      90%, with `vision_enabled` able to default to `True`.
-- [ ] Hold `vision_enabled = False` until that gate is met.
-- [ ] Keep the overconfident single-anchor case in the benchmark as a control
+- [!] Blocker for the shipped configuration: a single-anchor ESKF cannot
+      represent correlated visual drift. Mean NEES 286.2 on `outage_visual`,
+      20.5% coverage against 99.3% expected. (The figure was 1996.5 before
+      ADR-0006; the number fell because the filter began taking its own
+      uncertainty more seriously, not because the anchor is now modelled
+      correctly. See `CONSTRAINTS.md:B1`.)
+- [x] Decide the formulation. A stochastic clone of the previous pose was tried
+      first as the cheaper option with the same key property
+      ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md),
+      accepted as an opt-in). A sliding window or pose graph was not needed to meet the gate on
+      the fixture.
+- [x] NumPy-only implementation. S1 holds. `vision_model: clone` reuses the six
+      anchor slots as clone error states; the default is unchanged.
+- [x] Define "fixed" quantitatively *before* building: under the 15 s
+      GNSS-denied scenario, mean NEES below 10 and 2-sigma coverage above 90%.
+      The `outage_visual_clone` row meets it, and holds across the seed, trajectory and
+      outage sweeps.
+- [x] Hold `vision_enabled = False` until that gate is met. Decided in ADR-0017: the gate is met by the
+      opt-in clone for a front end with independent errors, `vision_enabled` stays `False`, and it is
+      reconsidered when a front end's error correlation is measured.
+- [x] Keep the overconfident single-anchor case in the benchmark as a control
       row after the fix lands. Deleting the number that motivated the work would
       destroy the evidence that the work mattered.
+- [x] A long vision-only run, to look for spurious information about global
+      position and yaw: none on the fixture. The claimed uncertainty keeps growing
+      and GNSS is accepted on return (`tests/test_clone_long_run.py`). The
+      first-estimate Jacobian or an observability-constrained update was not
+      needed there.
+- [~] A visual front end with correlated errors, scale ambiguity and outliers.
+      Outliers and scale drift are survived. Correlated errors are not, unless the
+      assumed visual noise is inflated by a factor found by trial. A real front end
+      is still untested.
 
 **Exit test:** NEES below 10 with vision enabled and GNSS denied, coverage above
-90%, `vision_enabled = True` as the shipped default. Current value 286.2.
+90%, `vision_enabled = True` as the shipped default. Current value 286.2 for the
+shipped single anchor; the clone row is in the results table and meets the gate.
+The default has not been changed.
 
 ### Track C: TPM / PM deliverables `[~]`
 
@@ -255,13 +269,14 @@ a technical one.
 - [x] System Requirements Specification (SRS) (`docs/product_management/01_system_requirements_spec.md`): the interface, the failure
       modes, the detection requirements from Track A, and the acceptance
       thresholds from Track B, written as testable requirements.
-- [ ] Sensor synchronisation and calibration specification: the timing model
-      between IMU, GNSS and camera streams; the time-offset handling; the
-      intrinsic and extrinsic calibration assumptions; what is measured on the
-      bench versus what is assumed in simulation.
+- [x] Sensor synchronisation and calibration specification
+      ([`docs/product_management/04_sensor_sync_and_calibration_spec.md`](docs/product_management/04_sensor_sync_and_calibration_spec.md)):
+      the timing model between IMU, GNSS and camera streams; the time-offset handling; the intrinsic and
+      extrinsic calibration assumptions; what is measured on the recordings versus what is assumed in simulation.
+      The recordings' timestamp regularity and ground-truth-to-IMU offset are measured, not assumed.
 - [x] The documents above live in `docs/product_management/`, together with the FDIR
-      and spoofing strategy (`03_fdir_and_spoofing_strategy.md`). Still missing: the
-      sensor synchronisation specification above, a risk log, and a work breakdown.
+      and spoofing strategy (`03_fdir_and_spoofing_strategy.md`). The risk log is
+      [`RISKS.md`](https://github.com/Telschow/contested-nav/blob/main/RISKS.md). Still missing: a work breakdown.
 
 **Exit test:** a reviewer can trace every requirement in the SRS to a test, a
 configuration, or an explicitly declared gap. The SRS has a traceability matrix
@@ -272,6 +287,20 @@ roll-up counts follow from the verdicts. The check is structural; it does not re
 ## Phase 5 backlog
 
 The next work is ordered by RICE score in [docs/prioritisation.md](docs/prioritisation.md). The inputs are judgements, and the page shows how stable the order is.
+
+Where each item stands:
+
+- **Done:** P5-01 (noise-mismatch sweep), P5-02 (fault matrix), P5-04 (velocity process noise, bias sigmas), P5-05
+  (the drift keys renamed per square-root second, with an alias), P5-06
+  (the accelerometer-bias falsification experiment, which falsified the hypothesis on the fixture), P5-07
+  (sensor synchronisation and calibration specification), P5-08 (SRS traceability check), P5-10 (release hygiene),
+  P5-13 (a TUM VI fetch path).
+- **Spike done, opt-in:** P5-03 (the stochastic clone, [ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)).
+  Calibrated for independent visual errors, not for correlated ones. The shipped configuration is unchanged.
+- **Partly done:** P5-09 (the stale figures in docstrings are fixed; the baseline records are excluded from the site
+  and not rewritten), P5-12 (the pull requests it names are closed; `uv.lock` was removed).
+- **Not started:** P5-11 (a comparison with an established consistent
+  estimator, which strains constraint S1).
 
 ---
 
