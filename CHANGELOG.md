@@ -102,8 +102,8 @@ this project uses [semantic versioning](https://semver.org/).
 - `navkit sweep vision-ramp` and [`docs/vision_ramp.md`](docs/vision_ramp.md): the slow-ramp runs with a simulated visual
   source fused by the stochastic clone. With independent visual errors a 2 m/s ramp is caught and not followed. A
   1 m/s ramp is seen and still followed. With correlated errors nothing is caught. `RunOptions.vision` adds the
-  source. [ADR-0020](docs/adr/0020-second-source-against-a-ramp.md) is proposed; the decision section is for the
-  maintainer to write.
+  source. [ADR-0020](docs/adr/0020-second-source-against-a-ramp.md) is accepted: record the floor,
+  measure a real front end next, then test a different second source.
 
 ### Changed
 
