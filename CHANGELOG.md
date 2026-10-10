@@ -107,8 +107,8 @@ this project uses [semantic versioning](https://semver.org/).
 
 - `navkit sweep faultclass` and [`docs/fault_classification.md`](docs/fault_classification.md): whether the GNSS
   innovations can name the cause of a fault, on real recorded IMU data with simulated GNSS. Multipath is called
-  correctly in 97% of runs and large degradation in at least 94%. Fewer than half the spoofed runs are called spoofing,
-  about one in seven control runs is called a fault, and weak faults are missed. `RunOptions.fault` injects the faults.
+  correctly in 99% of runs and large degradation in 98%. Spoofing is called in 74% of runs after five features were
+  added to the first five (38% before), about one in six control runs is called a fault, and weak faults are missed. `RunOptions.fault` injects the faults.
   The Track A exit test is not met. [ADR-0021](docs/adr/0021-fault-classification-from-innovations.md) is proposed;
   the decision section is for the maintainer to write.
 
