@@ -82,8 +82,8 @@ navkit euroc compare --dataset tumvi --markdown
 ```
 
 Results from this path are on [the EuRoC page](euroc.md) and [the TUM VI page](tumvi.md), each with the
-caveats beside the table and the runs that still fail listed. Two tests compare against a published TUM VI
-estimate when it is present locally. See [Path to real systems](REAL_SYSTEMS.md).
+caveats beside the table and the runs that still fail listed. A test compares the ground-truth attitude rate with the recorded gyroscope
+on every fetched sequence. See [Path to real systems](REAL_SYSTEMS.md).
 
 ## Does the repository implement the known fixes for the overconfidence?
 
