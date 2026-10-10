@@ -211,8 +211,12 @@ class RunOptions:
     process_noise: str = "textbook"  # EskfConfig.process_noise_form
     skip_s: float = 0.0
     duration_s: float | None = None
+    #: (start in s after the window start, rate in m/s): from the start on, every GNSS position is shifted along the
+    #: world x axis by rate * (t - start). A slow-ramp spoof. None leaves the GNSS honest.
+    spoof: tuple[float, float] | None = None
 
     def as_dict(self) -> dict[str, Any]:
+        extra = {"spoof": list(self.spoof)} if self.spoof is not None else {}
         return {
             "gnss_rate_hz": self.gnss_rate_hz,
             "gnss_sigma_m": self.gnss_sigma_m,
@@ -228,6 +232,7 @@ class RunOptions:
             "process_noise": self.process_noise,
             "skip_s": self.skip_s,
             "duration_s": self.duration_s,
+            **extra,
         }
 
 
@@ -377,11 +382,13 @@ def run_sequence(
     seq: EurocSequence,
     opts: RunOptions | None = None,
     innovations_out: list[tuple[float, np.ndarray, np.ndarray]] | None = None,
+    events_out: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Run the ESKF on one sequence and return a result record shaped like the benchmark's.
 
     ``innovations_out``, when given, receives ``(t, residual, S)`` for every GNSS fix before gating.
     The times are on the filter's clock, which starts at the first IMU sample of the window.
+    ``events_out`` receives the FDIR event log of the run.
     """
     opts = opts or RunOptions()
     mode = opts.init_bias or ("truth" if seq.bias_known else "static")
@@ -407,6 +414,10 @@ def run_sequence(
 
     gnss = gnss_fixes(reference, GnssConfig(rate_hz=opts.gnss_rate_hz, sigma_m=opts.gnss_sigma_m, seed=opts.seed))
     gnss = apply_gnss_outage(gnss, [Outage(start_s=s, duration_s=d) for s, d in window], True)
+    if opts.spoof is not None:
+        onset = t_start + opts.spoof[0]
+        gnss.positions = gnss.positions.copy()
+        gnss.positions[:, 0] += opts.spoof[1] * np.clip(gnss.t - onset, 0.0, None)
 
     cfg_kwargs: dict[str, Any] = {}
     if opts.bias_sigma is not None:
@@ -428,6 +439,8 @@ def run_sequence(
     est = result.trajectory
     if innovations_out is not None:
         innovations_out.extend(est.metadata.get("gnss_innovations", []))
+    if events_out is not None:
+        events_out.extend(est.metadata.get("fdir_events", []))
 
     ate = ate_bundle(est, reference)
     headline_ate = ate["none"]

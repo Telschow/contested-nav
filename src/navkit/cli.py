@@ -39,6 +39,7 @@ from . import (
     scene_sweep,
     seed_sweep,
     separability,
+    slow_ramp,
 )
 from .io import tumvi_fetch
 
@@ -50,6 +51,7 @@ _SWEEPS: dict[str, Callable[[list[str] | None], int]] = {
     "faults": fault_matrix.main,
     "attribution": attribution.main,
     "separability": separability.main,
+    "ramp": slow_ramp.main,
 }
 
 
@@ -67,6 +69,7 @@ def _sweep(argv: list[str] | None) -> int:
             "  faults   inject each fault mode and compare with a clean control",
             "  attribution  remove, inflate and grow each inertial error source to see what drives an outage",
             "  separability  honest returns after real-IMU outages against spoofs, at the first GNSS gate",
+            "  ramp     slow-ramp GNSS spoofs on real recorded IMU data",
         )
         print("\n".join((usage, *kinds)), file=sys.stderr)
         return 0 if args and args[0] in ("-h", "--help") else 2

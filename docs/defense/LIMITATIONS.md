@@ -123,6 +123,11 @@ each one with its gap.
 would face. An adversary that produces *plausible but wrong* fixes is
 substantially harder than an outage, and is not tested at all.
 
+**Measured slow-ramp limit.** A GNSS spoof that grows from 0.05 to 2 m/s was followed by the filter in every run on
+two recorded-IMU datasets with simulated GNSS, and a channel declared faulty did not stop it (see
+[slow ramp](../slow_ramp.md), [ADR-0019](../adr/0019-slow-ramp-spoofing.md)). With an IMU and GNSS alone this
+cannot be detected. It needs a second independent source, which is not tested.
+
 **ADR-0007** records the spoof-permanence problem (the detection signal that is
 still missing). It is tracked but unimplemented.
 
