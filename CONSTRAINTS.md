@@ -4,7 +4,7 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: <!-- metric:tests_collected -->1196<!-- /metric --> tests collected, all of which pass except the deliberate
+Last measured: <!-- metric:tests_collected -->1212<!-- /metric --> tests collected, all of which pass except the deliberate
 xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->93.9<!-- /metric -->%
 line coverage (<!-- metric:coverage_lines_hit -->8421<!-- /metric -->/<!-- metric:coverage_lines_total -->8971<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
@@ -35,7 +35,7 @@ here so the number cannot read higher than it measures.
 
 - **C2: A wrong-order rotation must fail loudly.** Orthonormality and
   `det == 1` are not sufficient: a permuted quaternion satisfies both. Tests
-  assert known matrices, and assert ATE against published TUM VI numbers.
+  assert known matrices, and assert that the ground-truth attitude rate matches the recorded gyroscope.
 
 - **C3: Poses are `T_wb`.** Body frame in world frame, everywhere. No
   inverted convention anywhere in the codebase.
@@ -83,7 +83,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | <!-- metric:tests_collected -->1196<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | <!-- metric:tests_collected -->1212<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
 | Line coverage | 75% | <!-- metric:coverage_percent -->93.9<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
@@ -129,12 +129,6 @@ These are floors, not goals. Each must not regress; raising one is welcome.
   shipped configuration. The decision (ADR-0017): the clone stays opt-in, because it is calibrated for a front end
   with independent errors and not for a correlated one, and no data here says which a real front end is. Reconsider
   when a front end's error correlation is measured. The single-anchor rows remain as the control.
-
-- **B4: The published TUM VI estimate is unavailable.** The two skipped tests compare a published
-  Basalt estimate of room1 with a subsampled Plotly ground truth, and neither is fetched. The full
-  motion-capture ground truth of the room sequences can now be fetched (`navkit tumvi fetch`), but the ATE
-  figure is still not a verified reproduction of the published 0.069 m, and the claim is typed accordingly.
-  That is why two tests skip when the data is absent.
 
 ## Resolved engineering blockers
 
@@ -246,6 +240,14 @@ residual numerically.
   2026-10-06: `python -m build` produced an sdist and a wheel, and the wheel
   installed and imported in a second clean virtual environment. CI repeats this in
   the `build` job.
+
+- **R5 (was B4): the published TUM VI estimate was unavailable.** Two tests compared a published Basalt estimate
+  of room1 with a subsampled ground truth, and neither file could be fetched, so both always skipped. The claim of
+  a reproduction of the published 0.069 m is retired. Its purpose, a check that fails loudly on a wrong quaternion
+  order, is served by `tests/test_recorded_orientation.py`: the ground-truth attitude rate must match the recorded
+  gyroscope, and a mis-ordered quaternion must not. It always runs on a synthetic sequence and runs on every
+  fetched EuRoC and TUM VI sequence. The TUM VI paper lists 0.09 m for Basalt on room1, a different figure from
+  0.069 m, and nobody checked why.
 
 ## Adding a constraint
 

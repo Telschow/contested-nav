@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1196<!-- /metric --> tests collected and <!-- metric:coverage_percent -->93.9<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1212<!-- /metric --> tests collected and <!-- metric:coverage_percent -->93.9<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -24,7 +24,7 @@ number below re-measures against that, not against a remembered value.
 - [x] Fix the EuRoC velocity slice reading `a[:, 14:17]` (accelerometer bias)
       instead of `a[:, 8:11]`.
 - [x] Add reader/writer tests including round trips and a check against the
-      published TUM VI ATE. `io/trajectory.py` 10.6% -> 90.8%.
+      published TUM VI ATE (later replaced, see B4). `io/trajectory.py` 10.6% -> 90.8%.
 - [x] Add `README.md`, which `pyproject.toml` referenced but which did not
       exist, breaking the build.
 - [x] Add `.gitignore`; correct the repository URLs in `pyproject.toml`.
@@ -315,8 +315,8 @@ Where each item stands:
 `CONSTRAINTS.md` holds the authoritative list. In short:
 
 - **B1**: visual fusion is overconfident under GNSS denial. Needs Track B.
-- **B4**: full TUM VI room1 ground truth unavailable, so two tests skip and
-      the ATE figure is not a verified reproduction of the published 0.069 m.
+- **B4** is resolved (R5 in `CONSTRAINTS.md`): the claim of a reproduction of the published 0.069 m is retired
+      and replaced by a gyroscope check on recorded data.
 
 ## Deliberately not planned
 
