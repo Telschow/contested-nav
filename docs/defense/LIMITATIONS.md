@@ -142,6 +142,10 @@ distinguish multipath from spoofing from sensor degradation.
 **Consequence:** an operator receives "this channel is faulty", not "this channel
 is being spoofed". No response is selected on the operator's behalf.
 
+**Measured.** On injected faults and real recorded IMU data, the GNSS innovations separate multipath and large IMU
+faults and do not separate spoofing ([fault classification](../fault_classification.md)). The false-alarm rate on the
+control is about one in seven.
+
 **VERIFIED BY REPOSITORY.**
 
 ### L8: The accelerometer-bias hypothesis was untested; it is now tested and was wrong

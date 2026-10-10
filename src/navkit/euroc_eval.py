@@ -217,12 +217,19 @@ class RunOptions:
     #: A simulated visual front end, generated from the ground truth: None (off), "anchor" or "clone" (the filter's
     #: ``vision_model``). ``vision_corr_s`` makes its errors correlated over that many seconds; ``vision_noise_scale``
     #: multiplies the noise the filter assumes. Never images; see ADR-0017.
+    #: (kind, onset in s after the window start, level): one injected fault. ``multipath``: extra white noise of
+    #: ``level`` metres per axis on every GNSS fix for ``FAULT_WINDOW_S``. ``ramp``: the slow-ramp spoof at ``level``
+    #: m/s. ``step``: a GNSS offset of ``level`` metres along x. ``accel_bias`` and ``gyro_bias``: a constant added to
+    #: the IMU from the onset, ``level`` m/s^2 or rad/s, spread equally over the three axes.
+    fault: tuple[str, float, float] | None = None
     vision: str | None = None
     vision_corr_s: float = 0.0
     vision_noise_scale: float = 1.0
 
     def as_dict(self) -> dict[str, Any]:
         extra: dict[str, Any] = {"spoof": list(self.spoof)} if self.spoof is not None else {}
+        if self.fault is not None:
+            extra["fault"] = list(self.fault)
         if self.vision is not None:
             extra["vision"] = {
                 "model": self.vision,
@@ -246,6 +253,53 @@ class RunOptions:
             "duration_s": self.duration_s,
             **extra,
         }
+
+
+#: Seconds a multipath fault lasts. The other faults persist.
+FAULT_WINDOW_S = 20.0
+FAULT_KINDS = ("multipath", "ramp", "step", "accel_bias", "gyro_bias")
+
+
+def _inject_fault(imu: ImuSample, gnss: Any, opts: RunOptions, t_start: float) -> ImuSample:
+    """Apply ``opts.fault`` to the GNSS fixes in place and return the (possibly modified) IMU."""
+    assert opts.fault is not None
+    kind, at, level = opts.fault
+    if kind not in FAULT_KINDS:
+        raise SequenceError(f"unknown fault {kind!r}; known: {', '.join(FAULT_KINDS)}")
+    onset = t_start + at
+    if kind == "multipath":
+        rng = np.random.default_rng(opts.seed + 104729)
+        inside = (gnss.t >= onset) & (gnss.t < onset + FAULT_WINDOW_S)
+        gnss.positions = gnss.positions.copy()
+        gnss.positions[inside] += rng.standard_normal((int(inside.sum()), 3)) * level
+    elif kind == "ramp":
+        gnss.positions = gnss.positions.copy()
+        gnss.positions[:, 0] += level * np.clip(gnss.t - onset, 0.0, None)
+    elif kind == "step":
+        gnss.positions = gnss.positions.copy()
+        gnss.positions[gnss.t >= onset, 0] += level
+    else:
+        after = imu.t >= onset
+        add = np.where(after[:, None], level / np.sqrt(3.0), 0.0) * np.ones((1, 3))
+        if kind == "accel_bias":
+            imu = ImuSample(
+                t=imu.t,
+                accel=imu.accel + add,
+                gyro=imu.gyro,
+                accel_cov=imu.accel_cov,
+                gyro_cov=imu.gyro_cov,
+                name=imu.name,
+            )
+        else:
+            imu = ImuSample(
+                t=imu.t,
+                accel=imu.accel,
+                gyro=imu.gyro + add,
+                accel_cov=imu.accel_cov,
+                gyro_cov=imu.gyro_cov,
+                name=imu.name,
+            )
+    return imu
 
 
 def gravity_check(
@@ -395,12 +449,14 @@ def run_sequence(
     opts: RunOptions | None = None,
     innovations_out: list[tuple[float, np.ndarray, np.ndarray]] | None = None,
     events_out: list[dict[str, Any]] | None = None,
+    bias_out: list[tuple[float, np.ndarray, np.ndarray]] | None = None,
 ) -> dict[str, Any]:
     """Run the ESKF on one sequence and return a result record shaped like the benchmark's.
 
     ``innovations_out``, when given, receives ``(t, residual, S)`` for every GNSS fix before gating.
     The times are on the filter's clock, which starts at the first IMU sample of the window.
-    ``events_out`` receives the FDIR event log of the run.
+    ``events_out`` receives the FDIR event log of the run, ``bias_out`` the ``(t, gyro bias, accel bias)`` estimate at
+    every GNSS fix.
     """
     opts = opts or RunOptions()
     mode = opts.init_bias or ("truth" if seq.bias_known else "static")
@@ -460,12 +516,16 @@ def run_sequence(
         **{"vision_enabled": False, **cfg_kwargs, **vision_kwargs},
     )
     initial = _initial_state(seq, opts, cfg, float(imu.t[0]), mode, imu)
-    result = ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, vision=vision, initial=initial)
+    # After the initial state, so that a static bias estimate never sees the injected fault.
+    imu_run = _inject_fault(imu, gnss, opts, t_start) if opts.fault is not None else imu
+    result = ErrorStateKalmanFilter(cfg).run(imu_run, gnss=gnss, vision=vision, initial=initial)
     est = result.trajectory
     if innovations_out is not None:
         innovations_out.extend(est.metadata.get("gnss_innovations", []))
     if events_out is not None:
         events_out.extend(est.metadata.get("fdir_events", []))
+    if bias_out is not None:
+        bias_out.extend(est.metadata.get("bias_log", []))
 
     ate = ate_bundle(est, reference)
     headline_ate = ate["none"]
