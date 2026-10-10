@@ -32,6 +32,7 @@ from . import (
     attribution,
     benchmark,
     euroc_cli,
+    fault_classification,
     fault_matrix,
     figures,
     mismatch_sweep,
@@ -53,6 +54,7 @@ _SWEEPS: dict[str, Callable[[list[str] | None], int]] = {
     "attribution": attribution.main,
     "separability": separability.main,
     "ramp": slow_ramp.main,
+    "faultclass": fault_classification.main,
     "vision-ramp": vision_ramp.main,
 }
 
@@ -71,6 +73,7 @@ def _sweep(argv: list[str] | None) -> int:
             "  faults   inject each fault mode and compare with a clean control",
             "  attribution  remove, inflate and grow each inertial error source to see what drives an outage",
             "  separability  honest returns after real-IMU outages against spoofs, at the first GNSS gate",
+            "  faultclass  separate multipath, spoofing and degradation from GNSS innovations",
             "  ramp     slow-ramp GNSS spoofs on real recorded IMU data",
             "  vision-ramp  slow-ramp GNSS spoofs with a simulated visual second source",
         )

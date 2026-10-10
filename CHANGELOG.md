@@ -105,6 +105,13 @@ this project uses [semantic versioning](https://semver.org/).
   source. [ADR-0020](docs/adr/0020-second-source-against-a-ramp.md) is proposed; the decision section is for the
   maintainer to write.
 
+- `navkit sweep faultclass` and [`docs/fault_classification.md`](docs/fault_classification.md): whether the GNSS
+  innovations can name the cause of a fault, on real recorded IMU data with simulated GNSS. Multipath is called
+  correctly in 97% of runs and large degradation in at least 94%. Fewer than half the spoofed runs are called spoofing,
+  about one in seven control runs is called a fault, and weak faults are missed. `RunOptions.fault` injects the faults.
+  The Track A exit test is not met. [ADR-0021](docs/adr/0021-fault-classification-from-innovations.md) is proposed;
+  the decision section is for the maintainer to write.
+
 ### Changed
 
 - Blocker B4 is resolved by retiring the claim. The two tests that compared a published Basalt estimate of TUM VI

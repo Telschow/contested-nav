@@ -106,6 +106,7 @@ nav:
       - Honest returns and spoofs: separability.md
       - Slow-ramp spoofing: slow_ramp.md
       - A second source against a ramp: vision_ramp.md
+      - Telling the causes apart: fault_classification.md
       - EuRoC, recorded IMU: euroc.md
       - TUM VI, recorded IMU: tumvi.md
       - Performance: PERFORMANCE.md
@@ -143,6 +144,7 @@ nav:
       - "0018 Honest return separability": adr/0018-honest-return-separability.md
       - "0019 Slow-ramp spoofing": adr/0019-slow-ramp-spoofing.md
       - "0020 Second source against a ramp": adr/0020-second-source-against-a-ramp.md
+      - "0021 Fault classification": adr/0021-fault-classification-from-innovations.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md
