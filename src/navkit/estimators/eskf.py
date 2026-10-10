@@ -458,6 +458,8 @@ class ErrorStateKalmanFilter:
         self.fdir_inflations = 0
         #: (t, residual, S) for every GNSS fix, before any gating (separability study).
         self.gnss_innovations: list[tuple[float, np.ndarray, np.ndarray]] = []
+        #: (t, gyro bias, accel bias) estimate at every GNSS fix, before the update (fault classification study).
+        self.bias_log: list[tuple[float, np.ndarray, np.ndarray]] = []
 
     # -- state ---------------------------------------------------------------
 
@@ -667,6 +669,7 @@ class ErrorStateKalmanFilter:
         S = H @ P @ H.T + Rcov
         if sensor == "gnss":
             self.gnss_innovations.append((t_s, residual.copy(), S.copy()))
+            self.bias_log.append((t_s, np.asarray(x["b_g"]).copy(), np.asarray(x["b_a"]).copy()))
 
         decision = self._fdir_decision(sensor, residual, S, P, H, t_s)
         if not decision.accepted:
@@ -1222,6 +1225,7 @@ class ErrorStateKalmanFilter:
         stats["fdir_inflations"] = float(self.fdir_inflations)
         traj.metadata["sigma_p"] = sigma_p
         traj.metadata["gnss_innovations"] = self.gnss_innovations
+        traj.metadata["bias_log"] = self.bias_log
         traj.metadata["fdir_events"] = [e.as_dict() for e in self.fdir.events]
         return EstimatorResult(
             trajectory=traj,
