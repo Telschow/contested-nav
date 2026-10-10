@@ -54,3 +54,35 @@ def test_gate_transfer_is_imperfect(rows):
 def test_spoof_zero_matches_honest(rows):
     r = rows[0]
     assert sp.spoof_d2(r, 0.0).max() == pytest.approx(sp.honest_d2(r))
+
+
+def test_honest_rows_run_on_a_synthetic_sequence(tmp_path):
+    from navkit import euroc_eval as ee
+
+    ee.write_fixture(tmp_path, "MH_01_easy", duration_s=90.0, seed=1)
+    got = sp.honest_rows("euroc", tmp_path, ("default",), seeds=1)
+    assert got
+    assert {r["config"] for r in got} == {"default"}
+    assert all(sp.honest_d2(r) >= 0.0 and sp.sigma_m(r) > 0.0 for r in got)
+
+
+def test_csv_round_trip_and_cli_rebuild(rows, tmp_path, capsys):
+    out = tmp_path / "again.csv"
+    sp.write_csv(out, rows)
+    assert sp.rows_from_csv(out) == rows
+    assert sp.main(["--from-csv", str(out), "--markdown"]) == 0
+    assert "Honest returns" in capsys.readouterr().out
+
+
+def test_page_writer_refuses_a_page_without_markers(rows, tmp_path, capsys):
+    page = tmp_path / "p.md"
+    page.write_text("no markers\n", encoding="utf-8")
+    assert sp.main(["--from-csv", str(ROOT / "docs" / "data" / "separability.csv"), "--page", str(page)]) == 1
+    assert "error" in capsys.readouterr().err
+
+
+def test_matched_gate_and_minimum_detected_size(rows):
+    sel = sp.select(rows, "euroc", "walk10")
+    assert sp.matched_gate(sel) > 0.0
+    assert sp.min_detected_m(sel, sp.shipped_gate()) == 200.0
+    assert sp.min_detected_m(sel, 1e9) is None
