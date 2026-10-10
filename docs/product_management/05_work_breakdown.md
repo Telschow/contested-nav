@@ -27,7 +27,7 @@ TUM VI data path was M. No hours are quoted, because none were recorded.
 | WB-6 | Remaining P5-09 and P5-12 | Baseline records and the pull-request clean-up | None | S | Stated in the roadmap item. |
 | WB-7 | UrbanNav | A licence answer, then a third dataset | Issue 94 | M | The licence permits the use, or the dataset is dropped. |
 
-WB-1 is done: the [vision-ramp study](../vision_ramp.md) puts the floor at about 2 m/s for independent visual errors. WB-7 is on hold.
+WB-1 is done: the [vision-ramp study](../vision_ramp.md) puts the floor at about 2 m/s for independent visual errors. WB-4 is done: option 3 was taken and B4 is resolved (R5 in `CONSTRAINTS.md`). WB-7 is on hold.
 
 ## 3. B4: the published TUM VI estimate
 
