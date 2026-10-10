@@ -160,13 +160,13 @@ turned out to matter ([EuRoC](../euroc.md), [TUM VI](../tumvi.md)).
 
 **VERIFIED BY REPOSITORY.**
 
-### L9: Two tests skip without external data
+### L9: Recorded-data tests skip without external data
 
-The TUM VI regression tests require reference data that is deliberately not
-vendored, and skip when it is absent.
+The orientation checks on recorded EuRoC and TUM VI sequences need data that is deliberately not
+vendored, and skip when it is absent. A synthetic sequence runs the same check in every checkout.
 
-**Consequence:** in a clean checkout, coverage of the trajectory reader is
-asserted but not exercised against the published benchmark.
+**Consequence:** in a clean checkout, the trajectory reader is checked on a synthetic
+sequence but not on recorded data.
 
 **VERIFIED BY REPOSITORY.**
 

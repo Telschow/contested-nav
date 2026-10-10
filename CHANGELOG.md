@@ -107,6 +107,12 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Changed
 
+- Blocker B4 is resolved by retiring the claim. The two tests that compared a published Basalt estimate of TUM VI
+  room1 with a subsampled ground truth always skipped, because neither file could be fetched. They are removed. The
+  claim of a reproduction of the published 0.069 m is dropped. `tests/test_recorded_orientation.py` takes over the
+  purpose: the ground-truth attitude rate must match the recorded gyroscope, and a mis-ordered quaternion must not.
+  It always runs on a synthetic sequence and runs on every fetched sequence.
+
 - The initial IMU bias sigmas are read ([ADR-0015](docs/adr/0015-initial-imu-bias-sigmas-are-read.md), accepted).
   `gyro_bias_sigma` and `accel_bias_sigma` were accepted and read by nothing. The generator now draws an initial
   bias from each, on its own random stream, and the benchmark filter is told the same sigmas through the new
