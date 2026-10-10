@@ -2,7 +2,7 @@
 
 What this project assumes about time and calibration across its sensor streams, what it has measured on real
 recordings, and what a system built on it would still have to supply. It is the item listed as missing under
-Track C of the [roadmap](../../ROADMAP.md) (P5-07). It specifies the evaluation harness, not a product: there are
+Track C of the [roadmap](https://github.com/Telschow/contested-nav/blob/main/ROADMAP.md) (P5-07). It specifies the evaluation harness, not a product: there are
 no sensor drivers here (see "Deliberately not planned").
 
 ## 1. Streams and the timing model

@@ -132,7 +132,7 @@ deliberate decision to live with it). A risk's status changes only with evidence
 ### R13. Supply chain: unpinned or unattested artefacts
 - **In place.** SHA-pinned actions, dependency review, `pip-audit`, a CycloneDX SBOM, CodeQL.
 - **Not done** ([ADR-0011](docs/adr/0011-ci-and-supply-chain.md)): signed releases or build
-  provenance, a base image pinned by digest. `uv.lock` exists but nothing uses it.
+  provenance, a base image pinned by digest. There is no lock file; `uv.lock` was removed because nothing used it.
 - **Next.** P5-10 before a tagged release.
 
 ### R14. Defense-adjacent framing is misread

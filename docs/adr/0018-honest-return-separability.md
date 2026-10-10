@@ -1,6 +1,6 @@
 # ADR-0018: Honest returns after an outage and the GNSS gate
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0007](0007-spoof-permanence-hysteresis.md), [ADR-0014](0014-textbook-imu-process-noise-by-default.md), [separability](../separability.md)
 
@@ -21,7 +21,13 @@ spoofs larger than the claimed uncertainty (tens of metres after 20 s).
 
 ## Decision
 
-To be written by the maintainer.
+Option 2, with option 1's honesty about the limit. For recorded IMUs the filter is run with the calibrated bias
+walk (`--preset adis16448-walk` on EuRoC, the walk-scaled setting on TUM VI). The shipped defaults and the FDIR gate
+are unchanged. No re-acquisition gate is tuned, because a gate fitted on one dataset did not transfer to the other.
+
+The limit is stated, not tuned away: a spoof smaller than the claimed uncertainty at return (tens of metres after
+a 20 s outage) cannot be told from an honest return by the first fix. A slow-ramp spoof is not covered by this
+measurement and stays open.
 
 ## Consequences
 
