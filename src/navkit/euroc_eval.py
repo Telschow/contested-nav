@@ -373,8 +373,16 @@ def _initial_state(
     return InitialState(R=R0, p=p0, v=v0, b_a=b_a, b_g=b_g)
 
 
-def run_sequence(seq: EurocSequence, opts: RunOptions | None = None) -> dict[str, Any]:
-    """Run the ESKF on one sequence and return a result record shaped like the benchmark's."""
+def run_sequence(
+    seq: EurocSequence,
+    opts: RunOptions | None = None,
+    innovations_out: list[tuple[float, np.ndarray, np.ndarray]] | None = None,
+) -> dict[str, Any]:
+    """Run the ESKF on one sequence and return a result record shaped like the benchmark's.
+
+    ``innovations_out``, when given, receives ``(t, residual, S)`` for every GNSS fix before gating.
+    The times are on the filter's clock, which starts at the first IMU sample of the window.
+    """
     opts = opts or RunOptions()
     mode = opts.init_bias or ("truth" if seq.bias_known else "static")
     if mode == "zero" and not (opts.bias_sigma and opts.bias_sigma > 0):
@@ -418,6 +426,8 @@ def run_sequence(seq: EurocSequence, opts: RunOptions | None = None) -> dict[str
     initial = _initial_state(seq, opts, cfg, float(imu.t[0]), mode, imu)
     result = ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, initial=initial)
     est = result.trajectory
+    if innovations_out is not None:
+        innovations_out.extend(est.metadata.get("gnss_innovations", []))
 
     ate = ate_bundle(est, reference)
     headline_ate = ate["none"]
