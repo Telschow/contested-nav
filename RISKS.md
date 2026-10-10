@@ -114,7 +114,8 @@ deliberate decision to live with it). A risk's status changes only with evidence
 ### R10. Fault modes the simulator can inject are never measured
 - **Cause and effect.** The FMEA-lite table in [MODEL.md](docs/MODEL.md) shows spoofing, slow
   GNSS bias, IMU loss, timestamp offsets and vision outages as unit-tested only. One spoofing
-  case (a modest offset after an outage) is an open problem with an expected-failure test.
+  case (a modest offset after an outage) is an open problem with an expected-failure test. A slow-ramp spoof is followed in every measured run
+  ([slow ramp](docs/slow_ramp.md), ADR-0019).
 - **Next.** P5-02 measures them and reports detection and false-alarm rates.
 
 ### R11. Known model defects change published numbers when fixed
