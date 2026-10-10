@@ -95,7 +95,8 @@ def test_python_dash_m_navkit_is_an_alias() -> None:
 def test_sweep_without_a_kind_prints_usage_and_fails(capsys: pytest.CaptureFixture[str]) -> None:
     assert cli.main(["sweep"]) == 2
     assert (
-        "navkit sweep {seeds, scenes, outages, mismatch, faults, attribution, separability}" in capsys.readouterr().err
+        "navkit sweep {seeds, scenes, outages, mismatch, faults, attribution, separability, ramp}"
+        in capsys.readouterr().err
     )
 
 
