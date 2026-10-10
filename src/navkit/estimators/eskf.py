@@ -456,6 +456,8 @@ class ErrorStateKalmanFilter:
         self.g = GRAVITY.copy() if config.gravity is None else np.asarray(config.gravity, float)
         self.fdir = FdirManager(config.fdir_config)
         self.fdir_inflations = 0
+        #: (t, residual, S) for every GNSS fix, before any gating (separability study).
+        self.gnss_innovations: list[tuple[float, np.ndarray, np.ndarray]] = []
 
     # -- state ---------------------------------------------------------------
 
@@ -663,6 +665,8 @@ class ErrorStateKalmanFilter:
         """
         P = x["P"]
         S = H @ P @ H.T + Rcov
+        if sensor == "gnss":
+            self.gnss_innovations.append((t_s, residual.copy(), S.copy()))
 
         decision = self._fdir_decision(sensor, residual, S, P, H, t_s)
         if not decision.accepted:
@@ -1217,6 +1221,7 @@ class ErrorStateKalmanFilter:
         stats.update(self.fdir.stats())
         stats["fdir_inflations"] = float(self.fdir_inflations)
         traj.metadata["sigma_p"] = sigma_p
+        traj.metadata["gnss_innovations"] = self.gnss_innovations
         traj.metadata["fdir_events"] = [e.as_dict() for e in self.fdir.events]
         return EstimatorResult(
             trajectory=traj,

@@ -38,6 +38,7 @@ from . import (
     outage_sweep,
     scene_sweep,
     seed_sweep,
+    separability,
 )
 from .io import tumvi_fetch
 
@@ -48,6 +49,7 @@ _SWEEPS: dict[str, Callable[[list[str] | None], int]] = {
     "mismatch": mismatch_sweep.main,
     "faults": fault_matrix.main,
     "attribution": attribution.main,
+    "separability": separability.main,
 }
 
 
@@ -64,6 +66,7 @@ def _sweep(argv: list[str] | None) -> int:
             "  mismatch vary how wrong the filter's assumed sensor noise is",
             "  faults   inject each fault mode and compare with a clean control",
             "  attribution  remove, inflate and grow each inertial error source to see what drives an outage",
+            "  separability  honest returns after real-IMU outages against spoofs, at the first GNSS gate",
         )
         print("\n".join((usage, *kinds)), file=sys.stderr)
         return 0 if args and args[0] in ("-h", "--help") else 2

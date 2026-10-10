@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1149<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.2<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1155<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.2<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
