@@ -89,6 +89,12 @@ this project uses [semantic versioning](https://semver.org/).
   `run_sequence` can return them. [ADR-0018](docs/adr/0018-honest-return-separability.md) is accepted: use the
   calibrated bias walk on recorded IMUs, leave the gate alone, and state the limit.
 
+- `navkit sweep ramp` and [`docs/slow_ramp.md`](docs/slow_ramp.md): a GNSS spoof that grows from 0.05 to 2 m/s, on
+  real recorded IMU data with simulated GNSS, healthy before the onset and after a 20 s outage. The filter follows
+  the spoof in every spoofed run. With the calibrated bias walk the gate does not react to ramps up to 1 m/s on
+  EuRoC. `RunOptions.spoof` applies the ramp. [ADR-0019](docs/adr/0019-slow-ramp-spoofing.md) is accepted: the limit is
+  documented in the limitations, the risk log and the roadmap.
+
 ### Changed
 
 - The initial IMU bias sigmas are read ([ADR-0015](docs/adr/0015-initial-imu-bias-sigmas-are-read.md), accepted).

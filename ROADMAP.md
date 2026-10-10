@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1159<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.2<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1170<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.0<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -195,6 +195,9 @@ that has already been wrong. This track moves detection forward.
       no longer separates this case from the honest 3.760 m control, so
       `CONSTRAINTS.md` now requires the coverage and NEES columns to be read
       alongside it.
+- [!] Slow-ramp spoofing is not detectable with an IMU and GNSS alone: the filter followed every ramp from 0.05
+      to 2 m/s on two datasets ([slow ramp](docs/slow_ramp.md), ADR-0019 accepted). The exit test below cannot be
+      met for spoofing without a second independent source.
 - [ ] Per-sensor detection of multipath (elevated innovation variance without
       a mean shift), spoofing (innovation consistent but GNSS-internally
       inconsistent, e.g. against the IMU-predicted position), and sensor
