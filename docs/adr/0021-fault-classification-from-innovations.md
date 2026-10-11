@@ -1,6 +1,6 @@
 # ADR-0021: Fault classification from the GNSS innovations
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0005](0005-chi-square-fdir-gating.md), [ADR-0019](0019-slow-ramp-spoofing.md), [fault classification](../fault_classification.md)
 
@@ -24,7 +24,16 @@ six. Weak faults are still missed. The Track A exit test is not met.
 
 ## Decision
 
-To be written by the maintainer.
+Option 2. A multipath detector is the only classifier worth shipping from this evidence: multipath is separable at
+every size tested, in 99% of runs. The label for every other detected fault stays "faulty, cause unknown". The
+ten-feature classifier that names spoofing and degradation is a study result, not a detector. It calls spoofing in
+about three quarters of runs, has a control false-alarm rate near one in six, and its second round of features was
+chosen after seeing the first round fail on the same data.
+
+No detector is added to the filter by this decision. Building one needs its own work package, the multipath
+signature held to a false-alarm rate measured on runs the thresholds never saw (the confirmation run on the page),
+and its own ADR. Track A's exit test is restated, not met: detection per type at zero false alarms holds for none of
+the three causes. Option 3, more features, was done once, cheaply, and a second sensor remains the next candidate.
 
 ## Consequences
 

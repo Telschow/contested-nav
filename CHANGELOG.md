@@ -102,15 +102,15 @@ this project uses [semantic versioning](https://semver.org/).
 - `navkit sweep vision-ramp` and [`docs/vision_ramp.md`](docs/vision_ramp.md): the slow-ramp runs with a simulated visual
   source fused by the stochastic clone. With independent visual errors a 2 m/s ramp is caught and not followed. A
   1 m/s ramp is seen and still followed. With correlated errors nothing is caught. `RunOptions.vision` adds the
-  source. [ADR-0020](docs/adr/0020-second-source-against-a-ramp.md) is proposed; the decision section is for the
-  maintainer to write.
+  source. [ADR-0020](docs/adr/0020-second-source-against-a-ramp.md) is accepted: record the floor,
+  measure a real front end next, then test a different second source.
 
 - `navkit sweep faultclass` and [`docs/fault_classification.md`](docs/fault_classification.md): whether the GNSS
   innovations can name the cause of a fault, on real recorded IMU data with simulated GNSS. Multipath is called
   correctly in 99% of runs and large degradation in 98%. Spoofing is called in 74% of runs after five features were
   added to the first five (38% before), about one in six control runs is called a fault, and weak faults are missed. `RunOptions.fault` injects the faults.
-  The Track A exit test is not met. [ADR-0021](docs/adr/0021-fault-classification-from-innovations.md) is proposed;
-  the decision section is for the maintainer to write.
+  The Track A exit test is not met. [ADR-0021](docs/adr/0021-fault-classification-from-innovations.md) is accepted:
+  ship a multipath detector at most, and report every other detected fault as cause unknown.
 
 ### Changed
 
