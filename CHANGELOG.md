@@ -114,6 +114,12 @@ this project uses [semantic versioning](https://semver.org/).
   The Track A exit test is not met. [ADR-0021](docs/adr/0021-fault-classification-from-innovations.md) is accepted:
   ship a multipath detector at most, and report every other detected fault as cause unknown.
 
+- `navkit.fdir.multipath` and [`docs/multipath.md`](docs/multipath.md): a multipath signature (NIS and lag-1
+  autocorrelation of a window of GNSS innovations) in a sensitive and a specific rule, with shipping criteria written
+  before the fresh runs. The specific rule met them: it called all multipath of 3 m and above and none of the other
+  runs, and none of 136 controls. The sensitive rule did not (14% of the other runs). It is a function, not wired into
+  the filter. [ADR-0022](docs/adr/0022-multipath-signature.md) is accepted. `navkit sweep multipath` runs the study.
+
 ### Changed
 
 - Blocker B4 is resolved by retiring the claim. The two tests that compared a published Basalt estimate of TUM VI

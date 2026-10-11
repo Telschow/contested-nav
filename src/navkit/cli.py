@@ -36,6 +36,7 @@ from . import (
     fault_matrix,
     figures,
     mismatch_sweep,
+    multipath_study,
     outage_sweep,
     scene_sweep,
     seed_sweep,
@@ -54,6 +55,7 @@ _SWEEPS: dict[str, Callable[[list[str] | None], int]] = {
     "attribution": attribution.main,
     "separability": separability.main,
     "ramp": slow_ramp.main,
+    "multipath": multipath_study.main,
     "faultclass": fault_classification.main,
     "vision-ramp": vision_ramp.main,
 }
@@ -74,6 +76,7 @@ def _sweep(argv: list[str] | None) -> int:
             "  attribution  remove, inflate and grow each inertial error source to see what drives an outage",
             "  separability  honest returns after real-IMU outages against spoofs, at the first GNSS gate",
             "  faultclass  separate multipath, spoofing and degradation from GNSS innovations",
+            "  multipath  evaluate the multipath signature on injected faults",
             "  ramp     slow-ramp GNSS spoofs on real recorded IMU data",
             "  vision-ramp  slow-ramp GNSS spoofs with a simulated visual second source",
         )
