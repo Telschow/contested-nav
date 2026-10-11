@@ -18,8 +18,12 @@ from dataclasses import dataclass
 
 import numpy as np
 
-#: A window whose mean NIS is at least this is inflated (a healthy channel is about 1).
+#: Two rules, fixed before the evaluation on fresh runs. ``sensitive``: a window whose mean NIS is at least 2 (a healthy
+#: channel is about 1). ``specific``: at least 6, the value the fault-classification tree learned on its training runs.
+#: The first catches smaller multipath and also calls a small step. The second does neither.
 NIS_MIN = 2.0
+NIS_MIN_SPECIFIC = 6.0
+RULES = ("sensitive", "specific")
 #: A window whose lag-1 autocorrelation of the whitened innovation is above this is a persistent offset, not noise.
 AC1_MAX = 0.8
 #: Fewer innovations than this and no call is made.
@@ -33,7 +37,13 @@ class Signature:
     nis: float
     ac1: float
     n: int
-    multipath: bool
+    sensitive: bool
+    specific: bool
+
+    @property
+    def multipath(self) -> bool:
+        """The call under the specific rule, which is the default."""
+        return self.specific
 
 
 def signature(innovations: Sequence[tuple[float, np.ndarray, np.ndarray]]) -> Signature | None:
@@ -48,10 +58,24 @@ def signature(innovations: Sequence[tuple[float, np.ndarray, np.ndarray]]) -> Si
     z = np.stack([np.linalg.solve(np.linalg.cholesky(i[2]), i[1]) for i in innovations])
     nis = float(d2.mean() / 3.0)
     ac1 = float((z[:-1] * z[1:]).sum() / max(float((z * z).sum()), 1e-12))
-    return Signature(nis=nis, ac1=ac1, n=len(innovations), multipath=nis >= NIS_MIN and ac1 <= AC1_MAX)
+    return Signature(
+        nis=nis,
+        ac1=ac1,
+        n=len(innovations),
+        sensitive=call(nis, ac1, "sensitive"),
+        specific=call(nis, ac1, "specific"),
+    )
 
 
-def is_multipath(innovations: Sequence[tuple[float, np.ndarray, np.ndarray]]) -> bool:
+def call(nis: float, ac1: float, rule: str = "specific") -> bool:
+    """The call of one rule on the two statistics of a window."""
+    if rule not in RULES:
+        raise ValueError(f"rule must be one of {RULES}, got {rule!r}")
+    floor = NIS_MIN if rule == "sensitive" else NIS_MIN_SPECIFIC
+    return bool(nis >= floor and ac1 <= AC1_MAX)
+
+
+def is_multipath(innovations: Sequence[tuple[float, np.ndarray, np.ndarray]], rule: str = "specific") -> bool:
     """True when the window looks like multipath; False when it does not or when it is too short to say."""
     sig = signature(innovations)
-    return bool(sig and sig.multipath)
+    return bool(sig and call(sig.nis, sig.ac1, rule))
