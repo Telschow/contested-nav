@@ -158,8 +158,21 @@ def autocorrelation(x: np.ndarray, max_lag: int = MAX_LAG) -> np.ndarray:
     return np.array([float(x[: len(x) - k] @ x[k:]) / var for k in range(max_lag + 1)])
 
 
+def _mean_acf(series: list[np.ndarray]) -> np.ndarray:
+    """The mean autocorrelation of the components, or all NaN when no component is long enough to have one."""
+    acfs = np.array([autocorrelation(x) for x in series])
+    if np.isnan(acfs).all():
+        return np.full(acfs.shape[1], np.nan)
+    return np.asarray(np.nanmean(acfs, axis=0))
+
+
 def correlation_time(acf: np.ndarray, step_s: float) -> float:
-    """Seconds until the autocorrelation first falls below 1/e. Capped at the longest lag if it never does."""
+    """Seconds until the autocorrelation first falls below 1/e. Capped at the longest lag if it never does.
+
+    NaN when the series was too short to have an autocorrelation.
+    """
+    if np.isnan(acf).all():
+        return float("nan")
     below = np.flatnonzero(acf < np.exp(-1.0))
     return float((below[0] if len(below) else len(acf)) * step_s)
 
@@ -175,8 +188,8 @@ def summary(rows: list[dict[str, Any]], gap: int, step_s: float) -> dict[str, fl
     lat_mag = np.linalg.norm(lat, axis=1)
     med = float(np.median(rot_mag))
     mad = float(np.median(np.abs(rot_mag - med))) * 1.4826
-    acf_rot = np.nanmean([autocorrelation(rot[:, k]) for k in range(3)], axis=0)
-    acf_lat = np.nanmean([autocorrelation(lat[:, k]) for k in range(3)], axis=0)
+    acf_rot = _mean_acf([rot[:, k] for k in range(3)])
+    acf_lat = _mean_acf([lat[:, k] for k in range(3)])
     return {
         "pairs": float(len(sel)),
         "baseline_m": float(np.median(base)),
