@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1245<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.1<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1259<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.2<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -203,6 +203,8 @@ that has already been wrong. This track moves detection forward.
 - [~] Per-sensor classification from the GNSS innovations is measured ([fault classification](docs/fault_classification.md),
       ADR-0021 accepted): multipath is separable, spoofing is called in about three quarters of runs, weak faults are
       missed, and the control false-alarm rate is 18% in cross-validation and 35% on unseen runs.
+- [x] Multipath signature as a function, not wired into the filter ([multipath](docs/multipath.md), ADR-0022): the
+      specific rule calls multipath of about 3 m and above on injected noise and nothing else on fresh runs.
 - [ ] Per-sensor detection of multipath (elevated innovation variance without
       a mean shift), spoofing (innovation consistent but GNSS-internally
       inconsistent, e.g. against the IMU-predicted position), and sensor
