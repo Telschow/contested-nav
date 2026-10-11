@@ -15,6 +15,7 @@ Convention: ``X1 = R X0 + t`` for a point seen in camera 0 and camera 1, so ``(R
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import pairwise
 from pathlib import Path
 
 import numpy as np
@@ -355,3 +356,50 @@ def relative_pose(
 def motion_from_pair(res: PairResult) -> tuple[np.ndarray, np.ndarray]:
     """The camera's own motion ``T_c0_c1``: its rotation and the direction of its translation, in camera 0."""
     return res.R.T, -res.R.T @ res.t_dir
+
+
+def track_chain(
+    images: list[np.ndarray], pts: np.ndarray, levels: int = 3, fb_tolerance: float = 0.5
+) -> list[tuple[np.ndarray, np.ndarray]]:
+    """Track ``pts`` of ``images[0]`` through every later frame, one step at a time.
+
+    Returns, for each later frame, the positions and the mask of points that survived every step so far. Tracking
+    step by step is how a feature tracker copes with the large image motion of a long baseline.
+    """
+    alive = np.ones(len(pts), dtype=bool)
+    cur = pts.copy()
+    out: list[tuple[np.ndarray, np.ndarray]] = []
+    for prev, nxt in pairwise(images):
+        moved, ok = track(prev, nxt, cur, levels=levels, fb_tolerance=fb_tolerance)
+        alive &= ok
+        cur = np.where(alive[:, None], moved, cur)
+        out.append((cur.copy(), alive.copy()))
+    return out
+
+
+def relative_poses_along(
+    images: list[np.ndarray], gaps: tuple[int, ...], cam: Camera, seed: int = 0, ransac_px: float = 1.0
+) -> dict[int, PairResult | None]:
+    """The relative pose from ``images[0]`` to ``images[g]`` for each gap ``g``, from one chain of tracks.
+
+    The corners are found once in ``images[0]``; a gap's pose uses the points still tracked at that frame.
+    """
+    if max(gaps) >= len(images):
+        raise ValueError("need a frame for every gap")
+    corners = shi_tomasi(images[0])
+    result: dict[int, PairResult | None] = dict.fromkeys(gaps)
+    if len(corners) < 20:
+        return result
+    chain = track_chain(images[: max(gaps) + 1], corners)
+    for g in gaps:
+        pos, alive = chain[g - 1]
+        if int(alive.sum()) < 20:
+            continue
+        x0, x1 = undistort(corners[alive], cam), undistort(pos[alive], cam)
+        try:
+            E, inl = essential_ransac(x0, x1, ransac_px / cam.fx, seed=seed)
+        except ValueError:
+            continue
+        R, t = decompose(E, x0[inl], x1[inl])
+        result[g] = PairResult(R=R, t_dir=t / np.linalg.norm(t), tracked=int(alive.sum()), inliers=int(inl.sum()))
+    return result

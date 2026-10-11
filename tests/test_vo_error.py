@@ -59,15 +59,18 @@ def _exact(monkeypatch, seq_dir, noise_deg=0.0, seed=0):
     times = [t for t, _ in ve.frame_list(seq_dir)]
     rng = np.random.default_rng(seed)
 
-    def fake(img0, img1, camera, seed=0):
-        t0, t1 = times[_index(img0)], times[_index(img1)]
-        R, t = ve.true_motion(seq.truth, cam, t0, t1)
-        Rm = R @ rot_exp(np.radians(noise_deg) * rng.standard_normal(3))
-        norm = np.linalg.norm(t)
-        u = t / norm if norm > 1e-9 else np.array([1.0, 0.0, 0.0])
-        return vf.PairResult(R=Rm.T, t_dir=-Rm.T @ u, tracked=100, inliers=90)
+    def fake(images, gaps, camera, seed=0):
+        out = {}
+        for g in gaps:
+            t0, t1 = times[_index(images[0])], times[_index(images[g])]
+            R, t = ve.true_motion(seq.truth, cam, t0, t1)
+            Rm = R @ rot_exp(np.radians(noise_deg) * rng.standard_normal(3))
+            norm = np.linalg.norm(t)
+            u = t / norm if norm > 1e-9 else np.array([1.0, 0.0, 0.0])
+            out[g] = vf.PairResult(R=Rm.T, t_dir=-Rm.T @ u, tracked=100, inliers=90)
+        return out
 
-    monkeypatch.setattr(ve, "relative_pose", fake)
+    monkeypatch.setattr(ve, "relative_poses_along", fake)
 
 
 def test_frame_list_is_sorted_on_the_imu_clock_and_skips_missing_files(seq_dir):
@@ -160,7 +163,7 @@ def test_measure_refuses_too_few_frames(seq_dir):
 
 
 def test_measure_skips_pairs_the_front_end_could_not_solve(seq_dir, monkeypatch):
-    monkeypatch.setattr(ve, "relative_pose", lambda *a, **k: None)
+    monkeypatch.setattr(ve, "relative_poses_along", lambda images, gaps, cam, seed=0: dict.fromkeys(gaps))
     assert ve.measure(seq_dir, gaps=(1,)) == []
 
 

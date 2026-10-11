@@ -25,9 +25,9 @@ import numpy as np
 from .euroc_eval import load_sequence
 from .geometry.rigid import rot_log
 from .types import Trajectory, interpolate_trajectory
-from .vo_frontend import Camera, camera_from_yaml, load_gray, motion_from_pair, relative_pose
+from .vo_frontend import Camera, camera_from_yaml, load_gray, motion_from_pair, relative_poses_along
 
-GAPS = (1, 4, 10)
+GAPS = (1, 2, 4, 6, 10)
 #: Below this true baseline the direction of the motion is undefined and the pair is skipped.
 MIN_TRUE_BASELINE_M = 1e-3
 MAX_LAG = 40
@@ -124,17 +124,18 @@ def measure(seq_dir: Path, gaps: tuple[int, ...] = GAPS, min_baseline_m: float =
     def image(i: int) -> np.ndarray:
         if i not in images:
             images[i] = load_gray(frames[i][1])
-            images.pop(i - 3 * max(gaps) - 4, None)  # keep memory bounded
+            images.pop(i - 2 * max(gaps) - 4, None)  # keep memory bounded
         return images[i]
 
     rows: list[dict[str, Any]] = []
-    for gap in gaps:
-        for i in range(0, len(frames) - gap):
+    top = max(gaps)
+    for i in range(0, len(frames) - top):
+        window = [image(i + k) for k in range(top + 1)]
+        found = relative_poses_along(window, gaps, cam, seed=i)
+        for gap in gaps:
+            est = found[gap]
             (t0, _), (t1, _) = frames[i], frames[i + gap]
-            if not (seq.truth.t[0] <= t0 and t1 <= seq.truth.t[-1]):
-                continue
-            est = relative_pose(image(i), image(i + gap), cam, seed=i)
-            if est is None:
+            if est is None or not (seq.truth.t[0] <= t0 and t1 <= seq.truth.t[-1]):
                 continue
             row = pair_row(seq_dir.name, gap, t0, t1, est, seq.truth, cam)
             if row is not None and row["baseline_m"] >= min_baseline_m:
