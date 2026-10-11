@@ -183,3 +183,29 @@ def test_a_pair_where_the_camera_did_not_move_is_skipped():
     cam = vf.Camera(450, 450, 32, 24, (0, 0, 0, 0), np.eye(4), 64, 48)
     est = vf.PairResult(R=np.eye(3), t_dir=np.array([1.0, 0.0, 0.0]), tracked=10, inliers=9)
     assert ve.pair_row("s", 1, 0.0, 1.0, est, still, cam) is None
+
+
+def test_a_short_series_has_no_autocorrelation_and_no_warning():
+    rows = [
+        {
+            "sequence": "s",
+            "gap_frames": 1,
+            "t_s": 0.05 * k,
+            "dt_s": 0.05,
+            "baseline_m": 0.03,
+            "rot_x_deg": 0.1 * k % 0.7,
+            "rot_y_deg": 0.0,
+            "rot_z_deg": 0.0,
+            "lat_x_m": 0.0,
+            "lat_y_m": 0.001 * k,
+            "lat_z_m": 0.0,
+            "dir_err_deg": 3.0,
+            "tracked": 50,
+            "inliers": 40,
+        }
+        for k in range(10)
+    ]
+    s = ve.summary(rows, 1, 0.05)
+    assert np.isnan(s["rot_acf_lag1"]) and np.isnan(s["lat_corr_time_s"]) and s["pairs"] == 10
+    assert "nan" in ve.summary_markdown(rows).lower() or "-" in ve.summary_markdown(rows)
+    assert np.isnan(ve.correlation_time(np.full(5, np.nan), 0.05))
