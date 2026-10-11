@@ -151,3 +151,35 @@ def test_a_png_is_read_as_a_single_float_channel(tmp_path):
     mpimg.imsave(str(path), (_texture(24, 32) * 255).astype(np.uint8), cmap="gray")
     img = vo.load_gray(path)
     assert img.shape == (24, 32) and img.min() >= 0.0 and img.max() <= 1.0
+
+
+def test_a_chain_of_tracks_survives_a_motion_too_large_for_one_step():
+    img0 = _texture(seed=6)
+    h, w = img0.shape
+    yy, xx = np.mgrid[0:h, 0:w].astype(float)
+    frames = [vo.bilinear(img0, xx - 8.0 * k, yy).astype(np.float32) for k in range(4)]  # 8 px per frame
+    pts = vo.shi_tomasi(img0, cell=16, border=40)
+    chain = vo.track_chain(frames, pts)
+    pos, alive = chain[-1]
+    assert alive.sum() > 0.4 * len(pts)
+    assert np.median(np.abs((pos[alive, 0] - pts[alive, 0]) - 24.0)) < 0.3
+
+
+def test_relative_poses_along_a_chain_use_the_points_still_tracked(monkeypatch):
+    x0, x1, _R, _t = _scene(n=150, seed=8)
+    px0, px1 = vo.distort(x0, CAM), vo.distort(x1, CAM)
+    monkeypatch.setattr(vo, "shi_tomasi", lambda img: px0)
+    keep = np.arange(150) < 100  # only 100 points survive the second step
+
+    def fake_chain(images, pts, levels=3, fb_tolerance=0.5):
+        return [(px1, np.ones(150, dtype=bool)), (px1, keep)]
+
+    monkeypatch.setattr(vo, "track_chain", fake_chain)
+    blank = np.zeros((480, 752), dtype=np.float32)
+    out = vo.relative_poses_along([blank, blank, blank], (1, 2), CAM)
+    assert out[1] is not None and out[2] is not None
+    assert out[1].tracked == 150 and out[2].tracked == 100
+    with pytest.raises(ValueError):
+        vo.relative_poses_along([blank, blank], (1, 5), CAM)
+    monkeypatch.setattr(vo, "shi_tomasi", lambda img: np.zeros((3, 2)))
+    assert vo.relative_poses_along([blank, blank], (1,), CAM) == {1: None}
