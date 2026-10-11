@@ -27,6 +27,15 @@ Then the clone is checked two ways, in a 30 s window with GNSS healthy for the f
 ## The errors
 
 <!-- vo-errors:start -->
+
+| Gap, frames | Pairs | Median baseline m | Rotation RMS deg | Lateral RMS m | Median direction error deg | Outlier share | Rotation lag-1 autocorrelation | Lateral lag-1 autocorrelation | Rotation correlation time s | Lateral correlation time s |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 590 | 0.028 | 0.08 | 0.008 | 11.7 | 2% | 0.54 | 0.57 | 0.20 | 0.25 |
+| 2 | 590 | 0.055 | 0.09 | 0.011 | 5.6 | 7% | 0.58 | 0.68 | 0.15 | 0.25 |
+| 4 | 590 | 0.110 | 0.14 | 0.018 | 3.1 | 8% | 0.53 | 0.66 | 0.10 | 0.20 |
+| 6 | 590 | 0.165 | 0.19 | 0.026 | 2.3 | 9% | 0.28 | 0.51 | 0.05 | 0.20 |
+| 10 | 590 | 0.273 | 0.38 | 0.042 | 1.8 | 13% | 0.20 | 0.36 | 0.05 | 0.05 |
+
 <!-- vo-errors:end -->
 
 *Lag-1 autocorrelation* is the correlation between a pair and the next pair. Pairs that overlap share frames, so the
@@ -37,6 +46,18 @@ standard deviations.
 ## The clone against them
 
 <!-- vo-clone:start -->
+
+| Variant | Runs | Median mean NEES | Median 2-sigma coverage | Median final error m | Median claimed sigma m | Meets the gate (NEES < 10, coverage > 90%) |
+|---|---:|---:|---:|---:|---:|---|
+| IMU only | 5 | 1.5 | 100% | 64.33 | 56.15 | yes |
+| anchor, measured errors | 5 | 8030.7 | 6% | 50.86 | 0.27 | no |
+| clone, independent errors | 5 | 2.0 | 100% | 0.30 | 0.27 | yes |
+| clone, measured correlation | 5 | 5.6 | 93% | 0.51 | 0.27 | yes |
+| clone, measured correlation, noise assumed x4 | 5 | 1.4 | 100% | 0.49 | 0.67 | yes |
+| replay, anchor | 5 | 23497.9 | 5% | 93.64 | 0.27 | no |
+| replay, clone | 5 | 27.0 | 55% | 0.25 | 0.27 | no |
+| replay, clone, noise assumed x4 | 5 | 4.3 | 91% | 0.75 | 0.67 | yes |
+
 <!-- vo-clone:end -->
 
 ## What it shows

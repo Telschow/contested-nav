@@ -108,6 +108,7 @@ nav:
       - A second source against a ramp: vision_ramp.md
       - Telling the causes apart: fault_classification.md
       - A multipath signature: multipath.md
+      - A real front end and the clone: real_front_end.md
       - EuRoC, recorded IMU: euroc.md
       - TUM VI, recorded IMU: tumvi.md
       - Performance: PERFORMANCE.md
@@ -147,6 +148,7 @@ nav:
       - "0020 Second source against a ramp": adr/0020-second-source-against-a-ramp.md
       - "0021 Fault classification": adr/0021-fault-classification-from-innovations.md
       - "0022 Multipath signature": adr/0022-multipath-signature.md
+      - "0023 Clone against a measured front end": adr/0023-clone-against-a-measured-front-end.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md
