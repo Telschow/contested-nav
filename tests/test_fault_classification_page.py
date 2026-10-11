@@ -225,3 +225,70 @@ def test_csv_round_trip_cli_rebuild_and_missing_markers(rows, tmp_path, capsys):
     page = tmp_path / "p.md"
     page.write_text("no markers\n", encoding="utf-8")
     assert fc.main(["--from-csv", str(out), "--page", str(page)]) == 1
+
+
+CONFIRM_CSV = ROOT / "docs" / "data" / "fault_classification_confirm.csv"
+
+
+@pytest.fixture(scope="module")
+def confirm(rows):
+    return fc.frozen_predictions(rows, fc.rows_from_csv(CONFIRM_CSV))
+
+
+def test_confirmation_blocks_match_csv():
+    text = PAGE.read_text(encoding="utf-8")
+    confirm_rows = fc.rows_from_csv(CONFIRM_CSV)
+    for fn in fc.CONFIRM_BLOCKS.values():
+        assert fn(confirm_rows) in text
+
+
+def test_confirmation_uses_sizes_and_seeds_the_model_never_saw(rows):
+    unseen = fc.rows_from_csv(CONFIRM_CSV)
+    seen = {(r["kind"], float(r["level"])) for r in rows}
+    assert not [r for r in unseen if r["kind"] != "none" and (r["kind"], float(r["level"])) in seen]
+    assert not {r["seed"] for r in unseen} & {r["seed"] for r in rows}
+    assert sum(r["cls"] == "control" for r in unseen) == 4 * len({(r["dataset"], r["sequence"]) for r in unseen})
+
+
+def test_every_multipath_run_is_confirmed_and_no_other_run_is_called_multipath(confirm):
+    mp = [r for r in confirm if r["cls"] == "multipath"]
+    assert mp and all(r["predicted"] == "multipath" for r in mp)
+    assert not [r for r in confirm if r["cls"] != "multipath" and r["predicted"] == "multipath"]
+
+
+def test_spoofing_and_degradation_hold_up_on_unseen_runs(confirm):
+    spoof = [r for r in confirm if r["cls"] == "spoofing"]
+    degr = [r for r in confirm if r["cls"] == "degradation"]
+    assert 0.7 < sum(r["predicted"] == "spoofing" for r in spoof) / len(spoof) < 0.85
+    assert 0.85 < sum(r["predicted"] == "degradation" for r in degr) / len(degr) < 0.95
+    steps = [r for r in confirm if r["kind"] == "step"]
+    assert all(r["predicted"] == "spoofing" for r in steps)
+
+
+def test_the_false_alarm_rate_doubled_on_unseen_controls(rows, confirm):
+    cv = fc.with_predictions(rows)
+    cv_far = sum(r["predicted"] != "control" for r in cv if r["cls"] == "control") / sum(
+        r["cls"] == "control" for r in cv
+    )
+    far = sum(r["predicted"] != "control" for r in confirm if r["cls"] == "control") / sum(
+        r["cls"] == "control" for r in confirm
+    )
+    assert 0.15 < cv_far < 0.2
+    assert 0.3 < far < 0.4
+
+
+def test_the_confirmation_cli_rebuilds_and_the_design_is_fixed(tmp_path, capsys):
+    assert fc.main(["--confirm", "--from-csv", str(CONFIRM_CSV), "--markdown"]) == 0
+    assert "frozen model" in capsys.readouterr().out
+    assert fc.CONFIRM_FAULT_SEEDS == (2, 3) and fc.CONFIRM_CONTROL_SEEDS == (2, 3, 4, 5)
+
+
+def test_confirm_sweep_runs_the_fixed_design(tmp_path, monkeypatch):
+    from navkit import euroc_eval as ee
+
+    monkeypatch.setattr(fc, "CONFIRM_CASES", fc.CONFIRM_CASES[:2])
+    monkeypatch.setattr(fc, "CONFIRM_CONTROL_SEEDS", (2,))
+    monkeypatch.setattr(fc, "CONFIRM_FAULT_SEEDS", (3,))
+    ee.write_fixture(tmp_path, "MH_01_easy", duration_s=80.0, seed=1)
+    got = fc.confirm_sweep("euroc", tmp_path)
+    assert [(r["kind"], r["seed"]) for r in got] == [("none", 2), ("multipath", 3)]

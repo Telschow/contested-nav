@@ -37,4 +37,7 @@ the three causes. Option 3, more features, was done once, cheaply, and a second 
 
 ## Consequences
 
-Whatever is chosen, the claim stays limited to injected faults, simulated GNSS and two datasets.
+A confirmation run on unseen fault sizes and seeds supports the decision. Multipath was called in 100% of 68 runs
+and in none of the other 476. The false-alarm rate of the any-fault stage rose from 18% to 35% on 68 unseen controls,
+so the stage 1 thresholds are not usable as they are. The claim stays limited to injected faults, simulated GNSS and
+two datasets.
