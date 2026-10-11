@@ -382,3 +382,119 @@ def test_no_sequence_is_a_usage_error(capsys):
 def test_every_sequence_maps_to_a_known_archive():
     assert set(ef.SEQUENCES.values()) <= set(ef.BITSTREAMS)
     assert len(ef.SEQUENCES) == 11
+
+
+# ------------------------------------------------------------------- camera frames
+
+T0_NS = 1403636579763555584
+
+
+def _cam_members(prefix: str) -> dict[str, bytes]:
+    stamps = [T0_NS + 50_000_000 * k for k in range(40)]  # 20 Hz, 2 s
+    csv_text = "#timestamp [ns],filename\n" + "".join(f"{t},{t}.png\n" for t in stamps)
+    out = {
+        f"{prefix}mav0/cam0/data.csv": csv_text.encode(),
+        f"{prefix}mav0/cam0/sensor.yaml": b"sensor_type: camera\nrate_hz: 20\n",
+    }
+    out.update({f"{prefix}mav0/cam0/data/{t}.png": b"PNG" + t.to_bytes(8, "big") * 8 for t in stamps})
+    return out
+
+
+def _flat_with_frames() -> bytes:
+    return _zip_bytes({**_members(f"{SEQ}/"), **_cam_members(f"{SEQ}/")}, zipfile.ZIP_STORED)
+
+
+def _nested_with_frames(inner_method: int) -> bytes:
+    inner = _zip_bytes({**_members(""), **_cam_members("")}, inner_method)
+    outer = zipfile.ZIP_STORED if inner_method == zipfile.ZIP_STORED else zipfile.ZIP_DEFLATED
+    return _zip_bytes({f"machine_hall/{SEQ}/{SEQ}.zip": inner}, outer)
+
+
+def _with_imu(server, dest, blob):
+    server.serve(GROUP, blob)
+    _fetch(server, dest)
+
+
+def test_select_frames_keeps_the_window_and_every_nth_frame():
+    text = _cam_members("")["mav0/cam0/data.csv"].decode()
+    rows = ef.select_frames(text, T0_NS, 0.5, 1.5, 2)
+    assert [t for t, _ in rows] == [T0_NS + 50_000_000 * k for k in range(10, 31, 2)]
+    with pytest.raises(ef.FetchError):
+        ef.select_frames(text, T0_NS, 1.0, 1.0, 1)
+    with pytest.raises(ef.FetchError):
+        ef.select_frames(text, T0_NS, 0.0, 1.0, 0)
+
+
+def test_frames_of_a_window_are_fetched_after_the_sequence(server, tmp_path):
+    _with_imu(server, tmp_path, _flat_with_frames())
+    files = ef.fetch_images(SEQ, tmp_path, start_s=0.5, stop_s=1.5, every=2, base_url=server.base_url)
+    frames = [f for f in files if f.path.endswith(".png")]
+    assert len(frames) == 11
+    assert (tmp_path / SEQ / "mav0/cam0/sensor.yaml").is_file() and (tmp_path / SEQ / "mav0/cam0/data.csv").is_file()
+    first = T0_NS + 50_000_000 * 10
+    assert (tmp_path / SEQ / f"mav0/cam0/data/{first}.png").read_bytes() == b"PNG" + first.to_bytes(8, "big") * 8
+    manifest = json.loads((tmp_path / "MANIFEST.json").read_text())["sequences"][SEQ]["files"]
+    paths = {f["path"] for f in manifest}
+    assert f"{SEQ}/mav0/imu0/data.csv" in paths and f"{SEQ}/mav0/cam0/data/{first}.png" in paths
+
+
+def test_frames_from_a_compressed_nested_archive_leave_no_copy_behind(server, tmp_path):
+    _with_imu(server, tmp_path, _nested_with_frames(zipfile.ZIP_DEFLATED))
+    files = ef.fetch_images(SEQ, tmp_path, start_s=0.0, stop_s=0.4, base_url=server.base_url)
+    assert sum(f.path.endswith(".png") for f in files) == 9
+    assert not list((tmp_path / ".work").glob("*.zip"))
+
+
+def test_frames_from_a_stored_nested_archive_are_read_in_place(server, tmp_path):
+    _with_imu(server, tmp_path, _nested_with_frames(zipfile.ZIP_STORED))
+    files = ef.fetch_images(SEQ, tmp_path, start_s=0.0, stop_s=0.2, base_url=server.base_url)
+    assert sum(f.path.endswith(".png") for f in files) == 5
+
+
+def test_frames_need_the_sequence_first_and_a_window_with_frames(server, tmp_path):
+    server.serve(GROUP, _flat_with_frames())
+    with pytest.raises(ef.FetchError, match="fetch the sequence first"):
+        ef.fetch_images(SEQ, tmp_path, start_s=0.0, stop_s=1.0, base_url=server.base_url)
+    _fetch(server, tmp_path)
+    with pytest.raises(ef.FetchError, match="no camera frame"):
+        ef.fetch_images(SEQ, tmp_path, start_s=50.0, stop_s=60.0, base_url=server.base_url)
+    with pytest.raises(ef.FetchError, match="unknown sequence"):
+        ef.fetch_images("NOPE", tmp_path, start_s=0.0, stop_s=1.0, base_url=server.base_url)
+
+
+def test_an_archive_without_camera_files_is_a_layout_error(server, tmp_path):
+    _with_imu(server, tmp_path, flat_archive())
+    with pytest.raises(ef.LayoutError):
+        ef.fetch_images(SEQ, tmp_path, start_s=0.0, stop_s=1.0, base_url=server.base_url)
+
+
+def test_the_images_flag_fetches_frames(server, tmp_path, capsys):
+    _with_imu(server, tmp_path, _flat_with_frames())
+    code = ef.main(
+        [
+            "--images",
+            "--sequence",
+            SEQ,
+            "--dest",
+            str(tmp_path),
+            "--base-url",
+            server.base_url,
+            "--image-window",
+            "0,0.2",
+        ]
+    )
+    assert code == 0 and "files under" in capsys.readouterr().out
+    bad = ef.main(
+        ["--images", "--sequence", SEQ, "--dest", str(tmp_path), "--base-url", server.base_url, "--image-window", "x"]
+    )
+    assert bad == 1
+
+
+def test_frames_can_be_read_from_a_whole_archive_placed_on_disk(server, tmp_path):
+    _with_imu(server, tmp_path, _nested_with_frames(zipfile.ZIP_DEFLATED))
+    local = tmp_path / ".downloads"
+    local.mkdir()
+    (local / f"{GROUP}.zip").write_bytes(_nested_with_frames(zipfile.ZIP_DEFLATED))
+    server.blobs.clear()  # nothing may be fetched: the archive on disk is used
+    files = ef.fetch_images(SEQ, tmp_path, start_s=0.0, stop_s=0.2, full_download=True, base_url=server.base_url)
+    assert sum(f.path.endswith(".png") for f in files) == 5

@@ -61,7 +61,7 @@ from .io.trajectory import _read_rows
 from .recorded import GRAVITY_Z_UP, EurocSequence, SequenceError, sha256_of
 from .sensors.models import GnssConfig, VisionConfig, gnss_fixes, visual_updates
 from .synthetic import SyntheticConfig, analytic_kinematics, analytic_pose
-from .types import GRAVITY, ImuSample, Trajectory, interpolate_trajectory
+from .types import GRAVITY, ImuSample, Trajectory, VisionUpdate, interpolate_trajectory
 
 DEFAULT_ROOT = "data/raw/euroc"
 
@@ -225,6 +225,9 @@ class RunOptions:
     vision: str | None = None
     vision_corr_s: float = 0.0
     vision_noise_scale: float = 1.0
+    #: (rotation sigma in degrees, translation sigma in metres) of the simulated front end's errors, in place of the
+    #: surrogate's defaults. The filter assumes these times ``vision_noise_scale``.
+    vision_sigmas: tuple[float, float] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         extra: dict[str, Any] = {"spoof": list(self.spoof)} if self.spoof is not None else {}
@@ -235,6 +238,7 @@ class RunOptions:
                 "model": self.vision,
                 "corr_s": self.vision_corr_s,
                 "noise_scale": self.vision_noise_scale,
+                **({"sigmas": list(self.vision_sigmas)} if self.vision_sigmas is not None else {}),
             }
         return {
             "gnss_rate_hz": self.gnss_rate_hz,
@@ -450,13 +454,15 @@ def run_sequence(
     innovations_out: list[tuple[float, np.ndarray, np.ndarray]] | None = None,
     events_out: list[dict[str, Any]] | None = None,
     bias_out: list[tuple[float, np.ndarray, np.ndarray]] | None = None,
+    vision_override: VisionUpdate | None = None,
 ) -> dict[str, Any]:
     """Run the ESKF on one sequence and return a result record shaped like the benchmark's.
 
     ``innovations_out``, when given, receives ``(t, residual, S)`` for every GNSS fix before gating.
     The times are on the filter's clock, which starts at the first IMU sample of the window.
     ``events_out`` receives the FDIR event log of the run, ``bias_out`` the ``(t, gyro bias, accel bias)`` estimate at
-    every GNSS fix.
+    every GNSS fix. ``vision_override`` replaces the generated visual stream (the options still say how the filter
+    treats it), for replaying errors measured on a real front end.
     """
     opts = opts or RunOptions()
     mode = opts.init_bias or ("truth" if seq.bias_known else "static")
@@ -493,7 +499,9 @@ def run_sequence(
         if opts.vision not in ("anchor", "clone"):
             raise SequenceError(f"unknown vision model {opts.vision!r}; known: anchor, clone")
         vcfg = VisionConfig(seed=opts.seed, noise_corr_s=opts.vision_corr_s)
-        vision = visual_updates(reference, vcfg)
+        if opts.vision_sigmas is not None:
+            vcfg.rot_sigma_deg, vcfg.trans_sigma_m = opts.vision_sigmas
+        vision = vision_override if vision_override is not None else visual_updates(reference, vcfg)
         vision_kwargs = {
             "vision_enabled": True,
             "vision_model": opts.vision,

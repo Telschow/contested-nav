@@ -27,3 +27,4 @@ what it cost, and what was rejected.
 | [ADR-0020](0020-second-source-against-a-ramp.md) | A second source against a slow-ramp spoof | accepted |
 | [ADR-0021](0021-fault-classification-from-innovations.md) | Fault classification from the GNSS innovations | accepted |
 | [ADR-0022](0022-multipath-signature.md) | A multipath signature on the GNSS innovations | accepted |
+| [ADR-0023](0023-clone-against-a-measured-front-end.md) | The clone against a measured front end | accepted |
