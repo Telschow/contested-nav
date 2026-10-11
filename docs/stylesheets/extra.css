@@ -11,6 +11,7 @@
   --nav-accent: #1d6b66;
   --nav-accent-soft: #e3efed;
   --nav-rule: #e4e0d8;
+  --nav-rule-soft: #ece9e3;
   --nav-surface: #f3f1ec;
   --nav-measure: 72ch;
 }
@@ -38,6 +39,7 @@
   --nav-accent: #6fbfb5;
   --nav-accent-soft: #1f2b29;
   --nav-rule: #2e2c29;
+  --nav-rule-soft: #252321;
   --nav-surface: #1c1b19;
   --md-hue: 40;
   --md-primary-fg-color: #1a1917;
@@ -104,7 +106,7 @@
   border-bottom: 1px solid var(--nav-rule);
 }
 .md-typeset table:not([class]) td {
-  border-top: 1px solid var(--nav-rule);
+  border-top: 1px solid var(--nav-rule-soft);
 }
 .md-typeset table:not([class]) tbody tr {
   transition: background-color 120ms ease;
@@ -150,8 +152,22 @@
   border-radius: 3px;
   box-shadow: none;
 }
+/* Code: a hairline and a small radius on inline code, a larger radius on blocks. Mono is for code only. */
 .md-typeset code {
   font-variant-numeric: tabular-nums;
+  border: 1px solid var(--nav-rule-soft);
+  border-radius: 4px;
+  padding: 0 0.3em;
+}
+.md-typeset pre > code {
+  border: 1px solid var(--nav-rule-soft);
+  border-radius: 8px;
+}
+.md-typeset .highlight {
+  border-radius: 8px;
+}
+.md-typeset .highlight pre {
+  margin: 0;
 }
 
 /* Links and the keyboard. */
