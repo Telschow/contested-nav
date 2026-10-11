@@ -105,6 +105,15 @@ this project uses [semantic versioning](https://semver.org/).
   source. [ADR-0020](docs/adr/0020-second-source-against-a-ramp.md) is accepted: record the floor,
   measure a real front end next, then test a different second source.
 
+- `navkit sweep faultclass` and [`docs/fault_classification.md`](docs/fault_classification.md): whether the GNSS
+  innovations can name the cause of a fault, on real recorded IMU data with simulated GNSS. Multipath is called
+  correctly in 99% of runs and large degradation in 98%. Spoofing is called in 74% of runs after five features were
+  added to the first five (38% before), and weak faults are missed. A confirmation run on unseen fault sizes and seeds
+  called multipath in all 68 runs and in none of the other 476, kept spoofing at 77% and degradation at 91%, and found
+  a control false-alarm rate of 35% against 18% in cross-validation. `RunOptions.fault` injects the faults.
+  The Track A exit test is not met. [ADR-0021](docs/adr/0021-fault-classification-from-innovations.md) is accepted:
+  ship a multipath detector at most, and report every other detected fault as cause unknown.
+
 ### Changed
 
 - Blocker B4 is resolved by retiring the claim. The two tests that compared a published Basalt estimate of TUM VI
