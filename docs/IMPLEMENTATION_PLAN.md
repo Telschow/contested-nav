@@ -1,5 +1,10 @@
 # Implementation plan
 
+> **Point-in-time snapshot (2026-09-29).** This plan was written from the audit, before the remediation in
+> `CHANGELOG.md` was applied. The baseline figures below are deliberately not updated: they are what the work was
+> measured against. For the current state see `ROADMAP.md` and `CHANGELOG.md`.
+
+
 Derived from `docs/ENGINEERING_BASELINE.md` and `docs/PUBLICATION_READINESS.md`
 (audit 2026-09-29). Prioritised by impact on correctness, reproducibility,
 research credibility, and publication safety. Not a wish list: every item cites
