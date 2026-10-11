@@ -515,6 +515,7 @@ def extract_images(
     members = _index(zf)
     nested = [info for name, info in members.items() if name.lower().split("/")[-1] == f"{seq.lower()}.zip"]
     local: Path | None = None
+    opened: IO[bytes] | None = None  # a file this function opened, which must be closed before it is deleted
     if nested:
         info = nested[0]
         if info.compress_type == zipfile.ZIP_STORED:
@@ -528,7 +529,7 @@ def extract_images(
             local = work_dir / f"{seq}.zip"
             _log(f"{seq}: copying the nested ZIP to {local} first ({info.file_size:,} bytes)")
             _copy_member(zf, info, local)
-            window = local.open("rb")
+            window = opened = local.open("rb")
         inner_zip = zipfile.ZipFile(window)
         prefix = ""
     else:
@@ -562,6 +563,8 @@ def extract_images(
     finally:
         if inner_zip is not zf:
             inner_zip.close()
+        if opened is not None:
+            opened.close()  # Windows cannot delete a file that is still open
         if local is not None:
             local.unlink(missing_ok=True)
 
