@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1259<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.2<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1302<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -259,8 +259,10 @@ this removes it.
       needed there.
 - [~] A visual front end with correlated errors, scale ambiguity and outliers.
       Outliers and scale drift are survived. Correlated errors are not, unless the
-      assumed visual noise is inflated by a factor found by trial. A real front end
-      is still untested.
+      assumed visual noise is inflated by a factor found by trial. A plain two-view front end was
+      then measured on real frames ([real front end](docs/real_front_end.md), ADR-0023): its errors are
+      correlated for about 0.25 s, and when they are replayed the clone stays inside the gate only with the assumed
+      noise inflated by four. One sequence and one window, so the default does not change.
 
 **Exit test:** NEES below 10 with vision enabled and GNSS denied, coverage above
 90%, `vision_enabled = True` as the shipped default. Current value 286.2 for the

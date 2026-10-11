@@ -120,6 +120,14 @@ this project uses [semantic versioning](https://semver.org/).
   runs, and none of 136 controls. The sensitive rule did not (14% of the other runs). It is a function, not wired into
   the filter. [ADR-0022](docs/adr/0022-multipath-signature.md) is accepted. `navkit sweep multipath` runs the study.
 
+- `navkit euroc fetch --images`, `navkit.vo_frontend`, `navkit euroc vo` and [`docs/real_front_end.md`](docs/real_front_end.md):
+  a NumPy two-view feature-tracking front end, measured against the ground truth on 30 s of real EuRoC frames. Its errors
+  are small (0.08° and 8 mm per one-frame pair, with the true scale) and correlated for 0.2 to 0.25 s. A Gaussian
+  surrogate with that size and correlation time keeps the stochastic clone inside its gate. Replaying the measured
+  errors does not (NEES 27, 55% coverage), and assuming four times the measured noise brings it back (NEES 4.3, 91%).
+  One sequence and one window. [ADR-0023](docs/adr/0023-clone-against-a-measured-front-end.md) is accepted: the clone
+  stays opt-in, with the inflation.
+
 ### Changed
 
 - The implementation plan carries the same point-in-time banner as the other baseline records. P5-09 and P5-12 are
