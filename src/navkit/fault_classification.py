@@ -50,6 +50,28 @@ CASES: tuple[tuple[str, str, float], ...] = (
     ("degradation", "gyro_bias", 0.01),
     ("degradation", "gyro_bias", 0.05),
 )
+#: The confirmation run: fault sizes the model never saw (between and beyond the training ones), and seeds it never
+#: saw. Fixed here, and committed, before the run. The model is the one fitted on the whole training CSV, unchanged.
+CONFIRM_CASES: tuple[tuple[str, str, float], ...] = (
+    ("control", "none", 0.0),
+    ("multipath", "multipath", 5.0),
+    ("multipath", "multipath", 20.0),
+    ("spoofing", "ramp", 0.75),
+    ("spoofing", "ramp", 1.5),
+    ("spoofing", "ramp", 3.0),
+    ("spoofing", "ramp", 10.0),
+    ("spoofing", "step", 5.0),
+    ("spoofing", "step", 20.0),
+    ("spoofing", "step", 100.0),
+    ("degradation", "accel_bias", 0.4),
+    ("degradation", "accel_bias", 0.7),
+    ("degradation", "accel_bias", 2.0),
+    ("degradation", "gyro_bias", 0.02),
+    ("degradation", "gyro_bias", 0.1),
+)
+CONFIRM_FAULT_SEEDS = (2, 3)
+CONFIRM_CONTROL_SEEDS = (2, 3, 4, 5)  # more controls: the false-alarm rate needs them
+TRAIN_CSV = "docs/data/fault_classification.csv"
 SETTINGS = {"euroc": "walk10", "tumvi": "file-walk10"}
 #: The first five features of the original study, then the ones added to see whether richer innovations help.
 BASE_FEATURES = ("nis", "mean_shift", "drift_m_s", "bias_accel", "bias_gyro")
@@ -118,6 +140,22 @@ def sweep_rows(dataset: str, root: str | Path, seeds: int) -> list[dict[str, Any
         seq = loader(root, name)
         for seed in range(seeds):
             for case in CASES:
+                row = run_case(seq, SETTINGS[dataset], seed, case)
+                if row is not None:
+                    rows.append(row)
+        print(f"{dataset} {name}", file=sys.stderr, flush=True)
+    return rows
+
+
+def confirm_sweep(dataset: str, root: str | Path) -> list[dict[str, Any]]:
+    """Runs of the confirmation design on one dataset."""
+    loader, _ = dataset_loader(dataset)
+    rows: list[dict[str, Any]] = []
+    for name in sorted(d for d in os.listdir(root) if (Path(root) / d).is_dir()):
+        seq = loader(root, name)
+        for case in CONFIRM_CASES:
+            seeds = CONFIRM_CONTROL_SEEDS if case[0] == "control" else CONFIRM_FAULT_SEEDS
+            for seed in seeds:
                 row = run_case(seq, SETTINGS[dataset], seed, case)
                 if row is not None:
                     rows.append(row)
@@ -219,6 +257,13 @@ def cross_validate(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES
     return out
 
 
+def frozen_predictions(train: list[dict[str, Any]], test: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The calls of one model fitted on ``train`` alone, on rows it never saw."""
+    model = fit_detector(train, FEATURES)
+    x, _ = _matrix(test, FEATURES)
+    return [{**r, "predicted": call(model, x[i])} for i, r in enumerate(test)]
+
+
 def with_predictions(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES) -> list[dict[str, Any]]:
     return [{**r, "predicted": p} for r, p in zip(rows, cross_validate(rows, feats), strict=True)]
 
@@ -317,11 +362,69 @@ def compare_markdown(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def _confirm_scored(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return frozen_predictions(rows_from_csv(TRAIN_CSV), rows)
+
+
+def confirm_confusion_markdown(rows: list[dict[str, Any]]) -> str:
+    return confusion_markdown(_confirm_scored(rows))
+
+
+def confirm_levels_markdown(rows: list[dict[str, Any]]) -> str:
+    scored = _confirm_scored(rows)
+    lines = [
+        "| Class | Fault | Level | Runs | Called correctly | Called control (missed) | Detected (any fault called) |",
+        "|---|---|---:|---:|---:|---:|---:|",
+    ]
+    for cls, kind, level in CONFIRM_CASES:
+        sel = [r for r in scored if r["kind"] == kind and float(r["level"]) == level]
+        if sel:
+            ok = sum(r["predicted"] == cls for r in sel) / len(sel)
+            miss = sum(r["predicted"] == "control" for r in sel) / len(sel)
+            lines.append(
+                f"| {cls} | {kind} | {level:g} | {len(sel)} | {_pct(ok)} | {_pct(miss)} | {_pct(1.0 - miss)} |"
+            )
+    return "\n".join(lines)
+
+
+def confirm_compare_markdown(rows: list[dict[str, Any]]) -> str:
+    """The cross-validated figures of the training runs next to the figures on the unseen runs."""
+    train = rows_from_csv(TRAIN_CSV)
+    sets = (
+        ("cross-validated, training runs", with_predictions(train, FEATURES)),
+        ("frozen model, unseen runs", _confirm_scored(rows)),
+    )
+    lines = [
+        "| Figures | Runs | Control called a fault | Multipath called multipath | Spoofing called spoofing "
+        "| Degradation called degradation |",
+        "|---|---:|---:|---:|---:|---:|",
+    ]
+    for label, sc in sets:
+
+        def share(cls: str, hit: Any, sc: list[dict[str, Any]] = sc) -> str:
+            sel = [r for r in sc if r["cls"] == cls]
+            return _pct(sum(hit(r) for r in sel) / len(sel))
+
+        lines.append(
+            f"| {label} | {len(sc)} | {share('control', lambda r: r['predicted'] != 'control')} "
+            f"| {share('multipath', lambda r: r['predicted'] == 'multipath')} "
+            f"| {share('spoofing', lambda r: r['predicted'] == 'spoofing')} "
+            f"| {share('degradation', lambda r: r['predicted'] == 'degradation')} |"
+        )
+    return "\n".join(lines)
+
+
 BLOCKS = {
     "faultclass-compare": compare_markdown,
     "faultclass-features": lambda rows: feature_markdown(rows),
     "faultclass-confusion": lambda rows: confusion_markdown(with_predictions(rows)),
     "faultclass-levels": lambda rows: level_markdown(with_predictions(rows)),
+}
+
+CONFIRM_BLOCKS = {
+    "faultclass-confirm-compare": confirm_compare_markdown,
+    "faultclass-confirm-calls": confirm_confusion_markdown,
+    "faultclass-confirm-levels": confirm_levels_markdown,
 }
 
 # ------------------------------------------------------------------------- I/O
@@ -359,6 +462,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--euroc-root", default="data/raw/euroc")
     p.add_argument("--tumvi-root", default="data/raw/tumvi")
     p.add_argument("--seeds", type=int, default=2)
+    p.add_argument(
+        "--confirm",
+        action="store_true",
+        help="run (or with --from-csv, read) the confirmation design on unseen sizes and seeds, with the model frozen "
+        "on the training CSV",
+    )
     p.add_argument("--csv", default=None, help="write one row per run")
     p.add_argument("--from-csv", default=None, help="rebuild the tables and page from a saved --csv file; no runs")
     p.add_argument("--page", default=None, help="fill the faultclass blocks of this Markdown page")
@@ -368,16 +477,17 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    blocks = CONFIRM_BLOCKS if args.confirm else BLOCKS
     if args.from_csv:
         rows = rows_from_csv(args.from_csv)
     else:
         rows = []
         for ds, root in (("euroc", args.euroc_root), ("tumvi", args.tumvi_root)):
-            rows += sweep_rows(ds, root, args.seeds)
+            rows += confirm_sweep(ds, root) if args.confirm else sweep_rows(ds, root, args.seeds)
     if args.csv:
         write_csv(args.csv, rows)
         print(f"wrote {args.csv}", file=sys.stderr)
-    tables = {name: fn(rows) for name, fn in BLOCKS.items()}
+    tables = {name: fn(rows) for name, fn in blocks.items()}
     if args.page:
         try:
             for name, text in tables.items():
