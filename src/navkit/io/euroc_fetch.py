@@ -464,6 +464,165 @@ def extract_sequence(
     return result
 
 
+# ---------------------------------------------------------------------- images
+
+CAM0_DIR = "mav0/cam0"
+CAM0_FILES = ("mav0/cam0/data.csv", "mav0/cam0/sensor.yaml")
+
+
+def select_frames(csv_text: str, t0_ns: int, start_s: float, stop_s: float, every: int) -> list[tuple[int, str]]:
+    """The ``(timestamp ns, file name)`` rows of ``cam0/data.csv`` inside the window, every ``every``-th."""
+    if every < 1 or stop_s <= start_s:
+        raise FetchError("need --image-every >= 1 and an image window with stop > start")
+    rows: list[tuple[int, str]] = []
+    for line in csv_text.splitlines():
+        if not line.strip() or line.startswith("#"):
+            continue
+        ts, name = (c.strip() for c in line.split(",")[:2])
+        t = (int(ts) - t0_ns) / 1e9
+        if start_s <= t <= stop_s:
+            rows.append((int(ts), name))
+    return rows[::every]
+
+
+def _first_imu_ns(dest: Path, seq: str) -> int:
+    path = dest / seq / IMU_CSV
+    if not path.is_file():
+        raise FetchError(
+            f"{seq}: fetch the sequence first ({path} is missing); the image window is counted from its IMU"
+        )
+    with path.open(encoding="utf-8") as fh:
+        for line in fh:
+            if line.strip() and not line.startswith("#"):
+                return int(line.split(",")[0])
+    raise FetchError(f"{path} has no samples")
+
+
+def extract_images(
+    zf: zipfile.ZipFile,
+    fobj: IO[bytes],
+    seq: str,
+    dest: Path,
+    *,
+    start_s: float,
+    stop_s: float,
+    every: int,
+    work_dir: Path,
+    max_nested_bytes: int = 4 << 30,
+) -> list[Extracted]:
+    """Extract the left-camera frames of one window, with the camera's calibration and timestamps."""
+    t0_ns = _first_imu_ns(dest, seq)
+    members = _index(zf)
+    nested = [info for name, info in members.items() if name.lower().split("/")[-1] == f"{seq.lower()}.zip"]
+    local: Path | None = None
+    if nested:
+        info = nested[0]
+        if info.compress_type == zipfile.ZIP_STORED:
+            window = cast(IO[bytes], SliceFile(fobj, stored_data_offset(fobj, info), info.file_size))
+        else:
+            if info.file_size > max_nested_bytes:
+                raise FetchError(
+                    f"{seq}: the nested ZIP is compressed and {info.file_size:,} bytes; raise --max-nested-gb"
+                )
+            work_dir.mkdir(parents=True, exist_ok=True)
+            local = work_dir / f"{seq}.zip"
+            _log(f"{seq}: copying the nested ZIP to {local} first ({info.file_size:,} bytes)")
+            _copy_member(zf, info, local)
+            window = local.open("rb")
+        inner_zip = zipfile.ZipFile(window)
+        prefix = ""
+    else:
+        inner_zip, prefix = zf, f"{seq}/"
+    try:
+        inner = _index(inner_zip)
+        meta = {rel: _pick(inner, f"{prefix}{rel}") for rel in CAM0_FILES}
+        missing = [rel for rel, info in meta.items() if info is None]
+        if missing:
+            raise LayoutError(f"{seq}: the archive has no {missing[0]}")
+        csv_info = meta[CAM0_FILES[0]]
+        assert csv_info is not None
+        frames = select_frames(inner_zip.read(csv_info).decode("utf-8"), t0_ns, start_s, stop_s, every)
+        if not frames:
+            raise FetchError(f"{seq}: no camera frame between {start_s} s and {stop_s} s of the IMU clock")
+        out: list[Extracted] = []
+        for rel, meta_info in meta.items():
+            assert meta_info is not None
+            item = _copy_member(inner_zip, meta_info, dest / seq / rel)
+            item.path = f"{seq}/{rel}"
+            out.append(item)
+        for _ts, name in frames:
+            frame_info = _pick(inner, f"{prefix}{CAM0_DIR}/data/{name}")
+            if frame_info is None:
+                raise LayoutError(f"{seq}: frame {name} is listed in cam0/data.csv but not in the archive")
+            item = _copy_member(inner_zip, frame_info, dest / seq / CAM0_DIR / "data" / Path(name).name)
+            item.path = f"{seq}/{CAM0_DIR}/data/{Path(name).name}"
+            out.append(item)
+        _log(f"  {len(frames)} frames, {sum(i.bytes for i in out):,} bytes")
+        return out
+    finally:
+        if inner_zip is not zf:
+            inner_zip.close()
+        if local is not None:
+            local.unlink(missing_ok=True)
+
+
+def fetch_images(
+    sequence: str,
+    dest: Path,
+    *,
+    start_s: float,
+    stop_s: float,
+    every: int = 1,
+    base_url: str = BASE_URL,
+    full_download: bool = False,
+    attempts: int = 6,
+    max_nested_bytes: int = 4 << 30,
+    sleep: Callable[[float], None] = time.sleep,
+) -> list[Extracted]:
+    """Fetch the left-camera frames of one window of one sequence and add them to the manifest.
+
+    The IMU and ground truth of the sequence must be fetched first: the window is counted from its first IMU sample.
+    A compressed nested archive has to be copied whole to disk first (over a gigabyte), then deleted. With
+    ``full_download`` the whole group archive is read from ``<dest>/.downloads/<group>.zip``, which is downloaded
+    first if it is absent. A browser download placed there works as well, which is the way round a server that
+    ignores byte ranges.
+    """
+    if sequence not in SEQUENCES:
+        raise FetchError(f"unknown sequence {sequence!r}; known: {', '.join(SEQUENCES)}")
+    group = SEQUENCES[sequence]
+    url = archive_url(group, base_url)
+    if full_download:
+        archive = dest / ".downloads" / f"{group}.zip"
+        if not archive.exists():
+            download_whole(url, archive, attempts=attempts, sleep=sleep)
+        _log(f"{group}: reading {archive}")
+        fobj: IO[bytes] = archive.open("rb")
+    else:
+        fobj = cast(IO[bytes], RangeFile(url, attempts=attempts, sleep=sleep))
+    try:
+        with zipfile.ZipFile(fobj) as zf:
+            files = extract_images(
+                zf,
+                fobj,
+                sequence,
+                dest,
+                start_s=start_s,
+                stop_s=stop_s,
+                every=every,
+                work_dir=dest / ".work",
+                max_nested_bytes=max_nested_bytes,
+            )
+    finally:
+        fobj.close()
+    manifest = _manifest_path(dest)
+    data = json.loads(manifest.read_text(encoding="utf-8")) if manifest.is_file() else {}
+    entry = data.setdefault("sequences", {}).setdefault(sequence, {"archive": group, "url": url, "files": []})
+    known = {f["path"] for f in entry["files"]}
+    entry["files"].extend(f.as_dict() for f in files if f.path not in known)
+    manifest.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
+    return files
+
+
 # ---------------------------------------------------------------------- driver
 
 
@@ -594,6 +753,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--max-nested-gb", type=float, default=4.0, help="largest compressed nested ZIP to copy (default: %(default)s)"
     )
+    parser.add_argument(
+        "--images",
+        action="store_true",
+        help="fetch left-camera frames instead of the IMU files (needs the sequence fetched first; a compressed "
+        "nested archive of over a gigabyte is copied whole to disk, then deleted)",
+    )
+    parser.add_argument(
+        "--image-window",
+        default="60,90",
+        metavar="START,STOP",
+        help="seconds after the first IMU sample (default: %(default)s)",
+    )
+    parser.add_argument("--image-every", type=int, default=1, help="keep every n-th frame (default: %(default)s)")
     return parser
 
 
@@ -607,6 +779,29 @@ def main(argv: list[str] | None = None) -> int:
     if not args.sequence:
         print("give at least one --sequence NAME (see --list)", file=sys.stderr)
         return 2
+    if args.images:
+        try:
+            start, stop = (float(x) for x in args.image_window.split(","))
+            files = [
+                f
+                for seq in args.sequence
+                for f in fetch_images(
+                    seq,
+                    Path(args.dest),
+                    start_s=start,
+                    stop_s=stop,
+                    every=args.image_every,
+                    base_url=args.base_url,
+                    full_download=args.full_download,
+                    attempts=args.attempts,
+                    max_nested_bytes=int(args.max_nested_gb * (1 << 30)),
+                )
+            ]
+        except (FetchError, ValueError, zipfile.BadZipFile) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"wrote {len(files)} files under {args.dest}; manifest: {_manifest_path(Path(args.dest))}")
+        return 0
     try:
         written = fetch(
             args.sequence,
