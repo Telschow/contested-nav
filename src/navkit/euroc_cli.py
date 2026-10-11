@@ -12,6 +12,7 @@ from .euroc_compare import main as compare_main
 from .euroc_eval import run_command, selftest_command
 from .io.euroc_fetch import main as fetch_main
 from .timing_check import main as timing_main
+from .vo_error import main as vo_main
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -23,14 +24,16 @@ def main(argv: list[str] | None = None) -> int:
         "compare": compare_main,
         "timing": timing_main,
         "selftest": selftest_command,
+        "vo": vo_main,
     }
     if not args or args[0] in ("-h", "--help") or args[0] not in commands:
-        usage = "usage: navkit euroc {fetch,run,compare,timing,selftest} [options]"
+        usage = "usage: navkit euroc {fetch,run,compare,timing,vo,selftest} [options]"
         kinds = (
             "  fetch     download the IMU and ground-truth files of a sequence (needs network)",
             "  run       run the filter on a fetched sequence, GNSS simulated from its ground truth",
             "  compare   run several filter settings over the fetched sequences and count lost runs",
             "  timing    timestamp regularity and the ground-truth-to-IMU time offset of fetched sequences",
+            "  vo        measure the errors of the two-view visual front end on fetched camera frames",
             "  selftest  run the whole pipeline on a synthetic sequence in the EuRoC layout",
         )
         print("\n".join((usage, *kinds)), file=sys.stderr)
