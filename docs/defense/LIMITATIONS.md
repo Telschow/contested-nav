@@ -144,7 +144,8 @@ is being spoofed". No response is selected on the operator's behalf.
 
 **Measured.** On injected faults and real recorded IMU data, the GNSS innovations separate multipath and large IMU
 faults, call spoofing in about three quarters of runs, and miss weak faults ([fault classification](../fault_classification.md)).
-The false-alarm rate on the control is about one in six.
+The false-alarm rate on the control is 18% in cross-validation and 35% on unseen runs; only the multipath call held
+up without a flaw.
 
 **VERIFIED BY REPOSITORY.**
 

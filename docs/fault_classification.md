@@ -110,6 +110,71 @@ Median of each feature by fault and level.
 
 <!-- faultclass-levels:end -->
 
+## Confirmation on unseen sizes and seeds
+
+The second round of features was chosen after seeing the first round fail, so its figures are not an independent
+test. This run is. The design was committed before it ran: fault sizes the model never saw (between and beyond the
+training ones), seeds it never saw, and four seeds of control instead of two, so the false-alarm rate has 68 runs
+behind it. The features, the thresholds and the tree are the ones fitted once on the whole training CSV. Nothing was
+tuned afterwards.
+
+<!-- faultclass-confirm-compare:start -->
+
+| Figures | Runs | Control called a fault | Multipath called multipath | Spoofing called spoofing | Degradation called degradation |
+|---|---:|---:|---:|---:|---:|
+| cross-validated, training runs | 476 | 18% | 99% | 74% | 86% |
+| frozen model, unseen runs | 544 | 35% | 100% | 77% | 91% |
+
+<!-- faultclass-confirm-compare:end -->
+
+By true class:
+
+<!-- faultclass-confirm-calls:start -->
+
+| True class | Runs | Called control | Called multipath | Called spoofing | Called degradation |
+|---|---:|---:|---:|---:|---:|
+| control | 68 | 65% | 0% | 22% | 13% |
+| multipath | 68 | 0% | 100% | 0% | 0% |
+| spoofing | 238 | 11% | 0% | 77% | 12% |
+| degradation | 170 | 0% | 0% | 9% | 91% |
+
+<!-- faultclass-confirm-calls:end -->
+
+By fault and level:
+
+<!-- faultclass-confirm-levels:start -->
+
+| Class | Fault | Level | Runs | Called correctly | Called control (missed) | Detected (any fault called) |
+|---|---|---:|---:|---:|---:|---:|
+| control | none | 0 | 68 | 65% | 65% | 35% |
+| multipath | multipath | 5 | 34 | 100% | 0% | 100% |
+| multipath | multipath | 20 | 34 | 100% | 0% | 100% |
+| spoofing | ramp | 0.75 | 34 | 32% | 50% | 50% |
+| spoofing | ramp | 1.5 | 34 | 44% | 24% | 76% |
+| spoofing | ramp | 3 | 34 | 65% | 0% | 100% |
+| spoofing | ramp | 10 | 34 | 100% | 0% | 100% |
+| spoofing | step | 5 | 34 | 100% | 0% | 100% |
+| spoofing | step | 20 | 34 | 100% | 0% | 100% |
+| spoofing | step | 100 | 34 | 100% | 0% | 100% |
+| degradation | accel_bias | 0.4 | 34 | 100% | 0% | 100% |
+| degradation | accel_bias | 0.7 | 34 | 88% | 0% | 100% |
+| degradation | accel_bias | 2 | 34 | 91% | 0% | 100% |
+| degradation | gyro_bias | 0.02 | 34 | 74% | 0% | 100% |
+| degradation | gyro_bias | 0.1 | 34 | 100% | 0% | 100% |
+
+<!-- faultclass-confirm-levels:end -->
+
+1. **Multipath held.** All 68 multipath runs, at 5 and 20 m, are called multipath, and none of the 476 other runs is
+   called multipath.
+2. **Spoofing and degradation held.** Spoofing is called in 77% of runs (74% in cross-validation) and degradation in
+   91% (86%). Steps are called spoofing at every size, and a 10 m/s ramp always.
+3. **The false-alarm rate did not hold.** About a third of the control runs are called a fault (35%, against 18% in
+   cross-validation). The calls are spread over almost every sequence, about one run in four on each, and are not
+   one bad sequence. The stage 1 rule is "above the largest value seen on the training controls" for each of ten
+   features. A threshold at the largest of 34 samples is exceeded by about 1 in 35 unseen runs, per feature, and
+   ten features give ten chances, so adding features raises the false-alarm rate of a rule like this one.
+4. **Weak ramps are still missed.** A 0.75 m/s ramp is detected in half the runs.
+
 ## What it shows
 
 1. **Multipath is separable.** Noise on the fixes raises the normalised innovation without a matching persistent
@@ -130,7 +195,9 @@ Median of each feature by fault and level.
 ## What follows
 
 The Track A exit test, 95% detection per fault type at zero false alarms on the control, is still not met: the
-false-alarm rate is not zero, weak spoofs are missed, and spoofing is called in 74% of runs. Richer innovation
+false-alarm rate is not zero (about a third of unseen controls), weak spoofs are missed, and spoofing is called in
+about three quarters of runs. Only the multipath call survived the confirmation without a flaw: 100% recall and no
+other run called multipath. Richer innovation
 features helped where the signal was in the innovation's shape over time, and did not help where the fault is
 smaller than the noise. That is the limit [ADR-0019](adr/0019-slow-ramp-spoofing.md) and
 [ADR-0020](adr/0020-second-source-against-a-ramp.md) describe. See
