@@ -198,8 +198,8 @@ def criteria_markdown(floor: list[dict[str, Any]], fresh: list[dict[str, Any]]) 
     res = criteria_results(fresh)
     lines = [
         f"| Rule | Recall, multipath of 3 m and above (needs {_pct(CRITERIA['recall_at_3m_and_above'])}) | "
-        f"Called multipath, all other runs including controls (needs at most {_pct(CRITERIA['false_call_rate_other'])}) "
-        "| Criteria met |",
+        "Called multipath, all other runs including controls "
+        f"(needs at most {_pct(CRITERIA['false_call_rate_other'])}) | Criteria met |",
         "|---|---:|---:|---|",
     ]
     for rule in mp.RULES:
@@ -214,11 +214,16 @@ def false_alarm_markdown(floor: list[dict[str, Any]], fresh: list[dict[str, Any]
         "confirmation": [r for r in confirm_rows() if r["kind"] == "none"],
         "fresh": [r for r in fresh if r["kind"] == "none"],
     }
-    lines = ["| Control runs | Runs | Sensitive rule calls | Specific rule calls |", "|---|---:|---:|---:|"]
+    lines = [
+        "| Control runs | Runs | Sensitive rule calls | Specific rule calls "
+        "| 95% upper bound on the specific rule's rate |",
+        "|---|---:|---:|---:|---:|",
+    ]
     everything = [r for sel in ctrl.values() for r in sel]
     for label, sel in (*ctrl.items(), ("all", everything)):
         s, p = (sum(called(r, rule) for r in sel) for rule in mp.RULES)
-        lines.append(f"| {label} | {len(sel)} | {s} | {p} |")
+        bound = _pct(upper_bound(len(sel))) if p == 0 else "see the count"
+        lines.append(f"| {label} | {len(sel)} | {s} | {p} | {bound} |")
     return "\n".join(lines)
 
 
