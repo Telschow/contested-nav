@@ -199,10 +199,10 @@ that has already been wrong. This track moves detection forward.
       to 2 m/s on two datasets ([slow ramp](docs/slow_ramp.md), ADR-0019 accepted). The exit test below cannot be
       met for spoofing without a second independent source. A simulated visual source with independent errors
       lowers the floor to about 2 m/s, and not at all with correlated errors ([vision ramp](docs/vision_ramp.md),
-      ADR-0020 proposed).
+      ADR-0020 accepted).
 - [~] Per-sensor classification from the GNSS innovations is measured ([fault classification](docs/fault_classification.md),
-      ADR-0021 proposed): multipath is separable, spoofing is called in about three quarters of runs, weak faults are missed, and the
-      false-alarm rate on the control is about one in six.
+      ADR-0021 accepted): multipath is separable, spoofing is called in about three quarters of runs, weak faults are
+      missed, and the false-alarm rate on the control is about one in six.
 - [ ] Per-sensor detection of multipath (elevated innovation variance without
       a mean shift), spoofing (innovation consistent but GNSS-internally
       inconsistent, e.g. against the IMU-predicted position), and sensor
