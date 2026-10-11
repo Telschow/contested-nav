@@ -130,7 +130,7 @@ def test_clone_and_replay_runs_on_a_synthetic_sequence(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(ve, "REPLAY_VARIANTS", {"replay, clone": ve.REPLAY_VARIANTS["replay, clone"]})
     sim = ve.clone_rows(tmp_path, "MH_01_easy", 0.08, 0.008, 0.25, seeds=1)
-    rep = ve.replay_rows(tmp_path, "MH_01_easy", rows, 0.08, 0.008, seeds=1)
+    rep = ve.replay_rows(tmp_path, "MH_01_easy", rows, seeds=1)
     assert {r["variant"] for r in sim} == set(ve.CLONE_VARIANTS)
     assert {r["variant"] for r in rep} == set(ve.REPLAY_VARIANTS)
     imu = next(r for r in sim if r["variant"] == "IMU only")
