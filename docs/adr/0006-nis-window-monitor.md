@@ -14,7 +14,7 @@ gate could not fix, because the gate was not what was wrong.
 With GNSS denied for 15 s, the filter dead-reckons. Its position covariance
 collapses along with the visual anchor error it never modelled. When GNSS
 returns, the healthy fixes produce innovations that are enormous against that
-collapsed covariance, and the gate — correctly, given its premise — rejects
+collapsed covariance, and the gate (correctly, given its premise) rejects
 them. The filter then dead-reckons the rest of the run while a working sensor
 shouts at it.
 
@@ -37,7 +37,7 @@ error, not a sensor fault, and isolating the channel makes it worse.
 
 So the fix cannot be a wider gate. A wider gate is the same decision with a
 larger number attached, and it costs the false-alarm rate ADR-0005 was written
-to establish — it would admit the sustained spoof that the whole subsystem
+to establish. It would admit the sustained spoof that the whole subsystem
 exists to catch.
 
 The distinction that makes it decidable is not the size of the innovation. It
@@ -58,22 +58,22 @@ produces is not something a covariance grown by its own outage explains.
   gate is unchanged: a rejection is a rejection, and one bad sample buys
   nothing.
 - Inflate the state block the measurement actually constrains, and recompute
-  `S' = S + H ΔP Hᵀ`. That is not an optimisation — it is exactly the `S` the
+  `S' = S + H ΔP Hᵀ`. That is not an optimisation: it is exactly the `S` the
   estimator will have once it honours the decision, because `S = H P Hᵀ + R`
   and the inflation adds to `P` only. Deriving it the other way would need `R`
   from the caller too, and would leave two chances for the re-gate and the
   fusion to disagree.
 - Bound the grant three ways, because each one closes a hole the other two
   leave:
-  - **By the factor cap** — `max_inflation_factor`, so no innovation, including
+  - **By the factor cap**: `max_inflation_factor`, so no innovation, including
     a non-finite one, buys unbounded covariance.
-  - **By the drift bound** — at most `max_drift_sigma_mps` of sigma per second
+  - **By the drift bound**: at most `max_drift_sigma_mps` of sigma per second
     of the channel's longest single silence. A stream at 5 Hz has 200 ms of
     silence and so has almost no budget, however long the attack runs. This is
     the property that separates a genuine outage from a sustained spoof, and it
     is the reason the budget is measured from the longest *gap* rather than
     from elapsed time.
-  - **By the re-gate** — the inflated innovation must pass with headroom, not
+  - **By the re-gate**: the inflated innovation must pass with headroom, not
     merely pass. A second pass that only has to reach the line is one rounding
     step from reintroducing the original failure.
 - Apply at most one grant per divergence episode. A filter that can re-inflate
@@ -89,7 +89,7 @@ produces is not something a covariance grown by its own outage explains.
   1 m innovation for long: the filter is pulled toward it, the residual shrinks,
   and within a few epochs the innovation is comfortably *inside* the threshold.
   The gate is entirely happy. The channel is excluded by the fault it correctly
-  declared — and a second pass that could not tell the two apart spent the drift
+  declared, and a second pass that could not tell the two apart spent the drift
   budget on that exclusion, re-gated successfully, and moved the estimate 2.1 m.
   A 3 m spoof, whose innovation stays out of range, was refused. Measured
   before the fix: 1 m and 2 m each obtained a grant; 3 m and above obtained
@@ -106,7 +106,7 @@ produces is not something a covariance grown by its own outage explains.
   needed it.
 - Grant inflation to the GNSS position block only. The units are metres per
   second of translational drift, and a metre-derived variance added to a
-  radian block is a dimensional mistake that still yields a valid covariance —
+  radian block is a dimensional mistake that still yields a valid covariance,
   so nothing downstream would object. The visual blocks keep the gate ADR-0005
   gave them, unrelaxed, which is the conservative direction for a
   security-relevant channel.
@@ -120,7 +120,7 @@ produces is not something a covariance grown by its own outage explains.
   Repeating `outage_visual` over 10 noise realisations gives mean NEES 844
   (range 211.7 to 2103.4), so 419.4 is a low draw rather than a central value,
   and the pre-inflation 1996.5 is likewise one sample. The mitigation's
-  *direction* is robust — the filter is overconfident at every seed — but the
+  *direction* is robust (the filter is overconfident at every seed) but the
   magnitudes are single draws and should be read as orders of magnitude. The
   camera-drop pair is weaker still: its two cases have overlapping ranges, so
   216.6 versus 419.4 does not establish that dropping frames helps. See N10 in
@@ -129,8 +129,8 @@ produces is not something a covariance grown by its own outage explains.
   camera frames dropped, 3.339 m to 2.005 m and 931.4 to 264.8". The benchmark
   config asked for a 30% drop but misspelled the key, so that case ran at the
   20% default while being described as 30%. The direction and the conclusion are
-  unchanged — B5 still closes and the degraded case is still better with the
-  monitor — but the measured values are the 20% ones until re-measured, and the
+  unchanged (B5 still closes and the degraded case is still better with the
+  monitor) but the measured values are the 20% ones until re-measured, and the
   30% numbers are now 1.872 m and 216.6.
 - **The blockage is not the same as calibration.** A 2.54 m error with 0.161 m
   claimed is still overconfident, and the coverage column still says so. What
@@ -157,7 +157,7 @@ produces is not something a covariance grown by its own outage explains.
 - `STATUS_REJECTED_TRANSIENT` became `STATUS_REJECTED_SPOOF`. This is a policy
   name, not a diagnosis: the gate cannot distinguish multipath from a spoof
   from a miscalibrated filter, and ADR-0005 says so. The name records what the
-  filter does — an unproven channel gets no relief — and the module docstring
+  filter does (an unproven channel gets no relief) and the module docstring
   says the rest.
 
 ## Alternatives rejected

@@ -4,7 +4,7 @@ site_url: https://telschow.github.io/contested-nav/
 repo_url: https://github.com/Telschow/contested-nav
 repo_name: Telschow/contested-nav
 edit_uri: edit/main/docs/
-copyright: MIT licensed. All results are from a synthetic fixture.
+copyright: MIT licensed. Not field validated.
 
 docs_dir: docs
 site_dir: site
@@ -27,18 +27,22 @@ exclude_docs: |
 
 theme:
   name: material
+  favicon: assets/favicon.svg
+  font:
+    text: Geist
+    code: Geist Mono
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
@@ -50,6 +54,9 @@ theme:
     - navigation.footer
     - search.suggest
     - toc.follow
+
+extra_css:
+  - stylesheets/extra.css
 
 plugins:
   - search

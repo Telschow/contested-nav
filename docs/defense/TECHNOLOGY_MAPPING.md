@@ -105,7 +105,7 @@ Every entry is anchored to a source.
 - That the public activity described above is stable, current beyond the access
   dates in [Sources](SOURCES.md), or indicative of any procurement cycle.
 
-**AUTHOR-STATED** — recorded explicitly so that a reader can distinguish a
+**AUTHOR-STATED**: recorded explicitly so that a reader can distinguish a
 technical claim from a market observation.
 
 ---
