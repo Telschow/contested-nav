@@ -21,16 +21,16 @@ flowchart LR
 
 Supporting layers:
 
-- `geometry/` — SE(3) transforms, quaternions, Umeyama alignment. Convention
+- `geometry/`: SE(3) transforms, quaternions, Umeyama alignment. Convention
   owner: everything is `(w, x, y, z)` and `T_wb` (ADR-0004).
-- `io/` — TUM, EuRoC and Plotly readers and writers. The only place that
+- `io/`: TUM, EuRoC and Plotly readers and writers. The only place that
   converts between quaternion orders.
-- `io/imu.py` — IMU noise models. Bias random walk, scale factor, axis
+- `io/imu.py`: IMU noise models. Bias random walk, scale factor, axis
   misalignment, white noise.
-- `analysis/findings.py` — typed claim records (`FACT`, `MEASUREMENT`,
+- `analysis/findings.py`: typed claim records (`FACT`, `MEASUREMENT`,
   `INTERPRETATION`, `HYPOTHESIS`) with validation, so published claims are
   structurally distinguishable from assertions.
-- `config.py` — application configuration loading and validation.
+- `config.py`: application configuration loading and validation.
 
 ## The estimator
 
@@ -116,7 +116,7 @@ produces a degenerate covariance (ADR-0003).
 
 Visual updates are gated on their innovation. GNSS updates are gated
 separately, and their accept/reject counts are reported as a first-class
-metric — in the defect configuration, 46 of 101 GNSS updates were rejected
+metric: in the defect configuration, 46 of 101 GNSS updates were rejected
 because the visual update had already collapsed the position covariance.
 That coupling was the diagnostic that exposed the original bug, so the
 counters are part of the public result, not debug output.
@@ -154,15 +154,15 @@ applied.
 ```
 
 A rejected update returns before the Kalman gain is formed: `P^+ = P^-`
-and the state is untouched. The alternative — inflating `R` until the
-innovation fits — is the failure ADR-0003 documents, where the filter ends
+and the state is untouched. The alternative (inflating `R` until the
+innovation fits) is the failure ADR-0003 documents, where the filter ends
 up confidently wrong rather than merely uncertain.
 
 Three properties are load-bearing and each has a test named after it:
 
 - **The false-alarm rate is stated, not chosen.** `alpha = 0.001` is the
   default, not the conventional 0.01, because 0.01 rejects 1% of healthy
-  updates *by definition* — measured here at 13 of 1212 healthy fixes. See
+  updates *by definition*, measured here at 13 of 1212 healthy fixes. See
   `gating.DEFAULT_CONFIDENCE`.
 - **Rotation and translation are gated separately.** They arrive as two
   blocks of one transform, so a single `vision` channel would let the
@@ -174,23 +174,23 @@ Three properties are load-bearing and each has a test named after it:
   whatever the gate refused.
 
 The premise is a *calibrated* innovation covariance, and this filter is
-not calibrated in exactly the configurations that matter — see the
+not calibrated in exactly the configurations that matter; see the
 benchmark note below and blocker B4.
 
 ## Evaluation
 
 `eval/calibration.py` is the centre of the project.
 
-- **NEES** — normalised estimation error squared,
+- **NEES**: normalised estimation error squared,
   `e^T P^-1 e`, against a chi-square distribution with `n` degrees of
   freedom. A well-calibrated filter sits near the nominal value.
-- **2-sigma coverage** — the fraction of steps where the true error falls
+- **2-sigma coverage**: the fraction of steps where the true error falls
   inside the claimed 2-sigma ellipsoid. The most direct read on whether a
   downstream consumer can trust the output.
-- **Calibration verdict** — over/underconfident classification with a Wilson
+- **Calibration verdict**: over/underconfident classification with a Wilson
   interval on the coverage fraction, so a verdict is not declared from a
   handful of steps.
-- **Conformal radius** — empirical coverage-preserving radius at a chosen
+- **Conformal radius**: empirical coverage-preserving radius at a chosen
   confidence, which is what you would actually hand to a downstream planner.
 
 `eval/statistics.py` implements exact integer-dof chi-square quantiles
@@ -199,7 +199,7 @@ directly, so the project has no SciPy dependency for its central claim
 
 `eval/metrics.py` provides trajectory-level metrics: ATE under several
 alignment conventions, relative pose error, drift, and time-to-recovery.
-Alignment convention matters and is always reported, never implied — an ATE
+Alignment convention matters and is always reported, never implied: an ATE
 without its alignment is not a result.
 
 ## Rejected design: convex combination
@@ -220,7 +220,7 @@ over visual keyframes, tracked in `ROADMAP.md` stage 3.
 FDIR interacts with that limitation rather than being independent of it. In
 `outage_visual`, the 15 s denial ends with the filter displaced and holding a
 collapsed covariance, and the ADR-0005 gate rejected the returning GNSS fixes
-at `t = 20.8 s` onwards — 51 of them — because a gate that trusts a
+at `t = 20.8 s` onwards (51 of them) because a gate that trusts a
 covariance of a few centimetres reads a healthy 3 m fix as an outlier. ATE
 3.428 m without FDIR, 5.059 m with it. The gate was behaving as specified; the
 specification assumed calibration the filter did not have. That was blocker B5.
@@ -229,8 +229,8 @@ ADR-0006 fixed it without touching the false-alarm rate. `FdirManager` keeps
 the ADR-0005 gate as the first pass and adds a second one, reached only when a
 per-channel NIS window (`fdir/nis_monitor.py`) reports a trailing run of
 rejections *and* the channel was actually silent. It then inflates the GNSS
-position block, recomputes `S' = S + H ΔP Hᵀ` — the covariance the estimator
-will actually have, not an approximation of it — and re-gates with headroom. The
+position block, recomputes `S' = S + H ΔP Hᵀ` (the covariance the estimator
+will actually have, not an approximation of it) and re-gates with headroom. The
 grant is bounded by a factor cap, by a drift rate per second of the channel's
 longest single silence, and by one grant per episode. In `outage_visual` this
 takes ATE 5.059 m to 2.541 m and rejections 51 to 5.

@@ -13,8 +13,8 @@ P = (I - K H) P
 
 This is algebraically exact in exact arithmetic, but numerically it is only
 symmetric and positive semidefinite in the limit of no floating-point error.
-Under strong measurements — a visual update against a nearly-covariance-free
-anchor, for instance — the subtraction can drive small eigenvalues negative.
+Under strong measurements (a visual update against a nearly-covariance-free
+anchor, for instance) the subtraction can drive small eigenvalues negative.
 Once `P` is not positive semidefinite, the Cholesky factorisation used for
 gating and the NEES computation silently returns garbage, and the filter can
 begin rejecting every measurement or, worse, accepting bad ones.

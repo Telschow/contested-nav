@@ -20,7 +20,7 @@ separately.
 ---
 
 <a id="s1"></a>
-## S1 — GNSS receiver autonomous integrity monitoring: research status and opportunities
+## S1: GNSS receiver autonomous integrity monitoring: research status and opportunities
 
 *Review article, Frontiers in Physics, 25 June 2025. DOI `10.3389/fphy.2025.1567301`.*
 Type: `PEER-REVIEWED`
@@ -36,7 +36,7 @@ https://doi.org/10.3389/fphy.2025.1567301
 ---
 
 <a id="s2"></a>
-## S2 — DARPA Adaptable Navigation Systems (ANS)
+## S2: DARPA Adaptable Navigation Systems (ANS)
 
 *DARPA. Program page. Marked "This program is now complete."*
 Type: `GOVERNMENT`
@@ -52,7 +52,7 @@ https://www.darpa.mil/research/programs/adaptable-navigation-systems
 ---
 
 <a id="s3"></a>
-## S3 — DARPA Subterranean Challenge
+## S3: DARPA Subterranean Challenge
 
 *DARPA. SubT program page and challenge final event page.*
 Type: `GOVERNMENT`
@@ -67,7 +67,7 @@ https://www.darpa.mil/research/challenges/subterranean
 ---
 
 <a id="s4"></a>
-## S4 — Hexagon completes acquisition of Septentrio
+## S4: Hexagon completes acquisition of Septentrio
 
 *Hexagon press release, 19 March 2025. Announced 7 January 2025.*
 Type: `VENDOR`
@@ -80,7 +80,7 @@ https://hexagon.com/company/newsroom/press-releases/2025/hexagon-completes-acqui
 ---
 
 <a id="s5"></a>
-## S5 — Septentrio company and product information
+## S5: Septentrio company and product information
 
 *Septentrio. About page, and mosaic-G5 P8 product announcement, 18 May 2026.*
 Type: `VENDOR`
@@ -94,7 +94,7 @@ https://www.septentrio.com/en/company/news/septentrio-unveils-mosaic-g5-p8-ultra
 ---
 
 <a id="s6"></a>
-## S6 — NIST request for comment on PNT; Satelles response
+## S6: NIST request for comment on PNT; Satelles response
 
 *National Institute of Standards and Technology. Public comment record, July 2020.*
 Type: `GOVERNMENT`
@@ -107,7 +107,7 @@ https://www.nist.gov/document/pnt-rfi-response-satelles-inc
 ---
 
 <a id="s7"></a>
-## S7 — Alternative Positioning, Navigation, and Timing challenge
+## S7: Alternative Positioning, Navigation, and Timing challenge
 
 *AFWERX / SpaceWERX. Challenge overview.*
 Type: `GOVERNMENT`
@@ -120,11 +120,11 @@ https://afwerxchallenge.com/spacewerx26/altpnt/overview
 ---
 
 <a id="s8"></a>
-## S8 — Physical consequences of GNSS interference, as reported publicly
+## S8: Physical consequences of GNSS interference, as reported publicly
 
 *Reported figures are cited within S1, drawn from OPSGROUP civil-aviation
 spoofing statistics and news reporting on port groundings.*
-Type: `INSTITUTIONAL` (secondary — see S1 for the review that compiles them)
+Type: `INSTITUTIONAL` (secondary; see S1 for the review that compiles them)
 
 Used to support: that GNSS interference has documented operational
 consequences, not only theoretical ones.
@@ -135,7 +135,7 @@ verified here. They are cited only as reported in a peer-reviewed review.
 ---
 
 <a id="s9"></a>
-## S9 — BlackNaute resilient PNT
+## S9: BlackNaute resilient PNT
 
 *Safran. Press release, June 2025. See also the company's resilient-PNT explainer.*
 Type: `VENDOR`
@@ -148,13 +148,13 @@ https://safran-navigation-timing.com/how-resilient-pnt-works-in-gps-denied-envir
 ---
 
 <a id="s10"></a>
-## S10 — Consistency analysis and improvement of vision-aided inertial navigation
+## S10: Consistency analysis and improvement of vision-aided inertial navigation
 
 *Hesch, J. A., Kottas, D. G., Bowman, S. L., Roumeliotis, S. I. *IEEE Transactions
 on Robotics* 30(1), pp. 158–176, 2014. DOI `10.1177/0278364913509675`.*
 Type: `PEER-REVIEWED`
 
-Used to support: **the central claim of this directory** — that inconsistency and
+Used to support: **the central claim of this directory**: that inconsistency and
 overconfidence in vision-aided inertial navigation is a characterised, published
 problem traceable to a mismatch between the observability of the linearised
 estimator and that of the true system.
@@ -164,7 +164,7 @@ https://doi.org/10.1177/0278364913509675
 ---
 
 <a id="s11"></a>
-## S11 — Observability-based rules for designing consistent EKF SLAM estimators
+## S11: Observability-based rules for designing consistent EKF SLAM estimators
 
 *Huang, G. P., Mourikis, A. I., Roumeliotis, S. I. *International Journal of
 Robotics Research`.*
@@ -178,7 +178,7 @@ Cited within [S14](SOURCES.md#s14) and the survey literature.
 ---
 
 <a id="s12"></a>
-## S12 — High-precision, consistent EKF-based visual-inertial odometry
+## S12: High-precision, consistent EKF-based visual-inertial odometry
 
 *Li, M., Mourikis, A. I. *International Journal of Robotics Research* 32(6),
 pp. 690–711, 2013.*
@@ -190,7 +190,7 @@ odometry is established prior work.
 ---
 
 <a id="s13"></a>
-## S13 — Towards Consistent Visual-Inertial Navigation (STOC-VINS)
+## S13: Towards Consistent Visual-Inertial Navigation (STOC-VINS)
 
 *Huang, G. MIT Computer Science and Artificial Intelligence Laboratory.*
 Type: `PREPRINT` (technical report, not peer-reviewed at time of access)
@@ -203,7 +203,7 @@ https://people.csail.mit.edu/ghuang/paper/tr/stocvins.pdf
 ---
 
 <a id="s14"></a>
-## S14 — FEJ2: A consistent visual-inertial state estimator design
+## S14: FEJ2: A consistent visual-inertial state estimator design
 
 *Chen, C., Yang, Y., Geneva, P., Huang, G. IEEE ICRA 2022. NSF Public Access
 record.*
@@ -217,7 +217,7 @@ https://par.nsf.gov/servlets/purl/10376064
 ---
 
 <a id="s15"></a>
-## S15 — OpenVINS: a research platform for visual-inertial estimation
+## S15: OpenVINS: a research platform for visual-inertial estimation
 
 *Geneva, K., Eckenhoff, K., Lee, W., Yang, Y., Huang, G. IEEE ICRA 2020,
 pp. 4666–4672.*
@@ -225,14 +225,14 @@ Type: `PEER-REVIEWED`
 
 Used to support: that an open, established visual-inertial reference
 implementation exists and is the natural comparison baseline for this
-repository — which does not currently use it.
+repository, which does not currently use it.
 
 Cited within [S16](SOURCES.md#s16).
 
 ---
 
 <a id="s16"></a>
-## S16 — Unobservable Subspace Evolution and Alignment for Consistent Visual-Inertial Navigation
+## S16: Unobservable Subspace Evolution and Alignment for Consistent Visual-Inertial Navigation
 
 *Tian, C., He, F., Hao, N. arXiv:2511.17992.*
 Type: `PREPRINT`
@@ -245,7 +245,7 @@ https://arxiv.org/abs/2511.17992
 ---
 
 <a id="s17"></a>
-## S17 — Ensuring PNT resilience in a time of navigation uncertainty
+## S17: Ensuring PNT resilience in a time of navigation uncertainty
 
 *Critchley-Marrows, J. J. R., Verspieren, Q. *Space Policy* 72, 101665, May 2025.
 DOI `10.1016/j.spacepol.2024.101665`. Open access, CC BY.*
@@ -259,7 +259,7 @@ https://doi.org/10.1016/j.spacepol.2024.101665
 ---
 
 <a id="s18"></a>
-## S18 — Resilience of A-PNT systems compared with traditional PNT systems
+## S18: Resilience of A-PNT systems compared with traditional PNT systems
 
 *Diachenko, A. / Oscilloquartz, ADTRAN. WSTS presentation, May 2024.*
 Type: `VENDOR`
@@ -275,7 +275,7 @@ https://wsts.atis.org/wp-content/uploads/2024/05/07_Resilience-of-APNT-systems-c
 ---
 
 <a id="s19"></a>
-## S19 — Autoware vision_pilot
+## S19: Autoware vision_pilot
 
 *Autoware Foundation. Open-source repository.*
 Type: `INSTITUTIONAL`
@@ -289,7 +289,7 @@ https://github.com/autowarefoundation/vision_pilot
 ---
 
 <a id="s20"></a>
-## S20 — DARPA non-GPS PNT programme overview
+## S20: DARPA non-GPS PNT programme overview
 
 *DARPA PNT programmes briefing, presented 2019. DoD Distribution Statement A:
 approved for public release; distribution unlimited. Archived by the National
@@ -308,7 +308,7 @@ https://archive.gps.gov/governance/advisory/meetings/2019-06/burke.pdf
 ---
 
 <a id="s21"></a>
-## S21 — Survey on opportunistic PNT with signals from LEO communication satellites
+## S21: Survey on opportunistic PNT with signals from LEO communication satellites
 
 *Stock, W., Schwarz, R. T., Hofmann, C. A., Knopp, A. *IEEE Communications
 Surveys & Tutorials* 27(1), pp. 77–107, February 2025.
@@ -323,7 +323,7 @@ https://doi.org/10.1109/COMST.2024.3406990
 ---
 
 <a id="s22"></a>
-## S22 — Septentrio and Xona Space Systems memorandum of understanding
+## S22: Septentrio and Xona Space Systems memorandum of understanding
 
 *Septentrio, 7 October 2025.*
 Type: `VENDOR`
@@ -337,14 +337,14 @@ https://www.septentrio.com/en/company/news/septentrio-and-xona-sign-mou-accelera
 ---
 
 <a id="s23"></a>
-## S23 — Navigation safety assurance of a KF-based GNSS/IMU system
+## S23: Navigation safety assurance of a KF-based GNSS/IMU system
 
 *Proceedings of the International Technical Meeting of the Satellite Division of
 the Institute of Navigation. DOI `10.33012/navi.612`, 2023.*
 Type: `INSTITUTIONAL` (peer-reviewed conference proceedings)
 
 Used to support: that navigation *safety assurance* for GNSS/IMU Kalman filters
-is an active, published topic — and that this repository does not engage it.
+is an active, published topic, and that this repository does not engage it.
 
 https://doi.org/10.33012/navi.612
 

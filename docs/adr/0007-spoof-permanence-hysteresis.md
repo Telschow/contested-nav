@@ -15,8 +15,8 @@ to the corrupted mean. Measured in `tests/test_nis_monitor.py` (`_denial_then_sp
 a 22 m post-outage offset is admitted with exactly **one** grant, and no second
 rejection ever occurs to count.
 
-The proposed trigger in the original write-up — escalate a channel that needs
-inflation grants on **consecutive updates** — provably does not fire on the
+The proposed trigger in the original write-up (escalate a channel that needs
+inflation grants on **consecutive updates**) provably does not fire on the
 measured case: it never requires a second consecutive grant. The grants are
 one-off.
 
