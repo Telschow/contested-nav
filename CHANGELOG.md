@@ -116,6 +116,9 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Changed
 
+- The implementation plan carries the same point-in-time banner as the other baseline records. P5-09 and P5-12 are
+  closed in the roadmap: the records stay as dated snapshots, and no pull request or Dependabot item is open.
+
 - Blocker B4 is resolved by retiring the claim. The two tests that compared a published Basalt estimate of TUM VI
   room1 with a subsampled ground truth always skipped, because neither file could be fetched. They are removed. The
   claim of a reproduction of the published 0.069 m is dropped. `tests/test_recorded_orientation.py` takes over the

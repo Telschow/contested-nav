@@ -306,8 +306,10 @@ Where each item stands:
   P5-13 (a TUM VI fetch path).
 - **Spike done, opt-in:** P5-03 (the stochastic clone, [ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)).
   Calibrated for independent visual errors, not for correlated ones. The shipped configuration is unchanged.
-- **Partly done:** P5-09 (the stale figures in docstrings are fixed; the baseline records are excluded from the site
-  and not rewritten), P5-12 (the pull requests it names are closed; `uv.lock` was removed).
+- **Done as decided:** P5-09 (the stale figures in docstrings are fixed; every baseline record is a dated
+  point-in-time snapshot with a banner saying so, excluded from the site and deliberately not rewritten, because their
+  old figures are what the remediation was measured against) and P5-12 (no pull request or Dependabot item is open,
+  `uv.lock` was removed).
 - **Not started:** P5-11 (a comparison with an established consistent
   estimator, which strains constraint S1).
 
