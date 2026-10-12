@@ -32,6 +32,9 @@ GAPS = (1, 2, 4, 6, 10)
 FRAME_STEP_S = 0.05  # the camera is 20 Hz
 #: Below this true baseline the direction of the motion is undefined and the pair is skipped.
 MIN_TRUE_BASELINE_M = 1e-3
+#: Floors on the noise the filter is told to assume (0.01 degrees, 1 mm). Real windows are well above them.
+MIN_ROT_SIGMA_DEG = 0.01
+MIN_TRANS_SIGMA_M = 0.001
 MAX_LAG = 40
 CSV_COLUMNS = (
     "sequence",
@@ -114,11 +117,18 @@ def pair_row(
     }
 
 
-def measure(seq_dir: Path, gaps: tuple[int, ...] = GAPS, min_baseline_m: float = 0.0) -> list[dict[str, Any]]:
+def measure(
+    seq_dir: Path,
+    gaps: tuple[int, ...] = GAPS,
+    min_baseline_m: float = 0.0,
+    window: tuple[float, float] | None = None,
+) -> list[dict[str, Any]]:
     """Run the front end on every pair ``gap`` frames apart and return one row per pair that produced an estimate."""
     seq = load_sequence(seq_dir.parent, seq_dir.name)
     cam = camera_from_yaml(seq_dir / "mav0/cam0/sensor.yaml")
     frames = frame_list(seq_dir)
+    if window is not None:
+        frames = [f for f in frames if window[0] <= f[0] <= window[1]]
     if len(frames) < max(gaps) + 2:
         raise ValueError(f"{seq_dir.name}: {len(frames)} frames are not enough for gaps up to {max(gaps)}")
     images: dict[int, np.ndarray] = {}
@@ -132,8 +142,10 @@ def measure(seq_dir: Path, gaps: tuple[int, ...] = GAPS, min_baseline_m: float =
     rows: list[dict[str, Any]] = []
     top = max(gaps)
     for i in range(0, len(frames) - top):
-        window = [image(i + k) for k in range(top + 1)]
-        found = relative_poses_along(window, gaps, cam, seed=i)
+        if frames[i + top][0] - frames[i][0] > top * FRAME_STEP_S * 1.5:
+            continue  # the frames are not contiguous here: a gap between two fetched windows
+        stack = [image(i + k) for k in range(top + 1)]
+        found = relative_poses_along(stack, gaps, cam, seed=i)
         for gap in gaps:
             est = found[gap]
             (t0, _), (t1, _) = frames[i], frames[i + gap]
@@ -146,6 +158,54 @@ def measure(seq_dir: Path, gaps: tuple[int, ...] = GAPS, min_baseline_m: float =
 
 
 # ------------------------------------------------------------------ statistics
+
+
+def pick_window(
+    truth: Trajectory,
+    length_s: float = 30.0,
+    step_s: float = 5.0,
+    earliest_s: float = 30.0,
+    margin_s: float = 5.0,
+    avoid: tuple[tuple[float, float], ...] = (),
+) -> float:
+    """The start of the window with the highest median speed, so that the camera moves and a direction exists.
+
+    Starts are on a ``step_s`` grid from ``earliest_s``; the window must end ``margin_s`` before the recording does
+    and must not overlap any ``(start, stop)`` in ``avoid``. This is the rule used for the wider measurement, fixed
+    before it was run.
+    """
+    t, p = truth.t, truth.positions
+    speed = np.linalg.norm(np.diff(p, axis=0), axis=1) / np.diff(t)
+    best: tuple[float, float] | None = None
+    start = earliest_s
+    while start + length_s <= float(t[-1]) - margin_s:
+        if not any(start < b and a < start + length_s for a, b in avoid):
+            m = (t[1:] >= start) & (t[1:] < start + length_s)
+            if m.any():
+                med = float(np.median(speed[m]))
+                if best is None or med > best[0]:
+                    best = (med, start)
+        start += step_s
+    if best is None:
+        raise ValueError("no window fits")
+    return best[1]
+
+
+def windows(rows: list[dict[str, Any]], max_gap_s: float = 1.0) -> list[tuple[str, float, float]]:
+    """``(sequence, start, stop)`` of each run of contiguous pairs in the rows."""
+    out: list[tuple[str, float, float]] = []
+    for seq in sorted({r["sequence"] for r in rows}):
+        ts = sorted({float(r["t_s"]) for r in rows if r["sequence"] == seq and int(r["gap_frames"]) == 1})
+        if not ts:
+            continue
+        start = prev = ts[0]
+        for t in ts[1:]:
+            if t - prev > max_gap_s:
+                out.append((seq, start, prev + FRAME_STEP_S))
+                start = t
+            prev = t
+        out.append((seq, start, prev + FRAME_STEP_S))
+    return out
 
 
 def autocorrelation(x: np.ndarray, max_lag: int = MAX_LAG) -> np.ndarray:
@@ -261,31 +321,52 @@ REPLAY_VARIANTS: dict[str, tuple[str, float]] = {
 }
 
 
-def replay_rows(
-    root: str | Path,
-    sequence: str,
+def _origin(seq: Any) -> float:
+    """The clock time where ``skip_s = 0`` starts a run: the later of the IMU's and the truth's first sample."""
+    return max(float(seq.imu.t[0]), float(seq.truth.t[0]))
+
+
+def _replay_window(
+    seq: Any,
+    cam: Camera,
     vo_rows: list[dict[str, Any]],
-    rot_sigma_deg: float,
-    trans_sigma_m: float,
-    seeds: int = 5,
+    start_s: float,
+    duration_s: float,
+    out_at_s: float,
+    scales: tuple[tuple[str, str, float], ...],
+    seeds: int,
 ) -> list[dict[str, Any]]:
-    """The clone fed the measured errors themselves. The filter assumes the measured sigmas times the scale."""
-    seq = load_sequence(root, sequence)
-    cam = camera_from_yaml(Path(root) / sequence / "mav0/cam0/sensor.yaml")
-    skip, duration, out_at = CLONE_WINDOW
-    t_from = skip + float(seq.imu.t[0])
-    stream = replay_stream(vo_rows, seq.truth, cam, t_from, t_from + duration)
+    """The clone on one window, fed the measured errors of that window. Scales are ``(name, model, scale)``.
+
+    The run starts exactly at ``start_s`` on the clock the frames use. (``skip_s`` is counted from the later of the
+    IMU's and the ground truth's first sample, so the offset is taken off.)
+    """
+    inside = [
+        r
+        for r in vo_rows
+        if r["sequence"] == seq.name
+        and start_s <= float(r["t_s"])
+        and float(r["t_s"]) + float(r["dt_s"]) <= start_s + duration_s
+    ]
+    one = [r for r in inside if int(r["gap_frames"]) == 1]
+    stream = replay_stream(one, seq.truth, cam, start_s, start_s + duration_s)
+    summ = summary(one, 1, FRAME_STEP_S)
+    # A floor, so that a window with (almost) no measured error does not hand the filter a zero measurement noise.
+    sigmas = (
+        max(round(summ["rot_rms_deg"], 3), MIN_ROT_SIGMA_DEG),
+        max(round(summ["lat_rms_m"], 4), MIN_TRANS_SIGMA_M),
+    )
     rows: list[dict[str, Any]] = []
-    for name, (model, scale) in REPLAY_VARIANTS.items():
+    for name, model, scale in scales:
         for seed in range(seeds):
             opts = RunOptions(
                 seed=seed,
-                skip_s=skip,
-                duration_s=duration,
-                outages=((out_at, duration - out_at),),
+                skip_s=start_s - _origin(seq),
+                duration_s=duration_s,
+                outages=((out_at_s, duration_s - out_at_s),),
                 vision=model,
                 vision_noise_scale=scale,
-                vision_sigmas=(rot_sigma_deg, trans_sigma_m),
+                vision_sigmas=sigmas,
                 **dict(CONFIGS["walk10"]),
             )
             rec = run_sequence(seq, opts, vision_override=stream)
@@ -303,6 +384,83 @@ def replay_rows(
                 }
             )
     return rows
+
+
+def replay_rows(
+    root: str | Path,
+    sequence: str,
+    vo_rows: list[dict[str, Any]],
+    seeds: int = 5,
+) -> list[dict[str, Any]]:
+    """The clone fed the measured errors themselves. The filter assumes the window's measured sigmas times the scale."""
+    seq = load_sequence(root, sequence)
+    cam = camera_from_yaml(Path(root) / sequence / "mav0/cam0/sensor.yaml")
+    start, duration, out_at = CLONE_WINDOW
+    scales = tuple((name, model, scale) for name, (model, scale) in REPLAY_VARIANTS.items())
+    return _replay_window(seq, cam, vo_rows, start, duration, out_at, scales, seeds)
+
+
+#: The wider measurement, fixed before it was run: the windows are chosen by speed (:func:`pick_window`), the front
+#: end is run at gaps of one and four frames, and the clone is replayed at these assumed-noise scales.
+WIDE_SEQUENCES = ("MH_01_easy", "MH_02_easy", "MH_03_medium", "MH_04_difficult", "MH_05_difficult")
+WIDE_GAPS = (1, 4)
+WIDE_LENGTH_S = 30.0
+WIDE_OUTAGE_AT_S = 10.0
+WIDE_SEEDS = 3
+WIDE_SCALES: tuple[tuple[str, str, float], ...] = (
+    ("clone x1", "clone", 1.0),
+    ("clone x2", "clone", 2.0),
+    ("clone x4", "clone", 4.0),
+    ("clone x8", "clone", 8.0),
+    ("anchor x1", "anchor", 1.0),
+)
+WIDE_COLUMNS = ("sequence", "window_start_s", *CLONE_COLUMNS)
+
+
+def wide_study(
+    root: str | Path,
+    sequences: tuple[str, ...] = WIDE_SEQUENCES,
+    existing: list[dict[str, Any]] | None = None,
+    seeds: int = WIDE_SEEDS,
+    fetch: bool = True,
+    earliest_s: float = 30.0,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Choose a window per sequence, fetch its frames, measure the front end, and replay the clone.
+
+    ``existing`` are the front-end rows already measured: their windows are avoided and kept. Returns the new
+    front-end rows and the replay rows, each replay row tagged with its sequence and window start.
+    """
+    from .io.euroc_fetch import fetch_images
+
+    existing = existing or []
+    new_rows: list[dict[str, Any]] = []
+    replay: list[dict[str, Any]] = []
+    for name in sequences:
+        seq = load_sequence(root, name)
+        avoid = tuple((a, b) for s_, a, b in windows(existing, 1.0) if s_ == name)
+        start = pick_window(seq.truth, WIDE_LENGTH_S, earliest_s=earliest_s, avoid=avoid)
+        # Frames are counted from the first IMU sample, which is also the clock of the ground truth here.
+        if fetch:
+            fetch_images(
+                name,
+                Path(root),
+                start_s=start,
+                stop_s=start + WIDE_LENGTH_S,
+                full_download=True,
+            )
+        print(f"{name}: window {start:.0f} s to {start + WIDE_LENGTH_S:.0f} s", file=sys.stderr, flush=True)
+        mine = measure(Path(root) / name, WIDE_GAPS, window=(start, start + WIDE_LENGTH_S))
+        new_rows += mine
+        cam = camera_from_yaml(Path(root) / name / "mav0/cam0/sensor.yaml")
+        for r in _replay_window(seq, cam, mine, start, WIDE_LENGTH_S, WIDE_OUTAGE_AT_S, WIDE_SCALES, seeds):
+            replay.append({"sequence": name, "window_start_s": start, **r})
+    # The window measured first is replayed again with the same scales, and with the run aligned to its frames.
+    for name, a, b in windows(existing, 1.0):
+        seq = load_sequence(root, name)
+        cam = camera_from_yaml(Path(root) / name / "mav0/cam0/sensor.yaml")
+        for r in _replay_window(seq, cam, existing, a, b - a, WIDE_OUTAGE_AT_S, WIDE_SCALES, seeds):
+            replay.append({"sequence": name, "window_start_s": a, **r})
+    return new_rows, replay
 
 
 CLONE_WINDOW = (60.0, 30.0, 10.0)  # skip, duration, and the start of the GNSS outage that runs to the end
@@ -371,6 +529,51 @@ def clone_markdown(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def write_wide_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=WIDE_COLUMNS)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def passes(nees: float, coverage: float) -> bool:
+    """The Track B gate: mean NEES below 10 and 2-sigma coverage above 90%."""
+    return nees < 10.0 and coverage > 0.9
+
+
+def wide_markdown(rows: list[dict[str, Any]]) -> str:
+    """Per window and assumed-noise scale: the median over seeds, and whether it meets the gate."""
+    names = [n for n, _, _ in WIDE_SCALES]
+    keys = sorted({(r["sequence"], float(r["window_start_s"])) for r in rows})
+    lines = [
+        "| Sequence | Window start s | " + " | ".join(f"{n}: NEES / coverage" for n in names) + " |",
+        "|---|---:|" + "---|" * len(names),
+    ]
+    verdict: dict[str, list[bool]] = {n: [] for n in names}
+    for seq, start in keys:
+        cells = []
+        for n in names:
+            sel = [
+                r for r in rows if r["sequence"] == seq and float(r["window_start_s"]) == start and r["variant"] == n
+            ]
+            if not sel:
+                cells.append("-")
+                continue
+            nees = float(np.median([float(r["nees_mean"]) for r in sel]))
+            cov = float(np.median([float(r["coverage_2sigma"]) for r in sel]))
+            ok = passes(nees, cov)
+            verdict[n].append(ok)
+            cells.append(f"{nees:.3g} / {100 * cov:.0f}%{' ok' if ok else ''}")
+        lines.append(f"| {seq} | {start:.0f} | " + " | ".join(cells) + " |")
+    total = len(keys)
+    lines.append(
+        "| **Windows meeting the gate** | | " + " | ".join(f"{sum(verdict[n])} of {total}" for n in names) + " |"
+    )
+    return "\n".join(lines)
+
+
 def write_clone_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -378,6 +581,55 @@ def write_clone_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
         writer = csv.DictWriter(fh, fieldnames=CLONE_COLUMNS)
         writer.writeheader()
         writer.writerows(rows)
+
+
+#: The window measured first (all five gaps), which the first tables of the page describe.
+ORIGINAL_WINDOW = ("MH_01_easy", 60.0, 90.0)
+
+
+def rows_in(rows: list[dict[str, Any]], sequence: str, start_s: float, stop_s: float) -> list[dict[str, Any]]:
+    """The rows of one sequence whose pair lies inside ``[start_s, stop_s]``."""
+    return [
+        r
+        for r in rows
+        if r["sequence"] == sequence and start_s <= float(r["t_s"]) and float(r["t_s"]) + float(r["dt_s"]) <= stop_s
+    ]
+
+
+def rows_in_window(rows: list[dict[str, Any]], sequence: str, start_s: float, length_s: float) -> list[dict[str, Any]]:
+    """The rows of one sequence whose pair starts in ``[start_s, start_s + length_s - one frame)``.
+
+    Two windows can touch (90.005 s ends where the next begins), so a window is defined by where its pairs start, and
+    a pair that straddles the boundary belongs to neither.
+    """
+    return [
+        r
+        for r in rows
+        if r["sequence"] == sequence and start_s - 1e-6 <= float(r["t_s"]) < start_s + length_s - FRAME_STEP_S - 1e-6
+    ]
+
+
+def windows_markdown(
+    rows: list[dict[str, Any]], wide_rows: list[dict[str, Any]], gaps: tuple[int, ...] = WIDE_GAPS
+) -> str:
+    """The front end's errors in every window of the wider measurement, at the gaps it used."""
+    lines = [
+        "| Sequence | Window start s | Gap, frames | Pairs | Rotation RMS deg | Lateral RMS m | Outlier share "
+        "| Rotation correlation time s | Lateral correlation time s |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    keys = sorted({(r["sequence"], float(r["window_start_s"])) for r in wide_rows})
+    for seq, start in keys:
+        sel = rows_in_window(rows, seq, start, WIDE_LENGTH_S)
+        for gap in gaps:
+            if not any(int(r["gap_frames"]) == gap for r in sel):
+                continue
+            s = summary(sel, gap, FRAME_STEP_S)
+            lines.append(
+                f"| {seq} | {start:.0f} | {gap} | {s['pairs']:.0f} | {s['rot_rms_deg']:.2f} | {s['lat_rms_m']:.3f} | "
+                f"{100 * s['outlier_share']:.0f}% | {s['rot_corr_time_s']:.2f} | {s['lat_corr_time_s']:.2f} |"
+            )
+    return "\n".join(lines)
 
 
 def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
@@ -425,6 +677,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--clone-csv", default=None, help="write (with --clone) or read the clone check's runs")
     p.add_argument("--page", default=None, help="fill the vo-errors and vo-clone blocks of this Markdown page")
+    p.add_argument(
+        "--wide",
+        action="store_true",
+        help="the wider measurement: pick a window per Machine Hall sequence, fetch its frames from the whole "
+        "archive on disk, measure, and replay the clone at several assumed-noise scales (an hour or more)",
+    )
+    p.add_argument("--wide-csv", default="docs/data/vo_wide.csv", help="the replay runs of --wide")
     p.add_argument("--markdown", action="store_true", help="print the tables")
     return p
 
@@ -446,6 +705,18 @@ def write_block(path: str | Path, name: str, block: str) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.wide:
+        existing = read_csv(args.csv) if args.csv and Path(args.csv).is_file() else []
+        try:
+            new_rows, replay = wide_study(args.root, WIDE_SEQUENCES, existing)
+        except (OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        if args.csv:
+            write_csv(args.csv, existing + new_rows)
+        write_wide_csv(args.wide_csv, replay)
+        print(wide_markdown(replay))
+        return 0
     if args.from_csv:
         rows = read_csv(args.from_csv)
     else:
@@ -458,13 +729,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.csv:
         write_csv(args.csv, rows)
         print(f"wrote {args.csv}", file=sys.stderr)
+    first = rows_in(rows, *ORIGINAL_WINDOW)
     clone = None
     if args.clone:
-        one = summary(rows, 1, FRAME_STEP_S)
+        one = summary(first, 1, FRAME_STEP_S)
         sigmas = (round(one["rot_rms_deg"], 3), round(one["lat_rms_m"], 4))
         corr = round(one["lat_corr_time_s"], 2)
         root, seq = args.root, args.sequence
-        clone = clone_rows(root, seq, *sigmas, corr_s=corr) + replay_rows(root, seq, rows, *sigmas)
+        clone = clone_rows(root, seq, *sigmas, corr_s=corr) + replay_rows(root, seq, first)
         if args.clone_csv:
             write_clone_csv(args.clone_csv, clone)
             print(f"wrote {args.clone_csv}", file=sys.stderr)
@@ -472,14 +744,18 @@ def main(argv: list[str] | None = None) -> int:
         clone = read_clone_csv(args.clone_csv)
     if args.page:
         try:
-            write_block(args.page, "vo-errors", summary_markdown(rows))
+            write_block(args.page, "vo-errors", summary_markdown(first))
             if clone is not None:
                 write_block(args.page, "vo-clone", clone_markdown(clone))
+            if Path(args.wide_csv).is_file():
+                wide = read_csv(args.wide_csv)
+                write_block(args.page, "vo-wide-errors", windows_markdown(rows, wide))
+                write_block(args.page, "vo-wide-clone", wide_markdown(wide))
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
     if args.markdown or not (args.csv or args.page):
-        print(summary_markdown(rows))
+        print(summary_markdown(first))
         if clone is not None:
             print("\n" + clone_markdown(clone))
     return 0
