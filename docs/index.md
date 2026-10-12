@@ -2,6 +2,13 @@
 
 **Is the filter right about how wrong it is?**
 
+<video controls preload="metadata" poster="assets/video/explainer-poster.jpg" style="width:100%">
+  <source src="assets/video/contested-nav-explainer.mp4" type="video/mp4">
+</video>
+
+*A captioned explainer built from one benchmark run: the same GNSS outage with the camera off and
+on, the measured accuracy and calibration, and the decision that follows.*
+
 ![Position error against the uncertainty the filter claims, through a GNSS outage, without and with vision](figures/hero.png)
 
 `contested-nav` is a 21-state error-state Kalman filter and an evaluation harness for GNSS-denied
@@ -20,6 +27,14 @@ did not (see [Results](results.md)).
 !!! warning "Mostly synthetic evidence"
     The table above comes from a deterministic known-answer fixture. The recorded-data pages use a
     real IMU with GNSS simulated from the ground truth. No number here is a field measurement.
+
+## How it works
+
+{%
+  include-markdown "../README.md"
+  start="<!-- how-it-works-start -->"
+  end="<!-- how-it-works-end -->"
+%}
 
 ## Where to start
 
