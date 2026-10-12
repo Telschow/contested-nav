@@ -19,12 +19,16 @@ is accurate and confidently wrong, so it **ships off by default**
 ([ADR-0003](docs/adr/0003-ship-visual-disabled.md)).
 
 **Evidence.** The result held for every one of 10 noise seeds and every one of 40 outage runs, and
-the numbers in the table below are regenerated and checked by CI. It is synthetic data, not a field
-test.
+the numbers in the table below are regenerated and checked by CI. That table is synthetic. The filter
+has also been run on recorded IMU data (EuRoC and TUM VI) with GNSS simulated from the ground truth;
+see [Status and limits](docs/status.md). None of it is a field test.
 
-**Next step.** The fix is a change to how the filter treats the visual anchor, which the
-[roadmap](ROADMAP.md) calls B1. It is not built. The bar for turning vision on is written down: a
-mean NEES below 10 and a 2σ coverage above 90% with GNSS denied.
+**Next step.** A stochastic clone of the previous pose is built and stays opt-in
+([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)). It meets the bar for turning
+vision on when the visual errors are independent. Against the measured errors of a real two-view front
+end it needs the assumed noise inflated ([ADR-0023](docs/adr/0023-clone-against-a-measured-front-end.md)).
+The bar is written down: a mean NEES below 10 and a 2σ coverage above 90% with GNSS denied. The
+[roadmap](ROADMAP.md) calls the open problem B1.
 
 ![Position error against the uncertainty the filter claims, through a GNSS outage, without and with vision](docs/figures/hero.png)
 
@@ -47,9 +51,10 @@ A stochastic clone of the previous pose (opt-in, `vision_model: clone`,
 visual errors are independent, and not when they are correlated over a couple of seconds; see the clone rows in the
 table below. It is a synthetic result, the default is unchanged, and visual fusion still ships off.
 
-> **Synthetic evidence only.** Every number comes from a deterministic known-answer fixture: an
-> analytic trajectory with generated sensor streams. No real sensor capture is evaluated and
-> no number here is a field measurement.
+> **Mostly synthetic evidence.** The tables on this page come from a deterministic known-answer
+> fixture: an analytic trajectory with generated sensor streams. The recorded-data pages use a real
+> IMU with simulated GNSS and, in one study, real camera frames. No number here is a field
+> measurement.
 
 ## Quickstart
 
@@ -106,14 +111,16 @@ code. Interpretation, the four ATE alignments and the figures are on the
 
 ## Limits
 
-- **Not field validated.** Synthetic fixture only; no real capture is vendored or evaluated.
+- **Not field validated.** The benchmark is a synthetic fixture. The recorded-data studies use real
+  IMU and camera data with GNSS simulated from the ground truth, and the data is not vendored.
 - **Visual fusion under GNSS denial is not trustworthy.** The cause is structural (the visual
   anchor is a pose the filter itself produced) and the established remedies are not implemented
   here. See [Concepts](docs/concepts.md#the-one-thing-this-cannot-do).
-- **FDIR detects implausible updates but does not explain them,** and one spoofing case
-  (a modest offset after an outage) is documented as undetected
-  ([ADR-0007](docs/adr/0007-spoof-permanence-hysteresis.md),
-  [ADR-0008](docs/adr/0008-frozen-anchor-cross-check.md)).
+- **FDIR detects implausible updates but mostly cannot say why.** A multipath signature exists as a
+  function ([ADR-0022](docs/adr/0022-multipath-signature.md)). A slow-ramp spoof is followed by the
+  filter with an IMU and GNSS alone ([ADR-0019](docs/adr/0019-slow-ramp-spoofing.md)), and a simulated
+  visual source catches it only when it is fast and the visual errors are independent
+  ([ADR-0020](docs/adr/0020-second-source-against-a-ramp.md)).
 - **Not flight-ready:** no sensor driver, no live front end, no real-time loop.
 
 All of it, with sources, is in [Status and limits](docs/status.md) and
@@ -137,8 +144,9 @@ All of it, with sources, is in [Status and limits](docs/status.md) and
 
 ## Scope and responsible use
 
-This is a research and evaluation library built from public sources and synthetic data. It
-contains no real sensor data or drivers, no radio-frequency model (a GNSS outage is a gap in a
+This is a research and evaluation library built from public sources, synthetic data and two public
+recorded datasets that are fetched, never vendored. It contains no real sensor data or drivers, no
+radio-frequency model (a GNSS outage is a gap in a
 stream; spoofing tests inject offsets into the filter), and no guidance, targeting or platform
 integration code. It is not a navigation product and is not qualified for any platform. To the
 maintainer's knowledge nothing in it is classified or restricted, but that is not a legal
@@ -156,6 +164,8 @@ every page is also a Markdown file under `docs/`.
 | To run it | [Getting started](docs/getting-started.md) |
 | The argument and the mechanism | [Concepts](docs/concepts.md), [calibration](docs/calibration.md) |
 | What the filter assumes, every config key, the result format | [Model and interface contract](docs/MODEL.md) |
+| Evidence on recorded data | [EuRoC](docs/euroc.md), [TUM VI](docs/tumvi.md), [where the outage error comes from](docs/attribution.md), [a real front end](docs/real_front_end.md) |
+| Spoofing, multipath and fault classes | [Honest returns](docs/separability.md), [slow ramps](docs/slow_ramp.md), [classification](docs/fault_classification.md), [multipath](docs/multipath.md) |
 | How fast it is, measured | [Performance](docs/PERFORMANCE.md) |
 | Decisions of record | [Architecture decision records](docs/adr/index.md) |
 | What is planned | [ROADMAP](ROADMAP.md), [CHANGELOG](CHANGELOG.md) |
