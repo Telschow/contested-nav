@@ -30,3 +30,5 @@ configuration. The next step is more sequences and windows, so that the replay r
 The finding is limited to this front end, this window and a known translation scale. The factor of four is a trial
 value that held in one replay, not a derived constant. A front end with another error structure may need another
 factor.
+
+Update: the wider measurement ran, and its result is in [ADR-0024](0024-assumed-noise-for-the-opt-in-clone.md).
