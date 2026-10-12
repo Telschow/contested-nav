@@ -139,6 +139,14 @@ numbers below for that window have three, so they differ slightly.
     inside the gate everywhere, and costs a larger claimed uncertainty.
 13. **The single anchor meets the gate in none of the six windows.**
 
+## The supported setting
+
+For a feature-tracking two-view front end like this one, the supported assumption for the opt-in clone is four times
+the measured visual noise ([ADR-0024](adr/0024-assumed-noise-for-the-opt-in-clone.md)). It is a named setting:
+`vision_noise_preset: measured-front-end` in a scenario file (with `vision_model: clone`), or
+`RunOptions.vision_noise_preset` for recorded data. It is off unless asked for, and `vision_enabled` stays False. It is
+an empirical value for this front end on these windows, not a derived constant.
+
 ## Limits
 
 Six windows of five sequences, all from one dataset (the EuRoC Machine Hall) and one front end. In each window the

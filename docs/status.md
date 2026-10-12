@@ -8,7 +8,8 @@
   See [concepts](concepts.md#the-one-thing-this-cannot-do). The opt-in stochastic clone
   ([ADR-0017](adr/0017-stochastic-clone-for-the-visual-update.md)) is calibrated for independent visual errors.
   Against the measured errors of a real two-view front end it stays inside the gate only with the assumed
-  noise inflated ([ADR-0023](adr/0023-clone-against-a-measured-front-end.md)), on the windows measured so far.
+  noise inflated by four, in all six windows measured, which is a named opt-in setting
+  ([ADR-0023](adr/0023-clone-against-a-measured-front-end.md), [ADR-0024](adr/0024-assumed-noise-for-the-opt-in-clone.md)).
 - **FDIR detects implausible updates and can name only some causes.** The chi-square gate in `fdir/` isolates a
   channel and says how long it was out ([ADR-0005](adr/0005-chi-square-fdir-gating.md)). A multipath call exists as
   a function ([ADR-0022](adr/0022-multipath-signature.md)). Spoofing and degradation are called in about three

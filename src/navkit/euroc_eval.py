@@ -51,7 +51,7 @@ from . import __version__
 from .benchmark import MEASUREMENT, _jsonable
 from .degrade.config import Outage
 from .degrade.inject import apply_gnss_outage
-from .estimators.eskf import ErrorStateKalmanFilter, EskfConfig, InitialState
+from .estimators.eskf import VISION_NOISE_PRESETS, ErrorStateKalmanFilter, EskfConfig, InitialState
 from .eval.calibration import normalized_error_squared, summarise
 from .eval.metrics import ate_bundle, outage_summary, relative_pose_error
 from .geometry.rigid import matrix_to_quat, quat_to_matrix, rot_exp
@@ -228,6 +228,9 @@ class RunOptions:
     #: (rotation sigma in degrees, translation sigma in metres) of the simulated front end's errors, in place of the
     #: surrogate's defaults. The filter assumes these times ``vision_noise_scale``.
     vision_sigmas: tuple[float, float] | None = None
+    #: A named assumption for the clone's visual noise (``navkit.estimators.eskf.VISION_NOISE_PRESETS``), in place of
+    #: ``vision_noise_scale``. Giving both is an error.
+    vision_noise_preset: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         extra: dict[str, Any] = {"spoof": list(self.spoof)} if self.spoof is not None else {}
@@ -239,6 +242,7 @@ class RunOptions:
                 "corr_s": self.vision_corr_s,
                 "noise_scale": self.vision_noise_scale,
                 **({"sigmas": list(self.vision_sigmas)} if self.vision_sigmas is not None else {}),
+                **({"preset": self.vision_noise_preset} if self.vision_noise_preset is not None else {}),
             }
         return {
             "gnss_rate_hz": self.gnss_rate_hz,
@@ -498,6 +502,16 @@ def run_sequence(
     if opts.vision is not None:
         if opts.vision not in ("anchor", "clone"):
             raise SequenceError(f"unknown vision model {opts.vision!r}; known: anchor, clone")
+        scale = opts.vision_noise_scale
+        if opts.vision_noise_preset is not None:
+            if opts.vision_noise_scale != 1.0:
+                raise SequenceError("give either vision_noise_preset or vision_noise_scale, not both")
+            if opts.vision != "clone":
+                raise SequenceError("vision_noise_preset is for the stochastic clone: set vision to 'clone'")
+            if opts.vision_noise_preset not in VISION_NOISE_PRESETS:
+                known = ", ".join(VISION_NOISE_PRESETS)
+                raise SequenceError(f"unknown vision_noise_preset {opts.vision_noise_preset!r}; known: {known}")
+            scale = VISION_NOISE_PRESETS[opts.vision_noise_preset]
         vcfg = VisionConfig(seed=opts.seed, noise_corr_s=opts.vision_corr_s)
         if opts.vision_sigmas is not None:
             vcfg.rot_sigma_deg, vcfg.trans_sigma_m = opts.vision_sigmas
@@ -505,8 +519,8 @@ def run_sequence(
         vision_kwargs = {
             "vision_enabled": True,
             "vision_model": opts.vision,
-            "vision_rot_sigma_deg": vcfg.rot_sigma_deg * opts.vision_noise_scale,
-            "vision_trans_sigma_m": vcfg.trans_sigma_m * opts.vision_noise_scale,
+            "vision_rot_sigma_deg": vcfg.rot_sigma_deg * scale,
+            "vision_trans_sigma_m": vcfg.trans_sigma_m * scale,
         }
 
     cfg_kwargs: dict[str, Any] = {}

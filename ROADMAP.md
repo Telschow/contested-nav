@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1313<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1319<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -261,7 +261,7 @@ this removes it.
       Outliers and scale drift are survived. Correlated errors are not, unless the
       assumed visual noise is inflated by a factor found by trial. A plain two-view front end was
       then measured on real frames ([real front end](docs/real_front_end.md); [ADR-0023](docs/adr/0023-clone-against-a-measured-front-end.md) and
-      [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md), the second proposed): its
+      [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md), which names the setting): its
       errors are correlated for 0.05 s to 0.5 s, and when they are replayed the clone stays inside the gate in all six
       windows of five Machine Hall sequences only with the assumed noise inflated by four. One dataset and one
       front end, so the default does not change.
