@@ -260,10 +260,11 @@ default in the benchmark:
 | `anchor_pos_drift_sigma_m_sqrt_s`, `anchor_rot_drift_sigma_deg_sqrt_s` | as in `EskfConfig`; the old `_m_s` and `_deg_s` names are accepted with a deprecation warning |
 | `rpe_delta_s` | spacing of the relative-pose-error metric, s |
 | `gnss_sigma_scale`, `vision_sigma_scale` | multiply the GNSS or vision noise the *filter* assumes (default 1); the generator keeps the true noise |
+| `vision_noise_preset` | a named value for `vision_sigma_scale`, only with `vision_model: clone` and not together with it. `measured-front-end` is four times the measured visual noise ([ADR-0024](adr/0024-assumed-noise-for-the-opt-in-clone.md), [real front end](real_front_end.md)) |
 
 By default the filter's GNSS and vision noise are taken from the scenario's sensor model, so
-the filter is told the true noise level, and no benchmark case sets the two scale keys.
-`navkit sweep mismatch` does ([Noise mismatch](mismatch.md)).
+the filter is told the true noise level. One benchmark case inflates the visual noise (the correlated-error case of the
+clone), and `navkit sweep mismatch` varies both ([Noise mismatch](mismatch.md)).
 
 ## Result JSON contract
 

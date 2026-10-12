@@ -307,6 +307,14 @@ class InitialState:
             raise ValueError("InitialState.R is not a rotation matrix")
 
 
+#: Named assumptions about the visual noise, as multiples of the noise a front end measures. They exist so that the
+#: opt-in clone does not depend on a number found in a page. ``measured-front-end`` is four times: with the errors of
+#: a two-view feature tracker replayed from real frames, the clone met the calibration gate in all six windows measured
+#: at four times and in two of six at the measured size (ADR-0024, ``docs/real_front_end.md``). It is an empirical
+#: value, not a derived one, and it is shown for that front end on those windows.
+VISION_NOISE_PRESETS: dict[str, float] = {"measured-front-end": 4.0}
+
+
 @dataclass
 class EskfConfig:
     """Tuning and noise for the filter, in physical units."""

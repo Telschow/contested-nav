@@ -1,6 +1,6 @@
 # ADR-0024: The assumed visual noise of the opt-in clone
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0017](0017-stochastic-clone-for-the-visual-update.md), [ADR-0023](0023-clone-against-a-measured-front-end.md), [real front end](../real_front_end.md)
 
@@ -27,7 +27,20 @@ All of it is one dataset, one front end that is not a production one, and a tran
 
 ## Decision
 
-To be written by the maintainer.
+Options 1 and 2.
+
+The clone stays opt-in and `vision_enabled` stays False. For a feature-tracking two-view front end like the one
+measured, the supported assumption for the opt-in clone is four times the measured visual noise. The docs say so, with
+the evidence and its limits.
+
+The assumption is a named setting, so that the opt-in path does not depend on a number found in a page:
+`navkit.estimators.eskf.VISION_NOISE_PRESETS["measured-front-end"]`, four times. In a scenario file it is
+`estimator.vision_noise_preset: measured-front-end`, valid only with `vision_model: clone`, and it excludes
+`vision_sigma_scale`. For recorded data it is `RunOptions.vision_noise_preset`, which excludes `vision_noise_scale`. A
+test ties the constant to the four-times run of the wider measurement, so the two cannot drift apart. No shipped case
+or default uses it.
+
+Option 3 is not taken. It needs a monocular scale, a second dataset and a front end that is not mine first.
 
 ## Consequences
 

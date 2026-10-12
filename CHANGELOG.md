@@ -133,8 +133,9 @@ this project uses [semantic versioning](https://semver.org/).
   clone. At the measured noise the clone meets the gate in two of six windows, at four times in all six, and the single
   anchor in none. The first window was also run again with the run aligned to its frames (the earlier run began 1.08 s
   after them, so the last second had no vision), which moved its figures slightly. `navkit euroc vo --wide` runs it.
-  [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md) is proposed; the decision section is for the
-  maintainer to write.
+  [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md) is accepted: the clone stays opt-in, four times is
+  the supported assumption, and it is a named setting (`vision_noise_preset: measured-front-end`, or
+  `RunOptions.vision_noise_preset`). No shipped case or default uses it.
 
 ### Changed
 
