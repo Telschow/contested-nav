@@ -11,15 +11,15 @@ decision, not a tuning pass:
 - **It is a design property, not a bad seed.** Over **10 noise realisations** of
   the same trajectory, `outage_visual` is overconfident at **every** seed: mean
   NEES **656**, range **113.5 to 1589.1**, coverage **6.8% to 35.2%**. Over **8
-  scenes** with trajectory geometry varied — path length **17.3 m to 80.6 m**, a
-  **4.65×** range — **all seven case verdicts are identical in all eight scenes**,
+  scenes** with trajectory geometry varied: path length **17.3 m to 80.6 m**, a
+  **4.65×** range. **All seven case verdicts are identical in all eight scenes**,
   and `outage_visual` holds mean NEES **286.4 [282.4, 290.2]** at 20.5% coverage.
 - **Sweeps cannot disagree with themselves.** Intervals are deterministic
   percentile bootstrap, 10 000 resamples, fixed RNG seed. CI runs the benchmark
   and the sweeps twice and fails if any two runs differ.
 - **The fix is partly shipped, and is still not enough.** Adaptive covariance
   inflation ([ADR-0006](adr/0006-nis-window-monitor.md)) took this case from
-  ATE **5.059 m to 2.541 m** and rejections **51 to 5** — and in doing so made
+  ATE **5.059 m to 2.541 m** and rejections **51 to 5**, and in doing so made
   the filter *more* accurate and therefore *harder* to catch by ranking on error.
 - **So the mitigation is to refuse the feature.** Visual fusion ships
   `vision_enabled=False`, and the residual NEES gap is an open blocker recorded in
@@ -29,7 +29,7 @@ decision, not a tuning pass:
 The underlying cause is that the visual anchor is a pose the filter itself
 produced, so its error is not independent evidence. The 21-state filter carries
 the anchor error as two 3-D nuisance parameters (`c_p`, `c_t`) rather than
-assuming it away — which fixes the *bulk* miscalibration and not the *tail*, and
+assuming it away, which fixes the *bulk* miscalibration and not the *tail*, and
 the table above is the tail. Full mechanism in
 [Reading the calibration numbers](calibration.md).
 
@@ -50,11 +50,11 @@ the anchor itself, and the covariance stops describing reality.
 
 The alternatives do not rescue it:
 
-- **Anchor as measurement noise** — the obvious shortcut, and demonstrably
+- **Anchor as measurement noise**: the obvious shortcut, and demonstrably
   worse. It looks identical in the source and drops coverage to 16%.
-- **A single anchor for the whole run** — mean NEES 23 instead of 3. It makes
+- **A single anchor for the whole run**: mean NEES 23 instead of 3. It makes
   the anchor error one unknown shared by every measurement.
-- **A larger gate or a bigger anchor prior** — inflates the uncertainty to
+- **A larger gate or a bigger anchor prior**: inflates the uncertainty to
   acknowledge the error instead of fixing it.
 
 The anchor model is the wrong tool, and this is a known failure mode rather than
@@ -63,7 +63,7 @@ absolute pose has to come from a single arbitrary reference; when that reference
 is only weakly constrained, an error-state filter gains spurious information
 along the unobservable directions and becomes overconfident. This has been
 characterised in the vision-aided inertial navigation literature for over a
-decade — Hesch et al. (IEEE T-RO, 2014) traced it to a mismatch between the
+decade. Hesch et al. (IEEE T-RO, 2014) traced it to a mismatch between the
 observability of the linearised estimator and that of the true system, and the
 remedies are established: observability-constrained EKF, first-estimate
 Jacobians, invariant and Schmidt filters, and pose-graph formulations. See
@@ -106,7 +106,7 @@ The rotation blocks are `R_rel_pred`, not the identity, because
 `rot_log(Q · Exp(v) · Qᵀ) = Q · v`: the conjugation identity rotates the
 increment into the previous body frame, which is the frame the residual lives
 in. Writing `H_theta = +I` is a frame error that happens to be invisible
-whenever the inter-frame rotation is small — at 20 Hz against a smooth
+whenever the inter-frame rotation is small: at 20 Hz against a smooth
 trajectory it changes the benchmark in the third decimal. All four blocks are
 pinned against central differences of the filter's own residual in
 `tests/test_estimators.py`, which is how this was found; a sign or frame error
@@ -117,17 +117,17 @@ here runs, fuses, and is wrong without ever raising.
 `navkit.eval.calibration` implements the diagnostics from their published
 definitions, with no SciPy:
 
-- **NEES** — normalised error squared, from the filter's own covariance.
+- **NEES**: normalised error squared, from the filter's own covariance.
   Singularity is handled by symmetric regularisation, never by dropping an
   epoch; silently discarding the worst epochs is precisely how a miscalibrated
   filter comes to look well behaved.
-- **Coverage** — the exact ellipsoid coverage for the stated degrees of
+- **Coverage**: the exact ellipsoid coverage for the stated degrees of
   freedom. The familiar "3σ means 99.7%" is the one-dimensional figure and does
   not hold for a 3-D position error; the real expectation at 2σ per axis in 3-D
   is 99.3%, and the code uses that.
-- **Conformal radius** — a finite-sample, distribution-free bound, used to check
+- **Conformal radius**: a finite-sample, distribution-free bound, used to check
   whether a confidence claim still holds under shift.
-- **Inflation factor** — the scalar covariance inflation that reaches a target
+- **Inflation factor**: the scalar covariance inflation that reaches a target
   coverage, reported as `inf` when the target is unreachable. Clipping it to a
   large finite number would disguise an unbounded calibration error as a merely
   large correction.

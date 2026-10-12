@@ -14,7 +14,8 @@ it is not field-validated, it is not novel, and it is not qualified for any plat
 
 ## What it does not contain
 
-- No real sensor data, drivers or capture tooling, and no live front end.
+- No sensor drivers or capture tooling, no live front end, and no vendored data. Two public recorded datasets
+  (EuRoC and TUM VI) can be fetched and evaluated, with GNSS simulated from their ground truth.
 - No radio-frequency model. A GNSS outage is a gap in a stream, and the spoofing tests in the
   suite are measurement offsets injected into the filter. There is no code that generates,
   transmits or simulates a signal.
