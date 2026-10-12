@@ -4,9 +4,9 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: <!-- metric:tests_collected -->1313<!-- /metric --> tests collected, all of which pass except the deliberate
+Last measured: <!-- metric:tests_collected -->1319<!-- /metric --> tests collected, all of which pass except the deliberate
 xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->94.3<!-- /metric -->%
-line coverage (<!-- metric:coverage_lines_hit -->10009<!-- /metric -->/<!-- metric:coverage_lines_total -->10614<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
+line coverage (<!-- metric:coverage_lines_hit -->10033<!-- /metric -->/<!-- metric:coverage_lines_total -->10638<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
 it is the project's dependency-free tracer (S1 forbids adding `pytest-cov`), and
 a number taken from a different tool is not comparable with the module figures
@@ -83,7 +83,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | <!-- metric:tests_collected -->1313<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | <!-- metric:tests_collected -->1319<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
 | Line coverage | 75% | <!-- metric:coverage_percent -->94.3<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
@@ -129,6 +129,13 @@ These are floors, not goals. Each must not regress; raising one is welcome.
   shipped configuration. The decision (ADR-0017): the clone stays opt-in, because it is calibrated for a front end
   with independent errors and not for a correlated one, and no data here says which a real front end is. Reconsider
   when a front end's error correlation is measured. The single-anchor rows remain as the control.
+
+  A real two-view front end's errors were then measured and replayed
+  ([ADR-0023](docs/adr/0023-clone-against-a-measured-front-end.md)). In six windows of five Machine Hall sequences
+  the clone meets the gate only with the assumed visual noise inflated by four, which is now a named opt-in setting
+  ([ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md)). The default and `vision_enabled` do not change,
+  and this blocker stays open for the shipped configuration: one dataset, a front end that is not a production one, and
+  a translation with the true scale.
 
 ## Resolved engineering blockers
 
