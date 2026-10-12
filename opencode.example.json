@@ -1,6 +1,9 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "freellmapi/auto",
+  "disabled_providers": [
+    "ollama"
+  ],
   "provider": {
     "freellmapi": {
       "npm": "@ai-sdk/openai-compatible",
@@ -20,12 +23,6 @@
           "name": "Auto Router (Fastest / Low Latency)"
         }
       }
-    },
-    "local": {
-      "disabled": true
-    },
-    "ollama": {
-      "disabled": true
     }
   }
 }

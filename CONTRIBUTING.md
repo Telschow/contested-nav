@@ -54,6 +54,12 @@ provider fails to authenticate rather than the file failing to load. Rotating
 the key is a manual step for the key's owner; ignore rules keep it out of Git but
 do not invalidate it anywhere it has already been exposed.
 
+The template was checked against OpenCode 1.19.0 with a local OpenAI-compatible
+mock endpoint. `@ai-sdk/openai-compatible` is the supported package for this
+kind of provider. To switch a built-in provider off, list it in
+`disabled_providers`: a `"disabled": true` key inside a `provider` entry is not
+part of the schema and is dropped without a warning, so the provider stays on.
+
 ## Before opening a pull request
 
 All of these must pass locally. They are what CI runs.
