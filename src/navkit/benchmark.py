@@ -56,7 +56,7 @@ import yaml
 from .degrade.config import Scenario, scenario_from_dict
 from .degrade.inject import config_hash, inject
 from .estimators.dead_reckoning import DeadReckoning
-from .estimators.eskf import ErrorStateKalmanFilter, EskfConfig
+from .estimators.eskf import VISION_NOISE_PRESETS, ErrorStateKalmanFilter, EskfConfig
 from .eval.calibration import (
     normalized_error_squared,
     summarise,
@@ -125,6 +125,20 @@ def _sigma_scale(keys: dict[str, Any], key: str) -> float:
     return scale
 
 
+def _vision_scale(keys: dict[str, Any]) -> float:
+    """The multiplier on the visual noise the filter assumes: a number, or a named preset for the clone (ADR-0024)."""
+    preset = keys.get("vision_noise_preset")
+    if preset is None:
+        return _sigma_scale(keys, "vision_sigma_scale")
+    if "vision_sigma_scale" in keys:
+        raise ValueError("give either 'vision_noise_preset' or 'vision_sigma_scale', not both")
+    if preset not in VISION_NOISE_PRESETS:
+        raise ValueError(f"unknown vision_noise_preset {preset!r}; known: {', '.join(VISION_NOISE_PRESETS)}")
+    if str(keys.get("vision_model", "anchor")) != "clone":
+        raise ValueError("vision_noise_preset is for the stochastic clone: set vision_model: clone")
+    return VISION_NOISE_PRESETS[str(preset)]
+
+
 def _renamed(keys: dict[str, Any], new: str, old: str, default: float) -> float:
     """An estimator key under its new name, or under the deprecated one it replaced.
 
@@ -142,12 +156,13 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
 
     By default the filter is told the noise the generator used. ``gnss_sigma_scale`` and
     ``vision_sigma_scale`` multiply the sigmas the *filter* assumes and leave the generator
-    alone, so the same data can be filtered with a wrong noise model. A value below 1 makes
+    alone, so the same data can be filtered with a wrong noise model. ``vision_noise_preset``
+    names a value of the second for the clone. A value below 1 makes
     the filter more confident in the sensor than it should be; above 1, less.
     """
     noise = scenario.imu_noise.scaled(scenario.imu_noise_scale)
     gnss_scale = _sigma_scale(keys, "gnss_sigma_scale")
-    vision_scale = _sigma_scale(keys, "vision_sigma_scale")
+    vision_scale = _vision_scale(keys)
     # The declared uncertainty of the starting state, when a case sets it (an ablation can set it to zero).
     initial: dict[str, Any] = {
         k: float(keys[k])
