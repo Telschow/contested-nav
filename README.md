@@ -56,6 +56,31 @@ table below. It is a synthetic result, the default is unchanged, and visual fusi
 > IMU with simulated GNSS and, in one study, real camera frames. No number here is a field
 > measurement.
 
+## How it works
+
+<!-- how-it-works-start -->
+```mermaid
+flowchart TB
+    IMU["IMU, always on"] --> F
+    GNSS["GNSS, can be denied"] --> FDIR["Fault detection: screens each measurement"]
+    CAM["Camera motion, opt-in"] -.-> FDIR
+    FDIR --> F["Navigation filter: position, and how sure it is"]
+    F --> ACC["Accuracy: error against the truth"]
+    F --> HON["Honesty: is the truth inside the claimed area?"]
+    TRUTH["Known truth: synthetic runs, recorded datasets"] --> ACC
+    TRUTH --> HON
+    ACC --> GATE{"Gate B1"}
+    HON --> GATE
+    GATE -- "met" --> ON["Camera fusion on"]
+    GATE -- "not met" --> OFF["Camera fusion off by default (ADR-0003)"]
+```
+
+Every run is scored twice: how far the estimate is from the truth, and whether the truth falls
+inside the area the filter claims. A feature that improves the first and breaks the second stays
+off. A short captioned explainer is on the [project page](https://telschow.github.io/contested-nav/);
+the module-level design is in [docs/architecture.md](docs/architecture.md).
+<!-- how-it-works-end -->
+
 ## Quickstart
 
 Python 3.11 to 3.13. From a fresh clone this took **18.7 s** (clone, environment, install and a
