@@ -128,6 +128,14 @@ this project uses [semantic versioning](https://semver.org/).
   One sequence and one window. [ADR-0023](docs/adr/0023-clone-against-a-measured-front-end.md) is accepted: the clone
   stays opt-in, with the inflation.
 
+- A wider real-front-end measurement ([`docs/real_front_end.md`](docs/real_front_end.md)): six windows of five Machine
+  Hall sequences, the design committed before the run, the measured errors of each window replayed into the stochastic
+  clone. At the measured noise the clone meets the gate in two of six windows, at four times in all six, and the single
+  anchor in none. The first window was also run again with the run aligned to its frames (the earlier run began 1.08 s
+  after them, so the last second had no vision), which moved its figures slightly. `navkit euroc vo --wide` runs it.
+  [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md) is proposed; the decision section is for the
+  maintainer to write.
+
 ### Changed
 
 - The implementation plan carries the same point-in-time banner as the other baseline records. P5-09 and P5-12 are

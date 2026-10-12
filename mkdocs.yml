@@ -156,6 +156,7 @@ nav:
       - "0021 Fault classification": adr/0021-fault-classification-from-innovations.md
       - "0022 Multipath signature": adr/0022-multipath-signature.md
       - "0023 Clone against a measured front end": adr/0023-clone-against-a-measured-front-end.md
+      - "0024 Assumed noise of the opt-in clone": adr/0024-assumed-noise-for-the-opt-in-clone.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md
