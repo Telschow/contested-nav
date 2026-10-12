@@ -54,11 +54,60 @@ standard deviations.
 | clone, independent errors | 5 | 2.0 | 100% | 0.30 | 0.27 | yes |
 | clone, measured correlation | 5 | 5.6 | 93% | 0.51 | 0.27 | yes |
 | clone, measured correlation, noise assumed x4 | 5 | 1.4 | 100% | 0.49 | 0.67 | yes |
-| replay, anchor | 5 | 23497.9 | 5% | 93.64 | 0.27 | no |
-| replay, clone | 5 | 27.0 | 55% | 0.25 | 0.27 | no |
-| replay, clone, noise assumed x4 | 5 | 4.3 | 91% | 0.75 | 0.67 | yes |
+| replay, anchor | 5 | 16102.0 | 6% | 72.40 | 0.27 | no |
+| replay, clone | 5 | 27.2 | 54% | 0.25 | 0.27 | no |
+| replay, clone, noise assumed x4 | 5 | 4.1 | 92% | 0.64 | 0.66 | yes |
 
 <!-- vo-clone:end -->
+
+## A wider measurement: six windows, five sequences
+
+The result above is one 30 s window of one sequence, and the replayed error series is one realisation. So the
+measurement was widened, with a design fixed in code and committed before it ran
+(`WIDE_SEQUENCES`, `WIDE_SCALES` and `pick_window` in `navkit.vo_error`):
+
+- **Windows.** For each Machine Hall sequence, the 30 s window with the highest median ground-truth speed, on a 5 s
+  grid, starting no earlier than 30 s. For MH_01 a second window that does not overlap the first. The rule picks windows
+  where the camera moves, so that a translation direction exists.
+- **Front end.** The same front end, at gaps of one and four frames.
+- **Clone.** Replayed with the errors of that window, with the assumed noise set to the window's measured sigmas times
+  1, 2, 4 and 8, three seeds each, and the single anchor at 1 for comparison.
+
+The first window was run again with the run aligned to its frames. The first table of this page has five seeds and the
+numbers below for that window have three, so they differ slightly.
+
+<!-- vo-wide-errors:start -->
+
+| Sequence | Window start s | Gap, frames | Pairs | Rotation RMS deg | Lateral RMS m | Outlier share | Rotation correlation time s | Lateral correlation time s |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| MH_01_easy | 60 | 1 | 590 | 0.08 | 0.008 | 2% | 0.20 | 0.25 |
+| MH_01_easy | 60 | 4 | 590 | 0.14 | 0.018 | 8% | 0.10 | 0.20 |
+| MH_01_easy | 90 | 1 | 595 | 0.09 | 0.006 | 5% | 0.20 | 0.40 |
+| MH_01_easy | 90 | 4 | 596 | 0.13 | 0.010 | 6% | 0.10 | 0.20 |
+| MH_02_easy | 105 | 1 | 596 | 0.07 | 0.005 | 8% | 0.25 | 0.20 |
+| MH_02_easy | 105 | 4 | 596 | 0.09 | 0.007 | 7% | 0.25 | 0.15 |
+| MH_03_medium | 80 | 1 | 596 | 0.12 | 0.013 | 6% | 0.05 | 0.05 |
+| MH_03_medium | 80 | 4 | 590 | 0.38 | 0.036 | 10% | 0.05 | 0.20 |
+| MH_04_difficult | 60 | 1 | 596 | 0.16 | 0.020 | 6% | 0.15 | 0.50 |
+| MH_04_difficult | 60 | 4 | 596 | 0.44 | 0.061 | 8% | 0.05 | 0.30 |
+| MH_05_difficult | 30 | 1 | 596 | 0.10 | 0.012 | 7% | 0.15 | 0.25 |
+| MH_05_difficult | 30 | 4 | 596 | 0.29 | 0.039 | 11% | 0.20 | 0.10 |
+
+<!-- vo-wide-errors:end -->
+
+<!-- vo-wide-clone:start -->
+
+| Sequence | Window start s | clone x1: NEES / coverage | clone x2: NEES / coverage | clone x4: NEES / coverage | clone x8: NEES / coverage | anchor x1: NEES / coverage |
+|---|---:|---|---|---|---|---|
+| MH_01_easy | 60 | 31.5 / 52% | 12.6 / 67% | 4.49 / 91% ok | 1.88 / 100% ok | 1.13e+05 / 6% |
+| MH_01_easy | 90 | 13.5 / 58% | 6.07 / 90% | 2.62 / 100% ok | 1.32 / 100% ok | 1.19e+05 / 5% |
+| MH_02_easy | 105 | 4.28 / 100% ok | 3.7 / 100% ok | 1.94 / 100% ok | 1.27 / 100% ok | 1.56e+05 / 5% |
+| MH_03_medium | 80 | 3.5 / 100% ok | 2.03 / 100% ok | 1.2 / 100% ok | 1.05 / 100% ok | 9.73e+04 / 7% |
+| MH_04_difficult | 60 | 74.3 / 18% | 14.8 / 42% | 2.73 / 99% ok | 1.16 / 100% ok | 9.04e+04 / 9% |
+| MH_05_difficult | 30 | 33.4 / 36% | 12.5 / 59% | 3.99 / 100% ok | 1.6 / 100% ok | 1.6e+05 / 6% |
+| **Windows meeting the gate** | | 2 of 6 | 2 of 6 | 6 of 6 | 6 of 6 | 0 of 6 |
+
+<!-- vo-wide-clone:end -->
 
 ## What it shows
 
@@ -72,20 +121,30 @@ standard deviations.
    times the baseline.
 4. **Outliers grow with the gap.** 2% of one-frame pairs, 13% of ten-frame pairs.
 5. **A Gaussian surrogate with the measured size and correlation time passes the gate.** NEES 5.6 and 93% coverage.
-6. **The real errors do not.** Replayed at the measured size, the clone has NEES 27 and 55% coverage and fails the
+6. **The real errors do not.** Replayed at the measured size, the clone has NEES 27 and 54% coverage and fails the
    gate. The surrogate misses what the real error series has beyond a size and a correlation time.
-7. **Assuming four times the measured noise brings it back, narrowly.** NEES 4.3 and 91% coverage. That is the factor
-   ADR-0017 found by trial. The margin is thin.
-8. **The single anchor fails badly on the same errors.** NEES in the tens of thousands and 5% coverage, as in the
+7. **Assuming four times the measured noise brings it back.** NEES 4.1 and 92% coverage in this window. That is the
+   factor ADR-0017 found by trial.
+8. **The single anchor fails badly on the same errors.** NEES in the tens of thousands and 6% coverage, as in the
    earlier studies.
 9. **Vision is worth having.** Dead reckoning on the IMU alone ends the window 64 m off. The clone ends it within
    a metre.
+10. **In every window the errors are small and short-lived.** One-frame rotation error is 0.07° to 0.16° RMS and
+    lateral error 5 mm to 20 mm. Correlation times run from 0.05 s to 0.5 s; the longest, 0.5 s on the lateral error in
+    the MH_04 window, sits at the edge of the range where ADR-0017 found the clone failing.
+11. **At the measured noise the clone meets the gate in two of six windows.** In the other four the replayed errors make
+    it overconfident. Doubling the assumed noise does not change that count.
+12. **At four times the measured noise it meets the gate in all six windows,** across five sequences including the two
+    marked difficult. The tightest window has a coverage of 91%, so the margin is thin there. Eight times is also
+    inside the gate everywhere, and costs a larger claimed uncertainty.
+13. **The single anchor meets the gate in none of the six windows.**
 
 ## Limits
 
-One sequence, one 30 s window, and one error series replayed: the five seeds change the simulated GNSS and not the
-visual errors, so the replay result is one realisation and the 91% coverage has no spread behind it. The front end is
-mine and plain. The translation has the true scale, which no monocular front end has. The ground truth is itself an
-estimate. The conclusion that the clone needs about four times the measured noise holds for this front end on this
-window, and it is not shown for another front end or sequence. `vision_enabled` stays False.
+Six windows of five sequences, all from one dataset (the EuRoC Machine Hall) and one front end. In each window the
+replayed errors are one realisation: the seeds change the simulated GNSS and not the visual errors, so a window's result
+has no spread of its own. The front end is mine and plain. The translation has the true scale, which no monocular front
+end has. The ground truth is itself an estimate. The conclusion that the clone needs about four times the measured noise
+holds for this front end on these windows, and it is not shown for another front end or dataset. `vision_enabled`
+stays False.
 See [ADR-0023](adr/0023-clone-against-a-measured-front-end.md).

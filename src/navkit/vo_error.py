@@ -423,6 +423,7 @@ def wide_study(
     existing: list[dict[str, Any]] | None = None,
     seeds: int = WIDE_SEEDS,
     fetch: bool = True,
+    earliest_s: float = 30.0,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Choose a window per sequence, fetch its frames, measure the front end, and replay the clone.
 
@@ -437,7 +438,7 @@ def wide_study(
     for name in sequences:
         seq = load_sequence(root, name)
         avoid = tuple((a, b) for s_, a, b in windows(existing, 1.0) if s_ == name)
-        start = pick_window(seq.truth, WIDE_LENGTH_S, avoid=avoid)
+        start = pick_window(seq.truth, WIDE_LENGTH_S, earliest_s=earliest_s, avoid=avoid)
         # Frames are counted from the first IMU sample, which is also the clock of the ground truth here.
         if fetch:
             fetch_images(
@@ -582,6 +583,55 @@ def write_clone_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
+#: The window measured first (all five gaps), which the first tables of the page describe.
+ORIGINAL_WINDOW = ("MH_01_easy", 60.0, 90.0)
+
+
+def rows_in(rows: list[dict[str, Any]], sequence: str, start_s: float, stop_s: float) -> list[dict[str, Any]]:
+    """The rows of one sequence whose pair lies inside ``[start_s, stop_s]``."""
+    return [
+        r
+        for r in rows
+        if r["sequence"] == sequence and start_s <= float(r["t_s"]) and float(r["t_s"]) + float(r["dt_s"]) <= stop_s
+    ]
+
+
+def rows_in_window(rows: list[dict[str, Any]], sequence: str, start_s: float, length_s: float) -> list[dict[str, Any]]:
+    """The rows of one sequence whose pair starts in ``[start_s, start_s + length_s - one frame)``.
+
+    Two windows can touch (90.005 s ends where the next begins), so a window is defined by where its pairs start, and
+    a pair that straddles the boundary belongs to neither.
+    """
+    return [
+        r
+        for r in rows
+        if r["sequence"] == sequence and start_s - 1e-6 <= float(r["t_s"]) < start_s + length_s - FRAME_STEP_S - 1e-6
+    ]
+
+
+def windows_markdown(
+    rows: list[dict[str, Any]], wide_rows: list[dict[str, Any]], gaps: tuple[int, ...] = WIDE_GAPS
+) -> str:
+    """The front end's errors in every window of the wider measurement, at the gaps it used."""
+    lines = [
+        "| Sequence | Window start s | Gap, frames | Pairs | Rotation RMS deg | Lateral RMS m | Outlier share "
+        "| Rotation correlation time s | Lateral correlation time s |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    keys = sorted({(r["sequence"], float(r["window_start_s"])) for r in wide_rows})
+    for seq, start in keys:
+        sel = rows_in_window(rows, seq, start, WIDE_LENGTH_S)
+        for gap in gaps:
+            if not any(int(r["gap_frames"]) == gap for r in sel):
+                continue
+            s = summary(sel, gap, FRAME_STEP_S)
+            lines.append(
+                f"| {seq} | {start:.0f} | {gap} | {s['pairs']:.0f} | {s['rot_rms_deg']:.2f} | {s['lat_rms_m']:.3f} | "
+                f"{100 * s['outlier_share']:.0f}% | {s['rot_corr_time_s']:.2f} | {s['lat_corr_time_s']:.2f} |"
+            )
+    return "\n".join(lines)
+
+
 def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -679,13 +729,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.csv:
         write_csv(args.csv, rows)
         print(f"wrote {args.csv}", file=sys.stderr)
+    first = rows_in(rows, *ORIGINAL_WINDOW)
     clone = None
     if args.clone:
-        one = summary(rows, 1, FRAME_STEP_S)
+        one = summary(first, 1, FRAME_STEP_S)
         sigmas = (round(one["rot_rms_deg"], 3), round(one["lat_rms_m"], 4))
         corr = round(one["lat_corr_time_s"], 2)
         root, seq = args.root, args.sequence
-        clone = clone_rows(root, seq, *sigmas, corr_s=corr) + replay_rows(root, seq, rows)
+        clone = clone_rows(root, seq, *sigmas, corr_s=corr) + replay_rows(root, seq, first)
         if args.clone_csv:
             write_clone_csv(args.clone_csv, clone)
             print(f"wrote {args.clone_csv}", file=sys.stderr)
@@ -693,14 +744,18 @@ def main(argv: list[str] | None = None) -> int:
         clone = read_clone_csv(args.clone_csv)
     if args.page:
         try:
-            write_block(args.page, "vo-errors", summary_markdown(rows))
+            write_block(args.page, "vo-errors", summary_markdown(first))
             if clone is not None:
                 write_block(args.page, "vo-clone", clone_markdown(clone))
+            if Path(args.wide_csv).is_file():
+                wide = read_csv(args.wide_csv)
+                write_block(args.page, "vo-wide-errors", windows_markdown(rows, wide))
+                write_block(args.page, "vo-wide-clone", wide_markdown(wide))
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
     if args.markdown or not (args.csv or args.page):
-        print(summary_markdown(rows))
+        print(summary_markdown(first))
         if clone is not None:
             print("\n" + clone_markdown(clone))
     return 0
