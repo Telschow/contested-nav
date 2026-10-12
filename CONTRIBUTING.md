@@ -54,6 +54,12 @@ provider fails to authenticate rather than the file failing to load. Rotating
 the key is a manual step for the key's owner; ignore rules keep it out of Git but
 do not invalidate it anywhere it has already been exposed.
 
+The template was checked against OpenCode 1.19.0 with a local OpenAI-compatible
+mock endpoint. `@ai-sdk/openai-compatible` is the supported package for this
+kind of provider. To switch a built-in provider off, list it in
+`disabled_providers`: a `"disabled": true` key inside a `provider` entry is not
+part of the schema and is dropped without a warning, so the provider stays on.
+
 ## Before opening a pull request
 
 All of these must pass locally. They are what CI runs.
@@ -70,7 +76,7 @@ mypy src --ignore-missing-imports
 `ruff format src tests scripts` applies formatting; the `--check` form is the
 gate.
 
-The suite collects <!-- metric:tests_collected -->1319<!-- /metric --> tests and all of them pass on a fresh clone, except the deliberate
+The suite collects <!-- metric:tests_collected -->1322<!-- /metric --> tests and all of them pass on a fresh clone, except the deliberate
 xfails and the skips. `pytest -rs` lists the skips: two need TUM VI reference data that is not
 vendored (see below), and the doc-table check runs once `python scripts/run_benchmark.py` has
 written `results/benchmark.json`. The count and the other numbers the docs quote are in
