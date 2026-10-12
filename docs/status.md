@@ -1,13 +1,22 @@
 # Status and limits
 
-- **Not field validated.** Synthetic fixture only. No real capture is vendored
-  or evaluated, and no number is a field measurement.
-- **Visual aiding under GNSS denial is untrustworthy**, and disabled by default.
-  See [concepts](concepts.md#the-one-thing-this-cannot-do).
-- **FDIR detects implausible updates; it does not yet explain them.** The
-  chi-square gate in `fdir/` isolates a channel and says how long it was out,
-  but it does not separate multipath from spoofing from sensor degradation. See
-  [ADR-0005](adr/0005-chi-square-fdir-gating.md).
+- **Not field validated.** The benchmark is a synthetic fixture. Recorded IMU data
+  ([EuRoC](euroc.md), [TUM VI](tumvi.md)) and one set of real camera frames
+  ([a real front end](real_front_end.md)) are used with GNSS simulated from the ground truth. None of that
+  data is vendored, and no number is a field measurement.
+- **Visual aiding under GNSS denial is untrustworthy with the shipped single anchor**, and disabled by default.
+  See [concepts](concepts.md#the-one-thing-this-cannot-do). The opt-in stochastic clone
+  ([ADR-0017](adr/0017-stochastic-clone-for-the-visual-update.md)) is calibrated for independent visual errors.
+  Against the measured errors of a real two-view front end it stays inside the gate only with the assumed
+  noise inflated ([ADR-0023](adr/0023-clone-against-a-measured-front-end.md)), on the windows measured so far.
+- **FDIR detects implausible updates and can name only some causes.** The chi-square gate in `fdir/` isolates a
+  channel and says how long it was out ([ADR-0005](adr/0005-chi-square-fdir-gating.md)). A multipath call exists as
+  a function ([ADR-0022](adr/0022-multipath-signature.md)). Spoofing and degradation are called in about three
+  quarters of injected runs, weak faults are missed and the false-alarm rate is not zero
+  ([ADR-0021](adr/0021-fault-classification-from-innovations.md)).
+- **A slow-ramp spoof is followed.** With an IMU and GNSS alone the filter follows a ramp of any rate tested
+  ([ADR-0019](adr/0019-slow-ramp-spoofing.md)). A simulated visual source catches a fast ramp when its errors are
+  independent ([ADR-0020](adr/0020-second-source-against-a-ramp.md)).
 - **The calibrated-covariance failure is mitigated, not fixed.** The ADR-0005
   gate assumed a calibrated innovation covariance the filter does not have once
   position covariance has collapsed, and in `outage_visual` that cost 1.6 m of
@@ -53,6 +62,6 @@
   ![Outage sweep](figures/outage-sweep.png)
 - **Not flight-ready.** No sensor driver, no live front end, no real-time loop,
   no failure-mode handling beyond a measurement gate.
-- **TUM VI regression is partial.** The trajectory reader is validated against
-  the published room1/512/16 ATE, but the full mocap ground truth is not
-  vendored, so that check is skipped when the data is absent.
+- **Recorded-data checks skip without the data.** The trajectory reader's orientation is checked against the
+  recorded gyroscope on every fetched sequence, and always on a synthetic one. The claim of reproducing a
+  published TUM VI ATE was retired (R5 in `CONSTRAINTS.md`).

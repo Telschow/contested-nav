@@ -3,7 +3,7 @@
 ## Is this a navigation system?
 
 No. It is an evaluation harness that happens to contain a filter. It has no sensor drivers, no
-live front end and no real-time loop, and it has never seen real sensor data. See
+live front end and no real-time loop. It has been run on public recorded data, never on a field capture. See
 [Scope and responsible use](scope.md).
 
 ## Are the numbers real?

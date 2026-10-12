@@ -30,8 +30,8 @@ model inference, and no data beyond a synthetic generator.
 ## 2. Dual-use risk assessment
 
 The honest framing is that **this specific repository is not the risk; the
-general capability is.** The capabilities it touches — inertial navigation,
-sensor fusion, and the observation that a filter can be confidently wrong — are
+general capability is.** The capabilities it touches (inertial navigation,
+sensor fusion, and the observation that a filter can be confidently wrong) are
 all either public-domain textbook material or published research. A reader who
 wanted to do harm would not need this repository.
 
@@ -51,7 +51,7 @@ That said, the question deserves a real answer rather than a dismissal.
 
 **INFERENCE.** This is ordinary open-source scientific software in a publicly
 researched area. It carries no disproportionate risk. The realistic
-misuse scenario — someone wanting a navigation filter under GNSS denial — is
+misuse scenario (someone wanting a navigation filter under GNSS denial) is
 served by a large amount of existing public literature and by commercial
 products, so the marginal contribution of this repository to that scenario is
 small.
@@ -71,7 +71,7 @@ limiting what the software can be used for.
 
 | Decision | Effect |
 |---|---|
-| Synthetic fixture only; no real capture vendored | Nothing to leak; no recording capability exists |
+| Synthetic fixture and fetch tooling for public datasets; no real capture vendored | Nothing to leak; no recording capability exists |
 | `vision_enabled=False` by default | The known-broken configuration cannot be reached by accident |
 | FDIR isolates and times a fault but does not classify its cause | The library cannot distinguish jamming from multipath from sensor failure, so it cannot select a response on an operator's behalf |
 | No output that commands anything | The library produces state and covariance. It drives nothing. |
@@ -90,11 +90,11 @@ supply all of the following. None is present here, and none is a matter of
 configuration.
 
 1. Real sensor interfaces and drivers.
-2. Real measurement characterisation — bias stability, noise spectra,
+2. Real measurement characterisation: bias stability, noise spectra,
    temperature dependence, vibration, shock, time synchronisation.
 3. Time synchronisation and latency budgets across every sensor.
 4. Online extrinsic calibration between camera and IMU.
-5. A correct solution to the problem this repository documents as unsolved — an
+5. A correct solution to the problem this repository documents as unsolved: an
    observability-consistent formulation or a pose-graph backend, neither of
    which exists here.
 6. Formal integrity targets and an argument that they are met.
@@ -112,7 +112,7 @@ configuration.
 ## 5. Intent
 
 **AUTHOR-STATED.** The purpose of this repository is to make a falsifiable claim
-about estimator calibration, test it, and publish the result — including the
+about estimator calibration, test it, and publish the result, including the
 result that fails. It is a portfolio and research artefact. It is not a product,
 and it is not offered as a component for integration.
 
