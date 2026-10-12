@@ -1,0 +1,219 @@
+/*
+ * Site styling for contested-nav.
+ *
+ * One accent (a desaturated teal) on a warm stone neutral, in a light and a dark scheme. Numbers are the content of
+ * this site, so tables use tabular figures and a quiet grid, and paragraphs keep a readable measure. Nothing here
+ * animates except colour, and nothing animates for a visitor who asks for reduced motion.
+ */
+
+:root {
+  --nav-ink: #22211f;
+  --nav-accent: #1d6b66;
+  --nav-accent-soft: #e3efed;
+  --nav-rule: #e4e0d8;
+  --nav-rule-soft: #ece9e3;
+  --nav-surface: #f3f1ec;
+  --nav-measure: 72ch;
+}
+
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--nav-ink);
+  --md-primary-fg-color--light: #4a4843;
+  --md-primary-fg-color--dark: #151412;
+  --md-primary-bg-color: #faf9f7;
+  --md-accent-fg-color: var(--nav-accent);
+  --md-default-bg-color: #faf9f7;
+  --md-default-fg-color: #22211f;
+  --md-default-fg-color--light: #5d5a54;
+  --md-default-fg-color--lighter: #8a867e;
+  --md-default-fg-color--lightest: var(--nav-rule);
+  --md-typeset-color: #22211f;
+  --md-typeset-a-color: var(--nav-accent);
+  --md-code-bg-color: var(--nav-surface);
+  --md-code-fg-color: #2c2a27;
+  --md-footer-bg-color: #22211f;
+}
+
+[data-md-color-scheme="slate"] {
+  --nav-ink: #1a1917;
+  --nav-accent: #6fbfb5;
+  --nav-accent-soft: #1f2b29;
+  --nav-rule: #2e2c29;
+  --nav-rule-soft: #252321;
+  --nav-surface: #1c1b19;
+  --md-hue: 40;
+  --md-primary-fg-color: #1a1917;
+  --md-primary-fg-color--light: #2a2825;
+  --md-primary-fg-color--dark: #121110;
+  --md-primary-bg-color: #e9e6e0;
+  --md-accent-fg-color: var(--nav-accent);
+  --md-default-bg-color: #131211;
+  --md-default-fg-color: #e9e6e0;
+  --md-default-fg-color--light: #b7b2a9;
+  --md-default-fg-color--lighter: #7f7a72;
+  --md-default-fg-color--lightest: var(--nav-rule);
+  --md-typeset-color: #e0ddd6;
+  --md-typeset-a-color: var(--nav-accent);
+  --md-code-bg-color: var(--nav-surface);
+  --md-code-fg-color: #dcd8d0;
+  --md-footer-bg-color: #0f0e0d;
+}
+
+/* Type: a heavy, tight title; sentence-case headings that do not leave a lone word on the last line. */
+.md-typeset h1 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--md-typeset-color);
+  text-wrap: balance;
+}
+.md-typeset h2 {
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+  margin-top: 2.2em;
+}
+.md-typeset h3,
+.md-typeset h4 {
+  font-weight: 600;
+  text-wrap: balance;
+}
+.md-typeset p,
+.md-typeset li,
+.md-typeset blockquote {
+  text-wrap: pretty;
+}
+.md-typeset p,
+.md-typeset ul,
+.md-typeset ol,
+.md-typeset blockquote {
+  max-width: var(--nav-measure);
+}
+
+/* Tables carry the results. Tabular figures, a light grid, no zebra, a header that reads as a header. */
+.md-typeset table:not([class]) {
+  font-variant-numeric: tabular-nums;
+  border: 0;
+  border-top: 1px solid var(--nav-rule);
+  border-bottom: 1px solid var(--nav-rule);
+  box-shadow: none;
+  font-size: 0.74rem;
+}
+.md-typeset table:not([class]) th {
+  background: var(--nav-surface);
+  font-weight: 600;
+  color: var(--md-default-fg-color--light);
+  border-bottom: 1px solid var(--nav-rule);
+}
+.md-typeset table:not([class]) td {
+  border-top: 1px solid var(--nav-rule-soft);
+}
+.md-typeset table:not([class]) tbody tr {
+  transition: background-color 120ms ease;
+}
+.md-typeset table:not([class]) tbody tr:hover {
+  background: var(--nav-accent-soft);
+}
+.md-typeset__scrollwrap {
+  margin: 1.2em 0;
+}
+
+/* Callouts: a rule and a tint, no icon colours of their own. */
+.md-typeset .admonition,
+.md-typeset details {
+  border: 0;
+  border-left: 3px solid var(--nav-accent);
+  border-radius: 2px;
+  box-shadow: none;
+  background: var(--nav-accent-soft);
+}
+.md-typeset .admonition > .admonition-title,
+.md-typeset details > summary {
+  background-color: transparent !important;
+  font-weight: 600;
+}
+.md-typeset .admonition-title::before,
+.md-typeset summary::before {
+  background-color: var(--nav-accent);
+}
+.md-typeset .admonition.warning {
+  border-left-color: #9a6a1c;
+  background: color-mix(in srgb, #9a6a1c 10%, var(--md-default-bg-color));
+}
+.md-typeset .admonition.warning .admonition-title::before {
+  background-color: #9a6a1c;
+}
+
+/* Figures: flat, with a hairline, and never wider than the column. */
+.md-typeset img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--nav-rule);
+  border-radius: 3px;
+  box-shadow: none;
+}
+/* Code: a hairline and a small radius on inline code, a larger radius on blocks. Mono is for code only. */
+.md-typeset code {
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--nav-rule-soft);
+  border-radius: 4px;
+  padding: 0 0.3em;
+}
+.md-typeset pre > code {
+  border: 1px solid var(--nav-rule-soft);
+  border-radius: 8px;
+}
+.md-typeset .highlight {
+  border-radius: 8px;
+}
+.md-typeset .highlight pre {
+  margin: 0;
+}
+
+/* Links and the keyboard. */
+.md-typeset a {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: color-mix(in srgb, var(--nav-accent) 45%, transparent);
+  transition: text-decoration-color 150ms ease, color 150ms ease;
+}
+.md-typeset a:hover {
+  text-decoration-color: currentColor;
+}
+.md-typeset .headerlink {
+  text-decoration: none;
+}
+:focus-visible {
+  outline: 2px solid var(--nav-accent);
+  outline-offset: 2px;
+}
+
+/* The header is a quiet bar, not a banner. */
+.md-header {
+  box-shadow: none;
+  border-bottom: 1px solid var(--nav-rule);
+}
+.md-tabs {
+  border-bottom: 1px solid var(--nav-rule);
+}
+.md-nav__link--active {
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@media print {
+  .md-typeset p,
+  .md-typeset ul,
+  .md-typeset ol {
+    max-width: none;
+  }
+}

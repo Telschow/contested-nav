@@ -22,7 +22,7 @@ a contested sensor cannot tell a momentary spike from a dead channel, and so
 cannot respond differently to them.
 
 ADR-0001 and ADR-0003 established that this project's failures are not
-smooth — a collapsed covariance, a correlated error the model cannot
+smooth: a collapsed covariance, a correlated error the model cannot
 represent. Smoothing is what the filter already does well. What it lacks is
 a way to say *this channel is lying* rather than *this number looks odd*.
 
@@ -42,7 +42,7 @@ a way to say *this channel is lying* rather than *this number looks odd*.
   `vision_trans`. They come from one transform, so a single `vision` channel
   would let the healthy half vouch for the broken half.
 - Keep `gate_sigma`. It is a second, independent bound, and the existing
-  rejection counters — which is how the ADR-0001 defect was found — keep
+  rejection counters (which is how the ADR-0001 defect was found) keep
   meaning what they meant.
 
 ### Why `alpha = 0.001` and not 0.01
@@ -52,7 +52,7 @@ operating point. Those two are the same number, and it is not achievable: a
 gate at 99% confidence rejects 1% of healthy updates by definition, because
 that is what the 1% means.
 
-Measured on this project's own fixture — 20 s runs, 12 visual seeds, 1212
+Measured on this project's own fixture: 20 s runs, 12 visual seeds, 1212
 healthy GNSS fixes:
 
 | `alpha` | Healthy fixes rejected | Broken configuration |
@@ -83,7 +83,7 @@ channel sharing a filter with a health monitor.
 - **The flagship benchmark case got worse, and this is the honest cost.**
   `outage_visual` ATE 3.428 m -> 5.059 m; `outage_visual_degraded_camera`
   2.545 m -> 3.339 m. In both, FDIR rejects the GNSS fixes that return at
-  `t = 20 s` after the denial — 51 of 75 in `outage_visual` — because the
+  `t = 20 s` after the denial (51 of 75 in `outage_visual`) because the
   filter ends the outage displaced and holding a collapsed covariance, and a
   gate that trusts that covariance reads a healthy 3 m fix as an outlier. The
   filter then dead-reckons the last 9 s instead of snapping back.
@@ -91,8 +91,8 @@ channel sharing a filter with a health monitor.
   The gate is doing exactly what it was specified to do. The specification
   assumes a calibrated `S`, and this filter does not have one in precisely
   the configurations this project exists to study. The mitigation is a
-  consistency monitor — an innovation-consistency statistic that detects the
-  miscalibration and widens the gate when the chi-square premise is void —
+  consistency monitor (an innovation-consistency statistic that detects the
+  miscalibration and widens the gate when the chi-square premise is void)
   not a different threshold. Tracked as blocker B4 and pinned by
   `test_fdir_throws_away_the_absolute_fixes_that_would_rescue_a_displaced_filter`,
   so the cost cannot be quietly forgotten or quietly re-measured as a

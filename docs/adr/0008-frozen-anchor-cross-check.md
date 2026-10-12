@@ -59,7 +59,7 @@ cross-check never runs. Measured across a truthful return and 5 m, 12 m, 20 m,
 22 m, 40 m and 100 m of offset: **zero reachable epochs.**
 
 On the 22 m case that motivated ADR-0007 the branch is entered once, with
-`d2 = 217.3` — under the 225 threshold — and the grant is applied.
+`d2 = 217.3`, under the 225 threshold, and the grant is applied.
 
 This is the same root cause the ADR-0007 xfails describe from the other side.
 One grant, then permanent adoption, means there is no second grant to count. The
@@ -76,7 +76,7 @@ that the NIS monitor's one-grant-per-episode policy never produces.
   conjunct and cross-check on any accepted fix after a grant. The arithmetic
   and the threshold are already pinned. Which of the two is correct is a
   security decision, not a mechanical one, and is tracked as N1 in
-  `docs/audit/06-revised-roadmap.md` — it must not be made as a drive-by.
+  `docs/audit/06-revised-roadmap.md`: it must not be made as a drive-by.
 - **`test_the_guard_is_never_satisfied_during_a_sustained_offset_spoof` is
   `strict=True` on purpose.** It asserts the gap is still open, so the day the
   guard is fixed the suite fails loudly and forces the ADR-0007 xfails, the
@@ -85,7 +85,7 @@ that the NIS monitor's one-grant-per-episode policy never produces.
   mode this project is built to avoid.
 - **The threshold's real resolution is 0.5 m**, between 12 m and 12.5 m, at
   `d2` 87.3 and 236.7. "About 15 sigma" is not the same claim as 15 sigma, and
-  the check's reach — roughly 12 m of displacement in this configuration — is
+  the check's reach (roughly 12 m of displacement in this configuration) is
   narrower than the modest-spoof band ADR-0007 says is the hard case. Even
   reachable, it would not have closed the 1–2 m case.
 
