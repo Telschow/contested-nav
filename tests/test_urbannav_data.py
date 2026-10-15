@@ -284,3 +284,156 @@ def test_the_converted_positions_move_at_the_speed_the_reference_reports(real):
     v_enu = np.linalg.norm((e[2:] - e[:-2]) / (t[2:] - t[:-2])[:, None], axis=1)
     v_body = np.linalg.norm(real.reference.vel_body[1:-1], axis=1)
     assert np.median(np.abs(v_enu - v_body)) < 0.1
+
+
+# ----------------------------------------------------------------------- GNSS
+
+
+def _nmea(body: str) -> str:
+    x = 0
+    for ch in body:
+        x ^= ord(ch)
+    return f"${body}*{x:02X}"
+
+
+def _gga(tod: str, quality: int = 2, lat: str = "2218.12774,N", lon: str = "11410.82767,E", sats: int = 12) -> str:
+    return _nmea(f"GNGGA,{tod},{lat},{lon},{quality},{sats:02d},0.58,0.4,M,-1.6,M,,0000")
+
+
+def _no_fix(tod: str) -> str:
+    return _nmea(f"GNGGA,{tod},,,,,0,00,99.99,,,,,,")
+
+
+RMC = _nmea("GNRMC,072028.00,A,2218.12774,N,11410.82767,E,1.247,153.43,180521,,,D,V")
+
+
+def write_nmea(path: Path, sentences: list[str]) -> Path:
+    path.write_text("\r\n".join(sentences) + "\r\n", encoding="ascii")
+    return path
+
+
+def test_gga_fixes_are_read_in_utc_with_the_date_from_rmc(tmp_path):
+    p = write_nmea(tmp_path / "f.nmea", [RMC, _gga("072028.00"), _gga("072029.00")])
+    fx = ud.read_gga(p)
+    assert fx.utc_s.tolist() == [1621322428.0, 1621322429.0]
+    assert fx.lat_deg[0] == pytest.approx(22 + 18.12774 / 60)
+    assert fx.lon_deg[0] == pytest.approx(114 + 10.82767 / 60)
+    assert fx.height_m[0] == pytest.approx(0.4 - 1.6)
+    assert fx.quality.tolist() == [2, 2] and fx.num_sats.tolist() == [12, 12]
+
+
+def test_a_sentence_with_no_position_is_kept_as_nan(tmp_path):
+    fx = ud.read_gga(write_nmea(tmp_path / "f.nmea", [RMC, _gga("072028.00"), _no_fix("072029.00")]))
+    assert fx.quality.tolist() == [2, 0]
+    assert np.isnan(fx.lat_deg[1]) and np.isnan(fx.lon_deg[1]) and np.isnan(fx.height_m[1])
+
+
+def test_southern_western_hemispheres_are_negative(tmp_path):
+    fx = ud.read_gga(write_nmea(tmp_path / "f.nmea", [RMC, _gga("072028.00", lat="3352.12800,S", lon="07040.15800,W")]))
+    assert fx.lat_deg[0] == pytest.approx(-(33 + 52.128 / 60))
+    assert fx.lon_deg[0] == pytest.approx(-(70 + 40.158 / 60))
+
+
+def test_bad_checksums_and_malformed_sentences_are_dropped_and_counted(tmp_path):
+    bad = _gga("072029.00")[:-2] + "00"
+    short = _nmea("GNGGA,072030.00,2218.1,N")
+    fx = ud.read_gga(write_nmea(tmp_path / "f.nmea", [RMC, _gga("072028.00"), bad, short, _gga("072031.00")]))
+    assert fx.utc_s.tolist() == [1621322428.0, 1621322431.0]
+    assert fx.skipped == 2
+
+
+def test_the_clock_passing_midnight_adds_a_day(tmp_path):
+    rmc = _nmea("GNRMC,235958.00,A,2218.12774,N,11410.82767,E,1.2,153.43,180521,,,D,V")
+    fx = ud.read_gga(write_nmea(tmp_path / "f.nmea", [rmc, _gga("235959.00"), _gga("000000.00"), _gga("000001.00")]))
+    assert np.allclose(np.diff(fx.utc_s), 1.0)
+
+
+def test_without_a_date_the_fixes_cannot_be_placed_and_a_page_is_rejected(tmp_path):
+    with pytest.raises(SequenceError, match="RMC"):
+        ud.read_gga(write_nmea(tmp_path / "f.nmea", [_gga("072028.00")]))
+    page = tmp_path / "p.nmea"
+    page.write_text("<!DOCTYPE html>\n<html>\n", encoding="ascii")
+    with pytest.raises(SequenceError):
+        ud.read_gga(page)
+
+
+def _fixes(flags: list[int], times: list[float] | None = None) -> ud.GgaFixes:
+    n = len(flags)
+    t = np.arange(n, dtype=float) if times is None else np.array(times)
+    q = np.array(flags)
+    pos = np.where(q > 0, 22.3, np.nan)
+    return ud.GgaFixes(t, pos, np.where(q > 0, 114.2, np.nan), np.zeros(n), q, np.full(n, 12), np.full(n, 0.6))
+
+
+def test_one_run_of_denied_epochs_is_one_outage_that_ends_at_the_next_valid_epoch():
+    assert ud.outage_intervals(_fixes([2, 2, 0, 0, 0, 2, 2])) == [(2.0, 5.0)]
+
+
+def test_an_outage_covers_its_start_and_not_its_end():
+    start, end = ud.outage_intervals(_fixes([2, 0, 0, 2]))[0]
+    t = np.arange(4.0)
+    assert [(start <= x < end) for x in t] == [False, True, True, False]
+
+
+def test_a_run_that_reaches_the_end_of_the_file_ends_one_spacing_later():
+    assert ud.outage_intervals(_fixes([2, 2, 0, 0])) == [(2.0, 4.0)]
+
+
+def test_a_position_with_quality_zero_and_a_missing_position_with_quality_two_are_both_denied():
+    fx = _fixes([2, 2, 2, 2])
+    fx.quality[1] = 0
+    fx.lat_deg[2] = np.nan
+    assert ud.outage_intervals(fx) == [(1.0, 3.0)]
+
+
+def test_time_with_no_epoch_is_denied():
+    fx = _fixes([2, 2, 2, 2], times=[0.0, 1.0, 2.0, 7.0])
+    assert ud.outage_intervals(fx) == [(3.0, 7.0)]
+
+
+def test_a_gap_next_to_a_denied_run_merges_into_one_outage():
+    fx = _fixes([2, 0, 2, 2], times=[0.0, 1.0, 2.0, 6.0])
+    assert ud.outage_intervals(fx) == [(1.0, 2.0), (3.0, 6.0)]
+    fx = _fixes([2, 0, 0, 2], times=[0.0, 1.0, 2.0, 6.0])
+    assert ud.outage_intervals(fx) == [(1.0, 6.0)]
+
+
+def test_two_separate_runs_are_two_outages_and_a_clean_stream_has_none():
+    assert ud.outage_intervals(_fixes([2, 0, 2, 0, 2])) == [(1.0, 2.0), (3.0, 4.0)]
+    assert ud.outage_intervals(_fixes([2, 2, 2, 2])) == []
+
+
+def test_the_rule_reads_only_the_fix_flag():
+    flags = [2, 2, 0, 0, 2, 2]
+    a = _fixes(flags)
+    b = _fixes(flags)
+    b.num_sats[:] = 3
+    b.hdop[:] = 50.0
+    assert ud.outage_intervals(a) == ud.outage_intervals(b)
+
+
+def test_a_missing_nmea_file_says_where_it_goes(tmp_path):
+    with pytest.raises(SequenceError, match="copy it here"):
+        ud.load_gga(tmp_path, SEQ)
+    with pytest.raises(SequenceError, match="no NMEA file"):
+        ud.load_gga(tmp_path, "nope")
+
+
+@pytest.fixture(scope="module")
+def real_fixes():
+    if not (FETCHED / SEQ / ud.NMEA_FILES[SEQ]).is_file():
+        pytest.skip("the tunnel1 NMEA file is not in data/raw/urbannav/tunnel1/ (from the publisher's folder download)")
+    return ud.load_gga(FETCHED, SEQ)
+
+
+def test_the_real_receiver_epochs_sit_on_the_reference_seconds(real_fixes, real):
+    assert real_fixes.skipped == 0
+    assert np.all(np.isin(real_fixes.utc_s, real.reference.utc_s))
+
+
+def test_the_real_tunnel_is_one_outage_of_minutes_and_not_at_the_edges(real_fixes, real):
+    spans = ud.outage_intervals(real_fixes)
+    assert len(spans) == 1
+    start, end = spans[0]
+    assert 60.0 < end - start < 300.0
+    assert real.reference.utc_s[0] + 60.0 < start and end < real.reference.utc_s[-1] - 30.0

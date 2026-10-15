@@ -13,6 +13,10 @@ What this module does with the two files, and what it leaves alone:
   comes from ``field.header.stamp`` (the sensor stamp), not ``%time`` (the logging time). The accelerometer and
   gyroscope values are passed on as recorded: the accelerometer reads about ``+g`` on z at rest, so the sensor
   frame is z-up, as for EuRoC and TUM VI.
+* **The GNSS fixes** come from the NMEA ``GGA`` sentences of the u-blox F9P, which carry the receiver's own
+  position and fix quality at 1 Hz. The NovAtel and F9P RINEX files hold raw observations only, and turning them
+  into positions needs navigation files that the folder does not contain. :func:`outage_intervals` defines the
+  GNSS outages from the fix flag alone. See its docstring for the rule.
 * **One clock is assumed.** The reference time is Unix seconds and so are the IMU stamps. The two files are placed
   on one clock by subtracting the first IMU stamp from both. Whether the two clocks agree to better than the 1 Hz
   reference spacing is not measured here.
@@ -24,6 +28,7 @@ Nothing is committed (constraint S2). Only numpy is used (constraint S1).
 
 from __future__ import annotations
 
+import calendar
 import csv
 import math
 from dataclasses import dataclass, field
@@ -42,6 +47,9 @@ HEADER_ROWS = 2
 REFERENCE_TOKENS = 20
 #: The token each quantity starts at in a reference row.
 _UTC, _WEEK, _TOW, _LAT, _LON, _HEIGHT, _VEL, _ACC, _RPY, _QUALITY = 0, 1, 2, 3, 6, 9, 10, 13, 16, 19
+
+#: The NMEA file of each sequence, in ``<root>/<seq>/``. It is inside the publisher's folder download.
+NMEA_FILES = {"tunnel1": "20210518.tunnel.cht.ublox.f9p.nmea"}
 
 IMU_STAMP = "field.header.stamp"
 IMU_GYRO = tuple(f"field.angular_velocity.{a}" for a in "xyz")
@@ -66,6 +74,23 @@ class Reference:
     acc_body: np.ndarray  # (N, 3) m/s^2
     rpy_deg: np.ndarray  # (N, 3) roll, pitch, heading
     quality: np.ndarray  # (N,) int, the publisher's code
+
+    def __len__(self) -> int:
+        return int(self.utc_s.shape[0])
+
+
+@dataclass
+class GgaFixes:
+    """The position fixes of a receiver, one row per ``GGA`` sentence. Rows without a position hold NaN."""
+
+    utc_s: np.ndarray  # (N,) Unix seconds
+    lat_deg: np.ndarray  # (N,)
+    lon_deg: np.ndarray  # (N,)
+    height_m: np.ndarray  # (N,) ellipsoidal: altitude above mean sea level plus the geoid separation
+    quality: np.ndarray  # (N,) int, 0 is no fix
+    num_sats: np.ndarray  # (N,) int
+    hdop: np.ndarray  # (N,)
+    skipped: int = 0  # sentences dropped for a bad checksum or a malformed field
 
     def __len__(self) -> int:
         return int(self.utc_s.shape[0])
@@ -243,3 +268,146 @@ def load_sequence(root: str | Path, seq: str) -> UrbanNavSequence:
         sha256={ref_name: sha256_of(ref_path), imu_name: sha256_of(imu_path)},
         notes=notes,
     )
+
+
+# ----------------------------------------------------------------------- GNSS
+
+
+def _checksum_ok(line: str) -> bool:
+    body, star, tail = line[1:].partition("*")
+    if not star or len(tail) < 2:
+        return False
+    x = 0
+    for ch in body:
+        x ^= ord(ch)
+    try:
+        return x == int(tail[:2], 16)
+    except ValueError:
+        return False
+
+
+def _ddmm(value: str, hemisphere: str, degree_digits: int, positive: str) -> float:
+    deg, minutes = int(value[:degree_digits]), float(value[degree_digits:])
+    if not 0.0 <= minutes < 60.0:
+        raise ValueError("minutes out of range")
+    return (deg + minutes / 60.0) * (1.0 if hemisphere == positive else -1.0)
+
+
+def read_gga(path: str | Path) -> GgaFixes:
+    """The ``GGA`` fixes of an NMEA file, with the date taken from its first ``RMC`` sentence.
+
+    A sentence with a bad checksum or a malformed field is dropped and counted in ``skipped``. A sentence with no
+    position (an empty field, as a receiver writes with no fix) is kept with NaN so that the outage is visible.
+    """
+    try:
+        lines = Path(path).read_text(encoding="ascii", errors="replace").splitlines()
+    except OSError as exc:
+        raise SequenceError(f"{path}: cannot read ({exc})") from exc
+    midnight: float | None = None
+    for raw in lines:
+        line = raw.strip()
+        if line[3:6] == "RMC" and _checksum_ok(line):
+            f = line[1 : line.index("*")].split(",")
+            if len(f) > 9 and len(f[9]) == 6 and f[9].isdigit():
+                day, month, year = int(f[9][0:2]), int(f[9][2:4]), 2000 + int(f[9][4:6])
+                midnight = float(calendar.timegm((year, month, day, 0, 0, 0)))
+                break
+    if midnight is None:
+        raise SequenceError(f"{path}: no valid RMC sentence with a date, so the fixes cannot be placed in UTC")
+    out: list[tuple[float, float, float, float, int, int, float]] = []
+    skipped, day_offset, previous = 0, 0.0, -1.0
+    for raw in lines:
+        line = raw.strip()
+        if line[3:6] != "GGA":
+            continue
+        if not _checksum_ok(line):
+            skipped += 1
+            continue
+        f = line[1 : line.index("*")].split(",")
+        try:
+            tod = int(f[1][0:2]) * 3600 + int(f[1][2:4]) * 60 + float(f[1][4:])
+            quality, sats = int(f[6] or 0), int(f[7] or 0)
+            hdop = float(f[8]) if f[8] else math.nan
+            if f[2] and f[4]:
+                lat, lon = _ddmm(f[2], f[3], 2, "N"), _ddmm(f[4], f[5], 3, "E")
+                height = float(f[9]) + float(f[11] or 0.0)
+            else:
+                lat = lon = height = math.nan
+        except (ValueError, IndexError):
+            skipped += 1
+            continue
+        if tod < previous:
+            day_offset += 86400.0  # the clock passed midnight
+        previous = tod
+        out.append((midnight + day_offset + tod, lat, lon, height, quality, sats, hdop))
+    if not out:
+        raise SequenceError(f"{path}: no valid GGA sentence")
+    a = np.array(out)
+    return GgaFixes(
+        utc_s=a[:, 0],
+        lat_deg=a[:, 1],
+        lon_deg=a[:, 2],
+        height_m=a[:, 3],
+        quality=a[:, 4].astype(int),
+        num_sats=a[:, 5].astype(int),
+        hdop=a[:, 6],
+        skipped=skipped,
+    )
+
+
+GAP_FACTOR = 1.5
+
+
+def outage_intervals(fixes: GgaFixes) -> list[tuple[float, float]]:
+    """GNSS outages as ``(start, end)`` in Unix seconds, with the repository's meaning ``start <= t < end``.
+
+    The rule, fixed before any filter was run on this data and not changed since:
+
+    * An epoch is **denied** when its fix quality is 0 or it carries no position.
+    * Time with **no epoch at all** is denied: a gap longer than 1.5 times the median epoch spacing, from the
+      expected next epoch to the next epoch that exists.
+    * An outage is a maximal denied stretch. It starts at its first denied epoch and ends at the first valid epoch
+      after it (or one spacing after the last epoch, when the stretch reaches the end of the file).
+
+    The rule reads only the receiver's own flag. It does not look at the reference, at the satellite count, at the
+    dilution of precision, or at how wrong a fix that is marked valid turns out to be. Fixes marked valid can be
+    badly wrong, as in the seconds before a receiver gives up, and the filter's gate is what has to catch them.
+    """
+    t = fixes.utc_s
+    if t.shape[0] < 2:
+        return []
+    step = float(np.median(np.diff(t)))
+    denied = (fixes.quality == 0) | ~np.isfinite(fixes.lat_deg) | ~np.isfinite(fixes.lon_deg)
+    spans: list[tuple[float, float]] = []
+    start: float | None = None
+    for i in range(t.shape[0]):
+        if denied[i] and start is None:
+            start = float(t[i])
+        elif not denied[i] and start is not None:
+            spans.append((start, float(t[i])))
+            start = None
+    if start is not None:
+        spans.append((start, float(t[-1]) + step))
+    for i in range(t.shape[0] - 1):
+        if t[i + 1] - t[i] > GAP_FACTOR * step:
+            spans.append((float(t[i]) + step, float(t[i + 1])))
+    spans.sort()
+    merged: list[tuple[float, float]] = []
+    for a, b in spans:
+        if merged and a <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], b))
+        else:
+            merged.append((a, b))
+    return merged
+
+
+def load_gga(root: str | Path, seq: str) -> GgaFixes:
+    """Read the NMEA file of ``seq`` from ``<root>/<seq>/``."""
+    if seq not in NMEA_FILES:
+        raise SequenceError(f"no NMEA file is known for sequence {seq!r}; known: {', '.join(NMEA_FILES)}")
+    path = Path(root) / seq / NMEA_FILES[seq]
+    if not path.is_file():
+        raise SequenceError(
+            f"{path} is missing. It is inside the publisher's folder download (the GNSS RINEX link); copy it here."
+        )
+    return read_gga(path)
