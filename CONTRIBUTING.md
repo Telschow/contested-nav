@@ -12,6 +12,9 @@ pytest
 local gates match CI. If you use `uv`, `uv run pytest` works from a clean
 checkout.
 
+There is no `uv.lock`. CI installs from `pyproject.toml`, so a lock file would be
+unused and go stale. It was removed on that basis (ADR-0011).
+
 No install step is strictly required to run the tests: `pyproject.toml` puts
 `src` on `pythonpath` for pytest, so a fresh clone needs only `pytest`.
 
