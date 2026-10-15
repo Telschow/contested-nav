@@ -60,36 +60,27 @@ with -- turns the two into the same thing: the filter is handed its own output
 and averages it as though it were fresh independent evidence. The covariance
 collapses, and once it has collapsed the filter is certain and wrong.
 
-Measured on the 20 s synthetic fixture (200 Hz inertial, 20 Hz vision at
-0.05 deg and 1 cm, 5 Hz GNSS at 0.1 m, 2 mm/s^2 accel noise density, 0.01 m/s
-gyro noise density), reported as mean squared Mahalanobis distance (NEES, where
-a calibrated 3D filter reports 3.0):
+Measured figures for the failing configuration, the FDIR-gated one and the
+anchor-as-a-state fix are in ``docs/results.md``, generated from the benchmark.
+They are not quoted here, because a typed copy goes stale.
 
-    configuration                  GNSS used   error    1-sigma    NEES
-    GNSS only (control)               101/101   0.039 m   0.073 m    2.8
-    vision, anchor folded into R       55/101  16.11 m    0.037 m    5.1e4
-    vision, anchor folded into R + FDIR 27/101  4.69 m    0.037 m    1.5e4
-    vision, anchor as a state          101/101   0.033 m   0.068 m    3.2
-
-The middle row is the failure in one line: the claimed 1-sigma is 3.7 cm while
-the error is 16 m, and 46 of 101 absolute GNSS fixes are discarded as outliers by
-the innovation gate. A system monitoring only its own gating counters would see
+The failure in one line: the claimed 1-sigma is centimetres while the error is
+metres, and the innovation gate discards a large share of the absolute GNSS
+fixes as outliers. A system monitoring only its own gating counters would see
 this as "vision is noisy", when the actual fault is that vision has silenced the
 GNSS.
 
-The third row is that same defect with the FDIR gate active (ADR-0005), and it
-is the clearest statement of what the gate can and cannot do here. FDIR rejects
-74 of 101 fixes instead of 46, which looks like an improvement -- the error does
-drop to 4.69 m. It is not one. Three quarters of the absolute fixes are now gone,
-and the claimed 1-sigma is unchanged at 3.7 cm, so the NEES only falls from
-5.1e4 to 1.5e4. The gate is applying a chi-square test to an innovation
-covariance that the defect has already made wrong, and a stricter threshold on a
-wrong denominator buys a smaller number rather than a more correct filter. The
-run that the regression test measures is the FDIR-off one, on purpose: FDIR
-partially masks this defect, and a test that measured the masked version would
-be measuring the mitigation rather than the fault.
+With the FDIR gate active (ADR-0005) the error drops, which looks like an
+improvement. It is not one. More of the absolute fixes are discarded, and the
+claimed 1-sigma is unchanged, so the NEES stays far from calibrated. The gate is
+applying a chi-square test to an innovation covariance that the defect has
+already made wrong, and a stricter threshold on a wrong denominator buys a
+smaller number rather than a more correct filter. The run that the regression
+test measures is the FDIR-off one, on purpose: FDIR partially masks this defect,
+and a test that measured the masked version would be measuring the mitigation
+rather than the fault.
 
-The fix is the last row, and it takes two things that are easy to get wrong:
+The fix is to carry the anchor as a state, and it takes two things that are easy to get wrong:
 
 * The anchor error is carried as six estimated states (``c_p``, ``c_t``) rather
   than folded into the innovation covariance. An error common to every visual
