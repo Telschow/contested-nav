@@ -292,3 +292,85 @@ def test_confirm_sweep_runs_the_fixed_design(tmp_path, monkeypatch):
     ee.write_fixture(tmp_path, "MH_01_easy", duration_s=80.0, seed=1)
     got = fc.confirm_sweep("euroc", tmp_path)
     assert [(r["kind"], r["seed"]) for r in got] == [("none", 2), ("multipath", 3)]
+
+
+# ------------------------------------------------------------ the calibrated stage 1 rule
+
+
+def test_the_bound_is_a_stated_level_of_a_fitted_normal():
+    rng = np.random.default_rng(3)
+    controls = np.column_stack([np.exp(rng.normal(0.0, 0.1, 400)), rng.normal(0.05, 0.05, 400)])
+    feats = ("nis", "ac1")
+    t = fc.bound_threshold(controls, feats, alpha=0.01)
+    # about 1% of fresh draws from the same law exceed it, per feature
+    fresh = np.column_stack([np.exp(rng.normal(0.0, 0.1, 20000)), rng.normal(0.05, 0.05, 20000)])
+    rates = (fresh > t).mean(axis=0)
+    assert np.all(rates < 0.03) and np.all(rates > 0.002)
+    # a smaller level is a higher bound
+    assert np.all(fc.bound_threshold(controls, feats, alpha=0.001) > t)
+
+
+def test_the_bound_stays_positive_on_the_log_scale_and_ac1_can_be_negative():
+    controls = np.array([[0.5, -0.1], [0.6, -0.2], [0.7, -0.15], [0.55, -0.05]])
+    t = fc.bound_threshold(controls, ("nis", "ac1"))
+    assert t[0] > 0.0 and t[1] > controls[:, 1].max()
+
+
+def test_an_unknown_stage_one_rule_is_rejected(rows):
+    with pytest.raises(ValueError, match="stage1"):
+        fc.fit_detector(rows, fc.FEATURES, "bogus")
+
+
+def test_the_first_rule_is_still_the_default(rows):
+    default, explicit = fc.fit_detector(rows), fc.fit_detector(rows, fc.FEATURES, "max")
+    assert default["stage1"] == "max"
+    assert np.array_equal(default["threshold"], explicit["threshold"])
+
+
+def test_the_upper_limit_of_a_rate():
+    assert fc.upper_limit(0, 68) == pytest.approx(1.0 - 0.05 ** (1 / 68), abs=1e-6)
+    assert fc.upper_limit(0, 68) < fc.upper_limit(1, 68) < fc.upper_limit(7, 68) < 1.0
+    assert fc.upper_limit(7, 68) > 7 / 68
+    assert fc.upper_limit(68, 68) == 1.0
+
+
+def test_on_unseen_controls_the_bound_beats_the_maximum_and_is_still_not_zero(rows):
+    unseen = fc.rows_from_csv(CONFIRM_CSV)
+
+    def alarms(rule):
+        sc = fc.frozen_predictions(rows, unseen, rule)
+        ctrl = [r for r in sc if r["cls"] == "control"]
+        return sum(r["predicted"] != "control" for r in ctrl), len(ctrl)
+
+    k_max, n = alarms("max")
+    k_bound, _ = alarms("bound")
+    assert 0 < k_bound < k_max
+    assert fc.upper_limit(k_bound, n) > 0.05
+
+
+def test_the_remaining_alarms_come_from_two_features_and_multipath_is_untouched(rows):
+    unseen = fc.rows_from_csv(CONFIRM_CSV)
+    model = fc.fit_detector(rows, fc.FEATURES, "bound")
+    x, y = fc._matrix(unseen)
+    fired = (x[y == 0] > model["threshold"]).any(axis=0)
+    assert {f for f, hit in zip(fc.FEATURES, fired, strict=True) if hit} == {"drift_m_s", "axis_conc"}
+    sc = fc.frozen_predictions(rows, unseen, "bound")
+    mp = [r for r in sc if r["cls"] == "multipath"]
+    assert all(r["predicted"] == "multipath" for r in mp)
+
+
+def test_the_bound_costs_detection(rows):
+    unseen = fc.rows_from_csv(CONFIRM_CSV)
+    for cls in ("spoofing", "degradation"):
+
+        def seen(rule, cls=cls):
+            sel = [r for r in fc.frozen_predictions(rows, unseen, rule) if r["cls"] == cls]
+            return sum(r["predicted"] != "control" for r in sel) / len(sel)
+
+        assert seen("bound") < seen("max")
+
+
+def test_the_track_a_exit_test_is_still_not_met_with_the_bound(rows):
+    sc = fc.with_predictions(rows, fc.FEATURES, "bound")
+    recalls = [_share(sc, lambda r, c=c: r["cls"] == c, lambda r, c=c: c) for c in fc.FAULT_CLASSES]
+    assert min(recalls) < 0.95

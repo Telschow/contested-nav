@@ -29,3 +29,4 @@ what it cost, and what was rejected.
 | [ADR-0022](0022-multipath-signature.md) | A multipath signature on the GNSS innovations | accepted |
 | [ADR-0023](0023-clone-against-a-measured-front-end.md) | The clone against a measured front end | accepted |
 | [ADR-0024](0024-assumed-noise-for-the-opt-in-clone.md) | The assumed visual noise of the opt-in clone | accepted |
+| [ADR-0025](0025-calibrated-stage-one-for-fault-detection.md) | A calibrated stage 1 for fault detection | proposed |
