@@ -118,6 +118,7 @@ nav:
       - A real front end and the clone: real_front_end.md
       - EuRoC, recorded IMU: euroc.md
       - TUM VI, recorded IMU: tumvi.md
+      - UrbanNav, real GNSS outages: urbannav.md
       - Performance: PERFORMANCE.md
       - Demo: demo.md
   - Reference:
