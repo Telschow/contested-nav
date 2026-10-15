@@ -27,7 +27,7 @@ TUM VI data path was M. No hours are quoted, because none were recorded.
 | WB-6 | Remaining P5-09 and P5-12 | Baseline records and the pull-request clean-up | None | S | Stated in the roadmap item. |
 | WB-7 | UrbanNav | A licence answer, then a third dataset | Issue 94 | M | The licence permits the use, or the dataset is dropped. |
 
-WB-1 is done: the [vision-ramp study](../vision_ramp.md) puts the floor at about 2 m/s for independent visual errors. WB-2 has a feasibility result: the [fault classification study](../fault_classification.md) separates multipath, calls spoofing in about three quarters of runs and has a control false-alarm rate of 35% on unseen runs, so the exit test is not met and the package stays open. WB-6 is done: the baseline records are dated snapshots by decision, and no housekeeping item is open. WB-4 is done: option 3 was taken and B4 is resolved (R5 in `CONSTRAINTS.md`). WB-7 is on hold.
+WB-1 is done: the [vision-ramp study](../vision_ramp.md) puts the floor at about 2 m/s for independent visual errors. WB-2 has a feasibility result: the [fault classification study](../fault_classification.md) separates multipath, calls spoofing in about three quarters of runs and has a control false-alarm rate of 35% on unseen runs, so the exit test is not met and the package stays open. WB-6 is done: the baseline records are dated snapshots by decision, and no housekeeping item is open. WB-4 is done: option 3 was taken and B4 is resolved (R5 in `CONSTRAINTS.md`). WB-7 is unblocked on the licence question: see section 5.
 
 ## 3. B4: the published TUM VI estimate
 
@@ -56,4 +56,32 @@ for the licence hint. Neither is a reproduction.
 3. WB-2.
 4. WB-5 and WB-3 only after a decision on S1 and on the front end.
 
-WB-6 can be done in any gap. WB-7 waits for the licence.
+WB-6 can be done in any gap. WB-7 can start once the checks in section 5 are done.
+
+## 5. WB-7: the UrbanNav reply
+
+The UrbanNav authors answered issue 94 by email. What they said, as a reported statement and not yet checked
+against the published files:
+
+- The data (ROS bags, RINEX, IMU, ground truth) and the repository code and documentation are MIT. They added a
+  LICENSE file and updated the README licence section.
+- Publishing aggregate results only is fine. A citation to Hsu et al. (2023), NAVIGATION, is requested as a
+  scholarly courtesy, not a licence condition.
+- Candidate sequences: UrbanNav-HK-Tunnel-1 (sea tunnel, real GNSS losses) and UrbanNav-HK-Deep-Urban-1 (small
+  tunnels, dense streets). Outage intervals are not annotated, so they must be found from the receiver's
+  observations.
+- Reference: NovAtel SPAN-CPT solution post-processed with Inertial Explorer, at 1 Hz, as raw text files or in the
+  bags on `/novatel_data/inspvax`. Positions are degrees-minutes-seconds and need a local ENU conversion.
+
+Before WB-7 starts:
+
+1. Open the LICENSE file in the UrbanNav repository and confirm it matches the email. The email is not the licence.
+2. Keep constraint S2: fetch the files locally, commit aggregate results only. Add a fetch path in the style of
+   `navkit tumvi fetch`, with checksums.
+3. Reading `/novatel_data/inspvax` needs a ROS bag reader. That may break S1, so prefer the raw text files.
+4. A 1 Hz reference is coarse next to the IMU rate. State how it is interpolated.
+5. Derive outage intervals from the GNSS observations by a stated rule, and write the rule down before looking at
+   the filter results.
+6. Add an ADR for the dataset choice. The maintainer writes the decision section.
+
+The exit test in the table is met on the licence, if step 1 confirms it. The package stays open until a run exists.
