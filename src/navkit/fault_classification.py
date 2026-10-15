@@ -19,9 +19,11 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import os
 import sys
 from pathlib import Path
+from statistics import NormalDist
 from typing import Any
 
 import numpy as np
@@ -81,6 +83,15 @@ LONG_WINDOW_S = 30.0
 EDGE_S = 5.0
 CSV_COLUMNS = ("dataset", "sequence", "seed", "cls", "kind", "level", *FEATURES)
 TREE_DEPTH = 3
+#: Stage 1 rules. ``max`` is the first one: the largest value of each feature on the training controls.
+#: ``bound`` is a one-sided upper bound from a distribution fitted to those controls, at ``ALPHA_PER_FEATURE`` per
+#: feature. 0.005 is a total budget of 5% shared over the ten features (Bonferroni), fixed before the unseen controls
+#: were scored. It is not a tuned value.
+STAGE1_RULES = ("max", "bound")
+ALPHA_PER_FEATURE = 0.005
+FA_CONFIDENCE = 0.95
+#: Every feature is positive except the lag-1 autocorrelation, so the others are fitted on the log scale.
+LINEAR_FEATURES = ("ac1",)
 
 
 def features(inn: list[Any], bias: list[Any], onset_abs: float) -> dict[str, float] | None:
@@ -228,14 +239,35 @@ def _balanced(y: np.ndarray, k: int) -> np.ndarray:
     return 1.0 / counts[y]
 
 
-def fit_detector(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES) -> dict[str, Any]:
-    """Stage 1 thresholds (the largest value of each feature on the controls) and the stage 2 tree."""
+def bound_threshold(controls: np.ndarray, feats: tuple[str, ...], alpha: float = ALPHA_PER_FEATURE) -> np.ndarray:
+    """A one-sided upper bound per feature from a normal fitted to the controls (log scale for positive features).
+
+    With 34 controls the largest value is a poor estimate of a tail: it is exceeded by about 1 in 35 unseen runs per
+    feature, and ten features give ten chances. A fitted bound has a stated level per feature. The spread is widened by
+    ``sqrt(1 + 1/n)`` for the uncertainty of the fitted mean.
+    """
+    z = NormalDist().inv_cdf(1.0 - alpha)
+    out = np.empty(controls.shape[1])
+    for i, name in enumerate(feats):
+        log = name not in LINEAR_FEATURES
+        v = np.log(controls[:, i]) if log else controls[:, i]
+        n = len(v)
+        edge = v.mean() + z * v.std(ddof=1) * math.sqrt(1.0 + 1.0 / n)
+        out[i] = math.exp(edge) if log else edge
+    return out
+
+
+def fit_detector(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES, stage1: str = "max") -> dict[str, Any]:
+    """Stage 1 thresholds (see ``STAGE1_RULES``) and the stage 2 tree."""
+    if stage1 not in STAGE1_RULES:
+        raise ValueError(f"stage1 must be one of {STAGE1_RULES}, not {stage1!r}")
     x, y = _matrix(rows, feats)
     ctrl = y == 0
     faults = ~ctrl
     yf = y[faults] - 1
     tree = fit_tree(x[faults], yf, _balanced(yf, len(FAULT_CLASSES)), len(FAULT_CLASSES))
-    return {"threshold": x[ctrl].max(axis=0), "tree": tree, "features": feats}
+    threshold = x[ctrl].max(axis=0) if stage1 == "max" else bound_threshold(x[ctrl], feats)
+    return {"threshold": threshold, "tree": tree, "features": feats, "stage1": stage1}
 
 
 def call(model: dict[str, Any], row: np.ndarray) -> str:
@@ -244,28 +276,32 @@ def call(model: dict[str, Any], row: np.ndarray) -> str:
     return FAULT_CLASSES[predict(model["tree"], row)]
 
 
-def cross_validate(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES) -> list[str]:
+def cross_validate(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES, stage1: str = "max") -> list[str]:
     """The called class per row, each from a model fitted without that row's sequence."""
     x, _ = _matrix(rows, feats)
     seqs = np.array([f"{r['dataset']}/{r['sequence']}" for r in rows])
     out = [""] * len(rows)
     for s in np.unique(seqs):
         test = seqs == s
-        model = fit_detector([r for r, t in zip(rows, test, strict=True) if not t], feats)
+        model = fit_detector([r for r, t in zip(rows, test, strict=True) if not t], feats, stage1)
         for i in np.flatnonzero(test):
             out[i] = call(model, x[i])
     return out
 
 
-def frozen_predictions(train: list[dict[str, Any]], test: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def frozen_predictions(
+    train: list[dict[str, Any]], test: list[dict[str, Any]], stage1: str = "max"
+) -> list[dict[str, Any]]:
     """The calls of one model fitted on ``train`` alone, on rows it never saw."""
-    model = fit_detector(train, FEATURES)
+    model = fit_detector(train, FEATURES, stage1)
     x, _ = _matrix(test, FEATURES)
     return [{**r, "predicted": call(model, x[i])} for i, r in enumerate(test)]
 
 
-def with_predictions(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES) -> list[dict[str, Any]]:
-    return [{**r, "predicted": p} for r, p in zip(rows, cross_validate(rows, feats), strict=True)]
+def with_predictions(
+    rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES, stage1: str = "max"
+) -> list[dict[str, Any]]:
+    return [{**r, "predicted": p} for r, p in zip(rows, cross_validate(rows, feats, stage1), strict=True)]
 
 
 def model_text(rows: list[dict[str, Any]], feats: tuple[str, ...] = FEATURES) -> str:
@@ -414,6 +450,55 @@ def confirm_compare_markdown(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def upper_limit(k: int, n: int, confidence: float = FA_CONFIDENCE) -> float:
+    """One-sided upper confidence limit of a rate seen as ``k`` events in ``n`` runs (Clopper-Pearson).
+
+    With no false alarm in 68 runs the rate is not shown to be zero: it is shown to be below this.
+    """
+    if k >= n:
+        return 1.0
+    lo, hi = 0.0, 1.0
+    for _ in range(60):
+        mid = (lo + hi) / 2.0
+        cdf = sum(math.comb(n, i) * mid**i * (1.0 - mid) ** (n - i) for i in range(k + 1))
+        if cdf > 1.0 - confidence:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2.0
+
+
+def stage1_markdown(rows: list[dict[str, Any]]) -> str:
+    """The two stage 1 rules, each cross-validated on the training runs and frozen on the unseen runs."""
+    train = rows_from_csv(TRAIN_CSV)
+    sets = (
+        ("training runs, cross-validated", lambda rule: with_predictions(train, FEATURES, rule)),
+        ("unseen runs, frozen model", lambda rule: frozen_predictions(train, rows, rule)),
+    )
+    names = {"max": "control maximum", "bound": f"fitted bound, {ALPHA_PER_FEATURE:.1%} per feature"}
+    lines = [
+        "| Runs | Stage 1 rule | Controls | False alarms | Rate, upper 95% limit | Multipath detected "
+        "| Spoofing detected | Degradation detected |",
+        "|---|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for label, scorer in sets:
+        for rule in STAGE1_RULES:
+            sc = scorer(rule)
+            ctrl = [r for r in sc if r["cls"] == "control"]
+            k = sum(r["predicted"] != "control" for r in ctrl)
+
+            def seen(cls: str, sc: list[dict[str, Any]] = sc) -> str:
+                sel = [r for r in sc if r["cls"] == cls]
+                return _pct(sum(r["predicted"] != "control" for r in sel) / len(sel))
+
+            rate = f"{_pct(k / len(ctrl))}, {_pct(upper_limit(k, len(ctrl)))}"
+            lines.append(
+                f"| {label} | {names[rule]} | {len(ctrl)} | {k} | {rate} "
+                f"| {seen('multipath')} | {seen('spoofing')} | {seen('degradation')} |"
+            )
+    return "\n".join(lines)
+
+
 BLOCKS = {
     "faultclass-compare": compare_markdown,
     "faultclass-features": lambda rows: feature_markdown(rows),
@@ -422,6 +507,7 @@ BLOCKS = {
 }
 
 CONFIRM_BLOCKS = {
+    "faultclass-stage1": stage1_markdown,
     "faultclass-confirm-compare": confirm_compare_markdown,
     "faultclass-confirm-calls": confirm_confusion_markdown,
     "faultclass-confirm-levels": confirm_levels_markdown,
