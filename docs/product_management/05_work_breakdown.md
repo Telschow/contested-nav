@@ -75,7 +75,12 @@ against the published files:
 
 Before WB-7 starts:
 
-1. Open the LICENSE file in the UrbanNav repository and confirm it matches the email. The email is not the licence.
+1. Licence check, done on 2026-10-15. Use the `IPNL-POLYU/UrbanNavDataset` repository. Its root has a LICENSE file
+   (MIT, "Copyright (c) 2026 UrbanNav contributors"), and its README licence section says the dataset files and the
+   repository code and documentation are MIT, and that the term "Software" includes the dataset files. This matches
+   the email. The older `weisongwen/UrbanNavDataset` README has no licence terms and no LICENSE file at the path
+   tried, so do not cite it. Third-party resources linked from the repository keep their own licences. Re-read the
+   LICENSE at the commit used when the fetch path is built, and record that commit.
 2. Keep constraint S2: fetch the files locally, commit aggregate results only. Add a fetch path in the style of
    `navkit tumvi fetch`, with checksums.
 3. Reading `/novatel_data/inspvax` needs a ROS bag reader. That may break S1, so prefer the raw text files.
@@ -84,4 +89,4 @@ Before WB-7 starts:
    the filter results.
 6. Add an ADR for the dataset choice. The maintainer writes the decision section.
 
-The exit test in the table is met on the licence, if step 1 confirms it. The package stays open until a run exists.
+The exit test in the table is met on the licence, as step 1 confirms. The package stays open until a run exists.
