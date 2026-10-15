@@ -175,6 +175,38 @@ By fault and level:
    ten features give ten chances, so adding features raises the false-alarm rate of a rule like this one.
 4. **Weak ramps are still missed.** A 0.75 m/s ramp is detected in half the runs.
 
+## A calibrated stage 1
+
+The confirmation showed that the stage 1 rule, "above the largest control value of each feature", is the weak part.
+A bound fitted to the training controls was tried in its place: for each feature, a one-sided upper bound at 0.5% from a
+normal fitted to the controls (on the log scale, except the autocorrelation), with the spread widened for the
+uncertainty of the fitted mean. The 0.5% is a budget of 5% shared over ten features, fixed before the unseen controls
+were scored. The first rule stays in the table as the control row. Stage 2 is unchanged.
+
+<!-- faultclass-stage1:start -->
+
+| Runs | Stage 1 rule | Controls | False alarms | Rate, upper 95% limit | Multipath detected | Spoofing detected | Degradation detected |
+|---|---|---:|---:|---:|---:|---:|---:|
+| training runs, cross-validated | control maximum | 34 | 6 | 18%, 32% | 100% | 87% | 90% |
+| training runs, cross-validated | fitted bound, 0.5% per feature | 34 | 0 | 0%, 8% | 100% | 76% | 78% |
+| unseen runs, frozen model | control maximum | 68 | 24 | 35%, 46% | 100% | 89% | 100% |
+| unseen runs, frozen model | fitted bound, 0.5% per feature | 68 | 7 | 10%, 18% | 100% | 83% | 96% |
+
+<!-- faultclass-stage1:end -->
+
+1. **The false-alarm rate fell and is not zero.** On the unseen controls the fitted bound raises fewer alarms than the
+   control maximum, but some remain. With no alarm at all in a set of controls, the rate is only shown to be below
+   the upper limit in the table, so "zero false alarms" is a claim about a bound and never about a rate.
+2. **Two features cause the remaining alarms.** Only `drift_m_s` and `axis_conc` fire on the unseen controls. Both were
+   very tightly spread in the training controls (two seeds), and the unseen controls go past that spread.
+   The other eight features stay inside their bounds. No rule was changed after seeing this, because the unseen controls
+   would then be in-sample. A fix needs more training controls, on more seeds, and a new confirmation on runs it never saw.
+3. **Detection fell with it.** Every fault class is detected a little less often, spoofing and degradation most. The
+   weak ramps and weak accelerometer steps were already missed, and they are missed more.
+4. **The samples are small.** The training controls and the unseen ones are few. The rate on
+   a different set of sequences could differ by more than the table's limits suggest, since the limits assume
+   independent runs and the runs share sequences and seeds.
+
 ## What it shows
 
 1. **Multipath is separable.** Noise on the fixes raises the normalised innovation without a matching persistent
