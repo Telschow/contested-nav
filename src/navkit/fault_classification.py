@@ -476,11 +476,11 @@ def stage1_markdown(rows: list[dict[str, Any]]) -> str:
         ("unseen runs, frozen model", lambda rule: frozen_predictions(train, rows, rule)),
     )
     names = {"max": "control maximum", "bound": f"fitted bound, {ALPHA_PER_FEATURE:.1%} per feature"}
-    lines = [
+    header = (
         "| Runs | Stage 1 rule | Controls | False alarms | Rate, upper 95% limit | Multipath detected "
-        "| Spoofing detected | Degradation detected |",
-        "|---|---|---:|---:|---:|---:|---:|---:|",
-    ]
+        "| Spoofing detected | Degradation detected |"
+    )
+    lines = [header, "|---|---|---:|---:|---:|---:|---:|---:|"]
     for label, scorer in sets:
         for rule in STAGE1_RULES:
             sc = scorer(rule)
