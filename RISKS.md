@@ -127,7 +127,7 @@ deliberate decision to live with it). A risk's status changes only with evidence
 ### R12. Single maintainer
 - **Cause and effect.** One person owns every path (`.github/CODEOWNERS`). GitHub
   does not let an author approve their own pull request, so review is by CI only.
-- **Status reason.** Accepted for a portfolio project. The mitigation is that the gates, not a
+- **Status reason.** Accepted for a single-maintainer project. The mitigation is that the gates, not a
   person, are the reviewer, and that decisions are written down as ADRs.
 
 ### R13. Supply chain: unpinned or unattested artefacts
