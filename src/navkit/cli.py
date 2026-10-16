@@ -18,6 +18,7 @@ only routes arguments.
     navkit euroc fetch --sequence MH_01_easy
     navkit tumvi fetch --sequence room1
     navkit urbannav fetch --sequence tunnel1
+    navkit urbannav check --sequence tunnel1
     navkit euroc run --sequence MH_01_easy --outage 60:20 --markdown
     python -m navkit run --list
 """
@@ -43,6 +44,7 @@ from . import (
     seed_sweep,
     separability,
     slow_ramp,
+    urbannav_check,
     vision_ramp,
 )
 from .io import tumvi_fetch, urbannav_fetch
@@ -98,14 +100,18 @@ def _tumvi(argv: list[str] | None) -> int:
 
 
 def _urbannav(argv: list[str] | None) -> int:
-    """Route ``navkit urbannav fetch``."""
+    """Route ``navkit urbannav fetch`` and ``navkit urbannav check``."""
     args = list(argv or [])
-    if not args or args[0] in ("-h", "--help") or args[0] != "fetch":
-        usage = "usage: navkit urbannav fetch [options]"
-        note = "  fetch  download the reference solution and IMU of UrbanNav sequences (MIT, cite Hsu et al. 2023)"
-        print("\n".join((usage, note)), file=sys.stderr)
+    routes = {"fetch": urbannav_fetch.main, "check": urbannav_check.main}
+    if not args or args[0] in ("-h", "--help") or args[0] not in routes:
+        usage = "usage: navkit urbannav {fetch,check} [options]"
+        notes = (
+            "  fetch  download the reference solution and IMU of UrbanNav sequences (MIT, cite Hsu et al. 2023)",
+            "  check  measure what the fetched files contain and fill the UrbanNav data page",
+        )
+        print("\n".join((usage, *notes)), file=sys.stderr)
         return 0 if args and args[0] in ("-h", "--help") else 2
-    return urbannav_fetch.main(args[1:])
+    return routes[args[0]](args[1:])
 
 
 #: Subcommand name to ``main(argv) -> int``, with a one-line summary for ``--help``.
