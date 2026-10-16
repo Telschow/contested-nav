@@ -1038,3 +1038,49 @@ def test_eskf_config_gravity_changes_serialised_config() -> None:
     assert base.as_dict()["gravity"] is None
     assert tilted.as_dict()["gravity"] == [0.0, 0.0, -9.81]
     assert EskfConfig(imu_noise=ImuNoiseModel()).as_dict()["gravity"] is None
+
+
+def test_a_declared_vertical_sigma_changes_only_the_vertical_weight():
+    from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig
+    from navkit.io.imu import DEFAULT_NOISE
+
+    def correction(vertical):
+        f = ErrorStateKalmanFilter(EskfConfig(imu_noise=DEFAULT_NOISE, gnss_position_sigma_m=1.0))
+        x = f._initial_state()
+        f._gnss_update(x, np.array([1.0, 1.0, 1.0]), 1.0, sigma_vertical=vertical)
+        return x["p"].copy()
+
+    iso, vert = correction(None), correction(100.0)
+    assert iso[0] == pytest.approx(iso[2], rel=1e-6)  # the same weight on every axis
+    assert vert[:2] == pytest.approx(iso[:2], rel=1e-6)  # the horizontal update is untouched
+    assert abs(vert[2]) < 0.01 * abs(iso[2])  # the height is nearly ignored
+
+
+def test_the_vertical_sigma_is_serialised_whether_or_not_it_is_set():
+    from navkit.estimators.eskf import EskfConfig
+    from navkit.io.imu import DEFAULT_NOISE
+
+    assert EskfConfig(imu_noise=DEFAULT_NOISE).as_dict()["gnss_vertical_sigma_m"] is None
+    assert EskfConfig(imu_noise=DEFAULT_NOISE, gnss_vertical_sigma_m=50.0).as_dict()["gnss_vertical_sigma_m"] == 50.0
+    a = EskfConfig(imu_noise=DEFAULT_NOISE, gnss_vertical_sigma_m=50.0)
+    b = EskfConfig(imu_noise=DEFAULT_NOISE, gnss_vertical_sigma_m=60.0)
+    assert a.as_dict() != b.as_dict()
+
+
+def test_a_fix_variance_replaces_the_scalar_sigma_when_given():
+    from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig
+    from navkit.io.imu import DEFAULT_NOISE
+
+    def corrected(variance):
+        f = ErrorStateKalmanFilter(EskfConfig(imu_noise=DEFAULT_NOISE, gnss_position_sigma_m=1.0))
+        x = f._initial_state()
+        f._gnss_update(x, np.array([1.0, 1.0, 1.0]), 1.0, variance=variance)
+        return x["p"].copy()
+
+    scalar = corrected(None)
+    same = corrected(np.array([1.0, 1.0, 1.0]))
+    loose = corrected(np.array([1.0e4, 1.0e4, 1.0e4]))
+    mixed = corrected(np.array([1.0, 1.0, 1.0e4]))
+    assert same == pytest.approx(scalar, rel=1e-9)
+    assert np.all(np.abs(loose) < 0.01 * np.abs(scalar))
+    assert mixed[:2] == pytest.approx(scalar[:2], rel=1e-6) and abs(mixed[2]) < 0.01 * abs(scalar[2])
