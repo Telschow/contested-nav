@@ -61,11 +61,13 @@ from .io.trajectory import _read_rows
 from .recorded import GRAVITY_Z_UP, EurocSequence, SequenceError, sha256_of
 from .sensors.models import GnssConfig, VisionConfig, gnss_fixes, visual_updates
 from .synthetic import SyntheticConfig, analytic_kinematics, analytic_pose
-from .types import GRAVITY, ImuSample, Trajectory, VisionUpdate, interpolate_trajectory
+from .types import GRAVITY, GnssFix, ImuSample, Trajectory, VisionUpdate, interpolate_trajectory
 
 DEFAULT_ROOT = "data/raw/euroc"
 
 DATA_CLASS = "real_imu_simulated_gnss"
+#: The record label when the GNSS fixes are a receiver's own, passed to :func:`run_sequence` as ``gnss_override``.
+REAL_GNSS_DATA_CLASS = "real_imu_real_gnss"
 
 #: Named settings for the EuRoC VI-Sensor IMU (ADIS16448). Both declare a 0.05 initial bias 1-sigma.
 #:
@@ -93,6 +95,14 @@ CAVEATS = (
     "The ground truth is an estimate; its time synchronisation with the sensors is limited.",
     "Visual fusion is disabled (constraint S3).",
     "Not field performance.",
+)
+
+REAL_GNSS_CAVEATS = (
+    "GNSS fixes are the receiver's own. Its antenna is offset from the IMU and the offset is not corrected.",
+    "Initial pose and velocity come from the post-processed reference solution.",
+    "The reference is an estimate. Where GNSS is lost it is carried by its own inertial sensors alone.",
+    "Visual fusion is disabled (constraint S3).",
+    "One sequence and one receiver. Not field performance.",
 )
 
 _TERMS = (
@@ -199,6 +209,10 @@ class RunOptions:
 
     gnss_rate_hz: float = 5.0
     gnss_sigma_m: float = 0.8
+    #: A different 1-sigma for the vertical axis only. None uses ``gnss_sigma_m`` on all three axes.
+    gnss_vertical_sigma_m: float | None = None
+    #: Weight each fix with the variances its own ``GnssFix.cov`` carries. Only meaningful with ``gnss_override``.
+    gnss_per_fix_covariance: bool = False
     outages: tuple[tuple[float, float], ...] = ()  # (start, duration) in seconds after the window start
     seed: int = 0
     noise_scale: float = 1.0
@@ -247,6 +261,8 @@ class RunOptions:
         return {
             "gnss_rate_hz": self.gnss_rate_hz,
             "gnss_sigma_m": self.gnss_sigma_m,
+            **({"gnss_vertical_sigma_m": self.gnss_vertical_sigma_m} if self.gnss_vertical_sigma_m is not None else {}),
+            **({"gnss_per_fix_covariance": True} if self.gnss_per_fix_covariance else {}),
             "outages": [list(o) for o in self.outages],
             "seed": self.seed,
             "noise_scale": self.noise_scale,
@@ -459,6 +475,8 @@ def run_sequence(
     events_out: list[dict[str, Any]] | None = None,
     bias_out: list[tuple[float, np.ndarray, np.ndarray]] | None = None,
     vision_override: VisionUpdate | None = None,
+    gnss_override: GnssFix | None = None,
+    detail_out: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run the ESKF on one sequence and return a result record shaped like the benchmark's.
 
@@ -466,7 +484,10 @@ def run_sequence(
     The times are on the filter's clock, which starts at the first IMU sample of the window.
     ``events_out`` receives the FDIR event log of the run, ``bias_out`` the ``(t, gyro bias, accel bias)`` estimate at
     every GNSS fix. ``vision_override`` replaces the generated visual stream (the options still say how the filter
-    treats it), for replaying errors measured on a real front end.
+    treats it), for replaying errors measured on a real front end. ``gnss_override`` replaces the simulated GNSS
+    with a receiver's own fixes on the filter's clock: only the fixes inside the window are used, a missing epoch is
+    an outage, and ``RunOptions.outages`` is then used only to summarise the error around them. ``detail_out``, when
+    given, receives ``est``, ``reference`` (on the estimate's times) and ``position_cov``, for scoring axes separately.
     """
     opts = opts or RunOptions()
     mode = opts.init_bias or ("truth" if seq.bias_known else "static")
@@ -490,8 +511,17 @@ def run_sequence(
                 f"outage starting at {start - t_start:.1f} s lies outside the {t_end - t_start:.1f} s window"
             )
 
-    gnss = gnss_fixes(reference, GnssConfig(rate_hz=opts.gnss_rate_hz, sigma_m=opts.gnss_sigma_m, seed=opts.seed))
-    gnss = apply_gnss_outage(gnss, [Outage(start_s=s, duration_s=d) for s, d in window], True)
+    if gnss_override is not None:
+        inside = (gnss_override.t >= t_start) & (gnss_override.t <= t_end)
+        gnss = GnssFix(
+            t=gnss_override.t[inside],
+            positions=gnss_override.positions[inside],
+            cov=None if gnss_override.cov is None else gnss_override.cov[inside],
+            name=gnss_override.name,
+        )
+    else:
+        gnss = gnss_fixes(reference, GnssConfig(rate_hz=opts.gnss_rate_hz, sigma_m=opts.gnss_sigma_m, seed=opts.seed))
+        gnss = apply_gnss_outage(gnss, [Outage(start_s=s, duration_s=d) for s, d in window], True)
     if opts.spoof is not None:
         onset = t_start + opts.spoof[0]
         gnss.positions = gnss.positions.copy()
@@ -526,6 +556,10 @@ def run_sequence(
     cfg_kwargs: dict[str, Any] = {}
     if opts.bias_sigma is not None:
         cfg_kwargs["initial_bias_sigma"] = opts.bias_sigma
+    if opts.gnss_vertical_sigma_m is not None:
+        cfg_kwargs["gnss_vertical_sigma_m"] = opts.gnss_vertical_sigma_m
+    if opts.gnss_per_fix_covariance:
+        cfg_kwargs["gnss_per_fix_covariance"] = True
     base_noise = seq.noise if opts.noise_source == "file" else seq.noise_variants.get(opts.noise_source)
     if base_noise is None:
         known = ", ".join(["file", *seq.noise_variants])
@@ -552,14 +586,20 @@ def run_sequence(
     ate = ate_bundle(est, reference)
     headline_ate = ate["none"]
     ref_on_est = interpolate_trajectory(reference, est.t)
+    if detail_out is not None:
+        detail_out.update(est=est, reference=ref_on_est, position_cov=result.position_cov)
 
     record: dict[str, Any] = {
         "name": f"{seq.slug}_{seq.name}",
-        "description": f"{seq.dataset} {seq.name}: recorded IMU, ground-truth-derived GNSS",
+        "description": f"{seq.dataset} {seq.name}: recorded IMU, "
+        + ("the receiver's own GNSS fixes" if gnss_override is not None else "ground-truth-derived GNSS"),
         "dataset": seq.dataset,
         "claim_type": MEASUREMENT,
-        "data_class": DATA_CLASS,
-        "caveats": [*CAVEATS, *([STATIC_BIAS_CAVEAT] if mode == "static" else [])],
+        "data_class": REAL_GNSS_DATA_CLASS if gnss_override is not None else DATA_CLASS,
+        "caveats": [
+            *(REAL_GNSS_CAVEATS if gnss_override is not None else CAVEATS),
+            *([STATIC_BIAS_CAVEAT] if mode == "static" else []),
+        ],
         "navkit_version": __version__,
         "sequence": seq.name,
         "inputs": {
@@ -591,7 +631,11 @@ def run_sequence(
             estimator="eskf",
             scenario=record["name"],
             series=series,
-            notes=("recorded IMU with ground-truth-derived GNSS; not field performance",),
+            notes=(
+                ("recorded IMU with a receiver's own GNSS fixes; not field performance",)
+                if gnss_override is not None
+                else ("recorded IMU with ground-truth-derived GNSS; not field performance",)
+            ),
         )
         claimed = np.sqrt(np.trace(result.position_cov, axis1=1, axis2=2) / 3.0)
         record["calibration"] = cal.as_dict()

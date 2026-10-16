@@ -62,10 +62,10 @@ def test_the_vertical_bias_differs_between_the_two_sides_of_the_outage(q):
     assert abs(q["fix_vertical_bias_before_outage"] - q["fix_vertical_bias_after_outage"]) > 2.0
 
 
-def test_the_page_makes_no_claim_about_the_filter():
-    text = PAGE.read_text(encoding="utf-8").lower()
-    assert "has not been run" in text
-    assert "nees" in text and "no nees" in text
+def test_the_data_section_of_the_page_is_separate_from_the_filter_result():
+    text = PAGE.read_text(encoding="utf-8")
+    assert "## What the files contain" in text and "## The run" in text
+    assert text.index("## What the files contain") < text.index("## The run")
 
 
 # ----------------------------------------------------------- the offset method
