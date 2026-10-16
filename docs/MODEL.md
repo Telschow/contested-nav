@@ -95,6 +95,8 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 |---|---|---|---|
 | `imu_noise` | see ImuNoiseModel | `required` | Inertial noise model the filter assumes. |
 | `gnss_position_sigma_m` | m | `0.8` | 1-sigma GNSS position noise declared to the filter. |
+| `gnss_vertical_sigma_m` | m | `None` | 1-sigma for the vertical axis only. `None` uses `gnss_position_sigma_m` on all three axes. |
+| `gnss_per_fix_covariance` | flag | `False` | Weight each fix with the variances in its own `GnssFix.cov` instead of the two sigmas above. |
 | `gnss_enabled` | flag | `True` | Fuse GNSS fixes. |
 | `vision_enabled` | flag | `False` | Fuse visual relative-pose updates. Off by default (ADR-0003, constraint S3). |
 | `vision_rot_sigma_deg` | deg | `0.35` | 1-sigma of the measured relative rotation. |
