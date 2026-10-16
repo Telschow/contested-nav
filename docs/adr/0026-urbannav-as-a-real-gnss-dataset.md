@@ -29,14 +29,20 @@ To be written by the maintainer.
 
 ## Evidence
 
-The measurements are generated on [the UrbanNav page](../urbannav.md) from a committed CSV. In short: the Tunnel-1
-files read cleanly, the two clocks agree to within the search step, the F9P stream has one outage, and the fixes
-next to that outage are badly wrong while marked valid. The outage rule was fixed before any filter ran and has not been
-changed since.
+The measurements and the run are generated on [the UrbanNav page](../urbannav.md) from committed CSVs. In short: the
+Tunnel-1 files read cleanly, the two clocks agree to within the search step, the F9P stream has one outage, and the
+fixes next to that outage are badly wrong while marked valid. The outage rule was fixed before any filter ran and has
+not been changed since.
+
+The filter was then run on it with the settings of option 2. Through the real outage it ends several times further
+from the reference than its own sigma says, the error is far more than the accelerometer alone would give, and the
+GNSS channel is declared faulty and never taken back. A second variant, weighting each fix with the receiver's own
+error estimate, was added after the first result and is labelled as not blind. Both variants agree on the outage.
 
 ## What this does not settle
 
-- No filter result exists yet. Nothing here says how the filter behaves on real fixes.
+- The run is one sequence, one receiver and five start perturbations, not five independent tests. Deep-Urban-1, the
+  planned unseen check, has not been fetched or run.
 - The reference inside the outage is an inertial estimate of unknown error.
 - The start attitude needs the rotation between the NovAtel and Xsens units, which is not in the files.
 - The F9P height is biased differently on the two sides of the outage, so a run would use the horizontal axes or declare

@@ -437,3 +437,64 @@ def test_the_real_tunnel_is_one_outage_of_minutes_and_not_at_the_edges(real_fixe
     start, end = spans[0]
     assert 60.0 < end - start < 300.0
     assert real.reference.utc_s[0] + 60.0 < start and end < real.reference.utc_s[-1] - 30.0
+
+
+# ------------------------------------------------------------ GST and attitude
+
+
+def _gst(tod: str, lat: float = 1.2, lon: float = 1.3, alt: float = 3.0) -> str:
+    return _nmea(f"GNGST,{tod},59,3.0,2.8,130,{lat},{lon},{alt}")
+
+
+def test_gst_error_estimates_are_read_with_the_date_from_rmc(tmp_path):
+    p = write_nmea(tmp_path / "f.nmea", [RMC, _gst("072028.00"), _gst("072029.00", 16.5, 17.0, 40.0)])
+    g = ud.read_gst(p)
+    assert g.utc_s.tolist() == [1621322428.0, 1621322429.0]
+    assert g.sigma_lat.tolist() == [1.2, 16.5] and g.sigma_lon.tolist() == [1.3, 17.0]
+    assert g.sigma_alt.tolist() == [3.0, 40.0]
+
+
+def test_gst_sentences_with_a_bad_checksum_or_an_empty_field_are_skipped(tmp_path):
+    bad = _gst("072029.00")[:-2] + "00"
+    empty = _nmea("GNGST,072030.00,,,,,,,")
+    g = ud.read_gst(write_nmea(tmp_path / "f.nmea", [RMC, _gst("072028.00"), bad, empty]))
+    assert len(g) == 1
+    with pytest.raises(SequenceError, match="no valid GST"):
+        ud.read_gst(write_nmea(tmp_path / "g.nmea", [RMC, _gga("072028.00")]))
+
+
+def test_the_attitude_convention_points_the_forward_axis_where_the_heading_says():
+    one = lambda v: np.array([v], dtype=float)  # noqa: E731
+    fwd = np.array([0.0, 1.0, 0.0])  # body y is forward
+    east = ud.rpy_to_rotation(one(0), one(0), one(90))[0] @ fwd
+    assert east == pytest.approx([1.0, 0.0, 0.0], abs=1e-12)  # heading is clockwise from north
+    assert ud.rpy_to_rotation(one(0), one(0), one(0))[0] @ fwd == pytest.approx([0.0, 1.0, 0.0], abs=1e-12)
+    up = ud.rpy_to_rotation(one(0), one(30), one(0))[0] @ fwd
+    assert up[2] == pytest.approx(0.5, abs=1e-12) and up[1] > 0  # positive pitch is nose up
+    right = np.array([1.0, 0.0, 0.0])
+    down = ud.rpy_to_rotation(one(30), one(0), one(0))[0] @ right
+    assert down[2] == pytest.approx(-0.5, abs=1e-12)  # positive roll is the right side down
+
+
+def test_the_attitude_matrices_are_rotations():
+    rng = np.random.default_rng(0)
+    r = ud.rpy_to_rotation(rng.uniform(-30, 30, 50), rng.uniform(-30, 30, 50), rng.uniform(0, 360, 50))
+    assert np.allclose(r @ np.transpose(r, (0, 2, 1)), np.eye(3), atol=1e-12)
+    assert np.allclose(np.linalg.det(r), 1.0)
+
+
+def test_the_real_reference_velocity_rotated_with_this_convention_matches_the_positions(real):
+    r = ud.rpy_to_rotation(real.reference.rpy_deg[:, 0], real.reference.rpy_deg[:, 1], real.reference.rpy_deg[:, 2])
+    v = np.einsum("nij,nj->ni", r, real.reference.vel_body)[1:-1]
+    e, t = real.truth_enu, real.truth_t
+    fd = (e[2:] - e[:-2]) / (t[2:] - t[:-2])[:, None]
+    moving = np.linalg.norm(fd[:, :2], axis=1) > 3.0
+    assert np.median(np.linalg.norm((v - fd)[moving], axis=1)) < 0.2
+
+
+def test_the_real_static_accelerometer_reading_rotated_with_this_convention_points_up(real):
+    r = ud.rpy_to_rotation(real.reference.rpy_deg[:, 0], real.reference.rpy_deg[:, 1], real.reference.rpy_deg[:, 2])
+    f = real.imu.accel[real.imu.t < 3.0].mean(axis=0)
+    k = int(np.argmin(np.abs(real.truth_t - 1.5)))
+    up = r[k] @ f
+    assert up[2] > 9.3 and abs(up[0]) < 0.6 and abs(up[1]) < 0.6
