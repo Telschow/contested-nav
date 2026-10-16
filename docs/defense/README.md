@@ -1,14 +1,13 @@
 # Defense and dual-use assessment
 
 **Scope.** This directory assesses what `contested-nav` is, in public terms, and
-what it is not. It exists so that a reader (technical, procurement, or
-otherwise) can decide the relevance of this repository without reading the
-source, and without anyone attaching a claim to it that the evidence does not
+what it is not. It exists so that a reader can decide the relevance of this
+repository without reading the source, and without anyone attaching a claim to it that the evidence does not
 support.
 
 **It is not a security assessment, a certification, or a fitness statement.**
 Nothing here certifies this software for any platform, and nothing here is
-written on behalf of any employer or customer.
+written as independent work.
 
 ## What this repository is
 
@@ -60,7 +59,7 @@ reader who disagrees with a claim can check the label first.
 ## Rules used in writing these documents
 
 1. No score, rating, readiness level, or tiering of any organisation.
-2. No inference that any named organisation is hiring, evaluating, or interested.
+2. No inference about the interest of any named organisation.
    Companies appear only where a public product or programme is verifiable, and
    inclusion is not a claim of relationship.
 3. No extrapolation to specific platforms, missions, or deployments.
