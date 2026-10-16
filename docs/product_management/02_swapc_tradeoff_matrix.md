@@ -230,7 +230,7 @@ to know that. On a FOG it would be provably fake by a factor of 7 500.
 
 ## 3. Consolidated comparison
 
-| Attribute | Class 1 UAS | Class 2 Recon UAS | Class 3 UGV |
+| Attribute | Class 1 UAS | Class 2 UAS | Class 3 UGV |
 |---|---|---|---|
 | Payload | < 250 g [E] | 1–3 kg [E] | > 10 kg [E] |
 | Compute power | < 5 W [E] | 15–30 W [E] | > 100 W [E] |
@@ -246,7 +246,7 @@ to know that. On a FOG it would be provably fake by a factor of 7 500.
 | Meets OUN-01 (< 3.0 m @ 15 s)? | Marginal, evidence favours yes [M] | Yes, large margin [D] | Yes, very large margin [D] |
 | Meets SRS TR-01/02? | **No** [M] | Likely [E] | Yes [E] |
 | Pose graph affordable? | No | Yes, at effort | Yes |
-| **Recommended role** | Short-denial intercept | **Primary GNSS-denied platform** | Long-endurance, contested-nav reference |
+| **Recommended role** | Short GNSS-denial legs | **Primary GNSS-denied platform** | Long-endurance, contested-nav reference |
 
 Cost subtotals exclude the airframe, the datalink, the antenna and
 integration labour, and the wide ranges are a deliberate reflection of how
@@ -334,7 +334,7 @@ outcome. **Do not let a platform upgrade be read as closing B1.**
 
 | # | Action | Area | Blocks |
 |---|---|---|---|
-| 1 | Replace every [E] cell with a dated quote or datasheet citation | Procurement | All cost rows |
+| 1 | Replace every [E] cell with a dated quote or datasheet citation | Cost data | All cost rows |
 | 2 | **Derive `max_drift_sigma_mps` per IMU grade from fitted bias instability** | FDIR | §2.5 finding; OUN-02 residual |
 | 3 | Add a 60 s benchmark case; the 15 s bound is a data limit, not a physical one | Estimation | §4.2 decision rule |
 | 4 | Add a jam-then-inject spoof probe (§2.5(b) attack) | FDIR | OUN-02 completeness |

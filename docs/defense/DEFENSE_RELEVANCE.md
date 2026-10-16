@@ -165,9 +165,9 @@ because the audit found the underlying claims unsupported.
 3. **As a test harness.** The evaluation stack (seeded scenes, deterministic
    bootstrap intervals, bulk and tail verdicts, typed claims, claim auditing)
    is reusable independent of the filter under test.
-4. **As an honest entry to the field.** For a reader who wants to work in
-   navigation resilience, this shows how a claim is specified, how it is
-   falsified, and what it costs when it fails.
+4. **As a worked example of a falsifiable claim.** It shows how a claim about
+   navigation resilience is specified, how it is falsified, and what it costs
+   when it fails.
 
 **UNSUPPORTED** and deliberately not claimed: that this constitutes
 contribution to any programme, contract, or product line.

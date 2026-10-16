@@ -4,8 +4,8 @@
 those areas, and who works in them publicly?
 
 **Scope note.** Organisations are listed only where a public product or programme
-is verifiable from a cited source. **Inclusion is not a claim of relationship,
-interest, or hiring intent, and none is implied.** No organisation is scored,
+is verifiable from a cited source. **Inclusion is not a claim of relationship
+or interest, and none is implied.** No organisation is scored,
 ranked, or assessed.
 
 ---
@@ -97,7 +97,7 @@ Every entry is anchored to a source.
 
 ## 3. Claims this document does not make
 
-- That any organisation listed is a customer, partner, employer, or target of
+- That any organisation listed is a customer, partner, or target of
   the author.
 - That any organisation has an interest in this repository or in its author.
 - That the organisations listed are exhaustive, or that the list reflects
