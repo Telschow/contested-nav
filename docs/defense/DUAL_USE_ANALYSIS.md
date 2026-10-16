@@ -113,7 +113,7 @@ configuration.
 
 **AUTHOR-STATED.** The purpose of this repository is to make a falsifiable claim
 about estimator calibration, test it, and publish the result, including the
-result that fails. It is a project and research artefact. It is not a product,
+result that fails. It is an independent research artefact. It is not a product,
 and it is not offered as a component for integration.
 
 If it is useful to someone working on navigation resilience, that is a good
