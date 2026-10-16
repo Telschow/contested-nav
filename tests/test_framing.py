@@ -41,8 +41,8 @@ def _tracked() -> list[str]:
         proc = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, check=True, capture_output=True)
     except (OSError, subprocess.CalledProcessError):
         pytest.skip("no git checkout: tracked files cannot be listed")
-    out = proc.stdout.decode()
-    return [p for p in out.split("\0") if p]
+        return []
+    return [p for p in proc.stdout.decode().split("\0") if p]
 
 
 def _text(path: str) -> str | None:
