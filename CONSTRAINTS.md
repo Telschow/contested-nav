@@ -17,12 +17,12 @@ moves with the bytecode. An earlier revision of this tree measured
 prints the interpreter it ran on, so a figure is never quoted without the one
 thing needed to interpret it. Floors are unaffected by that spread: every total
 clears 75% and every module floor sits well below its measured figure.
-Two skips are the TUM VI reference checks in
-`tests/test_trajectory_io.py`, which need ground truth that is deliberately not
-vendored (S2). The third is `tests/test_doc_tables.py`, which needs the generated,
-gitignored `results/benchmark.json`; the CI `benchmark` job runs the same check with
-`scripts/check_doc_tables.py`. They are skips, not passes, and are counted separately
-here so the number cannot read higher than it measures.
+Which tests skip depends on the machine: on which datasets are fetched
+(`tests/test_recorded_orientation.py`, `tests/test_urbannav_data.py` and
+`tests/test_urbannav_check.py`, because third-party data is deliberately not vendored, S2) and on
+whether the generated, gitignored `results/benchmark.json` exists (`tests/test_doc_tables.py`; the CI
+`benchmark` job runs the same check with `scripts/check_doc_tables.py`). `pytest -rs` lists them. They
+are skips, not passes, and are never counted as passes.
 
 ## Correctness
 
@@ -110,10 +110,20 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 ## Known blockers
 
-- **B1: Visual fusion is overconfident under GNSS denial.** Mean NEES 286.2
+- **B1: Visual fusion is overconfident under GNSS denial.**
+
+  B1 is open for the shipped configuration: the single-anchor visual update is overconfident under GNSS denial, and
+  `vision_enabled` stays `False`. The opt-in stochastic clone meets the current gate on the synthetic fixture when its
+  visual errors are independent, and not when they are correlated. On windows of recorded EuRoC sequences it meets the
+  gate in every window only with the assumed visual noise inflated
+  ([ADR-0023](docs/adr/0023-clone-against-a-measured-front-end.md),
+  [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md)). The current gate is one-sided: it does not reject an
+  uninformative filter, and an IMU-only filter also meets it ([real front end](docs/real_front_end.md)).
+
+  Mean NEES 286.2
   over a 15 s outage (`outage_visual`), with 20.5% of epochs inside 2 sigma
   against 99.3% expected. A single anchor cannot represent correlated visual
-  drift. Requires a pose graph. Pinned by
+  drift. Pinned by
   `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`. B2 did not
   change this number, and neither did ADR-0006: correcting a frame is not the
   same as modelling correlated error, and re-admitting the GNSS fixes that B5

@@ -37,7 +37,7 @@
 - **ADR-0008 frozen-anchor cross-check: implemented but unreachable under the
   current state-transition logic; the security gap remains documented as open.**
 - **The published numbers are single draws.** A 10-seed sweep shows NEES varying
-  by 4.4x to 45x between cases, and the two controls the tables call calibrated
+  by 4.4x to 45x between cases, and the two controls
   (`gnss_only`, `outage_control`) flip verdict across seeds, and `outage_control` is
   never clean in 10 draws. The shipped tables remain the seed-0 benchmark, which
   is the committed artefact; treat the magnitudes as order-of-magnitude and the

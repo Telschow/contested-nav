@@ -12,10 +12,10 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=500]
       - id: end-of-file-fixer
-        exclude: ^(tests/golden/|docs/audit/|docs/index\.html$)
+        exclude: ^(tests/golden/|docs/index\.html$)
       - id: trailing-whitespace
-        # Markdown uses two trailing spaces for a line break; the audit snapshots are history.
-        exclude: ^(tests/golden/|docs/audit/|docs/index\.html$|.*\.md$)
+        # Markdown uses two trailing spaces for a line break.
+        exclude: ^(tests/golden/|docs/index\.html$|.*\.md$)
 
   - repo: local
     hooks:

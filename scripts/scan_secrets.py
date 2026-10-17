@@ -40,7 +40,7 @@ RULES: dict[str, re.Pattern[str]] = {
 #: has to be written down here.
 KNOWN_HISTORY: dict[tuple[str, str], str] = {
     ("fbeb429", "freellmapi-key"): (
-        "a provider key committed in docs/PUBLICATION_READINESS.md on 2026-09-29, redacted in ccb812a "
+        "a provider key committed in a documentation file on 2026-09-29, redacted in ccb812a "
         "on 2026-09-30, and rotated by the maintainer. It remains in git history."
     ),
 }

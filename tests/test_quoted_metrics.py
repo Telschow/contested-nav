@@ -108,10 +108,14 @@ class TestCheck:
 
     def test_history_documents_may_keep_their_old_counts(self, tmp_path):
         root = make_tree(tmp_path)
-        (root / "docs" / "audit").mkdir()
-        (root / "docs" / "audit" / "01-x.md").write_text("567 tests", encoding="utf-8")
-        (root / "docs" / "ENGINEERING_BASELINE.md").write_text("629 tests", encoding="utf-8")
+        (root / "docs" / "releases").mkdir()
+        (root / "docs" / "releases" / "0.1.0.md").write_text("567 tests", encoding="utf-8")
         assert metrics.check(root, collected=10) == []
+
+
+def test_every_live_file_exists():
+    missing = [p for p in metrics.LIVE_FILES if not (ROOT / p).is_file()]
+    assert missing == [], f"LIVE_FILES entries that no longer exist: {missing}"
 
 
 class TestCoverage:

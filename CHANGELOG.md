@@ -174,6 +174,14 @@ this project uses [semantic versioning](https://semver.org/).
   or a document quotes the start of a provider key.
 - `uv.lock` is removed. ADR-0011 called it stale, and CI never used it.
 
+### Removed
+
+- The dated snapshot pages: `docs/audit/`, `docs/ENGINEERING_BASELINE.md`,
+  `docs/RESEARCH_BASELINE.md`, `docs/ML_BASELINE.md`, `docs/PUBLICATION_READINESS.md`,
+  `docs/IMPLEMENTATION_PLAN.md`, `docs/REPOSITORY_MAP.md` and `docs/PROJECT_STATE.md`.
+  `docs/status.md` is the one current status page. Git history keeps the old text.
+- The skip rule for `docs/audit/0*` in `scripts/check_links.py`, which had no files left to skip.
+
 ### Found, not fixed
 
 - The synthetic IMU uses the opposite gravity sign to a physical z-up accelerometer. The EuRoC path passes
