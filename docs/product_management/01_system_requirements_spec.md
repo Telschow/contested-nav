@@ -16,13 +16,15 @@ leg, and one is unverified and partly contradicted by the design as it stands.
 A requirements document whose traceability column read "met" across the board
 would be describing a different system from this one.
 
-This document is one of three in `docs/product_management/`:
+This document is one of the documents in `docs/product_management/`:
 
 | Document | ID | Contents |
 |---|---|---|
 | `01_system_requirements_spec.md` | PM-SRS-001 | this document: OUNs, requirements, verdicts |
 | `02_swapc_tradeoff_matrix.md` | PM-SWAPC-002 | platform cost study and the ESKF/pose-graph decision rule |
 | `03_fdir_and_spoofing_strategy.md` | PM-FDIR-003 | threat taxonomy, two-stage architecture, operator telemetry |
+| `04_sensor_sync_and_calibration_spec.md` | none | timing model and calibration assumptions, with timing measured on recordings |
+| `05_work_breakdown.md` | none | remaining work packages and the B4 estimate |
 
 | Verdict | Meaning |
 |---|---|

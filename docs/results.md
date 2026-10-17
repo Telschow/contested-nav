@@ -23,7 +23,7 @@ the strictest of the four conventions the code supports.
 | Stochastic clone, visual errors correlated over 2 s | 1.931 | 0.375 | 13.1 | 58.3% | overconfident |
 | Stochastic clone, correlated errors, visual noise assumed 4x | 2.259 | 0.531 | 4.9 | 100.0% | mixed: bulk overconfident, tail underconfident |
 
-Four things deserve more than a glance.
+Three things deserve more than a glance.
 
 **The defect row is not a gate-threshold problem.** Folding the visual anchor
 error into the measurement covariance, rather than treating it as filter state,
@@ -54,7 +54,7 @@ overconfident almost everywhere while never once producing a tail escape;
 collapsing that into a single "calibrated" boolean discards half the evidence
 and hides the shape of the error distribution.
 
-The `mixed` rows are exactly that case: mean NEES of 4.0 against an expected 3
+The `mixed` rows are exactly that case: a mean NEES above its expected 3
 is a real, statistically detectable overconfidence, and yet no epoch escapes
 2σ. Both statements are true and only one of them is usually quoted.
 

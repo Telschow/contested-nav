@@ -123,8 +123,8 @@ produces is not something a covariance grown by its own outage explains.
   *direction* is robust (the filter is overconfident at every seed) but the
   magnitudes are single draws and should be read as orders of magnitude. The
   camera-drop pair is weaker still: its two cases have overlapping ranges, so
-  216.6 versus 419.4 does not establish that dropping frames helps. See N10 in
-  `docs/audit/06-revised-roadmap.md`.
+  216.6 versus 419.4 does not establish that dropping frames helps. The repeat varied the noise
+  seed only, not the scene.
 - **Correction (2026-09, audit).** The figures above originally read "30% of
   camera frames dropped, 3.339 m to 2.005 m and 931.4 to 264.8". The benchmark
   config asked for a 30% drop but misspelled the key, so that case ran at the

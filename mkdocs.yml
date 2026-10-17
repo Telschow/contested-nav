@@ -10,19 +10,9 @@ docs_dir: docs
 site_dir: site
 strict: true
 
-# Frozen audit snapshots are history, not documentation.
-# Frozen audit snapshots and the early baseline records are history, not documentation: some of
-# their statements predate the work they describe.
+# Dated release notes are history, not documentation.
 exclude_docs: |
-  audit/0[1-6]-*
   index.html
-  ENGINEERING_BASELINE.md
-  ML_BASELINE.md
-  PROJECT_STATE.md
-  PUBLICATION_READINESS.md
-  REPOSITORY_MAP.md
-  RESEARCH_BASELINE.md
-  IMPLEMENTATION_PLAN.md
   releases/*
 
 theme:
@@ -158,6 +148,8 @@ nav:
       - "0022 Multipath signature": adr/0022-multipath-signature.md
       - "0023 Clone against a measured front end": adr/0023-clone-against-a-measured-front-end.md
       - "0024 Assumed noise of the opt-in clone": adr/0024-assumed-noise-for-the-opt-in-clone.md
+      - "0025 Calibrated stage 1 for fault detection": adr/0025-calibrated-stage-one-for-fault-detection.md
+      - "0026 UrbanNav as a real GNSS dataset": adr/0026-urbannav-as-a-real-gnss-dataset.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md
@@ -180,10 +172,6 @@ nav:
           - Dual-use analysis: defense/DUAL_USE_ANALYSIS.md
           - Technology mapping: defense/TECHNOLOGY_MAPPING.md
           - Sources: defense/SOURCES.md
-      - Audit and plan:
-          - Audit: audit/AUDIT.md
-          - Plan: audit/PLAN.md
-          - Index: audit/README.md
       - Contributing: contributing.md
       - Security: security.md
       - Code of conduct: code-of-conduct.md

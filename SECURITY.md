@@ -65,7 +65,7 @@ will be triaged first.
 
 ## Known incident
 
-A provider API key was committed in `docs/PUBLICATION_READINESS.md` on 2026-09-29
+A provider API key was committed in a documentation file on 2026-09-29
 (commit `fbeb429`, as evidence in an audit), redacted on 2026-09-30 (`ccb812a`) and
 rotated by the maintainer. The value is still readable in git history. History has not
 been rewritten, because the key is revoked and a rewrite would invalidate every open
