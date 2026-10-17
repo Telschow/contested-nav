@@ -75,8 +75,8 @@ that the NIS monitor's one-grant-per-episode policy never produces.
   on the epoch it is issued rather than after it, or drop the `inflated`
   conjunct and cross-check on any accepted fix after a grant. The arithmetic
   and the threshold are already pinned. Which of the two is correct is a
-  security decision, not a mechanical one, and is tracked as N1 in
-  `docs/audit/06-revised-roadmap.md`: it must not be made as a drive-by.
+  security decision, not a mechanical one. The gap is listed as open in
+  `docs/status.md`, and the choice is left to the maintainer: it must not be made as a drive-by.
 - **`test_the_guard_is_never_satisfied_during_a_sustained_offset_spoof` is
   `strict=True` on purpose.** It asserts the gap is still open, so the day the
   guard is fixed the suite fails loudly and forces the ADR-0007 xfails, the

@@ -9,8 +9,7 @@ directory must exist), and ``#anchor`` fragments (the heading must exist in the 
 Markdown file, using GitHub's slug rules). What it does not check: ``http(s)`` links, which
 need the network and are flaky; the weekly link workflow covers those with lychee.
 
-Fenced code blocks and inline code are ignored, and the audit snapshots under
-``docs/audit/0*`` are skipped because they are frozen history.
+Fenced code blocks and inline code are ignored.
 """
 
 from __future__ import annotations
@@ -27,7 +26,6 @@ INLINE_CODE = re.compile(r"`[^`\n]*`")
 LINK = re.compile(r"!?\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)")
 HEADING = re.compile(r"^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$")
 HTML_ANCHOR = re.compile(r"""<a\s+[^>]*?(?:name|id)=["']([^"']+)["']""")
-SKIP_PREFIXES = ("docs/audit/01", "docs/audit/02", "docs/audit/03", "docs/audit/04", "docs/audit/05", "docs/audit/06")
 
 
 def slug(heading: str) -> str:
@@ -99,7 +97,7 @@ def check_file(path: Path, root: Path = ROOT) -> list[str]:
 
 def default_files(root: Path = ROOT) -> list[Path]:
     files = sorted(root.glob("*.md")) + sorted((root / "docs").rglob("*.md")) + sorted((root / ".github").rglob("*.md"))
-    return [f for f in files if not str(f.relative_to(root)).startswith(SKIP_PREFIXES)]
+    return files
 
 
 def main(argv: list[str] | None = None) -> int:

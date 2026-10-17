@@ -315,9 +315,7 @@ Where each item stands:
   P5-13 (a TUM VI fetch path).
 - **Spike done, opt-in:** P5-03 (the stochastic clone, [ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)).
   Calibrated for independent visual errors, not for correlated ones. The shipped configuration is unchanged.
-- **Done as decided:** P5-09 (the stale figures in docstrings are fixed; every baseline record is a dated
-  point-in-time snapshot with a banner saying so, excluded from the site and deliberately not rewritten, because their
-  old figures are what the remediation was measured against) and P5-12 (no pull request or Dependabot item is open,
+- **Done as decided:** P5-09 (the dated baseline records were deleted rather than rewritten) and P5-12 (no pull request or Dependabot item is open,
   `uv.lock` was removed).
 - **Not started:** P5-11 (a comparison with an established consistent
   estimator, which strains constraint S1).
@@ -328,7 +326,7 @@ Where each item stands:
 
 `CONSTRAINTS.md` holds the authoritative list. In short:
 
-- **B1**: visual fusion is overconfident under GNSS denial. Needs Track B.
+- **B1** is open for the shipped configuration; see `CONSTRAINTS.md`.
 - **B4** is resolved (R5 in `CONSTRAINTS.md`): the claim of a reproduction of the published 0.069 m is retired
       and replaced by a gyroscope check on recorded data.
 
