@@ -153,19 +153,11 @@ All of it, with sources, is in [Status and limits](docs/status.md) and
 
 ## How this was built
 
-- The code was written mostly by an AI coding assistant (Claude Code). The commit trailers and the
-  `claude/*` branch names show which changes.
-- The maintainer sets the scope and the order of work, and decides what ships. Changes land through a
-  pull request that the maintainer merges, and releases are tagged by the maintainer.
-- The assistant's work is not trusted on sight. Gates decide: finite-difference checks on the
-  Jacobians, property tests, a golden snapshot of the benchmark, a coverage ratchet, CI on three
-  Python versions and three operating systems, CodeQL and a secret scan.
-- Every number in the README is generated, and a test fails when a table cell disagrees with the
-  code.
-- Defects found this way are in the [changelog](CHANGELOG.md), including one in this repository's
-  own test setup ([ADR-0012](docs/adr/0012-every-scenario-is-injected.md)).
-- What stays with a person: which claims to make. The headline is a negative result, and it was
-  kept.
+The code was written mostly with an AI coding assistant (Claude Code). The maintainer sets the scope and the order of
+work, and the project's rule is that the maintainer writes and accepts the decision in each ADR. The evidence to trust
+is the gates, not the authorship: finite-difference checks on the measurement Jacobians, property tests, a golden
+snapshot of the benchmark, and CI. Since the first week of the repository, every change lands through a pull request
+that must pass CI and that the maintainer merges.
 
 ## Scope and responsible use
 

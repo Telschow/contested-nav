@@ -7,6 +7,7 @@ credential-shaped string that the scanner (and every other scanner) would flag.
 from __future__ import annotations
 
 import importlib.util
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -23,7 +24,7 @@ _spec.loader.exec_module(scan)
 
 def _samples() -> dict[str, str]:
     return {
-        "freellmapi-key": "freellmapi-" + "k" * 24,
+        "provider-key": "freellmapi-" + "k" * 24,
         "github-token": "ghp_" + "A1" * 20,
         "github-fine-grained-token": "github_pat_" + "B" * 30,
         "aws-access-key-id": "AKIA" + "Z" * 16,
@@ -39,8 +40,8 @@ def test_each_rule_fires_on_its_own_shape_and_names_the_rule(rule: str) -> None:
 
 
 def test_the_report_redacts_the_value() -> None:
-    ((where, line, rule, prefix),) = scan.scan_text(_samples()["freellmapi-key"], "f.txt")
-    assert (where, line, rule) == ("f.txt", 1, "freellmapi-key")
+    ((where, line, rule, prefix),) = scan.scan_text(_samples()["provider-key"], "f.txt")
+    assert (where, line, rule) == ("f.txt", 1, "provider-key")
     assert prefix == "free..."
     assert "k" * 8 not in prefix
 
@@ -82,20 +83,20 @@ def test_tree_scan_finds_a_tracked_secret_and_ignores_untracked_files(repo: Path
 
 def test_history_scan_finds_a_secret_that_was_later_removed(repo: Path) -> None:
     f = repo / "doc.md"
-    f.write_text(f"apiKey: {_samples()['freellmapi-key']}\n")
+    f.write_text(f"apiKey: {_samples()['provider-key']}\n")
     _git(repo, "add", "doc.md")
     _git(repo, "commit", "-q", "-m", "add")
     f.write_text("apiKey: <redacted>\n")
     _git(repo, "commit", "-q", "-am", "redact")
     assert scan.scan_files(scan.tracked_files(repo), repo) == []
     found = scan.scan_history(repo)
-    assert [r for _, _, r, _ in found] == ["freellmapi-key"]
+    assert [r for _, _, r, _ in found] == ["provider-key"]
 
 
 def test_known_history_is_accepted_only_for_its_commit_and_rule() -> None:
-    assert scan.is_known("commit fbeb4290d0bf", "freellmapi-key")
+    assert scan.is_known("commit fbeb4290d0bf", "provider-key")
     assert not scan.is_known("commit fbeb4290d0bf", "github-token")
-    assert not scan.is_known("commit 0123456789ab", "freellmapi-key")
+    assert not scan.is_known("commit 0123456789ab", "provider-key")
 
 
 def test_main_exits_nonzero_on_a_new_finding_and_zero_when_clean(
@@ -114,3 +115,23 @@ def test_main_exits_nonzero_on_a_new_finding_and_zero_when_clean(
 
 def test_the_repository_itself_has_no_secret_in_its_tracked_files() -> None:
     assert scan.main(["--root", str(ROOT)]) == 0
+
+
+#: The first characters of a provider key, as a document might quote them. The scanner needs 16
+#: characters of token; this catches a shorter quoted start in Markdown.
+KEY_PREFIX = re.compile(r"freellmapi-[0-9a-z]{3,}", re.IGNORECASE)
+SKIP_PARTS = {".venv", "site", ".git", ".hypothesis", "node_modules"}
+
+
+def test_no_document_quotes_the_start_of_a_provider_key() -> None:
+    root = Path(__file__).resolve().parent.parent
+    docs = [p for p in root.rglob("*.md") if not SKIP_PARTS & set(p.relative_to(root).parts)]
+    hits = [
+        f"{p.relative_to(root)}: {m.group(0)}" for p in docs for m in KEY_PREFIX.finditer(p.read_text(encoding="utf-8"))
+    ]
+    assert hits == []
+
+
+def test_the_prefix_pattern_catches_a_quoted_start_and_not_prose() -> None:
+    assert KEY_PREFIX.search('apiKey: "freellmapi-e4a9..."')
+    assert not KEY_PREFIX.search("a key of the shape freellmapi- followed by a token")

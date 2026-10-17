@@ -5,8 +5,8 @@
     python scripts/scan_secrets.py --history    # every line ever added, on every ref
 
 Why this exists next to a generic scanner: the repository once carried a provider API key
-in a local config file, so the shape of that key is a rule of its own (``freellmapi-``
-followed by a long token). The other rules are a short list of high-signal formats. This
+in a local config file, so the shape of that key is a rule of its own, ``provider-key``
+(``freellmapi-`` followed by a long token). The other rules are a short list of high-signal formats. This
 is a tripwire, not a guarantee; it finds well-known shapes and will miss an arbitrary
 high-entropy string.
 
@@ -26,7 +26,7 @@ from pathlib import Path
 #: Rule name to pattern. Keep this list short and high-signal: a noisy rule trains people to
 #: ignore the tool.
 RULES: dict[str, re.Pattern[str]] = {
-    "freellmapi-key": re.compile(r"freellmapi-[A-Za-z0-9_-]{16,}"),
+    "provider-key": re.compile(r"freellmapi-[A-Za-z0-9_-]{16,}"),
     "github-token": re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}\b"),
     "github-fine-grained-token": re.compile(r"\bgithub_pat_[A-Za-z0-9_]{22,}\b"),
     "aws-access-key-id": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
@@ -39,7 +39,7 @@ RULES: dict[str, re.Pattern[str]] = {
 #: scan, and anything else does. Adding an entry is a decision to make in review, so the reason
 #: has to be written down here.
 KNOWN_HISTORY: dict[tuple[str, str], str] = {
-    ("fbeb429", "freellmapi-key"): (
+    ("fbeb429", "provider-key"): (
         "a provider key committed in a documentation file on 2026-09-29, redacted in ccb812a "
         "on 2026-09-30, and rotated by the maintainer. It remains in git history."
     ),
