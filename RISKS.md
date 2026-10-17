@@ -32,14 +32,14 @@ deliberate decision to live with it). A risk's status changes only with evidence
 ## Details
 
 ### R1. Results are read as field performance
-- **Cause and effect.** Every input is synthetic, so a reader quotes a number as if it were a
-  measurement of a real system.
+- **Cause and effect.** The headline inputs are synthetic and the recorded-data studies simulate the GNSS,
+  so a reader quotes a number as if it were a measurement of a real system.
 - **In place.** "Not field validated" is on the README, the social preview and
   [Scope and responsible use](docs/scope.md). [LIMITATIONS](docs/defense/LIMITATIONS.md) L1 and
   L5 state what the data cannot support. [REAL_SYSTEMS](docs/REAL_SYSTEMS.md) lists the
   sim-to-real gap.
 - **Early warning.** A quoted number in a doc or issue with no scenario name next to it.
-- **Next.** P5-01 and P5-02 add the mismatch and fault evidence a real system would need first.
+- **Next.** No real GNSS outage is evaluated in the committed results yet; [ADR-0026](docs/adr/0026-urbannav-as-a-real-gnss-dataset.md) (proposed) covers it.
 
 ### R2. Visual fusion is overconfident under GNSS denial
 - **Cause and effect.** The single-anchor filter cannot represent correlated visual drift, so
@@ -47,11 +47,8 @@ deliberate decision to live with it). A risk's status changes only with evidence
   [Results](docs/results.md), mean NEES in the hundreds against an expected 3).
 - **In place.** `vision_enabled` ships off ([ADR-0003](docs/adr/0003-ship-visual-disabled.md));
   the failing case is a benchmark row and a pinned test, not a hidden one.
-- **Status reason.** Accepted: it is the project's subject. A stochastic clone of the previous pose is
-  calibrated on the fixture when the visual errors are independent, and is kept opt-in
-  ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)): it is not calibrated when they are
-  correlated over a couple of seconds, and no data here says which a real front end has. So the shipped
-  configuration is unchanged and the risk stays accepted.
+- **Status reason.** Accepted for the shipped configuration only, because `vision_enabled` is `False`. Enabling it
+  would reopen this risk. B1 stays open: see `CONSTRAINTS.md`.
 - **Early warning.** Any change that moves the NEES or coverage of `outage_visual`.
 
 ### R3. Estimator and generator share a conceptual error
@@ -60,8 +57,7 @@ deliberate decision to live with it). A risk's status changes only with evidence
 - **In place.** The generator is analytic and its IMU output is checked against closed-form
   kinematics; Jacobians are checked against finite differences; the filter is told the true
   noise, which is itself a weakness (MODEL.md finding 5).
-- **Next.** P5-01 breaks the "filter knows the true noise" assumption. P5-11 would add an
-  independent estimator; it is not done. The stochastic clone is a live example: it is calibrated against a
+- **Next.** P5-11 would add an independent estimator; it is not done. The stochastic clone is a live example: it is calibrated against a
   visual surrogate whose errors are independent, the assumption the filter makes, and it fails when the
   generator's errors are correlated. The stress cases in the benchmark push on that; a real front end would
   settle it.
@@ -96,7 +92,7 @@ deliberate decision to live with it). A risk's status changes only with evidence
   `.github/workflows/ci.yml`). MkDocs Material warns that MkDocs 2.0 removes plugins; the docs
   extra pins `mkdocs<2`.
 - **In place.** Pinned extras, SHA-pinned actions, Dependabot for actions, pip and docker.
-- **Next.** Review Dependabot [#5](https://github.com/Telschow/contested-nav/pull/5) (P5-12).
+- **Next.** None open; P5-12 is done in `ROADMAP.md`.
 
 ### R8. A third-party service fails a check for reasons unrelated to the code
 - **What happened.** The `github-advanced-security` check failed on every pull request with a
@@ -116,13 +112,15 @@ deliberate decision to live with it). A risk's status changes only with evidence
   GNSS bias, IMU loss, timestamp offsets and vision outages as unit-tested only. One spoofing
   case (a modest offset after an outage) is an open problem with an expected-failure test. A slow-ramp spoof is followed in every measured run
   ([slow ramp](docs/slow_ramp.md), ADR-0019).
-- **Next.** P5-02 measures them and reports detection and false-alarm rates.
+- **Next.** False alarms on the controls are reported in [the fault matrix](docs/faults.md). The per-update rate against the stated alpha, and the sensitivity of the FDIR thresholds, are not measured.
 
 ### R11. Known model defects change published numbers when fixed
-- **Cause and effect.** MODEL.md records six as-implemented findings (inert bias sigmas,
-  mis-named drift keys, no velocity process noise and others). Fixing any moves the golden
+- **Cause and effect.** The "as implemented" section of MODEL.md records six findings. Items 1 to 4 are
+  fixed (the bias sigmas are read, the drift keys are named per square-root second, the initial bias sigma can be set
+  per sensor, and velocity has process noise). Items 5 and 6 remain as described: the filter is told the true sensor
+  noise unless the scale keys are set, and the reference frame is the filter's frame. Fixing any finding moved the golden
   snapshot and so every published number.
-- **Next.** P5-04 and P5-05, each with a deliberate regeneration and a review of the diff.
+- **Next.** Items 5 and 6 are open. Changing either moves the golden snapshot and needs a deliberate regeneration.
 
 ### R12. Single maintainer
 - **Cause and effect.** One person owns every path (`.github/CODEOWNERS`). GitHub
@@ -131,10 +129,13 @@ deliberate decision to live with it). A risk's status changes only with evidence
   person, are the reviewer, and that decisions are written down as ADRs.
 
 ### R13. Supply chain: unpinned or unattested artefacts
-- **In place.** SHA-pinned actions, dependency review, `pip-audit`, a CycloneDX SBOM, CodeQL.
-- **Not done** ([ADR-0011](docs/adr/0011-ci-and-supply-chain.md)): signed releases or build
-  provenance, a base image pinned by digest. There is no lock file; `uv.lock` was removed because nothing used it.
-- **Next.** P5-10 before a tagged release.
+- **In place.** SHA-pinned actions, dependency review, `pip-audit`, a CycloneDX SBOM, CodeQL. The Dockerfile
+  base image is pinned by digest. On a version tag, `.github/workflows/release.yml` attests the build provenance of
+  the sdist and the wheel and creates a draft release for the maintainer to publish.
+- **Not done** ([ADR-0011](docs/adr/0011-ci-and-supply-chain.md)): there is no lock file, and the Dockerfile
+  installs the dev extra without pinned versions. `uv.lock` was removed because nothing used it. No version tag exists,
+  so the attestation step has not yet run on a real release.
+- **Next.** Check the attestation of the first tagged release.
 
 ### R14. Defense-adjacent framing is misread
 - **Cause and effect.** The subject is navigation under contested GNSS. A reader could take
@@ -150,8 +151,7 @@ deliberate decision to live with it). A risk's status changes only with evidence
 
 ### R16. The published site is broken and nobody notices
 - **In place.** `mkdocs build --strict` runs on every pull request and on every deploy.
-- **Not verified.** Deploys succeed in Actions, but the live site has not been opened from the
-  development environment, which cannot reach `github.io`. The maintainer should open it.
+- **Not verified.** Deploys succeed in Actions, but the live site has not been checked by hand.
 
 ### R17. Prioritisation inputs are wrong
 - **Cause and effect.** The RICE inputs are judgements, so the order can be wrong.

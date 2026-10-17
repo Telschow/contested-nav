@@ -22,19 +22,6 @@ DEFENCE_ROLE = re.compile(
     re.IGNORECASE,
 )
 
-# Snapshot pages that T1-4 deletes. Remove this tuple in T1-4.
-# The existence test below fails once the files are gone.
-PENDING_DELETION = (
-    "docs/audit/",
-    "docs/ENGINEERING_BASELINE.md",
-    "docs/RESEARCH_BASELINE.md",
-    "docs/ML_BASELINE.md",
-    "docs/PUBLICATION_READINESS.md",
-    "docs/IMPLEMENTATION_PLAN.md",
-    "docs/REPOSITORY_MAP.md",
-    "docs/PROJECT_STATE.md",
-)
-
 
 def _tracked() -> list[str]:
     try:
@@ -58,7 +45,7 @@ def _text(path: str) -> str | None:
 def _hits(pattern: re.Pattern[str], skip_defense_dir: bool) -> list[str]:
     found = []
     for path in _tracked():
-        if path == "tests/test_framing.py" or path.startswith(PENDING_DELETION):
+        if path == "tests/test_framing.py":
             continue
         if skip_defense_dir and path.startswith("docs/defense/"):
             continue
@@ -79,12 +66,6 @@ def test_no_career_wording_in_any_tracked_file():
 
 def test_no_defence_role_wording_outside_docs_defense():
     assert _hits(DEFENCE_ROLE, skip_defense_dir=True) == []
-
-
-def test_pending_deletion_paths_still_exist():
-    tracked = _tracked()
-    stale = [p for p in PENDING_DELETION if not any(t.startswith(p) for t in tracked)]
-    assert stale == [], f"empty PENDING_DELETION: {stale}"
 
 
 def test_bare_intercept_is_not_flagged():

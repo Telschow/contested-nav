@@ -54,21 +54,11 @@ KEYS = (
     "coverage_python",
 )
 
-#: Documents that quote counts. History is left out: the audit snapshots, the baselines, the
-#: changelog and the dated release notes record what was true when they were written.
+#: Documents that quote counts. History is left out: the changelog and the dated release
+#: notes record what was true when they were written.
 LIVE_FILES = ("README.md", "CONSTRAINTS.md", "ROADMAP.md", "CONTRIBUTING.md", "CLAUDE.md")
 LIVE_DIRS = ("docs",)
-HISTORY = (
-    "docs/audit/",
-    "docs/releases/",
-    "docs/ENGINEERING_BASELINE.md",
-    "docs/ML_BASELINE.md",
-    "docs/PROJECT_STATE.md",
-    "docs/PUBLICATION_READINESS.md",
-    "docs/REPOSITORY_MAP.md",
-    "docs/RESEARCH_BASELINE.md",
-    "docs/IMPLEMENTATION_PLAN.md",
-)
+HISTORY = ("docs/releases/",)
 
 MARKER = re.compile(r"<!--\s*metric:(\w+)\s*-->(.*?)<!--\s*/metric\s*-->")
 HAND_TYPED = re.compile(

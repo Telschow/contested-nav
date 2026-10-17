@@ -16,7 +16,7 @@ needs a measured false-alarm rate of zero on the control.
 1. **Keep the control maximum.** Known false-alarm rate on unseen controls: the first row of the table on the page.
 2. **A fitted bound per feature at a stated level.** A one-sided normal bound (log scale for positive features), with
    0.5% per feature as a Bonferroni split of 5%. Fixed before the unseen controls were scored.
-3. **More training controls, then a new confirmation.** Not possible in this session: the recordings and the
+3. **More training controls, then a new confirmation.** Not possible with the data at hand: the recordings and the
    hosts that serve them were out of reach, so no new run could be made.
 
 ## Decision
