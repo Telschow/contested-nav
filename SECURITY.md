@@ -38,8 +38,8 @@ will be triaged first.
 
 ## Credential hygiene in this repository
 
-- `opencode.json` is ignored in `.gitignore` because it carries a provider API
-  key. Do not remove that rule, and do not commit the file under another name.
+- `.gitignore` lists a local agent config file that can carry a provider API key. Do not
+  remove that rule, and do not commit such a file under another name.
 - CI runs with `contents: read` at the top level. The only job granted more is
   CodeQL, which needs `security-events: write` to upload its results.
 - The Dockerfile base image is pinned by digest, and the release workflow attests the provenance of

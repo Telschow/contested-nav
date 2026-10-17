@@ -176,6 +176,9 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Removed
 
+- The OpenCode example config, its test and the contributing section about it. The ignore rules for a
+  local config stay. The secret scanner's rule for that provider's key is renamed `provider-key`; it detects the
+  same strings.
 - The dated snapshot pages: `docs/audit/`, `docs/ENGINEERING_BASELINE.md`,
   `docs/RESEARCH_BASELINE.md`, `docs/ML_BASELINE.md`, `docs/PUBLICATION_READINESS.md`,
   `docs/IMPLEMENTATION_PLAN.md`, `docs/REPOSITORY_MAP.md` and `docs/PROJECT_STATE.md`.
