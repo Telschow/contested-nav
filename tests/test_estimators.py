@@ -1038,3 +1038,170 @@ def test_eskf_config_gravity_changes_serialised_config() -> None:
     assert base.as_dict()["gravity"] is None
     assert tilted.as_dict()["gravity"] == [0.0, 0.0, -9.81]
     assert EskfConfig(imu_noise=ImuNoiseModel()).as_dict()["gravity"] is None
+
+
+# -- the error-state reset and the transition matrix, against finite differences --------------
+
+from navkit.estimators.eskf import _IDX_BA, _IDX_BG, _IDX_V
+from navkit.geometry.rigid import rot_log
+
+#: The three sizes of injected attitude correction the reset is checked at (radians).
+_RESET_MAGNITUDES = (1e-3, 1e-2, 1e-1)
+#: The exact reset Jacobian is J_r(a) = I - 0.5 [a]x + O(|a|^2). Measured on the fixed seeds
+#: below, the first-order form misses it by |a|^2 / 6 (the [a]x^2 / 6 term of J_r), at all three
+#: sizes. The bound 0.2 |a|^2 adds a little headroom; a wrong sign misses by about |a| and fails by orders of
+#: magnitude at the smallest size.
+_RESET_C = 0.2
+
+
+def _full_state(rng: np.random.Generator) -> dict:
+    return {
+        "R": rot_exp(rng.normal(size=3)),
+        "p": rng.normal(size=3),
+        "v": rng.normal(size=3),
+        "b_g": rng.normal(size=3) * 1e-3,
+        "b_a": rng.normal(size=3) * 1e-2,
+        "R_vk": rot_exp(rng.normal(size=3)),
+        "p_vk": rng.normal(size=3),
+        "c_p": np.zeros(3),
+        "c_t": np.zeros(3),
+        "P": np.eye(_N_STATES),
+    }
+
+
+def _filter_reset_block(eskf: ErrorStateKalmanFilter, dx: np.ndarray, block: slice) -> np.ndarray:
+    """Read the reset Jacobian the filter applies, through `_inject_correction` itself.
+
+    With H = 0 and R = 0 the Joseph update leaves P unchanged, so the result is G P G^T. Seeding
+    P with a single unit variance in column j returns G[:, j] G[:, j]^T, and G[:, j] follows
+    because its diagonal entry is positive. This reads the matrix the filter uses rather than a
+    copy of its formula, so the test also holds a refactor to account.
+    """
+    rng = np.random.default_rng(0)
+    out = np.zeros((3, 3))
+    for k, j in enumerate(range(block.start, block.stop)):
+        x = _full_state(rng)
+        x["P"] = np.zeros((_N_STATES, _N_STATES))
+        x["P"][j, j] = 1.0
+        eskf._inject_correction(
+            x, np.eye(_N_STATES), dx.copy(), np.zeros((_N_STATES, _N_STATES)), np.zeros((_N_STATES, _N_STATES))
+        )
+        col = x["P"][:, j] / np.sqrt(x["P"][j, j])
+        out[:, k] = col[block]
+    return out
+
+
+def _exact_reset(a: np.ndarray, eps: float = 1e-6) -> np.ndarray:
+    """Central difference of Log(Exp(-a) Exp(d)) at d = a: the error after injecting `a`."""
+    cols = []
+    for k in range(3):
+        e = np.zeros(3)
+        e[k] = eps
+        cols.append((rot_log(rot_exp(-a) @ rot_exp(a + e)) - rot_log(rot_exp(-a) @ rot_exp(a - e))) / (2 * eps))
+    return np.column_stack(cols)
+
+
+@pytest.mark.parametrize("magnitude", _RESET_MAGNITUDES)
+def test_attitude_reset_jacobian_is_the_exact_derivative(magnitude: float) -> None:
+    """The attitude block of the reset matches the derivative of the injection to second order.
+
+    Convention ``R_true = R Exp(dtheta)``. Injecting ``a`` sets ``R+ = R Exp(a)``, so the error
+    after the reset is ``Log(Exp(-a) Exp(dtheta))``. Its derivative at ``dtheta = a`` is
+    ``J_r(a) = I - 0.5 [a]x + O(|a|^2)``. The bound is ``_RESET_C * |a|^2``.
+    """
+    rng = np.random.default_rng(11)
+    eskf = _eskf_with_vision(anchor_modelled=True)
+    for _ in range(5):
+        u = rng.normal(size=3)
+        a = u / la.norm(u) * magnitude
+        dx = np.zeros(_N_STATES)
+        dx[_IDX_THETA] = a
+        dx[_IDX_P] = rng.normal(size=3) * 1e-2
+        err = la.norm(_filter_reset_block(eskf, dx, _IDX_THETA) - _exact_reset(a), ord=2)
+        assert err <= _RESET_C * magnitude**2 + 1e-8, f"|a|={magnitude}: reset off by {err:.3e}"
+
+
+def test_anchor_reset_block_stays_identity_when_the_anchor_correction_is_not_applied() -> None:
+    """The anchor model does not inject dx[c_t] (CN-003), so its reset block must stay identity."""
+    eskf = _eskf_with_vision(anchor_modelled=True)
+    dx = np.zeros(_N_STATES)
+    dx[_IDX_THETA] = np.array([0.02, -0.01, 0.03])
+    dx[_IDX_CT] = np.array([0.05, 0.04, -0.06])
+    assert _filter_reset_block(eskf, dx, _IDX_CT) == pytest.approx(np.eye(3), abs=1e-12)
+
+
+def _nominal_step(R, p, v, b_g, b_a, accel, gyro, g, dt):
+    """The nominal equations of `_propagate`, restated for the test."""
+    a_world = R @ (accel - b_a) + g
+    return R @ rot_exp((gyro - b_g) * dt), p + v * dt + 0.5 * a_world * dt * dt, v + a_world * dt
+
+
+def _numeric_transition(eskf, R, p, v, b_g, b_a, accel, gyro, dt, h=1e-6) -> np.ndarray:
+    """Central-difference Jacobian of the propagated error with respect to each initial error state.
+
+    Errors use the filter's own convention: ``R_true = R Exp(dtheta)``, everything else additive.
+    """
+    g = eskf.g
+    R1, p1, v1 = _nominal_step(R, p, v, b_g, b_a, accel, gyro, g, dt)
+
+    def err_after(d: np.ndarray) -> np.ndarray:
+        Rt, pt, vt = _nominal_step(
+            R @ rot_exp(d[_IDX_THETA]),
+            p + d[_IDX_P],
+            v + d[_IDX_V],
+            b_g + d[_IDX_BG],
+            b_a + d[_IDX_BA],
+            accel,
+            gyro,
+            g,
+            dt,
+        )
+        return np.concatenate([rot_log(R1.T @ Rt), pt - p1, vt - v1, d[_IDX_BG], d[_IDX_BA]])
+
+    Phi = np.zeros((15, 15))
+    for j in range(15):
+        e = np.zeros(15)
+        e[j] = h
+        Phi[:, j] = (err_after(e) - err_after(-e)) / (2 * h)
+    return Phi
+
+
+#: Blocks whose first-order form omits a term of order dt^2: 0.5 dt^2 R[a]x, 0.5 dt^2 R and the
+#: difference between -dt and -J_r(w dt) dt. Every other block of the 15-state transition is exact
+#: to first order in the error, at any dt.
+_SECOND_ORDER_BLOCKS = {
+    "p,theta": (_IDX_P, _IDX_THETA),
+    "p,b_a": (_IDX_P, _IDX_BA),
+    "theta,b_g": (_IDX_THETA, _IDX_BG),
+}
+
+
+def test_transition_matrix_matches_the_nominal_propagation_to_first_order() -> None:
+    """F agrees with the differenced nominal propagation, and its error shrinks as dt^2.
+
+    One fixed tolerance would not say much, because the omitted terms differ per block. The
+    test asserts the convergence rate instead: halving dt divides the error of each block that
+    omits a second-order term by four, and every other block is exact.
+    """
+    rng = np.random.default_rng(5)
+    eskf = _eskf_with_vision(anchor_modelled=True)
+    R = rot_exp(rng.normal(size=3))
+    p, v = rng.normal(size=3), rng.normal(size=3) * 3.0
+    b_g, b_a = rng.normal(size=3) * 1e-3, rng.normal(size=3) * 1e-2
+    accel = np.array([0.4, -0.3, 9.81]) + rng.normal(size=3)
+    gyro = rng.normal(size=3) * 0.5
+
+    def errors(dt: float) -> np.ndarray:
+        F = eskf._transition(R, gyro - b_g, accel - b_a, dt)[:15, :15]
+        return _numeric_transition(eskf, R, p, v, b_g, b_a, accel, gyro, dt) - F
+
+    dt = 0.01
+    e1, e2 = errors(dt), errors(dt / 2)
+    covered = np.zeros((15, 15), bool)
+    for name, (r, c) in _SECOND_ORDER_BLOCKS.items():
+        n1, n2 = la.norm(e1[r, c]), la.norm(e2[r, c])
+        assert n1 > 1e-7, f"{name}: no second-order error to measure"
+        assert 3.6 < n1 / n2 < 4.4, f"{name}: error ratio {n1 / n2:.2f} at dt halving, expected 4"
+        covered[r, c] = True
+    assert np.abs(e1[~covered]).max() < 1e-8
+    assert np.abs(e2[~covered]).max() < 1e-8
