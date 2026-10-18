@@ -52,3 +52,26 @@ def test_a_noiseless_imu_is_still_available_by_asking_for_it() -> None:
     scaled = {**case, "scenario": {**case["scenario"], "imu_noise_scale": 0.0}}
     clean = run_case("dead_reckoning", scaled, doc["defaults"], seed=0)["headline"]["ate_rmse_m"]
     assert clean == pytest.approx(1.877, abs=1e-3)
+
+
+def test_outage_calibration_is_scored_over_the_outage_window_only() -> None:
+    import numpy as np
+
+    doc = _doc()
+    record = run_case("outage_control", doc["cases"]["outage_control"], doc["defaults"], seed=0, trajectories=True)
+    block = record["outage_calibration"]
+    outage = record["scenario"]["gnss_outages"][0]
+    start, end = outage["start_s"], outage["start_s"] + outage["duration_s"]
+    assert block["windows"] == [{"start_s": start, "end_s": end}]
+    t = np.asarray(record["error_time_series"]["t"])
+    assert block["epochs"] == int(np.count_nonzero((t >= start) & (t < end)))
+    assert 0 < block["epochs"] < len(t)
+    # The window is a subset: its values are not the full-run values, which the headline keeps.
+    assert record["headline"]["nees_mean"] != block["nees_mean"]
+    assert block["nees_expected"] == 3.0
+
+
+def test_a_case_without_outages_has_no_outage_calibration() -> None:
+    doc = _doc()
+    record = run_case("gnss_only", doc["cases"]["gnss_only"], doc["defaults"], seed=0)
+    assert "outage_calibration" not in record

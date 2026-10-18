@@ -37,10 +37,10 @@ It measures not only how accurate the trajectory is, but whether the uncertainty
 reports is honest. With GNSS denied and visual odometry on, the filter's position error
 falls from 3.768 m to 2.321 m while its claimed uncertainty collapses to 0.162 m:
 
-| Configuration | ATE RMSE | Claimed 1σ | Mean NEES (expected 3) | 2σ-per-axis coverage (expected 99.3%) |
-|---|---:|---:|---:|---:|
-| GNSS denied, vision off | 3.768 m | 0.567 m | 4.1 | 100.0% |
-| GNSS denied, vision on | **2.321 m** | **0.162 m** | **286.1** | **20.5%** |
+| Configuration | ATE RMSE, full run | Claimed 1σ, full run | Mean NEES, full run (expected 3) | 2σ-per-axis coverage, full run (expected 99.3%) | Mean NEES, outage window (expected 3) | 2σ-per-axis coverage, outage window (expected 99.3%) |
+|---|---:|---:|---:|---:|---:|---:|
+| GNSS denied, vision off | 3.768 m | 0.567 m | 4.1 | 100.0% | 5.9 | 100.0% |
+| GNSS denied, vision on | **2.321 m** | **0.162 m** | **286.1** | **20.5%** | **478.6** | **0.0%** |
 
 **Accuracy improved. Calibration failed.** The filter converges and is confidently wrong, so
 visual fusion ships **off by default**. Across 8 outage windows the overconfidence held in

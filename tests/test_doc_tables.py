@@ -85,7 +85,7 @@ HTML = """<table>
 
 
 def _write(path: Path, text: str) -> Path:
-    path.write_text(text)
+    path.write_text(text, encoding="utf-8")
     return path
 
 
@@ -163,3 +163,62 @@ def test_the_real_documents_match_the_committed_benchmark() -> None:
     if not results.exists():
         pytest.skip("results/benchmark.json not generated")
     assert check_doc_tables.check(results, [ROOT / "README.md", ROOT / "docs" / "results.md"]) == 0
+
+
+# -- the Configuration table: full run and outage window side by side ----------------------------------
+
+
+def _configuration_results() -> dict:
+    def case(name: str, ate: float, claim: float, nees: float, cov: float, wnees: float, wcov: float) -> dict:
+        return {
+            "name": name,
+            "headline": {"ate_rmse_m": ate, "claimed_sigma_p_m": claim, "nees_mean": nees, "coverage": {"2sigma": cov}},
+            "outage_calibration": {"nees_mean": wnees, "coverage_2sigma": wcov, "epochs": 100},
+        }
+
+    return {
+        "cases": [
+            case("outage_control", 3.7681, 0.5671, 4.13, 1.0, 5.94, 1.0),
+            case("outage_visual", 2.3214, 0.1623, 286.14, 0.2051, 478.6, 0.0),
+        ]
+    }
+
+
+def _configuration_doc(results: dict) -> str:
+    return "# Page\n\nSome prose.\n\n" + check_doc_tables.configuration_table(results) + "\n\nMore prose.\n"
+
+
+def test_the_configuration_table_shows_both_windows_in_labelled_columns() -> None:
+    table = check_doc_tables.configuration_table(_configuration_results())
+    header = table.splitlines()[0]
+    assert header.count("full run") == 4 and header.count("outage window") == 2
+    row = table.splitlines()[3]
+    assert "**478.6**" in row and "**0.0%**" in row and "**286.1**" in row
+
+
+def test_a_matching_configuration_table_passes(tmp_path: Path) -> None:
+    results = _write(tmp_path / "results.json", json.dumps(_configuration_results()))
+    doc = _write(tmp_path / "index.md", _configuration_doc(_configuration_results()))
+    assert check_doc_tables.check_configuration(results, [doc]) == 0
+
+
+def test_a_drifted_outage_window_number_fails(tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    results = _write(tmp_path / "results.json", json.dumps(_configuration_results()))
+    doc = _write(tmp_path / "index.md", _configuration_doc(_configuration_results()).replace("478.6", "470.0"))
+    assert check_doc_tables.check_configuration(results, [doc]) == 1
+    assert "470.0" in capsys.readouterr().err
+
+
+def test_a_configuration_table_without_the_outage_columns_fails(tmp_path: Path) -> None:
+    results = _write(tmp_path / "results.json", json.dumps(_configuration_results()))
+    old = (
+        "| Configuration | ATE RMSE | Claimed 1σ | Mean NEES (expected 3) | 2σ-per-axis coverage (expected 99.3%) |\n"
+        "|---|---:|---:|---:|---:|\n| GNSS denied, vision off | 3.768 m | 0.567 m | 4.1 | 100.0% |\n"
+        "| GNSS denied, vision on | **2.321 m** | **0.162 m** | **286.1** | **20.5%** |\n"
+    )
+    assert check_doc_tables.check_configuration(results, [_write(tmp_path / "index.md", old)]) == 1
+
+
+def test_a_document_without_a_configuration_table_fails(tmp_path: Path) -> None:
+    results = _write(tmp_path / "results.json", json.dumps(_configuration_results()))
+    assert check_doc_tables.check_configuration(results, [_write(tmp_path / "x.md", "no table\n")]) == 1

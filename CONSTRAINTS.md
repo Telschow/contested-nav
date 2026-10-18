@@ -4,7 +4,7 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: <!-- metric:tests_collected -->1418<!-- /metric --> tests collected, all of which pass except the deliberate
+Last measured: <!-- metric:tests_collected -->1434<!-- /metric --> tests collected, all of which pass except the deliberate
 xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->94.3<!-- /metric -->%
 line coverage (<!-- metric:coverage_lines_hit -->10033<!-- /metric -->/<!-- metric:coverage_lines_total -->10638<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
@@ -83,7 +83,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | <!-- metric:tests_collected -->1418<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | <!-- metric:tests_collected -->1434<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
 | Line coverage | 75% | <!-- metric:coverage_percent -->94.3<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
@@ -120,12 +120,13 @@ These are floors, not goals. Each must not regress; raising one is welcome.
   [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md)). The current gate is one-sided: it does not reject an
   uninformative filter, and an IMU-only filter also meets it ([real front end](docs/real_front_end.md)).
 
-  Mean NEES 286.1
-  over a 15 s outage (`outage_visual`), with 20.5% of epochs inside 2 sigma
-  against 99.3% expected. A single anchor cannot represent correlated visual
+  `outage_visual`, over the 15 s outage window (5 s to 20 s, half-open): mean NEES 478.6, with
+  0.0% of epochs inside 2 sigma against 99.3% expected. Over the whole 30 s run, which includes the epochs with GNSS,
+  the same case gives mean NEES 286.1 and 20.5% inside 2 sigma. Both are generated
+  (`python scripts/check_doc_tables.py --print-configuration-table`). A single anchor cannot represent correlated visual
   drift. Pinned by
   `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`. B2 did not
-  change this number, and neither did ADR-0006: correcting a frame is not the
+  change the full-run number, and neither did ADR-0006: correcting a frame is not the
   same as modelling correlated error, and re-admitting the GNSS fixes that B5
   caused to be discarded shrank the error without repairing the model that made
   `P` wrong. The number fell from 1996.5 to 419.4 as a side effect of taking the
