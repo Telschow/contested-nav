@@ -71,18 +71,6 @@ MARKDOWN = """# Title
 Some prose after the table.
 """
 
-HTML = """<table>
-  <thead><tr><th>Scenario</th><th class="num">ATE RMSE (m)</th>
-    <th class="num">Claimed 1&sigma; (m)</th><th class="num">Mean NEES</th>
-    <th class="num">Coverage @ 2&sigma;</th><th>Verdict</th></tr></thead>
-  <tbody>
-    <tr><td>GNSS only (control)</td><td class="num">0.503</td><td class="num">0.252</td><td class="num">3.7</td><td class="num">100.0%</td><td>mixed</td></tr>
-    <tr><td>Dead reckoning</td><td class="num">1.877</td><td class="num">n/a</td><td class="num">n/a</td><td class="num">n/a</td><td>no covariance</td></tr>
-    <tr><td>Vision only</td><td class="num">2.309</td><td class="num">0.156</td><td class="num">331.0</td><td class="num">0.7%</td><td>overconfident</td></tr>
-  </tbody>
-</table>
-"""
-
 
 def _write(path: Path, text: str) -> Path:
     path.write_text(text, encoding="utf-8")
@@ -96,17 +84,10 @@ def test_markdown_table_is_read_in_order(tmp_path: Path) -> None:
     assert rows[1][2] == "n/a"
 
 
-def test_html_table_is_read_in_order() -> None:
-    rows = check_doc_tables._html_cells(HTML)
-    assert len(rows) == 3
-    assert rows[2][1] == "2.309"
-    assert rows[0][4] == "100.0%"
-
-
 def test_matching_documents_pass(tmp_path: Path) -> None:
     results = _write(tmp_path / "results.json", json.dumps(_results()))
     readme = _write(tmp_path / "README.md", MARKDOWN)
-    page = _write(tmp_path / "index.html", HTML)
+    page = _write(tmp_path / "results.md", MARKDOWN)
     assert check_doc_tables.check(results, [readme, page]) == 0
 
 
@@ -222,3 +203,81 @@ def test_a_configuration_table_without_the_outage_columns_fails(tmp_path: Path) 
 def test_a_document_without_a_configuration_table_fails(tmp_path: Path) -> None:
     results = _write(tmp_path / "results.json", json.dumps(_configuration_results()))
     assert check_doc_tables.check_configuration(results, [_write(tmp_path / "x.md", "no table\n")]) == 1
+
+
+# -- tables whose rows are named by benchmark case (docs/getting-started.md) ---------------------------------
+
+
+def _named_results() -> dict:
+    def case(name: str, ate: float, claim: float, nees: float, cov: float, verdict: str) -> dict:
+        return {
+            "name": name,
+            "headline": {
+                "ate_rmse_m": ate,
+                "claimed_sigma_p_m": claim,
+                "nees_mean": nees,
+                "coverage": {"2sigma": cov},
+                "calibration_verdict": verdict,
+            },
+        }
+
+    return {
+        "cases": [
+            case("gnss_only", 0.5281, 0.2534, 4.29, 1.0, "mixed(bulk=overconfident, tail=underconfident)"),
+            case("outage_control", 3.7682, 0.5671, 4.13, 1.0, "mixed(bulk=overconfident, tail=underconfident)"),
+            case("outage_visual", 2.3214, 0.1623, 286.14, 0.2051, "overconfident"),
+        ]
+    }
+
+
+NAMED = """# Getting started
+
+```text
+| Scenario | ATE RMSE (m) | Claimed 1-sigma (m) | Mean NEES (exp. 3) | Coverage at 2 sigma | Verdict |
+| --- | ---: | ---: | ---: | ---: | --- |
+| gnss_only | 0.528 | 0.253 | 4.3 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
+| outage_control | 3.768 | 0.567 | 4.1 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
+| outage_visual | 2.321 | 0.162 | 286.1 | 20.5% | overconfident |
+```
+"""
+
+
+def test_a_named_row_table_that_matches_passes(tmp_path: Path) -> None:
+    results = _write(tmp_path / "results.json", json.dumps(_named_results()))
+    doc = _write(tmp_path / "getting-started.md", NAMED)
+    assert check_doc_tables.check_named_rows(results, [doc]) == 0
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("| 3.768 |", "| 3.760 |"),  # the stale value this check exists for
+        ("| 286.1 |", "| 286.2 |"),
+        ("| 20.5% |", "| 21.5% |"),
+        ("| overconfident |", "| mixed |"),
+    ],
+)
+def test_a_drifted_named_row_cell_fails(tmp_path: Path, capsys: pytest.CaptureFixture, old: str, new: str) -> None:
+    results = _write(tmp_path / "results.json", json.dumps(_named_results()))
+    doc = _write(tmp_path / "getting-started.md", NAMED.replace(old, new))
+    assert check_doc_tables.check_named_rows(results, [doc]) == 1
+    assert new.strip("| ") in capsys.readouterr().err
+
+
+def test_a_named_row_for_a_case_that_does_not_exist_fails(tmp_path: Path) -> None:
+    results = _write(tmp_path / "results.json", json.dumps(_named_results()))
+    doc = _write(tmp_path / "getting-started.md", NAMED.replace("| outage_visual |", "| outage_invented |"))
+    assert check_doc_tables.check_named_rows(results, [doc]) == 1
+
+
+def test_a_document_with_no_named_row_table_fails(tmp_path: Path) -> None:
+    results = _write(tmp_path / "results.json", json.dumps(_named_results()))
+    assert check_doc_tables.check_named_rows(results, [_write(tmp_path / "x.md", "no table\n")]) == 1
+
+
+def test_the_real_getting_started_table_matches_the_golden_snapshot(tmp_path: Path) -> None:
+    """Runs everywhere: the golden file is committed, and it is what the benchmark must reproduce."""
+    golden = json.loads((ROOT / "tests" / "golden" / "benchmark.json").read_text(encoding="utf-8"))
+    results = {"cases": [{"name": name, **case} for name, case in golden["cases"].items()]}
+    path = _write(tmp_path / "golden_as_results.json", json.dumps(results))
+    assert check_doc_tables.check_named_rows(path, [ROOT / "docs" / "getting-started.md"]) == 0

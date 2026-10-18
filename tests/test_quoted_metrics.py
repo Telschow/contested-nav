@@ -31,7 +31,12 @@ GOOD = {
     "coverage_lines_hit": 100,
     "coverage_lines_total": 110,
     "coverage_python": "3.13",
+    "outage_visual_window_nees": 478.63,
+    "outage_visual_window_coverage_percent": 0.0,
 }
+
+#: What the golden snapshot holds for the two headline values, in the shape of ``tests/golden/benchmark.json``.
+GOLDEN = {"cases": {"outage_visual": {"outage_calibration": {"nees_mean": 478.63, "coverage_2sigma": 0.0}}}}
 
 
 def marker(key: str, value: str) -> str:
@@ -45,6 +50,8 @@ def make_tree(tmp_path: Path, readme: str = "", adrs: tuple[str, ...] = ("0001-a
         (tmp_path / "docs" / "adr" / name).write_text("# ADR\n", encoding="utf-8")
     (tmp_path / "docs" / "adr" / "index.md").write_text("\n".join(adrs), encoding="utf-8")
     (tmp_path / "docs" / "data" / "metrics.json").write_text(json.dumps(GOOD), encoding="utf-8")
+    (tmp_path / "tests" / "golden").mkdir(parents=True)
+    (tmp_path / "tests" / "golden" / "benchmark.json").write_text(json.dumps(GOLDEN), encoding="utf-8")
     (tmp_path / "README.md").write_text(readme, encoding="utf-8")
     return tmp_path
 
@@ -113,6 +120,34 @@ class TestCheck:
         assert metrics.check(root, collected=10) == []
 
 
+class TestHeadline:
+    """The two values prose quotes from the benchmark come from the committed golden snapshot."""
+
+    def test_the_values_are_read_from_the_golden_snapshot(self, tmp_path):
+        got = metrics.headline_from_golden(make_tree(tmp_path))
+        assert got == {"outage_visual_window_nees": 478.63, "outage_visual_window_coverage_percent": 0.0}
+
+    def test_each_is_shown_with_one_decimal(self):
+        assert metrics.render("outage_visual_window_nees", GOOD) == "478.6"
+        assert metrics.render("outage_visual_window_coverage_percent", GOOD) == "0.0"
+
+    def test_a_marker_holding_the_current_value_passes(self, tmp_path):
+        text = f"NEES {marker('outage_visual_window_nees', '478.6')} over the window"
+        assert metrics.check(make_tree(tmp_path, text), collected=10) == []
+
+    def test_a_stale_marker_is_reported(self, tmp_path):
+        text = f"NEES {marker('outage_visual_window_nees', '286.1')} over the window"
+        problems = metrics.check(make_tree(tmp_path, text), collected=10)
+        assert any("outage_visual_window_nees reads 286.1" in p for p in problems)
+
+    def test_a_recorded_value_that_differs_from_the_golden_snapshot_is_reported(self, tmp_path):
+        root = make_tree(tmp_path)
+        moved = {"cases": {"outage_visual": {"outage_calibration": {"nees_mean": 500.0, "coverage_2sigma": 0.0}}}}
+        (root / "tests" / "golden" / "benchmark.json").write_text(json.dumps(moved), encoding="utf-8")
+        problems = metrics.check(root, collected=10)
+        assert any("outage_visual_window_nees" in p and "golden" in p for p in problems)
+
+
 def test_every_live_file_exists():
     missing = [p for p in metrics.LIVE_FILES if not (ROOT / p).is_file()]
     assert missing == [], f"LIVE_FILES entries that no longer exist: {missing}"
@@ -167,6 +202,13 @@ class TestRepository:
     def test_every_key_is_recorded(self):
         assert set(metrics.KEYS) <= set(metrics.read_metrics())
 
-    @pytest.mark.parametrize("name", ["README.md", "CONSTRAINTS.md", "ROADMAP.md", "CONTRIBUTING.md"])
+    @pytest.mark.parametrize(
+        "name", ["README.md", "CONSTRAINTS.md", "ROADMAP.md", "CONTRIBUTING.md", "RISKS.md", "SECURITY.md"]
+    )
     def test_the_live_files_are_in_scope(self, name):
         assert (ROOT / name) in metrics.live_documents()
+
+    def test_the_recorded_headline_values_match_the_golden_snapshot(self):
+        recorded = metrics.read_metrics()
+        for key, value in metrics.headline_from_golden().items():
+            assert recorded[key] == value, key
