@@ -47,45 +47,44 @@ Lost = more than 20% of GNSS fixes rejected. Flag = FDIR declared the channel fa
 
 | Scope | Config | Runs | Lost | Flag | Median NEES (expected 3) | Mean 2σ coverage | Median max error m |
 |---|---|---:|---:|---:|---:|---:|---:|
-| all | file | 46 | 4 | 4 | 5.02 | 86.4% | 11.8 |
-| all | allan | 46 | 13 | 14 | 11.87 | 60.3% | 24.0 |
-| all | file-walk10 | 46 | 0 | 0 | 2.92 | 99.2% | 13.6 |
-| room1 | file | 8 | 0 | 0 | 4.90 | 89.4% | 15.2 |
-| room1 | allan | 8 | 3 | 3 | 10.82 | 60.3% | 39.7 |
-| room1 | file-walk10 | 8 | 0 | 0 | 2.79 | 99.7% | 19.3 |
-| room2 | file | 8 | 0 | 0 | 3.98 | 97.9% | 5.5 |
-| room2 | allan | 8 | 0 | 0 | 7.93 | 78.3% | 5.4 |
-| room2 | file-walk10 | 8 | 0 | 0 | 2.75 | 99.4% | 5.8 |
-| room3 | file | 8 | 1 | 1 | 5.02 | 86.8% | 15.0 |
-| room3 | allan | 8 | 1 | 1 | 10.52 | 66.9% | 15.0 |
-| room3 | file-walk10 | 8 | 0 | 0 | 3.13 | 99.1% | 7.9 |
-| room4 | file | 6 | 0 | 0 | 3.99 | 94.5% | 9.9 |
-| room4 | allan | 6 | 1 | 1 | 8.28 | 70.2% | 24.3 |
-| room4 | file-walk10 | 6 | 0 | 0 | 2.73 | 99.3% | 10.6 |
-| room5 | file | 8 | 2 | 2 | 6.44 | 72.9% | 28.4 |
-| room5 | allan | 8 | 4 | 4 | 41.95 | 41.8% | 93.6 |
-| room5 | file-walk10 | 8 | 0 | 0 | 3.23 | 98.6% | 31.7 |
-| room6 | file | 8 | 1 | 1 | 6.24 | 79.1% | 14.6 |
-| room6 | allan | 8 | 4 | 5 | 21.78 | 46.6% | 42.8 |
-| room6 | file-walk10 | 8 | 0 | 0 | 3.02 | 99.2% | 14.0 |
+| all | file | 46 | 2 | 2 | 4.25 | 91.0% | 10.6 |
+| all | allan | 46 | 6 | 6 | 8.20 | 71.8% | 12.9 |
+| all | file-walk10 | 46 | 1 | 1 | 2.85 | 97.6% | 13.7 |
+| room1 | file | 8 | 0 | 0 | 3.98 | 97.9% | 13.5 |
+| room1 | allan | 8 | 0 | 0 | 7.90 | 78.5% | 13.7 |
+| room1 | file-walk10 | 8 | 0 | 0 | 2.78 | 99.7% | 19.3 |
+| room2 | file | 8 | 0 | 0 | 3.85 | 97.9% | 5.2 |
+| room2 | allan | 8 | 0 | 0 | 7.30 | 81.3% | 4.8 |
+| room2 | file-walk10 | 8 | 0 | 0 | 2.72 | 99.4% | 6.0 |
+| room3 | file | 8 | 0 | 0 | 4.74 | 95.4% | 8.6 |
+| room3 | allan | 8 | 1 | 1 | 9.08 | 72.5% | 11.8 |
+| room3 | file-walk10 | 8 | 0 | 0 | 2.80 | 99.3% | 7.9 |
+| room4 | file | 6 | 0 | 0 | 3.84 | 95.7% | 13.3 |
+| room4 | allan | 6 | 0 | 0 | 8.10 | 76.6% | 14.0 |
+| room4 | file-walk10 | 6 | 0 | 0 | 2.83 | 99.4% | 12.0 |
+| room5 | file | 8 | 2 | 2 | 8.21 | 66.8% | 29.1 |
+| room5 | allan | 8 | 4 | 4 | 45.40 | 40.6% | 72.2 |
+| room5 | file-walk10 | 8 | 1 | 1 | 3.18 | 89.0% | 31.3 |
+| room6 | file | 8 | 0 | 0 | 4.21 | 93.2% | 14.7 |
+| room6 | allan | 8 | 1 | 1 | 6.24 | 82.3% | 18.7 |
+| room6 | file-walk10 | 8 | 0 | 0 | 2.88 | 99.3% | 11.6 |
 
 Runs still lost with `allan`:
 
 | Sequence | Outage start s | Seed | GNSS fixes rejected | Max position error m |
 |---|---:|---:|---:|---:|
-| room1 | 15 | 1 | 62% | 729.5 |
-| room1 | 60 | 1 | 51% | 304.4 |
-| room1 | 90 | 1 | 26% | 97.5 |
-| room3 | 60 | 1 | 51% | 148.1 |
-| room4 | 60 | 1 | 35% | 108.7 |
-| room5 | 15 | 0 | 51% | 928.8 |
-| room5 | 60 | 1 | 51% | 273.4 |
-| room5 | 90 | 0 | 27% | 134.4 |
-| room5 | 90 | 1 | 27% | 161.3 |
-| room6 | 35 | 0 | 69% | 1656.8 |
-| room6 | 35 | 1 | 68% | 592.4 |
-| room6 | 60 | 0 | 44% | 37.3 |
-| room6 | 60 | 1 | 46% | 84.0 |
+| room3 | 60 | 1 | 51% | 130.4 |
+| room5 | 15 | 0 | 51% | 508.7 |
+| room5 | 35 | 0 | 71% | 2076.3 |
+| room5 | 60 | 1 | 51% | 199.0 |
+| room5 | 90 | 0 | 28% | 107.9 |
+| room6 | 15 | 1 | 66% | 455.6 |
+
+Runs still lost with `file-walk10`:
+
+| Sequence | Outage start s | Seed | GNSS fixes rejected | Max position error m |
+|---|---:|---:|---:|---:|
+| room5 | 35 | 0 | 71% | 2124.0 |
 
 <!-- tumvi:end -->
 
@@ -94,19 +93,21 @@ Runs still lost with `allan`:
 Each statement below is checked against the CSV (and, for statement 5, the timing CSV) by `tests/test_tumvi_page.py`.
 
 1. **The raw figures lose more runs than the authors' inflated figures**, and the inflated figures lose more than
-   the bias-walk setting, which loses none.
+   the bias-walk setting, which loses one run.
 2. **The same ordering holds for calibration.** The median NEES falls and the mean 2σ coverage rises from `allan`
    to `file` to `file-walk10`.
-3. **With only the bias random walk changed, the loss goes from some runs to none.** `file-walk10` differs from
-   `file` in the bias random walks alone.
+3. **With only the bias random walk changed, the loss falls from some runs to fewer.** `file-walk10` differs from
+   `file` in the bias random walks alone, and still loses a run.
 4. **The bias-walk setting is close to nominal.** Over all runs its median NEES is below the expected 3, and its
-   mean 2σ coverage is within a point of the nominal 99.3%.
+   mean 2σ coverage is within two points of the nominal 99.3%.
 5. **The ordering also holds in the rooms with the fewest dropouts.** Leaving out the two rooms that spend most of their
    time in motion-capture dropouts, the raw figures still lose more runs than the inflated ones, which lose more
    than the bias-walk setting.
 6. **The ordering is the one found on EuRoC**, on a different IMU, from different authors and with a different
    start. What carries over is the direction: the bias random walk the figures give is too small. The size of
    the factor does not: here the adjustment is applied to figures that were already inflated.
+
+**INTERPRETATION:** Which runs are lost changed between two filter versions, so read individual lost runs as sensitive and the counts as approximate.
 
 ## Reproduce
 

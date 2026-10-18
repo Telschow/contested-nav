@@ -44,8 +44,8 @@ The same cross-validation with the original five features and with all ten.
 
 | Features | Control called a fault | Multipath called multipath | Spoofing called spoofing | Degradation called degradation | 10 m step called multipath | 0.5 m/s ramp detected |
 |---|---:|---:|---:|---:|---:|---:|
-| original five | 15% | 97% | 38% | 85% | 85% | 44% |
-| all ten | 18% | 99% | 74% | 86% | 0% | 44% |
+| original five | 9% | 98% | 40% | 85% | 79% | 29% |
+| all ten | 12% | 99% | 70% | 87% | 0% | 32% |
 
 <!-- faultclass-compare:end -->
 
@@ -57,20 +57,20 @@ Median of each feature by fault and level.
 
 | Fault | Level | nis | mean_shift | drift_m_s | bias_accel | bias_gyro | ac1 | axis_conc | decay | bias_accel_30 | bias_gyro_30 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| none | 0 | 1.03 | 0.967 | 0.0187 | 0.0945 | 0.00241 | 0.0487 | 0.41 | 1.01 | 0.0896 | 0.00244 |
-| multipath | 3 | 8.7 | 19.2 | 0.655 | 0.138 | 0.00238 | 0.455 | 0.752 | 1.01 | 0.152 | 0.00273 |
-| multipath | 10 | 37.2 | 31.3 | 2.47 | 0.08 | 0.00184 | 0.198 | 0.734 | 0.458 | 0.146 | 0.00236 |
-| multipath | 30 | 210 | 32.8 | 1.45 | 0.0433 | 0.0006 | 0.0297 | 0.412 | 0.279 | 0.126 | 0.00167 |
-| ramp | 0.5 | 1.05 | 0.944 | 0.0247 | 0.0935 | 0.00194 | 0.0743 | 0.406 | 1.03 | 0.0927 | 0.00231 |
-| ramp | 1 | 1.17 | 1.26 | 0.0385 | 0.114 | 0.00194 | 0.117 | 0.401 | 0.951 | 0.104 | 0.00278 |
-| ramp | 2 | 1.34 | 1.84 | 0.0607 | 0.154 | 0.004 | 0.234 | 0.418 | 0.878 | 0.126 | 0.00413 |
-| ramp | 5 | 20.3 | 71.3 | 4.36 | 0.117 | 0.00304 | 0.988 | 0.998 | 0.46 | 0.187 | 0.00384 |
-| step | 10 | 7.8 | 24.2 | 0.799 | 0.205 | 0.0038 | 0.88 | 0.963 | 0.0515 | 0.15 | 0.00442 |
-| step | 50 | 154 | 137 | 1.95 | 0.13 | 0.00275 | 0.962 | 0.996 | 0.0235 | 0.187 | 0.00295 |
-| accel_bias | 0.2 | 1.08 | 1.42 | 0.032 | 0.166 | 0.00274 | 0.0982 | 0.411 | 0.974 | 0.184 | 0.00307 |
-| accel_bias | 1 | 1.66 | 4.9 | 0.132 | 0.663 | 0.00383 | 0.397 | 0.536 | 0.793 | 0.689 | 0.0034 |
-| gyro_bias | 0.01 | 1.18 | 5.37 | 0.0306 | 0.218 | 0.00739 | 0.163 | 0.411 | 1.2 | 0.191 | 0.00828 |
-| gyro_bias | 0.05 | 109 | 144 | 11.4 | 0.219 | 0.00541 | 0.984 | 0.996 | 166 | 0.219 | 0.00541 |
+| none | 0 | 1.06 | 0.775 | 0.0188 | 0.0737 | 0.00216 | 0.0485 | 0.411 | 0.945 | 0.0804 | 0.00254 |
+| multipath | 3 | 8.46 | 18 | 0.619 | 0.108 | 0.00215 | 0.429 | 0.695 | 1.02 | 0.139 | 0.00317 |
+| multipath | 10 | 37.2 | 31.9 | 2.59 | 0.0931 | 0.00209 | 0.186 | 0.756 | 0.451 | 0.093 | 0.00321 |
+| multipath | 30 | 217 | 30.8 | 1.68 | 0.0369 | 0.00055 | 0.0463 | 0.419 | 0.0468 | 0.0887 | 0.00169 |
+| ramp | 0.5 | 1.07 | 0.893 | 0.0267 | 0.0797 | 0.00207 | 0.0739 | 0.406 | 0.981 | 0.0849 | 0.00247 |
+| ramp | 1 | 1.17 | 1.06 | 0.0412 | 0.105 | 0.00314 | 0.119 | 0.401 | 1.03 | 0.097 | 0.00316 |
+| ramp | 2 | 1.37 | 1.71 | 0.0676 | 0.148 | 0.00493 | 0.236 | 0.437 | 0.858 | 0.12 | 0.00439 |
+| ramp | 5 | 20.2 | 72.3 | 4.15 | 0.0978 | 0.00226 | 0.988 | 0.998 | 0.454 | 0.171 | 0.00316 |
+| step | 10 | 7.54 | 24.5 | 0.73 | 0.165 | 0.00466 | 0.878 | 0.967 | 0.0501 | 0.129 | 0.00352 |
+| step | 50 | 160 | 137 | 2.13 | 0.128 | 0.00311 | 0.963 | 0.997 | 0.0202 | 0.165 | 0.00422 |
+| accel_bias | 0.2 | 1.08 | 1.33 | 0.0329 | 0.169 | 0.00281 | 0.101 | 0.411 | 0.906 | 0.177 | 0.00303 |
+| accel_bias | 1 | 1.66 | 5.13 | 0.131 | 0.698 | 0.00365 | 0.381 | 0.542 | 0.732 | 0.78 | 0.00322 |
+| gyro_bias | 0.01 | 1.2 | 5.4 | 0.0302 | 0.203 | 0.00663 | 0.162 | 0.409 | 1.19 | 0.184 | 0.00864 |
+| gyro_bias | 0.05 | 108 | 145 | 11.5 | 0.208 | 0.00527 | 0.984 | 0.996 | 158 | 0.208 | 0.00585 |
 
 <!-- faultclass-features:end -->
 
@@ -80,10 +80,10 @@ Median of each feature by fault and level.
 
 | True class | Runs | Called control | Called multipath | Called spoofing | Called degradation |
 |---|---:|---:|---:|---:|---:|
-| control | 34 | 82% | 0% | 9% | 9% |
+| control | 34 | 88% | 0% | 9% | 3% |
 | multipath | 102 | 0% | 99% | 0% | 1% |
-| spoofing | 204 | 13% | 0% | 74% | 14% |
-| degradation | 136 | 10% | 0% | 4% | 86% |
+| spoofing | 204 | 16% | 0% | 70% | 14% |
+| degradation | 136 | 10% | 0% | 3% | 87% |
 
 <!-- faultclass-confusion:end -->
 
@@ -93,17 +93,17 @@ Median of each feature by fault and level.
 
 | Class | Fault | Level | Runs | Called correctly | Called control (missed) |
 |---|---|---:|---:|---:|---:|
-| control | none | 0 | 34 | 82% | 82% | 18% |
+| control | none | 0 | 34 | 88% | 88% | 12% |
 | multipath | multipath | 3 | 34 | 97% | 0% | 100% |
 | multipath | multipath | 10 | 34 | 100% | 0% | 100% |
 | multipath | multipath | 30 | 34 | 100% | 0% | 100% |
-| spoofing | ramp | 0.5 | 34 | 26% | 56% | 44% |
-| spoofing | ramp | 1 | 34 | 56% | 21% | 79% |
-| spoofing | ramp | 2 | 34 | 71% | 0% | 100% |
-| spoofing | ramp | 5 | 34 | 88% | 0% | 100% |
-| spoofing | step | 10 | 34 | 100% | 0% | 100% |
+| spoofing | ramp | 0.5 | 34 | 24% | 68% | 32% |
+| spoofing | ramp | 1 | 34 | 62% | 24% | 76% |
+| spoofing | ramp | 2 | 34 | 56% | 3% | 97% |
+| spoofing | ramp | 5 | 34 | 91% | 0% | 100% |
+| spoofing | step | 10 | 34 | 88% | 0% | 100% |
 | spoofing | step | 50 | 34 | 100% | 0% | 100% |
-| degradation | accel_bias | 0.2 | 34 | 56% | 32% | 68% |
+| degradation | accel_bias | 0.2 | 34 | 59% | 35% | 65% |
 | degradation | accel_bias | 1 | 34 | 97% | 0% | 100% |
 | degradation | gyro_bias | 0.01 | 34 | 91% | 6% | 94% |
 | degradation | gyro_bias | 0.05 | 34 | 100% | 0% | 100% |
@@ -122,8 +122,8 @@ tuned afterwards.
 
 | Figures | Runs | Control called a fault | Multipath called multipath | Spoofing called spoofing | Degradation called degradation |
 |---|---:|---:|---:|---:|---:|
-| cross-validated, training runs | 476 | 18% | 99% | 74% | 86% |
-| frozen model, unseen runs | 544 | 35% | 100% | 77% | 91% |
+| cross-validated, training runs | 476 | 12% | 99% | 70% | 87% |
+| frozen model, unseen runs | 544 | 34% | 100% | 68% | 85% |
 
 <!-- faultclass-confirm-compare:end -->
 
@@ -133,10 +133,10 @@ By true class:
 
 | True class | Runs | Called control | Called multipath | Called spoofing | Called degradation |
 |---|---:|---:|---:|---:|---:|
-| control | 68 | 65% | 0% | 22% | 13% |
+| control | 68 | 66% | 0% | 29% | 4% |
 | multipath | 68 | 0% | 100% | 0% | 0% |
-| spoofing | 238 | 11% | 0% | 77% | 12% |
-| degradation | 170 | 0% | 0% | 9% | 91% |
+| spoofing | 238 | 10% | 0% | 68% | 22% |
+| degradation | 170 | 0% | 0% | 15% | 85% |
 
 <!-- faultclass-confirm-calls:end -->
 
@@ -146,34 +146,34 @@ By fault and level:
 
 | Class | Fault | Level | Runs | Called correctly | Called control (missed) | Detected (any fault called) |
 |---|---|---:|---:|---:|---:|---:|
-| control | none | 0 | 68 | 65% | 65% | 35% |
+| control | none | 0 | 68 | 66% | 66% | 34% |
 | multipath | multipath | 5 | 34 | 100% | 0% | 100% |
 | multipath | multipath | 20 | 34 | 100% | 0% | 100% |
-| spoofing | ramp | 0.75 | 34 | 32% | 50% | 50% |
-| spoofing | ramp | 1.5 | 34 | 44% | 24% | 76% |
+| spoofing | ramp | 0.75 | 34 | 50% | 38% | 62% |
+| spoofing | ramp | 1.5 | 34 | 47% | 32% | 68% |
 | spoofing | ramp | 3 | 34 | 65% | 0% | 100% |
 | spoofing | ramp | 10 | 34 | 100% | 0% | 100% |
-| spoofing | step | 5 | 34 | 100% | 0% | 100% |
+| spoofing | step | 5 | 34 | 15% | 0% | 100% |
 | spoofing | step | 20 | 34 | 100% | 0% | 100% |
 | spoofing | step | 100 | 34 | 100% | 0% | 100% |
 | degradation | accel_bias | 0.4 | 34 | 100% | 0% | 100% |
 | degradation | accel_bias | 0.7 | 34 | 88% | 0% | 100% |
-| degradation | accel_bias | 2 | 34 | 91% | 0% | 100% |
-| degradation | gyro_bias | 0.02 | 34 | 74% | 0% | 100% |
+| degradation | accel_bias | 2 | 34 | 38% | 0% | 100% |
+| degradation | gyro_bias | 0.02 | 34 | 97% | 0% | 100% |
 | degradation | gyro_bias | 0.1 | 34 | 100% | 0% | 100% |
 
 <!-- faultclass-confirm-levels:end -->
 
 1. **Multipath held.** All 68 multipath runs, at 5 and 20 m, are called multipath, and none of the 476 other runs is
    called multipath.
-2. **Spoofing and degradation held.** Spoofing is called in 77% of runs (74% in cross-validation) and degradation in
-   91% (86%). Steps are called spoofing at every size, and a 10 m/s ramp always.
-3. **The false-alarm rate did not hold.** About a third of the control runs are called a fault (35%, against 18% in
-   cross-validation). The calls are spread over almost every sequence, about one run in four on each, and are not
-   one bad sequence. The stage 1 rule is "above the largest value seen on the training controls" for each of ten
+2. **Spoofing and degradation held.** Spoofing is called in 68% of runs (70% in cross-validation) and degradation in
+   85% (87%). Steps of 20 m and above and a 10 m/s ramp are always called spoofing, and the 5 m step in 15% of runs.
+3. **The false-alarm rate did not hold.** About a third of the control runs are called a fault (34%, against 12% in
+   cross-validation). The 23 alarms among the 68 unseen control runs fall on 15 of the 17 sequences, and no sequence has more than three of
+   its four control runs called a fault, so they are not one bad sequence. The stage 1 rule is "above the largest value seen on the training controls" for each of ten
    features. A threshold at the largest of 34 samples is exceeded by about 1 in 35 unseen runs, per feature, and
    ten features give ten chances, so adding features raises the false-alarm rate of a rule like this one.
-4. **Weak ramps are still missed.** A 0.75 m/s ramp is detected in half the runs.
+4. **Weak ramps are still missed.** A 0.75 m/s ramp is detected in 62% of the runs.
 
 ## A calibrated stage 1
 
@@ -187,10 +187,10 @@ were scored. The first rule stays in the table as the control row. Stage 2 is un
 
 | Runs | Stage 1 rule | Controls | False alarms | Rate, upper 95% limit | Multipath detected | Spoofing detected | Degradation detected |
 |---|---|---:|---:|---:|---:|---:|---:|
-| training runs, cross-validated | control maximum | 34 | 6 | 18%, 32% | 100% | 87% | 90% |
-| training runs, cross-validated | fitted bound, 0.5% per feature | 34 | 0 | 0%, 8% | 100% | 76% | 78% |
-| unseen runs, frozen model | control maximum | 68 | 24 | 35%, 46% | 100% | 89% | 100% |
-| unseen runs, frozen model | fitted bound, 0.5% per feature | 68 | 7 | 10%, 18% | 100% | 83% | 96% |
+| training runs, cross-validated | control maximum | 34 | 4 | 12%, 25% | 100% | 84% | 90% |
+| training runs, cross-validated | fitted bound, 0.5% per feature | 34 | 1 | 3%, 13% | 100% | 77% | 78% |
+| unseen runs, frozen model | control maximum | 68 | 23 | 34%, 44% | 100% | 90% | 100% |
+| unseen runs, frozen model | fitted bound, 0.5% per feature | 68 | 10 | 15%, 24% | 100% | 86% | 99% |
 
 <!-- faultclass-stage1:end -->
 
@@ -213,13 +213,13 @@ were scored. The first rule stays in the table as the control row. Stage 2 is un
    offset, and 99% of multipath runs are called multipath, including at 3 m (97%).
 2. **The added features fix the step.** With the original five features a 10 m step was called multipath in most
    runs, because the filter absorbs the offset within seconds. The autocorrelation separates a persistent offset
-   from white noise, and with all ten features no 10 m step is called multipath and every step is called spoofing.
-3. **Spoofing is better separated and not solved.** The share of spoofed runs called spoofing rises from 38% to
-   74%. A 5 m/s ramp is called spoofing in 88% of runs, against 9% before. Ramps of 1 m/s and below are still often
+   from white noise, and with all ten features no 10 m step is called multipath and 94% of the step runs are called spoofing.
+3. **Spoofing is better separated and not solved.** The share of spoofed runs called spoofing rises from 40% to
+   70%. A 5 m/s ramp is called spoofing in 91% of runs, against 18% before. Ramps of 1 m/s and below are still often
    missed.
-4. **The false-alarm rate did not improve.** About one in six held-out control runs is called a fault, slightly
-   more than before. More features gave the stage 1 thresholds more ways to fire.
-5. **Weak faults are still missed.** A 0.5 m/s ramp is detected in 44% of runs, as before, and a 0.2 m/s²
+4. **The false-alarm rate did not improve.** About one in eight (12%) held-out control runs is called a fault, slightly
+   more than before (9%). More features gave the stage 1 thresholds more ways to fire.
+5. **Weak faults are still missed.** A 0.5 m/s ramp is detected in 32% of runs, against 29% with the original five features, and a 0.2 m/s²
    accelerometer step in about two thirds.
 6. **Large degradation is called degradation.** Excluding the two weakest steps, 98% of degradation runs are called
    degradation.
@@ -228,7 +228,7 @@ were scored. The first rule stays in the table as the control row. Stage 2 is un
 
 The Track A exit test, 95% detection per fault type at zero false alarms on the control, is still not met: the
 false-alarm rate is not zero (about a third of unseen controls), weak spoofs are missed, and spoofing is called in
-about three quarters of runs. Only the multipath call survived the confirmation without a flaw: 100% recall and no
+about 70% of runs. Only the multipath call survived the confirmation without a flaw: 100% recall and no
 other run called multipath. Richer innovation
 features helped where the signal was in the innovation's shape over time, and did not help where the fault is
 smaller than the noise. That is the limit [ADR-0019](adr/0019-slow-ramp-spoofing.md) and

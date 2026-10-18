@@ -45,16 +45,17 @@ def test_no_control_run_is_captured(rows):
     assert not any(sr.captured(r) for r in rows if float(r["rate_m_s"]) == 0.0)
 
 
-def test_calibrated_clean_euroc_never_goes_over_the_gate(rows):
+def test_calibrated_clean_euroc_goes_over_the_gate_only_on_one_sequence_at_two_rates(rows):
     sel = [r for r in rows if r["dataset"] == "euroc" and r["config"] == "walk10" and r["arm"] == "clean"]
     assert sel
-    assert all(r["first_over_gate_s"] == "" for r in sel)
+    over = {(r["sequence"], float(r["rate_m_s"])) for r in sel if r["first_over_gate_s"] != ""}
+    assert over == {("V1_01_easy", 1.0), ("V1_01_easy", 2.0)}
 
 
-def test_tumvi_calibrated_first_reaction_is_at_two_m_s(rows):
+def test_tumvi_calibrated_first_reaction_is_at_two_m_s_in_a_third_of_the_runs(rows):
     for rate in (0.05, 0.2, 0.5, 1.0):
         assert sr.stats(sr.select(rows, "tumvi", "file-walk10", "clean", rate))["over_gate"] == 0.0
-    assert sr.stats(sr.select(rows, "tumvi", "file-walk10", "clean", 2.0))["over_gate"] == 0.5
+    assert sr.stats(sr.select(rows, "tumvi", "file-walk10", "clean", 2.0))["over_gate"] == pytest.approx(1 / 3)
 
 
 def test_default_noise_reacts_but_never_in_every_run_faulty(rows):

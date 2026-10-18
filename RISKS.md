@@ -28,6 +28,7 @@ deliberate decision to live with it). A risk's status changes only with evidence
 | R15 | Scope creeps into SLAM, drivers or learned models | Medium | Medium | Mitigated |
 | R16 | The published site is broken and nobody notices | Medium | Low | Open |
 | R17 | Prioritisation inputs are wrong | High | Medium | Accepted |
+| R18 | Run outcomes after an outage are sensitive to small filter changes on recorded data | High | Medium | Open |
 
 ## Details
 
@@ -158,6 +159,17 @@ deliberate decision to live with it). A risk's status changes only with evidence
 - **In place.** [Prioritisation](docs/prioritisation.md) states this, and shows how many
   single-input perturbations would change the top three.
 - **Status reason.** Accepted: the score orders the argument, it does not settle it.
+
+### R18. Run outcomes after an outage are sensitive to small filter changes on recorded data
+- **Cause and effect.** The EuRoC and TUM VI studies call a run lost when the filter rejects more than a fifth of the
+  GNSS fixes after the outage. A change to the attitude reset Jacobian (R6 in `CONSTRAINTS.md`) changed which runs are lost, in
+  both directions, and which runs the FDIR layer declares faulty. A reader can take a single lost run, or a count of
+  them, as a property of the filter.
+- **In place.** The studies are generated from committed CSVs, and each page is tested against its CSV. Every lost run of a
+  non-baseline setting is listed on the TUM VI page.
+- **Evidence.** The runs that changed between the two filter versions, listed in the pull request that regenerated
+  the studies.
+- **Early warning.** Any change that moves the lost counts on the [EuRoC](docs/euroc.md) or [TUM VI](docs/tumvi.md) pages.
 
 ## Review
 

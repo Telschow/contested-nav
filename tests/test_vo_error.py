@@ -209,3 +209,32 @@ def test_a_short_series_has_no_autocorrelation_and_no_warning():
     assert np.isnan(s["rot_acf_lag1"]) and np.isnan(s["lat_corr_time_s"]) and s["pairs"] == 10
     assert "nan" in ve.summary_markdown(rows).lower() or "-" in ve.summary_markdown(rows)
     assert np.isnan(ve.correlation_time(np.full(5, np.nan), 0.05))
+
+
+# -- replaying the wider measurement from the committed front-end rows (no images, no re-measurement) ------
+
+
+def test_wide_windows_from_rows_match_the_committed_replay() -> None:
+    """The windows are a function of the ground truth and the first window, so they can be recomputed."""
+    root = Path(__file__).resolve().parent.parent
+    euroc = root / "data" / "raw" / "euroc"
+    if not (euroc / "MH_01_easy" / "mav0" / "state_groundtruth_estimate0").is_dir():
+        pytest.skip("EuRoC Machine Hall is not fetched (navkit euroc fetch)")
+    rows = ve.read_csv(root / "docs" / "data" / "vo_errors.csv")
+    got = {(name, round(start, 3)) for name, start, _ in ve.wide_windows(euroc, rows)}
+    committed = {
+        (r["sequence"], round(float(r["window_start_s"]), 3))
+        for r in ve.read_csv(root / "docs" / "data" / "vo_wide.csv")
+    }
+    assert got == committed
+
+
+def test_wide_replay_refuses_a_window_with_no_measured_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _Seq:
+        truth = None
+        name = "MH_02_easy"
+
+    monkeypatch.setattr(ve, "load_sequence", lambda root, name: _Seq())
+    monkeypatch.setattr(ve, "pick_window", lambda *a, **k: 5.0)
+    with pytest.raises(ValueError, match="no measured front-end rows"):
+        ve.wide_windows("nowhere", [], sequences=("MH_02_easy",))

@@ -87,11 +87,13 @@ def test_claim_3_the_bias_walk_preset_loses_fewer_runs_than_the_noise_scale_pres
     assert _lost(_sel(rows, "walk10")) < _lost(_sel(rows, "preset"))
 
 
-def test_claim_4_in_the_later_checks_the_bias_walk_preset_loses_nothing_and_the_other_does(checks):
-    assert len({r.outage_s for r in checks}) >= 2
-    for outage in sorted({r.outage_s for r in checks}):
+def test_claim_4_in_the_later_checks_the_bias_walk_preset_loses_nothing_and_the_other_only_at_the_longer_outage(checks):
+    outages = sorted({r.outage_s for r in checks})
+    assert len(outages) >= 2
+    for outage in outages:
         assert _lost(_sel(checks, "walk10", outage=outage)) == 0, outage
-        assert _lost(_sel(checks, "preset", outage=outage)) > 0, outage
+    assert _lost(_sel(checks, "preset", outage=outages[0])) == 0
+    assert _lost(_sel(checks, "preset", outage=outages[-1])) > 0
 
 
 def test_claim_5_the_bias_walk_preset_is_slightly_conservative(rows, checks):

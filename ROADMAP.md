@@ -4,7 +4,7 @@ Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked.
 
-Measured baseline: <!-- metric:tests_collected -->1411<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1414<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -201,8 +201,8 @@ that has already been wrong. This track moves detection forward.
       lowers the floor to about 2 m/s, and not at all with correlated errors ([vision ramp](docs/vision_ramp.md),
       ADR-0020 accepted).
 - [~] Per-sensor classification from the GNSS innovations is measured ([fault classification](docs/fault_classification.md),
-      ADR-0021 accepted): multipath is separable, spoofing is called in about three quarters of runs, weak faults are
-      missed, and the control false-alarm rate is 18% in cross-validation and 35% on unseen runs.
+      ADR-0021 accepted): multipath is separable, spoofing is called in about 70% of runs, weak faults are
+      missed, and the control false-alarm rate is 12% in cross-validation and 34% on unseen runs.
 - [~] A fitted stage 1 bound against the control maximum ([fault classification](docs/fault_classification.md),
       ADR-0025 proposed): fewer false alarms on unseen controls, not zero, with some detection lost. The exit test is
       still not met.

@@ -41,3 +41,5 @@ A confirmation run on unseen fault sizes and seeds supports the decision. Multip
 and in none of the other 476. The false-alarm rate of the any-fault stage rose from 18% to 35% on 68 unseen controls,
 so the stage 1 thresholds are not usable as they are. The claim stays limited to injected faults, simulated GNSS and
 two datasets.
+
+Note (2026-10-18): the figures above were measured before the attitude reset fix (R6 in `CONSTRAINTS.md`). The regenerated page is [fault classification](../fault_classification.md). The text above is unchanged.
