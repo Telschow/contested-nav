@@ -113,7 +113,7 @@ def _configuration_block(text: str) -> tuple[list[str], list[list[str]]] | None:
 
 def check_configuration(results_path: Path, documents: list[Path]) -> int:
     """Check the Configuration table of each document against the generated benchmark."""
-    results = json.loads(results_path.read_text())
+    results = json.loads(results_path.read_text(encoding="utf-8"))
     by_name = {c["name"]: c for c in results["cases"]}
     failures: list[str] = []
     for document in documents:
@@ -121,7 +121,7 @@ def check_configuration(results_path: Path, documents: list[Path]) -> int:
         if not document.exists():
             failures.append(f"{name}: missing")
             continue
-        block = _configuration_block(document.read_text())
+        block = _configuration_block(document.read_text(encoding="utf-8"))
         if block is None:
             failures.append(f"{name}: no Configuration table")
             continue
@@ -219,7 +219,7 @@ def _display(path: Path) -> str:
 
 
 def check(results_path: Path, documents: list[Path]) -> int:
-    results = json.loads(results_path.read_text())
+    results = json.loads(results_path.read_text(encoding="utf-8"))
     expected = _expected_rows(results)
     failures: list[str] = []
 
@@ -228,7 +228,7 @@ def check(results_path: Path, documents: list[Path]) -> int:
         if not document.exists():
             failures.append(f"{document}: missing")
             continue
-        text = document.read_text()
+        text = document.read_text(encoding="utf-8")
         found = _html_cells(text) if document.suffix == ".html" else _markdown_cells(text)
         name = _display(document)
         if len(found) != len(expected):
@@ -271,12 +271,17 @@ def main(argv: list[str] | None = None) -> int:
         "--print-configuration-table", action="store_true", help="print the generated Configuration table and exit"
     )
     args = parser.parse_args(argv)
+    # The tables contain non-ASCII characters (σ), and a Windows console or redirected stream defaults to a
+    # legacy code page. Print them as UTF-8 so a generated table can be pasted into a document.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
 
     if not args.results.exists():
         print(f"{args.results} not found; run scripts/run_benchmark.py first", file=sys.stderr)
         return 1
     if args.print_configuration_table:
-        print(configuration_table(json.loads(args.results.read_text())))
+        print(configuration_table(json.loads(args.results.read_text(encoding="utf-8"))))
         return 0
     if args.documents:
         return check(args.results, args.documents)
