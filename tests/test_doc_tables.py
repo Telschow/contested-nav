@@ -85,7 +85,7 @@ HTML = """<table>
 
 
 def _write(path: Path, text: str) -> Path:
-    path.write_text(text)
+    path.write_text(text, encoding="utf-8")
     return path
 
 
