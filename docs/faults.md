@@ -27,26 +27,26 @@ disagree, and CI reruns the sweep and fails if the committed CSV no longer match
 | Case | Fault | Level | ATE rmse m [95% CI] | NEES mean [95% CI] | Coverage @2σ % [95% CI] | Gate rejected | Fault declared | Declared channel | Latency s | Inflation grant | Measurements rejected % [95% CI] |
 |---|---|---:|---|---|---|---:|---:|---|---:|---:|---|
 | gnss_only | none (control) |  | 0.51 [0.48, 0.56] | 3.6 [2.8, 4.3] | 100.0 [100.0, 100.0] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
-| gnss_only | GNSS spoof, sustained offset | 3 m | 2.86 [2.27, 3.59] | 75.9 [66.7, 88.5] | 39.4 [36.1, 43.4] | 5/5 | 2/5 | gnss | 11.2 | 0/5 | 15.6 [3.0, 28.2] |
-| gnss_only | GNSS spoof, sustained offset | 10 m | 5.42 [0.73, 10.21] | 99.1 [2.5, 249.1] | 85.1 [69.1, 100.0] | 5/5 | 5/5 | gnss | 0.8 | 0/5 | 47.4 [37.0, 58.9] |
-| gnss_only | GNSS spoof, sustained offset | 40 m | 1.11 [0.72, 1.77] | 2.7 [2.3, 3.1] | 99.7 [99.2, 100.0] | 5/5 | 5/5 | gnss | 0.8 | 0/5 | 39.1 [39.1, 39.1] |
+| gnss_only | GNSS spoof, sustained offset | 3 m | 2.92 [2.27, 3.69] | 76.7 [67.3, 89.6] | 38.5 [35.7, 42.1] | 5/5 | 2/5 | gnss | 11.2 | 0/5 | 15.6 [3.0, 28.2] |
+| gnss_only | GNSS spoof, sustained offset | 10 m | 5.42 [0.72, 10.21] | 99.0 [2.5, 248.7] | 85.1 [69.1, 100.0] | 5/5 | 5/5 | gnss | 0.8 | 0/5 | 47.4 [37.0, 58.9] |
+| gnss_only | GNSS spoof, sustained offset | 40 m | 1.11 [0.72, 1.78] | 2.7 [2.3, 3.1] | 99.8 [99.5, 100.0] | 5/5 | 5/5 | gnss | 0.8 | 0/5 | 39.1 [39.1, 39.1] |
 | gnss_only | GNSS single spike | 20 m | 0.52 [0.47, 0.56] | 3.6 [2.8, 4.4] | 100.0 [100.0, 100.0] | 5/5 | 0/5 | none | n/a | 0/5 | 0.7 [0.7, 0.7] |
-| gnss_only | GNSS slow bias | 1 m (1 sigma) | 1.43 [1.08, 1.76] | 38.0 [17.2, 59.1] | 37.2 [22.2, 58.8] | 1/5 | 0/5 | none | n/a | 0/5 | 0.1 [0.0, 0.4] |
-| gnss_only | GNSS slow bias | 3 m (1 sigma) | 4.07 [2.93, 5.36] | 189.6 [118.3, 299.0] | 9.9 [2.8, 17.1] | 5/5 | 2/5 | gnss | n/a | 0/5 | 17.9 [2.6, 34.7] |
-| gnss_only | GNSS timestamp offset | 0.05 s | 0.53 [0.49, 0.58] | 3.8 [3.0, 4.6] | 99.9 [99.6, 100.0] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
-| gnss_only | GNSS timestamp offset | 0.2 s | 0.65 [0.61, 0.69] | 5.3 [4.3, 6.2] | 95.2 [90.9, 98.4] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
-| gnss_only | GNSS timestamp offset | 0.5 s | 1.02 [0.99, 1.05] | 12.6 [11.3, 13.8] | 57.3 [53.8, 61.0] | 2/5 | 0/5 | none | n/a | 0/5 | 0.3 [0.0, 0.5] |
-| gnss_only | IMU sample loss | 0.5 s lost at 10 s | 0.80 [0.72, 0.90] | 10.4 [8.1, 12.5] | 61.9 [50.2, 76.8] | 1/5 | 0/5 | none | n/a | 0/5 | 0.1 [0.0, 0.4] |
-| gnss_only | IMU sample loss | 2 s lost at 10 s | 71.15 [68.70, 73.33] | 1100.0 [1032.4, 1185.2] | 38.1 [36.8, 39.1] | 5/5 | 5/5 | gnss | 5.5 | 0/5 | 51.8 [51.3, 52.5] |
-| outage_visual | none (control) |  | 3.15 [2.37, 4.32] | 502.3 [290.6, 836.6] | 21.0 [15.5, 28.2] | 5/5 | 3/5 | gnss | n/a | 5/5 | 2.9 [1.2, 4.7] |
-| outage_visual | GNSS spoof after an outage | 3 m | 3.54 [2.91, 4.30] | 595.7 [432.6, 786.7] | 17.1 [11.3, 26.3] | 5/5 | 3/5 | gnss | 6.9 | 5/5 | 2.7 [0.9, 4.5] |
-| outage_visual | GNSS spoof after an outage | 10 m | 7.30 [6.17, 9.10] | 2619.8 [1802.6, 4035.5] | 17.0 [11.2, 26.3] | 5/5 | 3/5 | gnss | 5.5 | 4/5 | 3.1 [0.9, 5.6] |
-| outage_visual | GNSS spoof after an outage | 22 m | 6.28 [4.67, 8.66] | 2214.3 [1229.4, 3852.1] | 17.0 [11.2, 26.3] | 5/5 | 5/5 | gnss | 0.8 | 0/5 | 7.6 [7.6, 7.6] |
-| vision_only | none (control) |  | 3.57 [2.52, 4.97] | 691.6 [323.8, 1242.5] | 0.7 [0.7, 0.7] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
-| vision_only | Vision timestamp offset | 0.05 s | 3.51 [2.55, 4.88] | 664.8 [328.9, 1189.3] | 0.8 [0.8, 0.8] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
-| vision_only | Vision timestamp offset | 0.2 s | 3.42 [2.51, 4.68] | 616.2 [319.8, 1073.7] | 1.3 [1.3, 1.3] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
-| vision_only | Vision outage | 2 s lost at 10 s | 3.99 [2.75, 5.39] | 835.6 [374.7, 1425.5] | 0.7 [0.7, 0.7] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
-| vision_only | Vision outage | 5 s lost at 10 s | 4.96 [3.79, 6.31] | 1158.3 [650.6, 1795.9] | 0.7 [0.7, 0.7] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
+| gnss_only | GNSS slow bias | 1 m (1 sigma) | 1.43 [1.09, 1.76] | 38.0 [17.3, 59.1] | 37.0 [22.2, 58.5] | 1/5 | 0/5 | none | n/a | 0/5 | 0.1 [0.0, 0.4] |
+| gnss_only | GNSS slow bias | 3 m (1 sigma) | 4.00 [2.92, 5.16] | 185.9 [116.9, 292.7] | 9.9 [2.8, 17.0] | 5/5 | 2/5 | gnss | n/a | 0/5 | 17.9 [2.6, 34.7] |
+| gnss_only | GNSS timestamp offset | 0.05 s | 0.53 [0.49, 0.58] | 3.8 [3.0, 4.5] | 99.9 [99.6, 100.0] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
+| gnss_only | GNSS timestamp offset | 0.2 s | 0.65 [0.61, 0.69] | 5.2 [4.3, 6.2] | 95.3 [91.1, 98.5] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
+| gnss_only | GNSS timestamp offset | 0.5 s | 1.02 [0.98, 1.05] | 12.5 [11.1, 13.7] | 57.4 [53.5, 61.3] | 2/5 | 0/5 | none | n/a | 0/5 | 0.3 [0.0, 0.5] |
+| gnss_only | IMU sample loss | 0.5 s lost at 10 s | 0.80 [0.72, 0.90] | 10.3 [8.2, 12.4] | 62.3 [51.3, 76.7] | 1/5 | 0/5 | none | n/a | 0/5 | 0.1 [0.0, 0.4] |
+| gnss_only | IMU sample loss | 2 s lost at 10 s | 71.14 [68.77, 73.23] | 1091.8 [1036.2, 1159.7] | 38.1 [36.8, 39.1] | 5/5 | 5/5 | gnss | 5.5 | 0/5 | 51.8 [51.3, 52.5] |
+| outage_visual | none (control) |  | 3.15 [2.37, 4.32] | 502.4 [290.9, 836.9] | 21.0 [15.5, 28.2] | 5/5 | 3/5 | gnss | n/a | 5/5 | 2.9 [1.2, 4.7] |
+| outage_visual | GNSS spoof after an outage | 3 m | 3.54 [2.91, 4.29] | 595.8 [432.9, 786.3] | 17.0 [11.3, 26.3] | 5/5 | 3/5 | gnss | 6.9 | 5/5 | 2.7 [0.9, 4.5] |
+| outage_visual | GNSS spoof after an outage | 10 m | 7.30 [6.18, 9.10] | 2620.3 [1803.1, 4036.9] | 17.0 [11.2, 26.3] | 5/5 | 3/5 | gnss | 5.5 | 4/5 | 3.1 [0.9, 5.6] |
+| outage_visual | GNSS spoof after an outage | 22 m | 6.28 [4.67, 8.66] | 2214.5 [1230.5, 3852.8] | 17.0 [11.2, 26.3] | 5/5 | 5/5 | gnss | 0.8 | 0/5 | 7.6 [7.6, 7.6] |
+| vision_only | none (control) |  | 3.57 [2.52, 4.97] | 691.7 [323.8, 1242.7] | 0.7 [0.7, 0.7] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
+| vision_only | Vision timestamp offset | 0.05 s | 3.51 [2.55, 4.88] | 664.9 [328.9, 1189.5] | 0.8 [0.8, 0.8] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
+| vision_only | Vision timestamp offset | 0.2 s | 3.42 [2.51, 4.68] | 616.3 [319.8, 1073.9] | 1.3 [1.3, 1.3] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
+| vision_only | Vision outage | 2 s lost at 10 s | 3.99 [2.75, 5.39] | 835.8 [374.7, 1425.9] | 0.7 [0.7, 0.7] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
+| vision_only | Vision outage | 5 s lost at 10 s | 4.96 [3.79, 6.31] | 1158.3 [650.5, 1796.1] | 0.7 [0.7, 0.7] | 0/5 | 0/5 | none | n/a | 0/5 | 0.0 [0.0, 0.0] |
 
 <!-- faults:end -->
 

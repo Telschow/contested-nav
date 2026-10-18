@@ -7,21 +7,21 @@ the strictest of the four conventions the code supports.
 
 | Scenario | ATE RMSE (m) | Claimed 1σ (m) | Mean NEES (exp. 3) | Coverage @ 2σ | Verdict |
 | --- | ---: | ---: | ---: | ---: | --- |
-| GNSS only (control) | 0.528 | 0.254 | 4.3 | 100.0% | mixed: bulk overconfident, tail underconfident |
+| GNSS only (control) | 0.528 | 0.253 | 4.3 | 100.0% | mixed: bulk overconfident, tail underconfident |
 | Dead reckoning (no aiding) | 2.359 | n/a | n/a | n/a | no covariance reported |
 | Anchor as measurement noise (defect) | 1.063 | 0.094 | 163.7 | 16.3% | overconfident |
-| Vision only | 2.321 | 0.158 | 264.2 | 0.7% | overconfident |
-| GNSS denied 5–20 s, vision off (control) | 3.760 | 0.567 | 4.1 | 100.0% | mixed: bulk overconfident, tail underconfident |
-| GNSS denied 5–20 s, vision on | 2.322 | 0.162 | 286.2 | 20.5% | overconfident |
+| Vision only | 2.320 | 0.158 | 264.2 | 0.7% | overconfident |
+| GNSS denied 5–20 s, vision off (control) | 3.768 | 0.567 | 4.1 | 100.0% | mixed: bulk overconfident, tail underconfident |
+| GNSS denied 5–20 s, vision on | 2.321 | 0.162 | 286.1 | 20.5% | overconfident |
 | GNSS denied, 30% camera frames dropped | 2.008 | 0.192 | 203.7 | 17.8% | overconfident |
 | GNSS denied 5–20 s, vision on, stochastic clone | 0.725 | 0.375 | 2.5 | 100.0% | underconfident |
-| GNSS denied, 30% frames dropped, re-referenced, single anchor | 1.973 | 0.192 | 191.5 | 17.7% | overconfident |
-| GNSS denied, 30% frames dropped, re-referenced, stochastic clone | 0.503 | 0.307 | 2.2 | 100.0% | underconfident |
-| Vision only, stochastic clone | 1.959 | 1.326 | 2.3 | 100.0% | underconfident |
+| GNSS denied, 30% frames dropped, re-referenced, single anchor | 1.974 | 0.192 | 191.5 | 17.7% | overconfident |
+| GNSS denied, 30% frames dropped, re-referenced, stochastic clone | 0.502 | 0.308 | 2.2 | 100.0% | underconfident |
+| Vision only, stochastic clone | 1.958 | 1.326 | 2.3 | 100.0% | underconfident |
 | Stochastic clone, 5% gross visual outliers | 0.727 | 0.382 | 2.5 | 100.0% | underconfident |
 | Stochastic clone, drifting translation scale | 0.787 | 0.375 | 2.9 | 100.0% | underconfident |
-| Stochastic clone, visual errors correlated over 2 s | 1.931 | 0.375 | 13.1 | 58.3% | overconfident |
-| Stochastic clone, correlated errors, visual noise assumed 4x | 2.259 | 0.531 | 4.9 | 100.0% | mixed: bulk overconfident, tail underconfident |
+| Stochastic clone, visual errors correlated over 2 s | 1.937 | 0.375 | 13.2 | 58.5% | overconfident |
+| Stochastic clone, correlated errors, visual noise assumed 4x | 2.260 | 0.531 | 4.9 | 100.0% | mixed: bulk overconfident, tail underconfident |
 
 Three things deserve more than a glance.
 
@@ -31,7 +31,7 @@ drops coverage to 16%. Both variants are in the benchmark so the comparison is
 reproducible, and the broken one is kept in the default run on purpose.
 
 **Turning vision on makes the filter much less calibrated, though not much less
-accurate.** The outage control with vision off ends at 3.76 m with its
+accurate.** The outage control with vision off ends at 3.77 m with its
 uncertainty grown to match, so coverage stays at 100%. The aided case claims
 0.16 m while being 2.32 m wrong. Note what adaptive inflation did to this
 comparison: before it, the FDIR gate made the aided case *worse* on ATE (5.06 m),

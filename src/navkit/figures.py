@@ -114,9 +114,26 @@ def fig_coverage(cases: list[dict]) -> Path:
     return out
 
 
+#: The two cases the outage figure compares: the control without vision and the single-anchor case with it.
+OUTAGE_FIGURE_CASES = ("outage_control", "outage_visual")
+
+
+def outage_cases(cases: list[dict]) -> list[dict]:
+    """The cases of the outage figure, in the order of :data:`OUTAGE_FIGURE_CASES`; empty if one is missing."""
+    by_name = {c["name"]: c for c in cases if "error_time_series" in c}
+    if any(name not in by_name for name in OUTAGE_FIGURE_CASES):
+        return []
+    return [by_name[name] for name in OUTAGE_FIGURE_CASES]
+
+
+def nees_cases(cases: list[dict]) -> list[dict]:
+    """Every case that has a mean NEES. Dead reckoning has none and is not drawn."""
+    return [c for c in cases if isinstance(c["headline"].get("nees_mean"), (int, float))]
+
+
 def fig_outage(cases: list[dict]) -> Path | None:
     """Error against time through the GNSS outage, for the two outage cases."""
-    sel = [c for c in cases if "outage" in c["name"] and "error_time_series" in c]
+    sel = outage_cases(cases)
     if not sel:
         return None
     fig, axes = plt.subplots(1, len(sel), figsize=(5.0 * len(sel), 3.8), squeeze=False)
@@ -146,7 +163,7 @@ def fig_outage(cases: list[dict]) -> Path | None:
 def fig_nees(cases: list[dict]) -> Path | None:
     """Mean NEES against the expected value, which is the number a reviewer
     will check first when judging whether a filter is honest."""
-    sel = [c for c in cases if isinstance(c["headline"].get("nees_mean"), (int, float))]
+    sel = nees_cases(cases)
     if not sel:
         return None
     vals = [c["headline"]["nees_mean"] for c in sel]
