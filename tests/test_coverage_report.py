@@ -62,6 +62,19 @@ def test_a_passing_suite_with_met_floors_succeeds(quiet, monkeypatch, capsys) ->
     assert "ratchet OK" in capsys.readouterr().out
 
 
+def test_the_script_leaves_an_outer_tracer_in_place(quiet, monkeypatch) -> None:
+    """The coverage run executes this test under its own tracer. Clearing it would blind every later test."""
+    outer = lambda *_a: None  # noqa: E731
+    previous = sys.gettrace()
+    sys.settrace(outer)
+    try:
+        monkeypatch.setattr(cr, "TOTAL_FLOOR", 0.0)
+        _run(monkeypatch, 0, ["--ratchet"])
+        assert sys.gettrace() is outer
+    finally:
+        sys.settrace(previous)
+
+
 def test_no_test_imports_another_through_the_tests_package() -> None:
     """``from tests.x import y`` works only when the repository root is on ``sys.path``.
 
