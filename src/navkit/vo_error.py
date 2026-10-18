@@ -463,6 +463,51 @@ def wide_study(
     return new_rows, replay
 
 
+def wide_windows(
+    root: str | Path,
+    rows: list[dict[str, Any]],
+    sequences: tuple[str, ...] = WIDE_SEQUENCES,
+    earliest_s: float = 30.0,
+) -> list[tuple[str, float, float]]:
+    """``(sequence, start, length)`` of every window the wider measurement replays, from measured rows alone.
+
+    The windows depend only on the ground truth and on the window measured first, which is
+    :data:`ORIGINAL_WINDOW`, so they can be recomputed without images. Raises ``ValueError`` if the rows hold no
+    measurement for a window.
+    """
+    first = rows_in(rows, *ORIGINAL_WINDOW)
+    out: list[tuple[str, float, float]] = []
+    for name in sequences:
+        seq = load_sequence(root, name)
+        avoid = tuple((a, b) for s_, a, b in windows(first, 1.0) if s_ == name)
+        start = pick_window(seq.truth, WIDE_LENGTH_S, earliest_s=earliest_s, avoid=avoid)
+        if not rows_in(rows, name, start, start + WIDE_LENGTH_S):
+            raise ValueError(f"{name}: no measured front-end rows in the window starting at {start:.1f} s")
+        out.append((name, start, WIDE_LENGTH_S))
+    out += [(name, a, b - a) for name, a, b in windows(first, 1.0)]
+    return out
+
+
+def wide_replay(
+    root: str | Path,
+    rows: list[dict[str, Any]],
+    sequences: tuple[str, ...] = WIDE_SEQUENCES,
+    seeds: int = WIDE_SEEDS,
+) -> list[dict[str, Any]]:
+    """Replay the wider measurement from front-end rows already measured: no images, no new measurement.
+
+    This is :func:`wide_study` without the fetch and the measurement, so a change to the filter can be replayed
+    over the same front-end errors.
+    """
+    replay: list[dict[str, Any]] = []
+    for name, start, length in wide_windows(root, rows, sequences):
+        seq = load_sequence(root, name)
+        cam = camera_from_yaml(Path(root) / name / "mav0/cam0/sensor.yaml")
+        for r in _replay_window(seq, cam, rows, start, length, WIDE_OUTAGE_AT_S, WIDE_SCALES, seeds):
+            replay.append({"sequence": name, "window_start_s": start, **r})
+    return replay
+
+
 CLONE_WINDOW = (60.0, 30.0, 10.0)  # skip, duration, and the start of the GNSS outage that runs to the end
 
 
@@ -684,6 +729,11 @@ def build_parser() -> argparse.ArgumentParser:
         "archive on disk, measure, and replay the clone at several assumed-noise scales (an hour or more)",
     )
     p.add_argument("--wide-csv", default="docs/data/vo_wide.csv", help="the replay runs of --wide")
+    p.add_argument(
+        "--wide-replay",
+        action="store_true",
+        help="replay the wider measurement from the front-end rows of --from-csv: no images, no new measurement",
+    )
     p.add_argument("--markdown", action="store_true", help="print the tables")
     return p
 
@@ -705,6 +755,18 @@ def write_block(path: str | Path, name: str, block: str) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.wide_replay:
+        if not args.from_csv:
+            print("error: --wide-replay needs --from-csv", file=sys.stderr)
+            return 1
+        try:
+            replay = wide_replay(args.root, read_csv(args.from_csv))
+        except (OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        write_wide_csv(args.wide_csv, replay)
+        print(wide_markdown(replay))
+        return 0
     if args.wide:
         existing = read_csv(args.csv) if args.csv and Path(args.csv).is_file() else []
         try:
