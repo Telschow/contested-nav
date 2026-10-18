@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
 from pathlib import Path
 
@@ -59,3 +60,15 @@ def test_a_passing_suite_with_met_floors_succeeds(quiet, monkeypatch, capsys) ->
     monkeypatch.setattr(cr, "TOTAL_FLOOR", 0.0)
     assert _run(monkeypatch, 0, ["--ratchet"]) == 0
     assert "ratchet OK" in capsys.readouterr().out
+
+
+def test_no_test_imports_another_through_the_tests_package() -> None:
+    """``from tests.x import y`` works only when the repository root is on ``sys.path``.
+
+    ``python -m pytest`` puts it there. ``scripts/coverage_report.py`` runs pytest in process from ``scripts/``,
+    where it is not, so such a test passed everywhere except in the coverage step. Sibling test modules are
+    importable by name, because pytest puts ``tests/`` on the path.
+    """
+    pattern = re.compile(r"^\s*(?:from\s+tests(?:\.|\s)|import\s+tests\b)", re.MULTILINE)
+    offenders = [p.name for p in sorted((ROOT / "tests").glob("test_*.py")) if pattern.search(p.read_text("utf-8"))]
+    assert offenders == []
