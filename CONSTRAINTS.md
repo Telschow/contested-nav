@@ -4,7 +4,7 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: <!-- metric:tests_collected -->1407<!-- /metric --> tests collected, all of which pass except the deliberate
+Last measured: <!-- metric:tests_collected -->1411<!-- /metric --> tests collected, all of which pass except the deliberate
 xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->94.3<!-- /metric -->%
 line coverage (<!-- metric:coverage_lines_hit -->10033<!-- /metric -->/<!-- metric:coverage_lines_total -->10638<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
@@ -83,7 +83,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | <!-- metric:tests_collected -->1407<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | <!-- metric:tests_collected -->1411<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
 | Line coverage | 75% | <!-- metric:coverage_percent -->94.3<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
@@ -271,9 +271,9 @@ residual numerically.
   derivative at `dtheta = a` is `I - 0.5 [a]x` to first order. The filter applied `I + 0.5 [a]x`, to the
   live attitude block and, for the stochastic clone, to the clone attitude block.
 
-  It was invisible for the same reason as R1: the correction applied at each update is small, so
-  the wrong sign moves the covariance at second order in a small number and the benchmark only in
-  the third decimal. No test differentiated the reset, and the transition matrix was not checked
+  It was invisible for the same reason as R1. The wrong and the correct reset differ by `[a]x`, which is
+  first order in the size of each correction. The corrections are small on the synthetic fixture, so the
+  benchmark moved only in the third decimal. No test differentiated the reset, and the transition matrix was not checked
   against the nominal propagation either.
 
   Fixed by a pure helper, `_reset_jacobian`, and pinned by
