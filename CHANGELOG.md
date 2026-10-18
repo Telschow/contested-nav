@@ -194,6 +194,11 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Fixed
 
+- The attitude reset Jacobian used `I + 0.5 [a]x` where the derivative of the injection is `I - 0.5 [a]x`. It is
+  now a helper, `_reset_jacobian`, pinned against finite differences for the live and the clone attitude
+  (R6 in `CONSTRAINTS.md`). The golden snapshot, the figures, the benchmark tables, the mismatch sweep and the
+  fault matrix are regenerated.
+
 - The two anchor drift strengths were named per second and are per square-root second (P5-05). They are now
   `anchor_pos_drift_sigma_m_sqrt_s` and `anchor_rot_drift_sigma_deg_sqrt_s`. The old names
   (`anchor_pos_drift_sigma_m_s`, `anchor_rot_drift_sigma_deg_s`) are still accepted by the `EskfConfig` constructor and

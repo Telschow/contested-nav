@@ -239,3 +239,20 @@ def test_the_clone_keeps_the_covariance_valid_through_a_gnss_outage_with_vision(
     series = record["error_time_series"]["claimed_sigma_p_m"]
     assert np.all(np.isfinite(series)) and min(series) > 0.0
     assert record["stats"]["vision_updates_used"] > 100
+
+
+def test_clone_reset_jacobian_is_the_exact_derivative() -> None:
+    """The clone attitude is injected like the live one (``R_vk Exp(dx[c_t])``), so its reset must be ``J_r``."""
+    from tests.test_estimators import _RESET_C, _RESET_MAGNITUDES, _exact_reset, _filter_reset_block
+
+    rng = np.random.default_rng(13)
+    eskf = _eskf("clone")
+    for magnitude in _RESET_MAGNITUDES:
+        for _ in range(5):
+            u = rng.normal(size=3)
+            a = u / np.linalg.norm(u) * magnitude
+            dx = np.zeros(_N_STATES)
+            dx[_IDX_THETA] = rng.normal(size=3) * 1e-2
+            dx[_IDX_CT] = a
+            err = np.linalg.norm(_filter_reset_block(eskf, dx, _IDX_CT) - _exact_reset(a), ord=2)
+            assert err <= _RESET_C * magnitude**2 + 1e-8, f"|a|={magnitude}: clone reset off by {err:.3e}"
