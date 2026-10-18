@@ -169,8 +169,8 @@ By fault and level:
 2. **Spoofing and degradation held.** Spoofing is called in 68% of runs (70% in cross-validation) and degradation in
    85% (87%). Steps of 20 m and above and a 10 m/s ramp are always called spoofing, and the 5 m step in 15% of runs.
 3. **The false-alarm rate did not hold.** About a third of the control runs are called a fault (34%, against 12% in
-   cross-validation). The calls are spread over almost every sequence, about one run in four on each, and are not
-   one bad sequence. The stage 1 rule is "above the largest value seen on the training controls" for each of ten
+   cross-validation). The 23 alarms among the 68 unseen control runs fall on 15 of the 17 sequences, and no sequence has more than three of
+   its four control runs called a fault, so they are not one bad sequence. The stage 1 rule is "above the largest value seen on the training controls" for each of ten
    features. A threshold at the largest of 34 samples is exceeded by about 1 in 35 unseen runs, per feature, and
    ten features give ten chances, so adding features raises the false-alarm rate of a rule like this one.
 4. **Weak ramps are still missed.** A 0.75 m/s ramp is detected in 62% of the runs.
