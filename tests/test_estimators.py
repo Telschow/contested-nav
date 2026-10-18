@@ -589,14 +589,18 @@ def test_gnss_aided_filter_keeps_its_absolute_fixes() -> None:
 def test_gnss_denial_still_over_trusts_vision_and_that_is_pinned() -> None:
     """The known remaining limitation, asserted so it stays visible.
 
-    Aided with GNSS available the filter is calibrated, and vision-only is
-    calibrated. The case that is *not* fixed is vision carrying the solution
-    through a GNSS outage: the filter stays certain while it coasts, and ends
-    roughly 100x overconfident. The cause is structural, not a tuning miss -- the
-    Schur complement of a single-anchor relative-pose measurement cannot express
-    "informative about motion, uninformative about position" without becoming
-    degenerate, and a whole chain has to be considered jointly, which needs a
-    pose graph. See the module docstring.
+    Vision carrying the solution through a GNSS outage is not fixed: the filter
+    stays certain while it coasts, and ends far outside its claimed uncertainty.
+    This test pins that case only, with a band on the mean NEES and a floor on
+    the ratio of the final error to the claimed sigma. It does not assert
+    calibration in any other configuration: the ``vision_only`` benchmark row is
+    itself badly overconfident (``docs/results.md``). The tests near this one pin
+    only that vision does not cause GNSS fixes to be rejected, and a bound on how
+    far out the vision-only normalised error may be. The cause is structural,
+    not a tuning miss -- the Schur complement of a single-anchor relative-pose
+    measurement cannot express "informative about motion, uninformative about
+    position" without becoming degenerate, and a whole chain has to be
+    considered jointly, which needs a pose graph. See the module docstring.
 
     This test therefore asserts the limitation rather than a success. If it
     starts failing because the number improved, that is good news and the fix
