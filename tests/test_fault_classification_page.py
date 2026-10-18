@@ -279,6 +279,19 @@ def test_the_false_alarm_rate_rose_on_unseen_controls(rows, confirm):
     assert 0.3 < far < 0.4
 
 
+def test_the_unseen_control_alarms_are_spread_over_most_sequences(confirm):
+    from collections import Counter
+
+    controls = [r for r in confirm if r["cls"] == "control"]
+    alarms = [r for r in controls if r["predicted"] != "control"]
+    per_sequence = Counter((r["dataset"], r["sequence"]) for r in alarms)
+    sequences = {(r["dataset"], r["sequence"]) for r in controls}
+    assert (len(alarms), len(controls)) == (23, 68)
+    assert (len(per_sequence), len(sequences)) == (15, 17)
+    assert max(per_sequence.values()) == 3
+    assert set(Counter((r["dataset"], r["sequence"]) for r in controls).values()) == {4}
+
+
 def test_the_confirmation_cli_rebuilds_and_the_design_is_fixed(tmp_path, capsys):
     assert fc.main(["--confirm", "--from-csv", str(CONFIRM_CSV), "--markdown"]) == 0
     assert "frozen model" in capsys.readouterr().out
