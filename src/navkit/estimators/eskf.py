@@ -445,6 +445,25 @@ class EskfConfig:
         }
 
 
+def _reset_jacobian(dx: np.ndarray, clone: bool = False) -> np.ndarray:
+    """First-order reset Jacobian ``G`` for an injected correction ``dx``.
+
+    With the convention ``R_true = R Exp(dtheta)``, injecting ``a`` sets ``R+ = R Exp(a)``, so
+    the error after the reset is ``Log(Exp(-a) Exp(dtheta))``. Its derivative at ``dtheta = a``
+    is the right Jacobian ``J_r(a) = I - 0.5 [a]x + O(|a|^2)``; ``G`` keeps the first-order part.
+    The clone attitude is injected the same way (``R_vk Exp(dx[c_t])``), so its block has the
+    same form. The anchor model does not inject ``dx[c_t]`` (CN-003), so its block stays the
+    identity. Pinned against finite differences by
+    ``test_attitude_reset_jacobian_is_the_exact_derivative`` and
+    ``test_clone_reset_jacobian_is_the_exact_derivative``.
+    """
+    G = np.eye(_N_STATES)
+    G[_IDX_THETA, _IDX_THETA] = np.eye(3) - 0.5 * _skew(dx[_IDX_THETA])
+    if clone:
+        G[_IDX_CT, _IDX_CT] = np.eye(3) - 0.5 * _skew(dx[_IDX_CT])
+    return G
+
+
 class ErrorStateKalmanFilter:
     """21-state error-state Kalman filter over a timestamped IMU stream."""
 
@@ -820,12 +839,7 @@ class ErrorStateKalmanFilter:
         P = x["P"]
         dx = K @ residual
         dtheta = dx[_IDX_THETA]
-        # First-order reset of the attitude error: re-linearise around the
-        # injected rotation, otherwise P is inconsistent with the new R.
-        G = np.eye(_N_STATES)
-        G[:3, :3] = np.eye(3) + 0.5 * _skew(dtheta)
-        if self.cfg.vision_model == "clone":
-            G[_IDX_CT, _IDX_CT] = np.eye(3) + 0.5 * _skew(dx[_IDX_CT])
+        G = _reset_jacobian(dx, clone=self.cfg.vision_model == "clone")
         # Joseph form, then the reset, in that order. The reset is the reason
         # this must happen after the covariance update and not before: the
         # injected rotation changes the linearisation point, and G acting on the

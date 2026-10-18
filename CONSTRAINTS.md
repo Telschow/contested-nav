@@ -4,7 +4,7 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: <!-- metric:tests_collected -->1401<!-- /metric --> tests collected, all of which pass except the deliberate
+Last measured: <!-- metric:tests_collected -->1407<!-- /metric --> tests collected, all of which pass except the deliberate
 xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->94.3<!-- /metric -->%
 line coverage (<!-- metric:coverage_lines_hit -->10033<!-- /metric -->/<!-- metric:coverage_lines_total -->10638<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
@@ -83,7 +83,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | <!-- metric:tests_collected -->1401<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | <!-- metric:tests_collected -->1407<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
 | Line coverage | 75% | <!-- metric:coverage_percent -->94.3<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
@@ -120,7 +120,7 @@ These are floors, not goals. Each must not regress; raising one is welcome.
   [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md)). The current gate is one-sided: it does not reject an
   uninformative filter, and an IMU-only filter also meets it ([real front end](docs/real_front_end.md)).
 
-  Mean NEES 286.2
+  Mean NEES 286.1
   over a 15 s outage (`outage_visual`), with 20.5% of epochs inside 2 sigma
   against 99.3% expected. A single anchor cannot represent correlated visual
   drift. Pinned by
@@ -265,6 +265,29 @@ residual numerically.
   gyroscope, and a mis-ordered quaternion must not. It always runs on a synthetic sequence and runs on every
   fetched EuRoC and TUM VI sequence. The TUM VI paper lists 0.09 m for Basalt on room1, a different figure from
   0.069 m, and nobody checked why.
+
+- **R6: The attitude reset Jacobian had the wrong sign.** After a correction is injected into the
+  nominal attitude (`R+ = R Exp(a)`), the error left in the filter is `Log(Exp(-a) Exp(dtheta))`. Its
+  derivative at `dtheta = a` is `I - 0.5 [a]x` to first order. The filter applied `I + 0.5 [a]x`, to the
+  live attitude block and, for the stochastic clone, to the clone attitude block.
+
+  It was invisible for the same reason as R1: the correction applied at each update is small, so
+  the wrong sign moves the covariance at second order in a small number and the benchmark only in
+  the third decimal. No test differentiated the reset, and the transition matrix was not checked
+  against the nominal propagation either.
+
+  Fixed by a pure helper, `_reset_jacobian`, and pinned by
+  `test_attitude_reset_jacobian_is_the_exact_derivative` (three magnitudes, tolerance quadratic in the
+  correction), `test_clone_reset_jacobian_is_the_exact_derivative`,
+  `test_anchor_reset_block_stays_identity_when_the_anchor_correction_is_not_applied` and
+  `test_transition_matrix_matches_the_nominal_propagation_to_first_order`, which asserts that the error of each
+  second-order block shrinks fourfold when `dt` is halved. The transition matrix needed no change.
+
+  Regenerated with the fix: the golden snapshot, the committed figures, the documented benchmark tables, the
+  mismatch sweep and the fault matrix. One per-seed verdict in the mismatch sweep changed because of the fix.
+  No benchmark verdict, gate result or fault-matrix count changed. The fix also changes outcomes on recorded
+  data. The studies on recorded data are regenerated in the following change, so until then their committed
+  results are evidence produced with the pre-fix filter.
 
 ## Adding a constraint
 
