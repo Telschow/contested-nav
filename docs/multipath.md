@@ -34,10 +34,10 @@ designed.
 | Multipath m | Runs | Sensitive rule calls | Specific rule calls | Median NIS | Median lag-1 autocorrelation |
 |---:|---:|---:|---:|---:|---:|
 | 0 | 34 | 0% | 0% | 0.88 | -0.04 |
-| 0.5 | 34 | 0% | 0% | 1.31 | -0.00 |
-| 1 | 34 | 100% | 0% | 2.49 | 0.05 |
-| 1.5 | 34 | 100% | 6% | 4.58 | 0.19 |
-| 2 | 34 | 100% | 68% | 6.64 | 0.51 |
+| 0.5 | 34 | 0% | 0% | 1.31 | -0.01 |
+| 1 | 34 | 100% | 0% | 2.48 | 0.05 |
+| 1.5 | 34 | 100% | 0% | 4.49 | 0.19 |
+| 2 | 34 | 94% | 62% | 6.59 | 0.46 |
 
 <!-- multipath-floor:end -->
 
@@ -52,8 +52,8 @@ were seen before the rules were fixed.
 |---|---:|---:|---:|
 | control | 68 | 0% | 0% |
 | multipath | 68 | 100% | 100% |
-| spoofing | 238 | 12% | 0% |
-| degradation | 170 | 4% | 0% |
+| spoofing | 238 | 13% | 0% |
+| degradation | 170 | 3% | 0% |
 
 <!-- multipath-confirm:end -->
 
@@ -68,15 +68,15 @@ test of the rule that is chosen.
 |---|---|---:|---:|---:|---:|
 | control | none | 0 | 34 | 0% | 0% |
 | multipath | multipath | 1 | 34 | 100% | 0% |
-| multipath | multipath | 2 | 34 | 94% | 65% |
+| multipath | multipath | 2 | 34 | 100% | 62% |
 | multipath | multipath | 3 | 34 | 100% | 100% |
 | multipath | multipath | 5 | 34 | 100% | 100% |
-| spoofing | step | 5 | 34 | 50% | 0% |
-| spoofing | step | 10 | 34 | 15% | 0% |
-| spoofing | ramp | 3 | 34 | 15% | 0% |
+| spoofing | step | 5 | 34 | 65% | 0% |
+| spoofing | step | 10 | 34 | 9% | 0% |
+| spoofing | ramp | 3 | 34 | 9% | 0% |
 | spoofing | ramp | 5 | 34 | 6% | 0% |
 | degradation | accel_bias | 0.7 | 34 | 3% | 0% |
-| degradation | gyro_bias | 0.02 | 34 | 9% | 0% |
+| degradation | gyro_bias | 0.02 | 34 | 12% | 0% |
 
 <!-- multipath-fresh:end -->
 
@@ -84,7 +84,7 @@ test of the rule that is chosen.
 
 | Rule | Recall, multipath of 3 m and above (needs 95%) | Called multipath, all other runs including controls (needs at most 2%) | Criteria met |
 |---|---:|---:|---|
-| sensitive | 100% | 14% | no |
+| sensitive | 100% | 15% | no |
 | specific | 100% | 0% | yes |
 
 <!-- multipath-criteria:end -->
@@ -106,8 +106,8 @@ test of the rule that is chosen.
 
 1. **The specific rule meets the criteria.** On the fresh runs it calls all multipath of 3 m and above, and none of
    the other runs: no control, no step, no ramp, no bias.
-2. **The sensitive rule does not.** It calls multipath from 1 m, but it also calls half of the 5 m steps and a few
-   ramps and bias steps, so 14% of the other fresh runs are called multipath.
+2. **The sensitive rule does not.** It calls multipath from 1 m, but it also calls about two thirds of the 5 m steps
+   and a few ramps and bias steps, so 15% of the other fresh runs are called multipath.
 3. **The cost of the specific rule is sensitivity.** Multipath of 2 m is called in about two thirds of runs, 1.5 m
    in a few, and 1 m and below in none. The detector sees multipath of about 3 m and above, which is several times the
    0.8 m noise of the simulated GNSS.

@@ -49,13 +49,13 @@ standard deviations.
 
 | Variant | Runs | Median mean NEES | Median 2-sigma coverage | Median final error m | Median claimed sigma m | Meets the gate (NEES < 10, coverage > 90%) |
 |---|---:|---:|---:|---:|---:|---|
-| IMU only | 5 | 1.5 | 100% | 64.33 | 56.15 | yes |
-| anchor, measured errors | 5 | 8030.7 | 6% | 50.86 | 0.27 | no |
-| clone, independent errors | 5 | 2.0 | 100% | 0.30 | 0.27 | yes |
-| clone, measured correlation | 5 | 5.6 | 93% | 0.51 | 0.27 | yes |
-| clone, measured correlation, noise assumed x4 | 5 | 1.4 | 100% | 0.49 | 0.67 | yes |
-| replay, anchor | 5 | 16102.0 | 6% | 72.40 | 0.27 | no |
-| replay, clone | 5 | 27.2 | 54% | 0.25 | 0.27 | no |
+| IMU only | 5 | 1.4 | 100% | 66.48 | 49.68 | yes |
+| anchor, measured errors | 5 | 8032.3 | 6% | 50.86 | 0.27 | no |
+| clone, independent errors | 5 | 2.1 | 100% | 0.31 | 0.27 | yes |
+| clone, measured correlation | 5 | 4.7 | 97% | 0.51 | 0.27 | yes |
+| clone, measured correlation, noise assumed x4 | 5 | 1.3 | 100% | 0.49 | 0.67 | yes |
+| replay, anchor | 5 | 16089.8 | 6% | 72.37 | 0.27 | no |
+| replay, clone | 5 | 27.9 | 55% | 0.24 | 0.27 | no |
 | replay, clone, noise assumed x4 | 5 | 4.1 | 92% | 0.64 | 0.66 | yes |
 
 <!-- vo-clone:end -->
@@ -99,12 +99,12 @@ numbers below for that window have three, so they differ slightly.
 
 | Sequence | Window start s | clone x1: NEES / coverage | clone x2: NEES / coverage | clone x4: NEES / coverage | clone x8: NEES / coverage | anchor x1: NEES / coverage |
 |---|---:|---|---|---|---|---|
-| MH_01_easy | 60 | 31.5 / 52% | 12.6 / 67% | 4.49 / 91% ok | 1.88 / 100% ok | 1.13e+05 / 6% |
-| MH_01_easy | 90 | 13.5 / 58% | 6.07 / 90% | 2.62 / 100% ok | 1.32 / 100% ok | 1.19e+05 / 5% |
-| MH_02_easy | 105 | 4.28 / 100% ok | 3.7 / 100% ok | 1.94 / 100% ok | 1.27 / 100% ok | 1.56e+05 / 5% |
-| MH_03_medium | 80 | 3.5 / 100% ok | 2.03 / 100% ok | 1.2 / 100% ok | 1.05 / 100% ok | 9.73e+04 / 7% |
-| MH_04_difficult | 60 | 74.3 / 18% | 14.8 / 42% | 2.73 / 99% ok | 1.16 / 100% ok | 9.04e+04 / 9% |
-| MH_05_difficult | 30 | 33.4 / 36% | 12.5 / 59% | 3.99 / 100% ok | 1.6 / 100% ok | 1.6e+05 / 6% |
+| MH_01_easy | 60 | 32.2 / 53% | 12.8 / 67% | 4.53 / 91% ok | 1.88 / 100% ok | 1.13e+05 / 6% |
+| MH_01_easy | 90 | 14.1 / 58% | 6.16 / 87% | 2.6 / 100% ok | 1.35 / 100% ok | 1.19e+05 / 5% |
+| MH_02_easy | 105 | 5.32 / 100% ok | 3.98 / 100% ok | 1.99 / 100% ok | 1.3 / 100% ok | 1.56e+05 / 5% |
+| MH_03_medium | 80 | 3.46 / 100% ok | 2.04 / 100% ok | 1.21 / 100% ok | 1.07 / 100% ok | 9.74e+04 / 7% |
+| MH_04_difficult | 60 | 69.9 / 19% | 14.6 / 42% | 2.74 / 99% ok | 1.15 / 100% ok | 9.06e+04 / 9% |
+| MH_05_difficult | 30 | 33.6 / 37% | 12.8 / 59% | 4.09 / 100% ok | 1.62 / 100% ok | 1.6e+05 / 6% |
 | **Windows meeting the gate** | | 2 of 6 | 2 of 6 | 6 of 6 | 6 of 6 | 0 of 6 |
 
 <!-- vo-wide-clone:end -->

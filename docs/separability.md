@@ -19,11 +19,11 @@ ramps up slowly. The GNSS is simulated from ground truth.
 
 | Dataset | Setting | Honest returns | Median d² | 95th percentile d² | Rejected by the shipped gate (16.3) | Median claimed σ at return (m) |
 |---|---|---:|---:|---:|---:|---:|
-| euroc | default | 108 | 19.64 | 150.0 | 56% | 4.7 |
-| euroc | walk10 | 108 | 0.99 | 3.5 | 0% | 30.0 |
-| tumvi | file | 69 | 4.23 | 18.6 | 7% | 4.3 |
-| tumvi | allan | 69 | 10.61 | 51.9 | 30% | 4.5 |
-| tumvi | file-walk10 | 69 | 1.36 | 7.5 | 1% | 10.9 |
+| euroc | default | 108 | 19.80 | 141.2 | 56% | 4.7 |
+| euroc | walk10 | 108 | 0.72 | 3.6 | 0% | 29.8 |
+| tumvi | file | 69 | 4.63 | 19.1 | 7% | 4.2 |
+| tumvi | allan | 69 | 7.15 | 56.7 | 19% | 3.2 |
+| tumvi | file-walk10 | 69 | 1.34 | 4.9 | 1% | 10.7 |
 
 <!-- separability-honest:end -->
 
@@ -36,11 +36,11 @@ rejects many honest returns. This is the lockout of the [attribution](attributio
 
 | Dataset | Setting | 5 m | 10 m | 20 m | 50 m | 100 m | 200 m | 500 m |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| euroc | default | 56% | 61% | 85% | 100% | 100% | 100% | 100% |
-| euroc | walk10 | 0% | 0% | 0% | 1% | 48% | 98% | 100% |
-| tumvi | file | 18% | 55% | 79% | 93% | 98% | 100% | 100% |
-| tumvi | allan | 48% | 68% | 80% | 93% | 98% | 100% | 100% |
-| tumvi | file-walk10 | 1% | 2% | 18% | 79% | 95% | 100% | 100% |
+| euroc | default | 57% | 61% | 86% | 100% | 100% | 100% | 100% |
+| euroc | walk10 | 0% | 0% | 0% | 1% | 47% | 98% | 100% |
+| tumvi | file | 15% | 52% | 77% | 92% | 98% | 100% | 100% |
+| tumvi | allan | 41% | 65% | 79% | 93% | 98% | 100% | 100% |
+| tumvi | file-walk10 | 1% | 2% | 16% | 78% | 95% | 100% | 100% |
 
 <!-- separability-detection:end -->
 
@@ -50,7 +50,7 @@ rejects many honest returns. This is the lockout of the [attribution](attributio
 
 | Setting pair (EuRoC gate -> TUM VI) | Gate | EuRoC honest rejected | TUM VI honest rejected | Spoof size detected 90% (TUM VI) |
 |---|---:|---:|---:|---:|
-| walk10 -> file-walk10 | 3.5 | 6% | 16% | 50 m |
+| walk10 -> file-walk10 | 3.6 | 6% | 13% | 50 m |
 
 <!-- separability-heldout:end -->
 
