@@ -1362,6 +1362,19 @@
     }
    },
    "name": "outage_control",
+   "outage_calibration": {
+    "coverage_2sigma": 1.0,
+    "coverage_2sigma_expected": 0.9926168394946402,
+    "epochs": 3000,
+    "nees_expected": 3.0,
+    "nees_mean": 5.929553407067523,
+    "windows": [
+     {
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ]
+   },
    "outages": [
     {
      "duration_s": 15.0,
@@ -1956,6 +1969,19 @@
     }
    },
    "name": "outage_visual",
+   "outage_calibration": {
+    "coverage_2sigma": 0.0,
+    "coverage_2sigma_expected": 0.9926168394946402,
+    "epochs": 3000,
+    "nees_expected": 3.0,
+    "nees_mean": 478.6399743166258,
+    "windows": [
+     {
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ]
+   },
    "outages": [
     {
      "duration_s": 15.0,
@@ -2578,6 +2604,19 @@
     }
    },
    "name": "outage_visual_clone",
+   "outage_calibration": {
+    "coverage_2sigma": 1.0,
+    "coverage_2sigma_expected": 0.9926168394946402,
+    "epochs": 3000,
+    "nees_expected": 3.0,
+    "nees_mean": 3.134876320611654,
+    "windows": [
+     {
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ]
+   },
    "outages": [
     {
      "duration_s": 15.0,
@@ -3200,6 +3239,19 @@
     }
    },
    "name": "outage_visual_clone_correlated",
+   "outage_calibration": {
+    "coverage_2sigma": 0.36,
+    "coverage_2sigma_expected": 0.9926168394946402,
+    "epochs": 3000,
+    "nees_expected": 3.0,
+    "nees_mean": 18.529017922954633,
+    "windows": [
+     {
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ]
+   },
    "outages": [
     {
      "duration_s": 15.0,
@@ -3827,6 +3879,19 @@
     }
    },
    "name": "outage_visual_clone_correlated_inflated",
+   "outage_calibration": {
+    "coverage_2sigma": 1.0,
+    "coverage_2sigma_expected": 0.9926168394946402,
+    "epochs": 3000,
+    "nees_expected": 3.0,
+    "nees_mean": 7.41259787704084,
+    "windows": [
+     {
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ]
+   },
    "outages": [
     {
      "duration_s": 15.0,
@@ -4454,6 +4519,19 @@
     }
    },
    "name": "outage_visual_clone_outliers",
+   "outage_calibration": {
+    "coverage_2sigma": 1.0,
+    "coverage_2sigma_expected": 0.9926168394946402,
+    "epochs": 3000,
+    "nees_expected": 3.0,
+    "nees_mean": 2.983308296343659,
+    "windows": [
+     {
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ]
+   },
    "outages": [
     {
      "duration_s": 15.0,
@@ -5081,6 +5159,19 @@
     }
    },
    "name": "outage_visual_clone_scale_drift",
+   "outage_calibration": {
+    "coverage_2sigma": 1.0,
+    "coverage_2sigma_expected": 0.9926168394946402,
+    "epochs": 3000,
+    "nees_expected": 3.0,
+    "nees_mean": 3.571644872355664,
+    "windows": [
+     {
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ]
+   },
    "outages": [
     {
      "duration_s": 15.0,
@@ -5708,6 +5799,19 @@
     }
    },
    "name": "outage_visual_degraded_camera",
+   "outage_calibration": {
+    "coverage_2sigma": 0.0,
+    "coverage_2sigma_expected": 0.9926168394946402,
+    "epochs": 3000,
+    "nees_expected": 3.0,
+    "nees_mean": 320.9986439913358,
+    "windows": [
+     {
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ]
+   },
    "outages": [
     {
      "duration_s": 15.0,
@@ -6334,6 +6438,19 @@
     }
    },
    "name": "outage_visual_degraded_camera_clone",
+   "outage_calibration": {
+    "coverage_2sigma": 1.0,
+    "coverage_2sigma_expected": 0.9926168394946402,
+    "epochs": 3000,
+    "nees_expected": 3.0,
+    "nees_mean": 2.659826818682296,
+    "windows": [
+     {
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ]
+   },
    "outages": [
     {
      "duration_s": 15.0,
@@ -6960,6 +7077,19 @@
     }
    },
    "name": "outage_visual_degraded_camera_rereferenced",
+   "outage_calibration": {
+    "coverage_2sigma": 0.0,
+    "coverage_2sigma_expected": 0.9926168394946402,
+    "epochs": 3000,
+    "nees_expected": 3.0,
+    "nees_mean": 308.16512090662286,
+    "windows": [
+     {
+      "end_s": 20.0,
+      "start_s": 5.0
+     }
+    ]
+   },
    "outages": [
     {
      "duration_s": 15.0,
