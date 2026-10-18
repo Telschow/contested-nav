@@ -32,3 +32,5 @@ value that held in one replay, not a derived constant. A front end with another 
 factor.
 
 Update: the wider measurement ran, and its result is in [ADR-0024](0024-assumed-noise-for-the-opt-in-clone.md).
+
+Note (2026-10-18): the figures above were measured before the attitude reset fix (R6 in `CONSTRAINTS.md`). The regenerated page is [real front end](../real_front_end.md). The text above is unchanged.

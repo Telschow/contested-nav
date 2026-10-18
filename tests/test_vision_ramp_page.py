@@ -44,7 +44,7 @@ def test_one_m_s_is_seen_and_mostly_followed(rows, ds, arm):
     s = _s(rows, "independent", ds, arm, 1.0)
     assert s["over_gate"] == 1.0
     assert s["faulted"] <= 3 / 11 + 1e-9
-    assert 9 / 11 - 1e-9 <= s["captured"] <= 1.0
+    assert 8 / 11 - 1e-9 <= s["captured"] <= 1.0
 
 
 @pytest.mark.parametrize(("ds", "arm"), CELLS)

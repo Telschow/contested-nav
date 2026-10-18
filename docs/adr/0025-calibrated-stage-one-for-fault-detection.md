@@ -11,6 +11,9 @@ unseen control runs. That stage called a fault when any of ten features exceeded
 controls. A maximum over a few dozen samples is a poor tail estimate, and ten features give ten chances. Track A's exit test
 needs a measured false-alarm rate of zero on the control.
 
+Update 2026-10-18: the page was regenerated after the attitude reset fix (R6 in `CONSTRAINTS.md`). On the 68 unseen controls the control
+maximum raises 23 alarms and the fitted bound 10.
+
 ## Options
 
 1. **Keep the control maximum.** Known false-alarm rate on unseen controls: the first row of the table on the page.

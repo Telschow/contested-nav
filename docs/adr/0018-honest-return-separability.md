@@ -33,3 +33,5 @@ measurement and stays open.
 
 Whatever is chosen, the claim stays limited to simulated GNSS and the first gate. Spoof detectability depends on
 the honest population, which here is two datasets.
+
+Note (2026-10-18): the figures above were measured before the attitude reset fix (R6 in `CONSTRAINTS.md`). The regenerated page is [separability](../separability.md). The text above is unchanged.

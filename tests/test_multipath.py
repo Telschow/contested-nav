@@ -101,9 +101,9 @@ def test_the_specific_rule_floor(floor, fresh):
     assert share(fresh, 3.0) == 1.0 and share(fresh, 5.0) == 1.0
 
 
-def test_the_sensitive_rule_calls_half_the_five_metre_steps(fresh):
+def test_the_sensitive_rule_calls_about_two_thirds_of_the_five_metre_steps(fresh):
     sel = [r for r in fresh if r["kind"] == "step" and float(r["level"]) == 5.0]
-    assert ms._share(sel, "sensitive") == 0.5 and ms._share(sel, "specific") == 0.0
+    assert 0.6 < ms._share(sel, "sensitive") < 0.7 and ms._share(sel, "specific") == 0.0
 
 
 def test_run_case_and_sweep_on_a_synthetic_sequence(tmp_path):

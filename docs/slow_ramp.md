@@ -30,25 +30,25 @@ This is one direction, one onset time, simulated GNSS, and two datasets.
 | euroc | default | 0.2 | 11 | 9% | 0% | 0% | 100% | 0 | 15.4 | 16.0 |
 | euroc | default | 0.5 | 11 | 18% | 0% | 0% | 100% | 15 | 39.1 | 39.9 |
 | euroc | default | 1 | 11 | 64% | 0% | 0% | 100% | 5 | 79.0 | 79.8 |
-| euroc | default | 2 | 11 | 100% | 36% | 0% | 100% | 5 | 160.8 | 159.7 |
+| euroc | default | 2 | 11 | 100% | 36% | 0% | 100% | 5 | 160.7 | 159.7 |
 | euroc | walk10 | 0 | 11 | 0% | 0% | 0% | 0% | - | 0.5 | 0.0 |
 | euroc | walk10 | 0.05 | 11 | 0% | 0% | 0% | 100% | - | 3.9 | 4.0 |
 | euroc | walk10 | 0.2 | 11 | 0% | 0% | 0% | 100% | - | 15.7 | 16.0 |
 | euroc | walk10 | 0.5 | 11 | 0% | 0% | 0% | 100% | - | 39.6 | 39.9 |
-| euroc | walk10 | 1 | 11 | 0% | 0% | 0% | 100% | - | 79.5 | 79.8 |
-| euroc | walk10 | 2 | 11 | 0% | 0% | 0% | 100% | - | 159.3 | 159.7 |
-| tumvi | file | 0 | 6 | 17% | 0% | 0% | 0% | 8 | 0.3 | 0.0 |
-| tumvi | file | 0.05 | 6 | 17% | 0% | 0% | 100% | 8 | 5.0 | 5.3 |
-| tumvi | file | 0.2 | 6 | 17% | 0% | 0% | 100% | 8 | 21.0 | 21.2 |
-| tumvi | file | 0.5 | 6 | 17% | 0% | 0% | 100% | 8 | 52.9 | 53.0 |
-| tumvi | file | 1 | 6 | 33% | 0% | 0% | 100% | 7 | 105.9 | 106.0 |
-| tumvi | file | 2 | 6 | 100% | 17% | 0% | 100% | 6 | 213.1 | 212.0 |
+| euroc | walk10 | 1 | 11 | 9% | 0% | 0% | 100% | 83 | 79.5 | 79.8 |
+| euroc | walk10 | 2 | 11 | 9% | 0% | 0% | 100% | 41 | 159.4 | 159.7 |
+| tumvi | file | 0 | 6 | 0% | 0% | 0% | 0% | - | 0.3 | 0.0 |
+| tumvi | file | 0.05 | 6 | 0% | 0% | 0% | 100% | - | 5.0 | 5.3 |
+| tumvi | file | 0.2 | 6 | 0% | 0% | 0% | 100% | - | 21.0 | 21.2 |
+| tumvi | file | 0.5 | 6 | 0% | 0% | 0% | 100% | - | 52.9 | 53.0 |
+| tumvi | file | 1 | 6 | 0% | 0% | 0% | 100% | - | 105.8 | 106.0 |
+| tumvi | file | 2 | 6 | 100% | 17% | 0% | 100% | 6 | 211.8 | 212.0 |
 | tumvi | file-walk10 | 0 | 6 | 0% | 0% | 0% | 0% | - | 0.4 | 0.0 |
 | tumvi | file-walk10 | 0.05 | 6 | 0% | 0% | 0% | 100% | - | 5.1 | 5.3 |
-| tumvi | file-walk10 | 0.2 | 6 | 0% | 0% | 0% | 100% | - | 21.1 | 21.2 |
+| tumvi | file-walk10 | 0.2 | 6 | 0% | 0% | 0% | 100% | - | 21.0 | 21.2 |
 | tumvi | file-walk10 | 0.5 | 6 | 0% | 0% | 0% | 100% | - | 52.9 | 53.0 |
 | tumvi | file-walk10 | 1 | 6 | 0% | 0% | 0% | 100% | - | 105.9 | 106.0 |
-| tumvi | file-walk10 | 2 | 6 | 50% | 0% | 0% | 100% | 5 | 211.9 | 212.0 |
+| tumvi | file-walk10 | 2 | 6 | 33% | 0% | 0% | 100% | 5 | 211.9 | 212.0 |
 
 <!-- ramp-clean:end -->
 
@@ -64,18 +64,18 @@ This is one direction, one onset time, simulated GNSS, and two datasets.
 | euroc | default | 0.5 | 11 | 64% | 45% | 0% | 100% | 0 | 48.7 | 39.9 |
 | euroc | default | 1 | 11 | 64% | 45% | 0% | 100% | 0 | 96.9 | 79.8 |
 | euroc | default | 2 | 11 | 91% | 55% | 0% | 100% | 1 | 193.4 | 159.7 |
-| euroc | walk10 | 0 | 11 | 9% | 0% | 0% | 0% | 83 | 0.5 | 0.0 |
-| euroc | walk10 | 0.05 | 11 | 9% | 0% | 0% | 100% | 83 | 4.0 | 4.0 |
-| euroc | walk10 | 0.2 | 11 | 9% | 0% | 0% | 100% | 83 | 15.7 | 16.0 |
-| euroc | walk10 | 0.5 | 11 | 9% | 0% | 0% | 100% | 83 | 39.6 | 39.9 |
-| euroc | walk10 | 1 | 11 | 9% | 9% | 0% | 100% | 83 | 79.5 | 79.8 |
-| euroc | walk10 | 2 | 11 | 9% | 9% | 0% | 100% | 41 | 159.3 | 159.7 |
-| tumvi | file | 0 | 6 | 17% | 17% | 0% | 0% | 13 | 0.3 | 0.0 |
-| tumvi | file | 0.05 | 6 | 17% | 17% | 0% | 100% | 13 | 5.3 | 5.3 |
-| tumvi | file | 0.2 | 6 | 17% | 17% | 0% | 100% | 13 | 21.2 | 21.2 |
-| tumvi | file | 0.5 | 6 | 17% | 17% | 0% | 100% | 13 | 52.9 | 53.0 |
-| tumvi | file | 1 | 6 | 17% | 17% | 0% | 100% | 13 | 105.9 | 106.0 |
-| tumvi | file | 2 | 6 | 67% | 17% | 0% | 100% | 11 | 211.8 | 212.0 |
+| euroc | walk10 | 0 | 11 | 9% | 0% | 0% | 0% | 41 | 0.5 | 0.0 |
+| euroc | walk10 | 0.05 | 11 | 9% | 0% | 0% | 100% | 41 | 3.9 | 4.0 |
+| euroc | walk10 | 0.2 | 11 | 0% | 0% | 0% | 100% | - | 15.7 | 16.0 |
+| euroc | walk10 | 0.5 | 11 | 0% | 0% | 0% | 100% | - | 39.6 | 39.9 |
+| euroc | walk10 | 1 | 11 | 0% | 0% | 0% | 100% | - | 79.5 | 79.8 |
+| euroc | walk10 | 2 | 11 | 0% | 0% | 0% | 100% | - | 159.4 | 159.7 |
+| tumvi | file | 0 | 6 | 17% | 0% | 0% | 0% | 13 | 0.3 | 0.0 |
+| tumvi | file | 0.05 | 6 | 17% | 0% | 0% | 100% | 16 | 5.0 | 5.3 |
+| tumvi | file | 0.2 | 6 | 17% | 0% | 0% | 100% | 16 | 21.0 | 21.2 |
+| tumvi | file | 0.5 | 6 | 17% | 0% | 0% | 100% | 16 | 52.9 | 53.0 |
+| tumvi | file | 1 | 6 | 0% | 0% | 0% | 100% | - | 105.8 | 106.0 |
+| tumvi | file | 2 | 6 | 67% | 0% | 0% | 100% | 12 | 211.8 | 212.0 |
 | tumvi | file-walk10 | 0 | 6 | 0% | 0% | 0% | 0% | - | 0.4 | 0.0 |
 | tumvi | file-walk10 | 0.05 | 6 | 0% | 0% | 0% | 100% | - | 5.1 | 5.3 |
 | tumvi | file-walk10 | 0.2 | 6 | 0% | 0% | 0% | 100% | - | 21.1 | 21.2 |
@@ -89,8 +89,8 @@ This is one direction, one onset time, simulated GNSS, and two datasets.
 
 1. **Every spoofed run is captured.** At every rate, from 0.05 to 2 m/s, in both datasets, both settings and both
    arms, the filter ends up following the spoof. None of the spoofed rows has a captured share below 100%.
-2. **With the calibrated bias walk the gate does not react to a ramp up to 1 m/s on EuRoC.** No clean-arm run
-   goes over the gate, at any rate. On TUM VI the first reaction, in half the runs, is at 2 m/s.
+2. **With the calibrated bias walk the gate rarely reacts to a ramp on EuRoC.** Two clean-arm runs go over the
+   gate, both on V1_01_easy, at 1 and 2 m/s. On TUM VI the first reaction, in a third of the runs, is at 2 m/s.
 3. **With the default noise the gate reacts to the faster ramps, and the filter is still captured.** It also fires on
    some control runs, which is the overconfidence of [ADR-0014](adr/0014-textbook-imu-process-noise-by-default.md).
    At no rate is a channel declared faulty in every run, and the capture is 100% regardless. A detection is not a
