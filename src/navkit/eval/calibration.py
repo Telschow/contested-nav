@@ -275,6 +275,56 @@ def coverage_report(
     return CoverageReport(points=points, mean_normalised_error=series.mean_squared(), dof=series.dof)
 
 
+@dataclass(frozen=True)
+class MaskScore:
+    """NEES and 2-sigma coverage over a subset of epochs.
+
+    ``nees_mean`` and ``coverage_2sigma`` are ``None`` when the subset is empty, so that an empty window is
+    not mistaken for a perfect or a failed one. ``coverage_2sigma`` uses the same ellipsoid as the 2-sigma point
+    of :func:`coverage_report`: ``squared <= 4 * dof``.
+    """
+
+    epochs: int
+    nees_mean: float | None
+    coverage_2sigma: float | None
+    nees_expected: float
+    coverage_2sigma_expected: float
+
+    def as_dict(self) -> dict[str, float | int | None]:
+        return {
+            "epochs": self.epochs,
+            "nees_mean": self.nees_mean,
+            "nees_expected": self.nees_expected,
+            "coverage_2sigma": self.coverage_2sigma,
+            "coverage_2sigma_expected": self.coverage_2sigma_expected,
+        }
+
+
+def window_mask(t: np.ndarray, windows: list[tuple[float, float]]) -> np.ndarray:
+    """Epochs inside any of the half-open windows ``[start, end)``, as in ``docs/MODEL.md``."""
+    t = np.asarray(t, float)
+    mask = np.zeros(t.shape, dtype=bool)
+    for start, end in windows:
+        mask |= (t >= start) & (t < end)
+    return mask
+
+
+def score_mask(series: MahalanobisSeries, mask: np.ndarray) -> MaskScore:
+    """Mean NEES and 2-sigma coverage over the epochs where ``mask`` is true."""
+    mask = np.asarray(mask, dtype=bool)
+    if mask.shape != (series.epochs,):
+        raise ValueError(f"mask has shape {mask.shape}, the series has {series.epochs} epochs")
+    squared = series.squared[mask]
+    n = int(squared.shape[0])
+    return MaskScore(
+        epochs=n,
+        nees_mean=float(np.mean(squared)) if n else None,
+        coverage_2sigma=float(np.count_nonzero(squared <= 4.0 * series.dof)) / n if n else None,
+        nees_expected=float(series.dof),
+        coverage_2sigma_expected=ellipsoid_coverage(2.0, series.dof),
+    )
+
+
 def inflation_factor(series: MahalanobisSeries, target_coverage: float = 0.95) -> float:
     """Scalar covariance inflation that reaches ``target_coverage``.
 
