@@ -11,9 +11,8 @@ Nominal state ``x = (R, p, v, b_a, b_g)``. The filter carries a 21-dimensional
 The first fifteen are the usual inertial states. ``c_p`` and ``c_t`` are the
 errors of the stored visual anchor position and attitude: nuisance parameters,
 not physical states, needed because an anchor is a pose the filter itself
-produced and its error is therefore not independent evidence. They are what
-makes the visual channel sound to enable, and the module docstring below
-explains both the failure they fix and the one they do not.
+produced and its error is therefore not independent evidence. The module
+docstring below explains the failure they fix and the one they do not.
 
 The convention that the true state relates to the nominal one as
 ``R_true = R Exp(dtheta)``, ``p_true = p + dp``, ``v_true = v + dv``, and the
@@ -35,9 +34,12 @@ Process model (discrete, first order), with ``a = accel - b_a``:
 Measurement models
 ------------------
 * **GNSS position**: ``z = p``, ``H = [0 I 0 0 0]``.
-* **Visual relative rotation** ``R_rel = R_{i-1}^T R_i``: the residual
-  ``Log(R_meas R_pred^T)``, which equals the attitude error exactly, with
-  ``H = [I 0 0 0 0]`` and an isotropic noise covariance.
+* **Visual relative rotation** ``R_rel = R_{i-1}^T R_i``: the residual is
+  ``Log(R_rel_meas R_rel_pred^T) = Log(R_rel_pred Exp(dtheta) R_rel_pred^T) =
+  R_rel_pred dtheta``, so the attitude block of ``H`` is ``R_rel_pred`` and not
+  the identity. The two agree only when ``R_rel_pred`` is the identity. With the
+  anchor modelled, the anchor attitude error enters through
+  ``-R_rel_pred J_r(c_t)``. The noise covariance is isotropic.
 * **Visual relative translation** ``t_rel = R_{i-1}^T (p_i - p_{i-1})``: with
   ``h(x) = R_prev^T (p_cur - p_prev)`` the residual is
   ``t_meas - h(x_nom)`` and ``H = [0 R_prev^T 0 0 0]``.
@@ -80,30 +82,38 @@ test measures is the FDIR-off one, on purpose: FDIR partially masks this defect,
 and a test that measured the masked version would be measuring the mitigation
 rather than the fault.
 
-The fix is to carry the anchor as a state, and it takes two things that are easy to get wrong:
+The fix is to carry the anchor error as states in the covariance, and it takes three things that are easy to get wrong:
 
-* The anchor error is carried as six estimated states (``c_p``, ``c_t``) rather
-  than folded into the innovation covariance. An error common to every visual
-  update is a quantity to be estimated, not noise to be divided down.
+* The anchor error is carried as six states (``c_p``, ``c_t``) in the covariance,
+  rather than folded into the innovation covariance. An error common to every
+  visual update is a quantity to be tracked, not noise to be divided down. The
+  states carry a declared prior and their correlation with the live state. The
+  correction computed for them is *not* applied to the stored anchor, so they do
+  not estimate the anchor error (CN-003, ADR-0001; the reasoning is in the
+  comment in ``_inject_correction``).
 * Those states are given a *declared* uncertainty, not the filter's own
   covariance. Deriving the new anchor's uncertainty from the current covariance
   is circular, and it ratchets the overconfidence downward at every re-commit.
 * The covariance update uses the Joseph form. The textbook shortcut
   ``(I - K H) P`` is symmetric but not positive semidefinite; with the anchor
-  states it drove the smallest eigenvalue to -0.31 within two visual updates,
+  states it drove the smallest eigenvalue negative within two visual updates,
   which is a physically meaningless covariance rather than a small inaccuracy.
 
-With GNSS available the filter is calibrated again, and slightly better than the
-GNSS-only control because the visual channel adds real information. Vision with
-no GNSS at all is also calibrated (mean NEES 4.2, 1.1 m final error), so the
-anchor model is doing real work rather than only muting the symptom.
+With GNSS available and vision enabled, the visual channel no longer causes the
+GNSS fixes to be rejected (pinned by
+``test_enabling_the_visual_channel_no_longer_silences_the_gnss``). The benchmark
+measures calibration in that configuration only with an outage (``outage_visual``).
+Vision with no GNSS at all is not calibrated: the ``vision_only`` row is badly
+overconfident, because nothing constrains the absolute position. The generated
+figures are in ``docs/results.md`` and the README table.
 
 The limit that remains
 ----------------------
-Under a 15 s GNSS denial the same filter still over-trusts vision
-(mean NEES 286.2, 2.322 m error against a claimed 0.162 m),
-and the cause is structural rather than a matter of tuning. The information a
-visual measurement carries about *absolute* position is the Schur complement
+Under a GNSS denial the same filter still over-trusts vision: the error is
+metres against a claimed 1-sigma of centimetres, and the mean NEES is far above
+its expected value (``outage_visual`` in ``docs/results.md`` and the README
+table). The cause is structural rather than a matter of tuning. The information
+a visual measurement carries about *absolute* position is the Schur complement
 
     P_pp - P_pc P_cc^-1 P_cp
 
@@ -118,8 +128,9 @@ is considered. That requires a pose graph over the visual keyframes, not a
 single-anchor ESKF, and it is the change this project has not made.
 
 So the visual channel ships disabled by default. The failure above is not a
-reason to hide it, and the numbers stay in this docstring; it is a reason not to
-hand a caller a filter that silently reports 0.162 m while being 2.32 m wrong.
+reason to hide it, and it stays measured in ``docs/results.md``; it is a reason
+not to hand a caller a filter that silently reports centimetres of uncertainty
+while being metres wrong.
 ``vision_anchor_modelled`` is exposed only so the regression tests can reproduce
 the middle row.
 
@@ -314,25 +325,24 @@ class EskfConfig:
     gnss_position_sigma_m: float = 0.8
     gnss_enabled: bool = True
     #: Off by default, and the reason is a known limitation rather than caution
-    #: about the code: with the anchor modelled the filter is calibrated when
-    #: GNSS is available and when it is absent entirely, but it is still badly
-    #: overconfident when vision has to carry the solution through a GNSS
-    #: outage. Enabling it by default would hand a caller a filter that reports
-    #: 0.3 m while being 31 m wrong. See the module docstring for the
-    #: measurements and for why closing that gap needs a pose graph.
+    #: about the code: the filter is badly overconfident when vision has to
+    #: carry the solution through a GNSS outage, and also with vision alone,
+    #: where nothing constrains the absolute position. Enabling it by default
+    #: would hand a caller a filter that reports centimetres of uncertainty
+    #: while being metres wrong. The measurements are the ``outage_visual`` and
+    #: ``vision_only`` rows of ``docs/results.md``. The module docstring says why
+    #: closing that gap needs a pose graph.
     vision_enabled: bool = False
     vision_rot_sigma_deg: float = 0.35
     vision_trans_sigma_m: float = 0.05
     #: How many accepted visual updates pass before the anchor pose is
-    #: re-committed. ``None`` (the default) anchors once and never moves it.
-    #:
-    #: 1 (the default) re-commits the anchor at every visual update, so each
-    #: measurement compares consecutive frames. This is the classic visual
-    #: odometry setup and it measures best, because the anchor error starts from
-    #: a fresh declared prior every frame instead of accumulating. Set to None
-    #: to hold one anchor for the whole run, which makes the anchor error a
-    #: single unknown that every measurement shares; that is measurably worse
-    #: (mean NEES 23 rather than 3) and is kept for the regression tests.
+    #: re-committed. 1 (the default) re-commits the anchor at every visual
+    #: update, so each measurement compares consecutive frames. This is the
+    #: classic visual odometry setup and it measures best, because the anchor
+    #: error starts from a fresh declared prior every frame instead of
+    #: accumulating. ``None`` anchors once and never moves it, which makes the
+    #: anchor error a single unknown that every measurement shares; that
+    #: measures worse and is kept for the regression tests.
     vision_keyframe_interval: int | None = 1
     #: Whether the anchor error is carried as an estimated state (correct) or
     #: treated as extra measurement noise (incorrect, kept only so the failure
@@ -567,10 +577,16 @@ class ErrorStateKalmanFilter:
         P[_IDX_CT, _IDX_CT] = np.eye(3) * np.deg2rad(self.cfg.anchor_rot_sigma_deg) ** 2
 
     def _process_noise(self, dt: float) -> np.ndarray:
-        """Discrete process noise, first-order-in-dt form.
+        """Discrete process noise, in the form chosen by ``process_noise_form``.
 
-        ``sigma_g^2 dt^3 / 3`` and ``sigma_a^2 dt^3 / 3`` for rate noises and
-        ``sigma_bg^2 dt`` / ``sigma_ba^2 dt`` for the bias random walks.
+        The default, ``"textbook"`` (ADR-0014), is ``sigma_g^2 dt`` on attitude and
+        ``sigma_a^2 dt`` on velocity, with the position terms ``dt^3 / 3`` and
+        ``dt^2 / 2`` that go with it. ``"legacy"`` is ``sigma_g^2 dt^3 / 3`` on
+        attitude and ``sigma_a^2 dt^3 / 3`` on position, and nothing on velocity.
+        In both forms the bias random walks are ``sigma_bg^2 dt`` and
+        ``sigma_ba^2 dt``, and the anchor error states get their own drift terms
+        when the anchor is modelled. See the field comment on
+        ``process_noise_form``.
         """
         n = self.cfg.imu_noise
         d = float(dt)
@@ -852,10 +868,10 @@ class ErrorStateKalmanFilter:
         # H and the true sensitivity shows up as a negative eigenvalue instead of
         # a slightly-too-small variance. That is not a rounding curiosity here.
         # With the anchor nuisance states, the position and anchor blocks are
-        # near-collinear, and the shortcut drove the smallest eigenvalue to
-        # about -0.31 within two visual updates -- large enough to make the
-        # covariance physically meaningless and to break the eigendecomposition
-        # that the calibration code relies on.
+        # near-collinear, and the shortcut drove the smallest eigenvalue negative
+        # within two visual updates -- by enough to make the covariance
+        # physically meaningless and to break the eigendecomposition that the
+        # calibration code relies on.
         I_KH = np.eye(_N_STATES) - K @ H
         x["P"] = G @ (I_KH @ P @ I_KH.T + K @ Rcov @ K.T) @ G.T
         x["R"] = x["R"] @ rot_exp(dtheta)
@@ -880,11 +896,12 @@ class ErrorStateKalmanFilter:
         # persistent anchor they are not identifiable, so a corrected anchor error
         # latches onto whatever persistent discrepancy exists and absorbs the
         # real navigation drift instead of letting the filter correct for it.
-        # Measured on outage_visual with the anchor held fixed, ATE went from
-        # 35.9 m to 217.5 m and mean NEES from 28.4 to 7118.5. Adding drift noise
-        # does not rescue it across the range that matters: drift sigma
-        # 0.01 and 0.05 m/s are still far worse post-fix, and only an implausibly
-        # large 0.2 m/s turns it marginally positive.
+        # Measured once on outage_visual with the anchor held fixed: both the
+        # error and the mean NEES got much worse. That measurement has no
+        # generated source, so its figures are not kept here. Adding anchor drift
+        # noise does not rescue it across the range that matters: small drift
+        # strengths are still far worse after the fix, and only an implausibly
+        # large one turns the result marginally positive.
         #
         # So the defect is real but it is not a one-line omission. Closing it
         # needs an identifiability decision -- constrain the anchor error to a
@@ -926,10 +943,11 @@ class ErrorStateKalmanFilter:
         tick: at 200 Hz inertial against 20 Hz vision, the previous tick is a
         different pose and using it would compare the current frame with itself.
         The saved keyframe is the filter state *after* the previous visual
-        correction, so its own error is zero to first order, which is the
-        standard first-order treatment of a relative-pose constraint; the
-        resulting loss of correlation information is recorded as a known
-        simplification.
+        correction, and its error is not zero. The anchor model carries that
+        error in the anchor states ``c_p`` and ``c_t`` with a declared prior, and
+        drops its correlation with the live state (ADR-0001). The clone model
+        (``vision_model="clone"``) carries both the error and the correlation
+        through the filter's own covariance.
 
         Returns ``(ok, normalised innovation, rotation_part_accepted)``.
         """
@@ -1036,7 +1054,7 @@ class ErrorStateKalmanFilter:
         ok_trans, innov_trans = self._update(x, z_trans, H_trans, Rcov_trans, sensor="vision_trans", t_s=t_s)
 
         # Re-commit the anchor only when the configured interval has elapsed.
-        # With the default of None the anchor stays where it was first set, so
+        # With None the anchor stays where it was first set, so
         # every visual measurement is a genuine constraint against one fixed pose
         # rather than against a pose the filter just produced from its own output.
         x["vision_updates"] = int(x["vision_updates"]) + 1
