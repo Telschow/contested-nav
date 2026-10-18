@@ -12,8 +12,8 @@
   ([ADR-0023](adr/0023-clone-against-a-measured-front-end.md), [ADR-0024](adr/0024-assumed-noise-for-the-opt-in-clone.md)).
 - **FDIR detects implausible updates and can name only some causes.** The chi-square gate in `fdir/` isolates a
   channel and says how long it was out ([ADR-0005](adr/0005-chi-square-fdir-gating.md)). A multipath call exists as
-  a function ([ADR-0022](adr/0022-multipath-signature.md)). Spoofing and degradation are called in about three
-  quarters of injected runs, weak faults are missed and the false-alarm rate is not zero
+  a function ([ADR-0022](adr/0022-multipath-signature.md)). Spoofing is called in about 70% of injected runs and
+  degradation in about 87%, weak faults are missed and the false-alarm rate is not zero
   ([ADR-0021](adr/0021-fault-classification-from-innovations.md)).
 - **A slow-ramp spoof is followed.** With an IMU and GNSS alone the filter follows a ramp of any rate tested
   ([ADR-0019](adr/0019-slow-ramp-spoofing.md)). A simulated visual source catches a fast ramp when its errors are

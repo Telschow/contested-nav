@@ -48,57 +48,55 @@ Lost = more than 20% of GNSS fixes rejected. Flag = FDIR declared the channel fa
 
 | Scope | Config | Runs | Lost | Flag | Median NEES (expected 3) | Mean 2σ coverage | Median max error m |
 |---|---|---:|---:|---:|---:|---:|---:|
-| all | default | 72 | 40 | 33 | 11.29 | 59.2% | 90.8 |
-| all | preset | 72 | 4 | 2 | 3.36 | 94.7% | 24.7 |
-| all | walk10 | 72 | 0 | 0 | 2.63 | 99.4% | 31.7 |
-| Machine Hall | default | 36 | 15 | 8 | 6.34 | 73.0% | 19.4 |
-| Machine Hall | preset | 36 | 2 | 2 | 3.20 | 95.2% | 23.3 |
-| Machine Hall | walk10 | 36 | 0 | 0 | 2.57 | 99.6% | 29.5 |
-| Vicon room | default | 36 | 25 | 25 | 23.68 | 45.5% | 216.7 |
-| Vicon room | preset | 36 | 2 | 0 | 3.43 | 94.2% | 25.3 |
-| Vicon room | walk10 | 36 | 0 | 0 | 2.65 | 99.2% | 33.0 |
-| MH_01_easy | default | 8 | 6 | 6 | 23.04 | 38.7% | 1233.1 |
-| MH_01_easy | preset | 8 | 0 | 0 | 3.13 | 98.4% | 16.5 |
-| MH_01_easy | walk10 | 8 | 0 | 0 | 2.53 | 99.8% | 20.2 |
-| MH_02_easy | default | 8 | 2 | 0 | 5.32 | 84.3% | 13.5 |
-| MH_02_easy | preset | 8 | 0 | 0 | 2.93 | 99.3% | 22.2 |
-| MH_02_easy | walk10 | 8 | 0 | 0 | 2.40 | 99.7% | 25.3 |
-| MH_03_medium | default | 8 | 1 | 0 | 4.71 | 93.0% | 13.3 |
-| MH_03_medium | preset | 8 | 0 | 0 | 2.92 | 99.5% | 20.1 |
-| MH_03_medium | walk10 | 8 | 0 | 0 | 2.54 | 99.6% | 28.8 |
-| MH_04_difficult | default | 6 | 3 | 2 | 8.85 | 69.9% | 62.9 |
-| MH_04_difficult | preset | 6 | 1 | 1 | 5.39 | 88.3% | 62.4 |
-| MH_04_difficult | walk10 | 6 | 0 | 0 | 2.84 | 99.5% | 49.0 |
-| MH_05_difficult | default | 6 | 3 | 0 | 6.56 | 79.9% | 46.1 |
-| MH_05_difficult | preset | 6 | 1 | 1 | 3.32 | 86.9% | 31.5 |
-| MH_05_difficult | walk10 | 6 | 0 | 0 | 2.72 | 99.4% | 32.0 |
-| V1_01_easy | default | 8 | 8 | 8 | 137.03 | 8.1% | 1432.9 |
-| V1_01_easy | preset | 8 | 2 | 0 | 5.38 | 77.1% | 30.4 |
-| V1_01_easy | walk10 | 8 | 0 | 0 | 2.77 | 98.1% | 44.1 |
-| V1_02_medium | default | 4 | 0 | 0 | 3.42 | 99.1% | 7.6 |
-| V1_02_medium | preset | 4 | 0 | 0 | 3.29 | 99.5% | 19.4 |
-| V1_02_medium | walk10 | 4 | 0 | 0 | 2.54 | 99.5% | 20.3 |
-| V1_03_difficult | default | 6 | 6 | 6 | 32.07 | 30.4% | 244.2 |
-| V1_03_difficult | preset | 6 | 0 | 0 | 3.64 | 99.0% | 28.8 |
-| V1_03_difficult | walk10 | 6 | 0 | 0 | 2.73 | 99.4% | 34.9 |
-| V2_01_easy | default | 6 | 2 | 2 | 6.36 | 78.4% | 9.5 |
-| V2_01_easy | preset | 6 | 0 | 0 | 3.41 | 99.2% | 27.7 |
-| V2_01_easy | walk10 | 6 | 0 | 0 | 2.62 | 99.6% | 35.4 |
-| V2_02_medium | default | 6 | 5 | 5 | 28.87 | 42.6% | 466.5 |
-| V2_02_medium | preset | 6 | 0 | 0 | 3.03 | 99.1% | 24.6 |
-| V2_02_medium | walk10 | 6 | 0 | 0 | 2.72 | 99.6% | 29.8 |
-| V2_03_difficult | default | 6 | 4 | 4 | 18.88 | 44.6% | 123.6 |
-| V2_03_difficult | preset | 6 | 0 | 0 | 3.28 | 98.8% | 21.4 |
-| V2_03_difficult | walk10 | 6 | 0 | 0 | 2.67 | 99.5% | 25.1 |
+| all | default | 72 | 39 | 32 | 10.84 | 59.6% | 91.5 |
+| all | preset | 72 | 2 | 1 | 3.23 | 96.7% | 22.1 |
+| all | walk10 | 72 | 0 | 0 | 2.57 | 99.4% | 26.0 |
+| Machine Hall | default | 36 | 14 | 7 | 6.31 | 73.9% | 20.0 |
+| Machine Hall | preset | 36 | 0 | 0 | 3.17 | 99.1% | 21.6 |
+| Machine Hall | walk10 | 36 | 0 | 0 | 2.51 | 99.6% | 20.1 |
+| Vicon room | default | 36 | 25 | 25 | 23.19 | 45.3% | 214.2 |
+| Vicon room | preset | 36 | 2 | 1 | 3.36 | 94.3% | 25.9 |
+| Vicon room | walk10 | 36 | 0 | 0 | 2.63 | 99.2% | 29.8 |
+| MH_01_easy | default | 8 | 5 | 5 | 18.62 | 45.6% | 1039.1 |
+| MH_01_easy | preset | 8 | 0 | 0 | 3.05 | 98.5% | 15.8 |
+| MH_01_easy | walk10 | 8 | 0 | 0 | 2.51 | 99.8% | 21.9 |
+| MH_02_easy | default | 8 | 2 | 0 | 5.31 | 84.4% | 13.4 |
+| MH_02_easy | preset | 8 | 0 | 0 | 3.04 | 99.3% | 18.6 |
+| MH_02_easy | walk10 | 8 | 0 | 0 | 2.42 | 99.7% | 19.8 |
+| MH_03_medium | default | 8 | 1 | 0 | 4.71 | 92.9% | 13.5 |
+| MH_03_medium | preset | 8 | 0 | 0 | 2.93 | 99.4% | 20.2 |
+| MH_03_medium | walk10 | 8 | 0 | 0 | 2.53 | 99.5% | 26.6 |
+| MH_04_difficult | default | 6 | 3 | 2 | 8.97 | 69.5% | 63.9 |
+| MH_04_difficult | preset | 6 | 0 | 0 | 3.20 | 99.1% | 21.0 |
+| MH_04_difficult | walk10 | 6 | 0 | 0 | 2.47 | 99.4% | 17.1 |
+| MH_05_difficult | default | 6 | 3 | 0 | 7.52 | 77.0% | 52.6 |
+| MH_05_difficult | preset | 6 | 0 | 0 | 3.30 | 99.4% | 27.5 |
+| MH_05_difficult | walk10 | 6 | 0 | 0 | 2.58 | 99.6% | 25.5 |
+| V1_01_easy | default | 8 | 8 | 8 | 129.95 | 8.1% | 1394.3 |
+| V1_01_easy | preset | 8 | 2 | 1 | 6.72 | 77.6% | 32.1 |
+| V1_01_easy | walk10 | 8 | 0 | 0 | 3.11 | 98.1% | 44.3 |
+| V1_02_medium | default | 4 | 0 | 0 | 3.44 | 99.1% | 7.5 |
+| V1_02_medium | preset | 4 | 0 | 0 | 2.84 | 99.5% | 14.3 |
+| V1_02_medium | walk10 | 4 | 0 | 0 | 2.39 | 99.5% | 17.5 |
+| V1_03_difficult | default | 6 | 6 | 6 | 32.86 | 30.2% | 245.3 |
+| V1_03_difficult | preset | 6 | 0 | 0 | 3.36 | 99.0% | 25.6 |
+| V1_03_difficult | walk10 | 6 | 0 | 0 | 2.62 | 99.5% | 22.9 |
+| V2_01_easy | default | 6 | 2 | 2 | 6.36 | 78.5% | 9.5 |
+| V2_01_easy | preset | 6 | 0 | 0 | 3.38 | 98.9% | 31.1 |
+| V2_01_easy | walk10 | 6 | 0 | 0 | 2.58 | 99.5% | 35.1 |
+| V2_02_medium | default | 6 | 5 | 5 | 28.19 | 42.4% | 468.5 |
+| V2_02_medium | preset | 6 | 0 | 0 | 3.16 | 99.0% | 21.5 |
+| V2_02_medium | walk10 | 6 | 0 | 0 | 2.66 | 99.6% | 22.8 |
+| V2_03_difficult | default | 6 | 4 | 4 | 19.25 | 44.1% | 124.2 |
+| V2_03_difficult | preset | 6 | 0 | 0 | 3.62 | 99.0% | 19.0 |
+| V2_03_difficult | walk10 | 6 | 0 | 0 | 2.81 | 99.4% | 28.0 |
 
 Runs still lost with `preset`:
 
 | Sequence | Outage start s | Seed | GNSS fixes rejected | Max position error m |
 |---|---:|---:|---:|---:|
-| MH_04_difficult | 60 | 0 | 24% | 372.2 |
-| MH_05_difficult | 15 | 0 | 71% | 2039.6 |
-| V1_01_easy | 15 | 0 | 81% | 6695.1 |
-| V1_01_easy | 35 | 1 | 29% | 132.1 |
+| V1_01_easy | 15 | 0 | 88% | 7168.8 |
+| V1_01_easy | 35 | 0 | 29% | 140.3 |
 
 <!-- euroc:end -->
 
@@ -113,12 +111,12 @@ Lost = more than 20% of GNSS fixes rejected.
 
 | Outage s | Config | Runs | Lost | Median NEES (expected 3) | Mean 2σ coverage |
 |---:|---|---:|---:|---:|---:|
-| 20 | default | 62 | 21 | 6.81 | 67.4% |
-| 20 | preset | 62 | 3 | 2.92 | 95.4% |
-| 20 | walk10 | 62 | 0 | 2.37 | 99.7% |
-| 30 | default | 42 | 25 | 14.96 | 51.6% |
-| 30 | preset | 42 | 5 | 3.49 | 91.4% |
-| 30 | walk10 | 42 | 0 | 2.54 | 99.4% |
+| 20 | default | 62 | 21 | 6.83 | 67.5% |
+| 20 | preset | 62 | 0 | 2.74 | 98.2% |
+| 20 | walk10 | 62 | 0 | 2.34 | 99.5% |
+| 30 | default | 42 | 25 | 14.45 | 51.6% |
+| 30 | preset | 42 | 2 | 3.27 | 94.0% |
+| 30 | walk10 | 42 | 0 | 2.39 | 99.4% |
 
 <!-- euroc-validation:end -->
 
@@ -130,11 +128,13 @@ Each statement below is checked against the CSV files by `tests/test_euroc_page.
    environments, Machine Hall and the Vicon rooms.
 2. **The default loses a larger share of runs on the Vicon rooms** than on Machine Hall.
 3. **The bias-walk preset loses fewer runs than the noise-scale preset** in the main table.
-4. **In the later checks the bias-walk preset loses no run**, for either outage length, and the
-   noise-scale preset loses some.
+4. **In the later checks the bias-walk preset loses no run**, for either outage length. The noise-scale preset
+   loses no run at the shorter outage and some at the longer one.
 5. **The bias-walk preset is slightly conservative.** Over all runs, its mean 2σ coverage is at
    or above the nominal 99.3% in each table, and its median NEES is below the expected 3.
 6. **The FDIR flag undercounts the lost runs of the default.** More runs are lost than are flagged.
+
+**INTERPRETATION:** Which runs are lost changed between two filter versions, so read individual lost runs as sensitive and the counts as approximate.
 
 ## Reproduce
 

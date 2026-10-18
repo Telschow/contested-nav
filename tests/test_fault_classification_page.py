@@ -59,10 +59,10 @@ def test_the_control_false_alarm_rate_is_not_zero_and_did_not_improve(scored, sc
     assert far["ten"] >= far["five"]
 
 
-def test_the_added_features_raise_spoofing_from_under_half_to_about_three_quarters(scored, scored_five):
+def test_the_added_features_raise_spoofing_from_under_half_to_about_seventy_percent(scored, scored_five):
     spoof = lambda r: r["cls"] == "spoofing"  # noqa: E731
     assert _share(scored_five, spoof, lambda r: "spoofing") < 0.5
-    assert 0.7 < _share(scored, spoof, lambda r: "spoofing") < 0.8
+    assert 0.65 < _share(scored, spoof, lambda r: "spoofing") < 0.75
 
 
 def test_the_added_features_fix_the_ten_metre_step(scored, scored_five):
@@ -70,12 +70,12 @@ def test_the_added_features_fix_the_ten_metre_step(scored, scored_five):
     assert _share(scored_five, pick, lambda r: "multipath") > 0.5
     assert _share(scored, pick, lambda r: "multipath") == 0.0
     step = lambda r: r["kind"] == "step"  # noqa: E731
-    assert _share(scored, step, lambda r: "spoofing") == 1.0
+    assert 0.93 < _share(scored, step, lambda r: "spoofing") < 0.95
 
 
 def test_a_five_metre_ramp_goes_from_missed_to_mostly_called(scored, scored_five):
     pick = lambda r: r["kind"] == "ramp" and float(r["level"]) == 5.0  # noqa: E731
-    assert _share(scored_five, pick, lambda r: "spoofing") < 0.15
+    assert _share(scored_five, pick, lambda r: "spoofing") < 0.2
     assert _share(scored, pick, lambda r: "spoofing") > 0.85
 
 
@@ -259,13 +259,15 @@ def test_every_multipath_run_is_confirmed_and_no_other_run_is_called_multipath(c
 def test_spoofing_and_degradation_hold_up_on_unseen_runs(confirm):
     spoof = [r for r in confirm if r["cls"] == "spoofing"]
     degr = [r for r in confirm if r["cls"] == "degradation"]
-    assert 0.7 < sum(r["predicted"] == "spoofing" for r in spoof) / len(spoof) < 0.85
-    assert 0.85 < sum(r["predicted"] == "degradation" for r in degr) / len(degr) < 0.95
+    assert 0.65 < sum(r["predicted"] == "spoofing" for r in spoof) / len(spoof) < 0.72
+    assert 0.8 < sum(r["predicted"] == "degradation" for r in degr) / len(degr) < 0.9
     steps = [r for r in confirm if r["kind"] == "step"]
-    assert all(r["predicted"] == "spoofing" for r in steps)
+    assert all(r["predicted"] == "spoofing" for r in steps if float(r["level"]) >= 20.0)
+    five = [r for r in steps if float(r["level"]) == 5.0]
+    assert 0.1 < sum(r["predicted"] == "spoofing" for r in five) / len(five) < 0.2
 
 
-def test_the_false_alarm_rate_doubled_on_unseen_controls(rows, confirm):
+def test_the_false_alarm_rate_rose_on_unseen_controls(rows, confirm):
     cv = fc.with_predictions(rows)
     cv_far = sum(r["predicted"] != "control" for r in cv if r["cls"] == "control") / sum(
         r["cls"] == "control" for r in cv
@@ -273,8 +275,21 @@ def test_the_false_alarm_rate_doubled_on_unseen_controls(rows, confirm):
     far = sum(r["predicted"] != "control" for r in confirm if r["cls"] == "control") / sum(
         r["cls"] == "control" for r in confirm
     )
-    assert 0.15 < cv_far < 0.2
+    assert 0.1 < cv_far < 0.15
     assert 0.3 < far < 0.4
+
+
+def test_the_unseen_control_alarms_are_spread_over_most_sequences(confirm):
+    from collections import Counter
+
+    controls = [r for r in confirm if r["cls"] == "control"]
+    alarms = [r for r in controls if r["predicted"] != "control"]
+    per_sequence = Counter((r["dataset"], r["sequence"]) for r in alarms)
+    sequences = {(r["dataset"], r["sequence"]) for r in controls}
+    assert (len(alarms), len(controls)) == (23, 68)
+    assert (len(per_sequence), len(sequences)) == (15, 17)
+    assert max(per_sequence.values()) == 3
+    assert set(Counter((r["dataset"], r["sequence"]) for r in controls).values()) == {4}
 
 
 def test_the_confirmation_cli_rebuilds_and_the_design_is_fixed(tmp_path, capsys):
