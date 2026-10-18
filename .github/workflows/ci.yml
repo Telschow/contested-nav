@@ -176,15 +176,19 @@ jobs:
 
       - name: Documentation tests
         # A documentation-only pull request skips the test jobs, so the tests that read the documents run here
-        # instead: the framing and owner guards, the quoted counts, the risk register, the link checker and every
-        # page that is generated from a committed CSV. Any other pull request runs them in the test jobs.
+        # instead: the framing and owner guards, the quoted counts, the risk register, the link checker, the secret
+        # scan of the documents and every page that is generated from a committed CSV. Any other pull request
+        # runs them in the test jobs. tests/test_ci_docs_tests.py fails when a test that reads a page is missing
+        # from this list; test_doc_tables.py is left out on purpose (see that file).
         if: needs.changes.outputs.code != 'true'
         run: >
           python -m pytest -q tests/test_framing.py tests/test_no_invented_owners.py tests/test_quoted_metrics.py
           tests/test_risks_doc.py tests/test_check_links.py tests/test_srs_trace.py tests/test_model_doc.py
-          tests/test_scenarios_doc.py tests/test_attribution_page.py tests/test_euroc_page.py
-          tests/test_fault_classification_page.py tests/test_separability_page.py tests/test_slow_ramp_page.py
-          tests/test_timing_page.py tests/test_tumvi_page.py tests/test_vision_ramp_page.py tests/test_vo_page.py
+          tests/test_scenarios_doc.py tests/test_scan_secrets.py tests/test_attribution_page.py
+          tests/test_euroc_page.py tests/test_fault_classification_page.py tests/test_fault_matrix.py
+          tests/test_mismatch_sweep.py tests/test_multipath.py tests/test_rice.py tests/test_separability_page.py
+          tests/test_slow_ramp_page.py tests/test_timing_page.py tests/test_tumvi_page.py
+          tests/test_urbannav_check.py tests/test_vision_ramp_page.py tests/test_vo_page.py
 
   build:
     name: build
