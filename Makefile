@@ -2,8 +2,8 @@
 # `make check` locally is the same set of gates a pull request faces.
 #
 #   make install   # editable install with the pinned dev tools
-#   make check     # lint + test + coverage ratchet (about 3 minutes)
-#   make repro     # regenerate every figure and table from scratch (measured 321 s, about 5 minutes)
+#   make check     # lint + test + coverage ratchet (about 3 minutes; measured once on one machine, not checked by CI)
+#   make repro     # regenerate every figure and table from scratch (321 s, about 5 minutes; measured once on one machine, not checked by CI)
 
 PYTHON ?= python
 RESULTS ?= results/benchmark.json

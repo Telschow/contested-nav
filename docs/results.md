@@ -27,14 +27,16 @@ Three things deserve more than a glance.
 
 **The defect row is not a gate-threshold problem.** Folding the visual anchor
 error into the measurement covariance, rather than treating it as filter state,
-drops coverage to 16%. Both variants are in the benchmark so the comparison is
+drops coverage far below its expected value (the `vision_anchor_in_measurement_noise` row). Both variants
+are in the benchmark so the comparison is
 reproducible, and the broken one is kept in the default run on purpose.
 
 **Turning vision on makes the filter much less calibrated, though not much less
-accurate.** The outage control with vision off ends at 3.77 m with its
-uncertainty grown to match, so coverage stays at 100%. The aided case claims
-0.16 m while being 2.32 m wrong. Note what adaptive inflation did to this
-comparison: before it, the FDIR gate made the aided case *worse* on ATE (5.06 m),
+accurate.** The outage control with vision off has the larger ATE RMSE of the two, and its
+uncertainty grew to match, so its coverage stays at the expected level. The aided case claims
+centimetres of uncertainty while being metres wrong. Note what adaptive inflation did to this
+comparison: before it, the FDIR gate made the aided case *worse* on ATE (R2 in
+[CONSTRAINTS.md](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md) has the figures),
 so a reader sorting by ATE at least got sent to the more honest filter. Recovering
 the error put the less-calibrated configuration back on top, and the ATE column no
 longer flags it at all. Ranking by error is not a calibration check, and this table is
