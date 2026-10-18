@@ -59,7 +59,9 @@ from .estimators.dead_reckoning import DeadReckoning
 from .estimators.eskf import VISION_NOISE_PRESETS, ErrorStateKalmanFilter, EskfConfig
 from .eval.calibration import (
     normalized_error_squared,
+    score_mask,
     summarise,
+    window_mask,
 )
 from .eval.metrics import (
     ate_bundle,
@@ -363,6 +365,14 @@ def run_case(
             "claimed_sigma_p_m": claimed.tolist(),
         }
         if scenario.gnss_outages:
+            # The same NEES and coverage, over the epochs inside the configured GNSS outages only. The
+            # headline values above are over the whole run, which includes the epochs with GNSS. Windows are
+            # half-open, [start, start + duration), as docs/MODEL.md defines them.
+            windows = [(o.start_s, o.start_s + o.duration_s) for o in scenario.gnss_outages]
+            record["outage_calibration"] = {
+                "windows": [{"start_s": a, "end_s": b} for a, b in windows],
+                **score_mask(series, window_mask(est.t, windows)).as_dict(),
+            }
             baseline = float(np.median(headline.per_pose_position_m[: max(1, len(est) // 10)]))
             record["outages"] = outage_summary(
                 est.t,
