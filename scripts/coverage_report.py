@@ -82,8 +82,8 @@ def executable_lines(path: pathlib.Path) -> set[int]:
     return {ln for ln in lines if 0 < ln <= src.count("\n") + 1}
 
 
-def instrumented(targets: dict[str, set[int]]) -> dict[str, set[int]]:
-    """Run pytest under a line tracer, returning the executed lines per file."""
+def instrumented(targets: dict[str, set[int]]) -> tuple[dict[str, set[int]], int]:
+    """Run pytest under a line tracer, returning the executed lines per file and pytest's exit code."""
     seen: dict[str, set[int]] = {k: set() for k in targets}
 
     def tracer(frame, event, _arg):
@@ -97,12 +97,13 @@ def instrumented(targets: dict[str, set[int]]) -> dict[str, set[int]]:
     import pytest
 
     os.chdir(ROOT)
+    outer = sys.gettrace()
     sys.settrace(tracer)
     try:
-        pytest.main(["-q", "--no-header", "-p", "no:cacheprovider"])
+        code = int(pytest.main(["-q", "--no-header", "-p", "no:cacheprovider"]))
     finally:
-        sys.settrace(None)
-    return seen
+        sys.settrace(outer)  # not None: the test suite runs this script under its own tracer
+    return seen, code
 
 
 def main() -> int:
@@ -128,7 +129,7 @@ def main() -> int:
         print(f"interpreter: {interp}")
 
     modules = {str(p.resolve()): executable_lines(p) for p in sorted(SRC.rglob("*.py"))}
-    seen = instrumented(modules)
+    seen, suite_code = instrumented(modules)
 
     rows = []
     for name, exec_lines in sorted(modules.items()):
@@ -175,6 +176,11 @@ def main() -> int:
             print(f"{r['module']:<40}{r['hit']:>7}{r['exec']:>7}{r['pct']:>6.1f}%{mark}{tag}")
         print(f"{'TOTAL':<40}{total_hit:>7}{total_exec:>7}{total_pct:>6.2f}%")
 
+    # The suite is part of the measurement: coverage taken from a run that failed says nothing, and the
+    # script must not report success for it whether or not --ratchet is set.
+    if suite_code != 0:
+        print(f"\ntest suite FAILED (pytest exit code {suite_code})", file=sys.stderr)
+        return 1
     if failures:
         print("\nratchet FAILED:", file=sys.stderr)
         for f in failures:
