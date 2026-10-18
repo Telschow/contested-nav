@@ -21,8 +21,10 @@ from navkit.eval.calibration import (
     coverage_report,
     inflation_factor,
     normalized_error_squared,
+    score_mask,
     shift_sensitivity,
     wilson_interval,
+    window_mask,
 )
 from navkit.eval.statistics import chi2_cdf, chi2_ppf, ellipsoid_coverage, ellipsoid_sigma
 
@@ -327,3 +329,48 @@ def test_report_dict_exposes_both_verdicts_and_the_nees_pair() -> None:
     assert d["tail_verdict"] == "underconfident"
     assert d["mean_nees"] == pytest.approx(3.74)
     assert d["expected_nees"] == 3
+
+
+# -- scoring the epochs inside an outage window ----------------------------------------------------
+
+
+def _series(squared: list[float]) -> MahalanobisSeries:
+    sq = np.asarray(squared, float)
+    return MahalanobisSeries(squared=sq, radius=np.sqrt(sq), dof=3)
+
+
+def test_window_mask_is_half_open() -> None:
+    t = np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
+    mask = window_mask(t, [(1.0, 3.0), (4.0, 5.0)])
+    assert mask.tolist() == [False, True, True, False, True, False]
+
+
+def test_score_mask_known_answer() -> None:
+    # dof 3: the 2-sigma-per-axis ellipsoid is squared <= 4 * 3 = 12.
+    series = _series([1.0, 2.0, 30.0, 12.0, 100.0, 5.0])
+    mask = np.array([False, False, True, True, True, False])  # squared 30, 12, 100
+    score = score_mask(series, mask)
+    assert score.epochs == 3
+    assert score.nees_mean == pytest.approx((30.0 + 12.0 + 100.0) / 3.0)
+    assert score.coverage_2sigma == pytest.approx(1.0 / 3.0)  # only 12.0 is inside, and it is on the boundary
+    assert score.nees_expected == 3.0
+    assert score.coverage_2sigma_expected == pytest.approx(ellipsoid_coverage(2.0, 3))
+
+
+def test_score_mask_over_everything_equals_the_full_run() -> None:
+    series = _series([0.5, 4.0, 13.0, 2.0])
+    everything = score_mask(series, np.ones(4, bool))
+    assert everything.nees_mean == pytest.approx(series.mean_squared())
+    assert everything.coverage_2sigma == pytest.approx(coverage_report(series).points[1].observed)
+
+
+def test_score_mask_with_no_epochs_is_empty_not_nan() -> None:
+    score = score_mask(_series([1.0, 2.0]), np.zeros(2, bool))
+    assert score.epochs == 0
+    assert score.nees_mean is None and score.coverage_2sigma is None
+    assert score.as_dict()["epochs"] == 0
+
+
+def test_score_mask_rejects_a_mask_of_the_wrong_length() -> None:
+    with pytest.raises(ValueError, match="mask"):
+        score_mask(_series([1.0, 2.0]), np.ones(3, bool))

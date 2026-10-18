@@ -296,6 +296,7 @@ Each case record:
 | `estimator` | The estimator class and its full configuration. |
 | `manifest` | What the injection layer applied, measured rather than declared. |
 | `outages` | Per-outage error at the start, peak, end and growth. Present when the estimator reports a covariance and the scenario has GNSS outages. |
+| `outage_calibration` | Mean NEES and 2-sigma coverage over the epochs inside the configured GNSS outage windows, half-open `[start, start + duration)`, with the windows and the epoch count. The `headline` values stay over the whole run. Present under the same conditions as `outages`. |
 | `runtime_s` | Wall-clock time of the estimator. Excluded from every comparison. |
 | `stats`, `summary` | Counters: fixes used and rejected, FDIR state, final and maximum position sigma, latency. |
 | `ate` | Absolute trajectory error under four alignments (`none`, `rigid`, `rigid_start`, `similarity`). |
