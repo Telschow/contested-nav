@@ -97,11 +97,12 @@ def instrumented(targets: dict[str, set[int]]) -> tuple[dict[str, set[int]], int
     import pytest
 
     os.chdir(ROOT)
+    outer = sys.gettrace()
     sys.settrace(tracer)
     try:
         code = int(pytest.main(["-q", "--no-header", "-p", "no:cacheprovider"]))
     finally:
-        sys.settrace(None)
+        sys.settrace(outer)  # not None: the test suite runs this script under its own tracer
     return seen, code
 
 
