@@ -95,6 +95,9 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 |---|---|---|---|
 | `imu_noise` | see ImuNoiseModel | `required` | Inertial noise model the filter assumes. |
 | `gnss_position_sigma_m` | m | `0.8` | 1-sigma GNSS position noise declared to the filter. |
+| `gnss_vertical_sigma_m` | m | `None` | 1-sigma for the vertical axis only. `None` uses `gnss_position_sigma_m` on all three axes. |
+| `gnss_per_fix_covariance` | flag | `False` | Weight each fix with the variances in its own `GnssFix.cov` instead of the two sigmas above. Each fix carries three variances (a diagonal), so a correlation between axes cannot be expressed. A fix with no `cov` uses the sigmas. A variance that is negative, NaN or infinite raises `ValueError`: it is a defect in the data, so it is not counted as a gate rejection. |
+| `gnss_per_fix_min_sigma_m` | m | `0.01` | Floor for the per-fix path only: each per-fix variance is raised to at least this sigma squared. A receiver that reports a variance of zero claims a perfect fix, and the filter would believe it. Must be finite and positive. No effect unless `gnss_per_fix_covariance` is on. |
 | `gnss_enabled` | flag | `True` | Fuse GNSS fixes. |
 | `vision_enabled` | flag | `False` | Fuse visual relative-pose updates. Off by default (ADR-0003, constraint S3). |
 | `vision_rot_sigma_deg` | deg | `0.35` | 1-sigma of the measured relative rotation. |
