@@ -37,13 +37,9 @@ RULES: dict[str, re.Pattern[str]] = {
 #: Findings in history that are already understood. Each entry is a commit prefix, the rule,
 #: and why it is accepted; a finding that matches is reported as known and does not fail the
 #: scan, and anything else does. Adding an entry is a decision to make in review, so the reason
-#: has to be written down here.
-KNOWN_HISTORY: dict[tuple[str, str], str] = {
-    ("b80db1a", "provider-key"): (
-        "a provider key committed in a documentation file on 2026-09-29, redacted in 8380bde "
-        "on 2026-09-30, and rotated by the maintainer. It remains in git history."
-    ),
-}
+#: has to be written down here. The list is empty on purpose: a test pins that, so a new entry
+#: shows up as a reviewed change.
+KNOWN_HISTORY: dict[tuple[str, str], str] = {}
 
 #: Files that are binary or generated and would only produce noise.
 SKIP_SUFFIXES = (".png", ".gif", ".jpg", ".pdf", ".lock")

@@ -65,9 +65,12 @@ will be triaged first.
 
 ## Known incident
 
-A provider API key was committed in a documentation file on 2026-09-29
-(commit `b80db1a`, as evidence in an audit), redacted on 2026-09-30 (`8380bde`) and
-rotated by the maintainer. The value is still readable in git history. History has not
-been rewritten, because the key is revoked and a rewrite would invalidate every open
-reference to the old commits. The secret scan lists this one finding as known and
-accepted (`KNOWN_HISTORY` in the script) and fails on anything new.
+A provider API key was committed in a documentation file in an early commit, as
+evidence in an audit. It was redacted the next day. The maintainer rotated the key
+before the history rewrite of 2026-10-19, and the rewrite removed the value from the
+branches of this repository. The secret scan now reports nothing in history, and its
+list of accepted findings is empty.
+
+The rewrite cannot reach everything. GitHub keeps hidden pull-request refs and cached
+views of old commits until GitHub Support removes them. The key must therefore be
+treated as exposed. It was rotated, so the exposure is closed.
