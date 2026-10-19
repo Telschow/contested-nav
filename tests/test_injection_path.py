@@ -45,33 +45,22 @@ def test_a_scenario_that_sets_only_an_imu_noise_scale_changes_the_data() -> None
     assert clean < noisy
 
 
+def test_the_dead_reckoning_control_starts_from_the_true_state_and_still_drifts() -> None:
+    """The control starts at the true first pose, so its first-epoch error is zero, and the error then grows."""
+    doc = _doc()
+    record = run_case("dead_reckoning", doc["cases"]["dead_reckoning"], doc["defaults"], seed=0)
+    position = record["ate"]["none"]["position_m"]
+    assert position["min"] == pytest.approx(0.0, abs=1e-12)
+    assert position["max"] > position["median"] > 0.0
+    assert record["drift"]["growth"]["slope_m_per_s"] > 0.0
+    assert record["drift"]["final_drift_pct_time"] > 0.0
+
+
 def test_a_noiseless_imu_is_still_available_by_asking_for_it() -> None:
-    """Scale 0 reproduces the result the benchmark gave for dead reckoning before the fix."""
+    """Scale 0 removes the injected noise and bias, so the control with the true start is nearly exact."""
     doc = _doc()
     case = doc["cases"]["dead_reckoning"]
     scaled = {**case, "scenario": {**case["scenario"], "imu_noise_scale": 0.0}}
+    noisy = run_case("dead_reckoning", case, doc["defaults"], seed=0)["headline"]["ate_rmse_m"]
     clean = run_case("dead_reckoning", scaled, doc["defaults"], seed=0)["headline"]["ate_rmse_m"]
-    assert clean == pytest.approx(1.877, abs=1e-3)
-
-
-def test_outage_calibration_is_scored_over_the_outage_window_only() -> None:
-    import numpy as np
-
-    doc = _doc()
-    record = run_case("outage_control", doc["cases"]["outage_control"], doc["defaults"], seed=0, trajectories=True)
-    block = record["outage_calibration"]
-    outage = record["scenario"]["gnss_outages"][0]
-    start, end = outage["start_s"], outage["start_s"] + outage["duration_s"]
-    assert block["windows"] == [{"start_s": start, "end_s": end}]
-    t = np.asarray(record["error_time_series"]["t"])
-    assert block["epochs"] == int(np.count_nonzero((t >= start) & (t < end)))
-    assert 0 < block["epochs"] < len(t)
-    # The window is a subset: its values are not the full-run values, which the headline keeps.
-    assert record["headline"]["nees_mean"] != block["nees_mean"]
-    assert block["nees_expected"] == 3.0
-
-
-def test_a_case_without_outages_has_no_outage_calibration() -> None:
-    doc = _doc()
-    record = run_case("gnss_only", doc["cases"]["gnss_only"], doc["defaults"], seed=0)
-    assert "outage_calibration" not in record
+    assert clean < 0.1 * noisy

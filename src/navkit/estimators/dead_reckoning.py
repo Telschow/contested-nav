@@ -22,11 +22,20 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
+from typing import Protocol
 
 import numpy as np
 
 from ..geometry.rigid import rot_exp
 from ..types import GRAVITY, ImuSample, Trajectory
+
+
+class InitialPose(Protocol):
+    """What a start needs: attitude, position and velocity. :class:`~navkit.estimators.eskf.InitialState` has them."""
+
+    R: np.ndarray
+    p: np.ndarray
+    v: np.ndarray
 
 
 @dataclass
@@ -64,7 +73,20 @@ class DeadReckoning:
     def __init__(self, gravity: np.ndarray | None = None) -> None:
         self.g = GRAVITY.copy() if gravity is None else np.asarray(gravity, float)
 
-    def run(self, imu: ImuSample, t0: float | None = None, t_end: float | None = None) -> EstimatorResult:
+    def run(
+        self,
+        imu: ImuSample,
+        t0: float | None = None,
+        t_end: float | None = None,
+        initial: InitialPose | None = None,
+    ) -> EstimatorResult:
+        """Integrate the inertial stream.
+
+        ``initial`` is where the run starts: attitude, position and velocity, as for the filter. The default is the
+        identity pose at rest at the origin. A scene whose first pose is elsewhere needs the true start passed in,
+        or the error mixes that offset with the drift. The biases in ``initial`` are not used: this integrator has no
+        bias state.
+        """
         t_start = time.perf_counter()
         t = imu.t
         if t_end is not None:
@@ -78,9 +100,9 @@ class DeadReckoning:
             raise ValueError("dead reckoning needs at least 2 IMU samples")
 
         poses = np.zeros((n, 4, 4))
-        R = np.eye(3)
-        p = np.zeros(3)
-        v = np.zeros(3)
+        R = np.eye(3) if initial is None else initial.R.copy()
+        p = np.zeros(3) if initial is None else initial.p.copy()
+        v = np.zeros(3) if initial is None else initial.v.copy()
         poses[0, :3, :3] = R
         poses[0, :3, 3] = p
         poses[0, 3, 3] = 1.0

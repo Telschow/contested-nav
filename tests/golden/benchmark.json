@@ -12,17 +12,17 @@
      ],
      "position_m": {
       "count": 6001.0,
-      "max": 3.4388039753646056,
-      "mean": 2.307140419411952,
-      "median": 2.080402196974764,
-      "min": 1.8674732534416745,
-      "rmse": 2.358836188063927,
-      "std": 0.49113261674989667
+      "max": 2.594729331065698,
+      "mean": 0.9266604881442663,
+      "median": 0.7032021184509726,
+      "min": 0.0,
+      "rmse": 1.247834265616023,
+      "std": 0.8356977289413378
      },
      "position_percentiles_m": {
-      "p50": 2.080402196974764,
-      "p95": 3.287195961038279,
-      "p99": 3.4083390143190964
+      "p50": 0.7032021184509726,
+      "p95": 2.412046100159873,
+      "p99": 2.557794003964035
      },
      "rotation_deg": {
       "count": 6001.0,
@@ -45,17 +45,17 @@
      ],
      "position_m": {
       "count": 6001.0,
-      "max": 1.722330767093535,
-      "mean": 0.7394499521527442,
-      "median": 0.7311195296359095,
-      "min": 0.016279826200096104,
-      "rmse": 0.8383763243440048,
-      "std": 0.3950805354378627
+      "max": 1.7223307670935317,
+      "mean": 0.7394499521527298,
+      "median": 0.7311195296358778,
+      "min": 0.01627982620010059,
+      "rmse": 0.8383763243439899,
+      "std": 0.39508053543785787
      },
      "position_percentiles_m": {
-      "p50": 0.7311195296359095,
-      "p95": 1.5049818809627311,
-      "p99": 1.67809738535761
+      "p50": 0.7311195296358778,
+      "p95": 1.5049818809627282,
+      "p99": 1.678097385357605
      },
      "rotation_deg": {
       "count": 6001.0,
@@ -78,17 +78,17 @@
      ],
      "position_m": {
       "count": 6001.0,
-      "max": 2.552200901226419,
-      "mean": 0.9035545718053405,
-      "median": 0.6772679239751968,
-      "min": 0.008720228530675805,
-      "rmse": 1.2308984691972957,
-      "std": 0.8358828729205509
+      "max": 2.552200901226397,
+      "mean": 0.9035545718053167,
+      "median": 0.6772679239751673,
+      "min": 0.008720228530676001,
+      "rmse": 1.2308984691972709,
+      "std": 0.8358828729205399
      },
      "position_percentiles_m": {
-      "p50": 0.6772679239751968,
-      "p95": 2.3719015800748964,
-      "p99": 2.5156397046535406
+      "p50": 0.6772679239751673,
+      "p95": 2.3719015800748844,
+      "p99": 2.51563970465352
      },
      "rotation_deg": {
       "count": 6001.0,
@@ -111,17 +111,17 @@
      ],
      "position_m": {
       "count": 6001.0,
-      "max": 1.7556854496889616,
-      "mean": 0.6979294462974219,
-      "median": 0.6679252472587413,
-      "min": 0.07626052510686518,
-      "rmse": 0.8282675249877637,
-      "std": 0.44600625661567767
+      "max": 1.7556854496889562,
+      "mean": 0.6979294462974107,
+      "median": 0.6679252472587202,
+      "min": 0.07626052510686754,
+      "rmse": 0.8282675249877497,
+      "std": 0.4460062566156692
      },
      "position_percentiles_m": {
-      "p50": 0.6679252472587413,
-      "p95": 1.5746735293544103,
-      "p99": 1.7199213221564336
+      "p50": 0.6679252472587202,
+      "p95": 1.574673529354404,
+      "p99": 1.7199213221564271
      },
      "rotation_deg": {
       "count": 6001.0,
@@ -132,28 +132,28 @@
       "rmse": 0.04678473254427496,
       "std": 0.015842861334198828
      },
-     "scale": 0.9612331151882978
+     "scale": 0.9612331151882995
     }
    },
    "claim_type": "MEASUREMENT",
    "config_hash": "94a94d13fc6fcf87",
    "data_class": "synthetic",
-   "description": "Inertial integration with no aiding at all. Reported as the control for \"how much of the result is the filter and how much is the motion model\".",
+   "description": "Inertial integration with no aiding at all, started from the true initial state, so its error is drift and not a start offset. Reported as the control for \"how much of the result is the filter and how much is the motion model\".",
    "drift": {
     "duration_s": 30.0,
-    "final_drift_pct_path_length": 10.042306206384247,
-    "final_drift_pct_time": 11.462679917882019,
+    "final_drift_pct_path_length": 7.577363133205508,
+    "final_drift_pct_time": 8.649097770218994,
     "growth": {
-     "intercept_m": 0.6091892884008449,
-     "r_squared": 0.9957236079731048,
-     "slope_m_per_s": 0.09312605493188454,
+     "intercept_m": -1.2267807565318194,
+     "r_squared": 0.9998629244542112,
+     "slope_m_per_s": 0.12787061309613057,
      "window_s": [
       15.0,
       30.0
      ]
     },
-    "max_drift_pct_path_length": 9126380.702733766,
-    "max_drift_pct_time": 37736.0133459977,
+    "max_drift_pct_path_length": 50.897399222500816,
+    "max_drift_pct_time": 8.649097770218994,
     "total_path_length_m": 34.2431698923743
    },
    "estimator": {
@@ -208,9 +208,9 @@
    },
    "headline": {
     "alignment": "none",
-    "ate_median_m": 2.080402196974764,
-    "ate_p95_m": 3.287195961038279,
-    "ate_rmse_m": 2.358836188063927,
+    "ate_median_m": 0.7032021184509726,
+    "ate_p95_m": 2.412046100159873,
+    "ate_rmse_m": 1.247834265616023,
     "rotation_rmse_deg": 0.04678473254427496
    },
    "manifest": {
@@ -278,12 +278,12 @@
     },
     "translation_m": {
      "count": 5801.0,
-     "max": 0.1347054038363281,
-     "mean": 0.08939891121728478,
-     "median": 0.11487537390280449,
-     "min": 0.0016173357971738626,
-     "rmse": 0.10051160959177144,
-     "std": 0.04593928967553499
+     "max": 0.1347054038363282,
+     "mean": 0.08939891121728345,
+     "median": 0.11487537390280465,
+     "min": 0.0016173357971723255,
+     "rmse": 0.1005116095917705,
+     "std": 0.04593928967553547
     }
    },
    "scenario": {
@@ -332,7 +332,7 @@
    "summary": {
     "final_speed_m_s": 1.1908382151065695,
     "name": "dead_reckoning",
-    "path_length_m": 34.04669886639325,
+    "path_length_m": 34.04669886639324,
     "poses": 6001,
     "reports_covariance": false,
     "trajectory_duration_s": 30.0
@@ -9081,7 +9081,7 @@
  },
  "claim_type": "MEASUREMENT",
  "config_file": "configs/benchmark.yaml",
- "config_sha256": "20b4e7a1ed97bdf6deb4977543be7dd33974bc9c0fe351de84809ea16e79e3cc",
+ "config_sha256": "d6f88bf7acfc4bc263df86510fa8e3710b32f78d64b0d5b1cf6cef02b7eafe4c",
  "data_class": "synthetic",
  "disclaimer": "All numbers are from a known-answer synthetic fixture. They are not field measurements and must not be presented as real-sensor performance.",
  "schema": "navkit-benchmark/1"
