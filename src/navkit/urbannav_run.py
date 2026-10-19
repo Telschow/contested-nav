@@ -130,10 +130,12 @@ def receiver_sigma_m(root: str | Path, seq: str, fixes: ud.GgaFixes) -> float:
     valid = fixes.utc_s[(fixes.quality > 0) & np.isfinite(fixes.lat_deg)]
     idx = np.searchsorted(gst.utc_s, valid)
     ok = (idx < len(gst)) & (gst.utc_s[np.minimum(idx, len(gst) - 1)] == valid)
-    if ok.sum() < 10:
-        raise SequenceError(f"{seq}: fewer than 10 valid fixes have a matching GST sentence")
     i = idx[ok]
-    return float(np.sqrt(np.mean(0.5 * (gst.sigma_lat[i] ** 2 + gst.sigma_lon[i] ** 2))))
+    variance = 0.5 * (gst.sigma_lat[i] ** 2 + gst.sigma_lon[i] ** 2)
+    variance = variance[np.isfinite(variance)]  # a NaN or infinite sigma is dropped by `build`, so it is not averaged
+    if variance.size < 10:
+        raise SequenceError(f"{seq}: fewer than 10 valid fixes have a matching, finite GST sentence")
+    return float(np.sqrt(np.mean(variance)))
 
 
 def usable_variance_mask(cov: np.ndarray) -> np.ndarray:
