@@ -307,3 +307,32 @@ def test_the_wide_flag_runs_the_study_and_reports_a_failure(tmp_path, monkeypatc
     monkeypatch.setattr(ve, "wide_study", boom)
     assert ve.main(["--wide", "--wide-csv", str(tmp_path / "x.csv")]) == 1
     assert "no window fits" in capsys.readouterr().err
+
+
+# ------------------------------------------------------------ how to regenerate the rows
+
+
+def _reproducing_section() -> str:
+    text = PAGE.read_text(encoding="utf-8")
+    head = "## Reproducing these rows"
+    assert head in text, "docs/real_front_end.md lost its 'Reproducing these rows' section"
+    return text.split(head, 1)[1].split("\n## ", 1)[0]
+
+
+def test_the_page_names_the_three_files_and_says_the_check_was_run_once():
+    section = _reproducing_section()
+    for name in ("vo_errors.csv", "vo_clone_check.csv", "vo_wide.csv"):
+        assert name in section, f"the section no longer names {name}"
+    assert "measured once on one machine, not checked by CI" in section
+
+
+def test_the_flags_in_the_reproducing_section_are_options_of_navkit_euroc_vo():
+    import re
+
+    commands = [ln.strip() for ln in _reproducing_section().splitlines() if ln.strip().startswith("navkit euroc vo")]
+    assert commands, "the section gives no command"
+    known = {opt for action in ve.build_parser()._actions for opt in action.option_strings}
+    for command in commands:
+        for flag in re.findall(r"--[a-z][a-z-]*", command):
+            assert flag in known, f"{flag} in `{command}` is not an option of navkit euroc vo"
+    assert {"--wide-replay", "--clone"} <= {f for c in commands for f in re.findall(r"--[a-z][a-z-]*", c)}

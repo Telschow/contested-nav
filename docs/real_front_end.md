@@ -147,6 +147,43 @@ the measured visual noise ([ADR-0024](adr/0024-assumed-noise-for-the-opt-in-clon
 `RunOptions.vision_noise_preset` for recorded data. It is off unless asked for, and `vision_enabled` stays False. It is
 an empirical value for this front end on these windows, not a derived constant.
 
+## Reproducing these rows
+
+Three files in `docs/data/` hold what this page reports.
+
+- `vo_errors.csv` holds the front-end rows, one per tracked pair.
+- `vo_clone_check.csv` holds the clone runs of the first window.
+- `vo_wide.csv` holds the clone runs of the six windows.
+
+The tables above are generated from them and checked against them by `tests/test_vo_page.py`. The two clone files are
+replayed from the front-end rows, so they need the EuRoC ground truth and IMU files and no camera frames. Write every
+output to a scratch path first and compare, because `--csv` and `--wide-csv` overwrite the file they are given.
+
+```bash
+navkit euroc vo --root data/raw/euroc --from-csv docs/data/vo_errors.csv --clone --clone-csv scratch/clone.csv
+navkit euroc vo --root data/raw/euroc --from-csv docs/data/vo_errors.csv --wide-replay --wide-csv scratch/wide.csv
+navkit euroc vo --sequence MH_01_easy --root data/raw/euroc --csv scratch/first_window.csv
+cp docs/data/vo_errors.csv scratch/vo_errors.csv
+navkit euroc vo --wide --root data/raw/euroc --csv scratch/vo_errors.csv --wide-csv scratch/wide_full.csv
+```
+
+The first command regenerates `vo_clone_check.csv` and the second regenerates `vo_wide.csv`. The third measures the
+first window and the fourth measures the wider windows, which needs their frames and takes an hour or more. The fourth
+needs the first window's rows already in its `--csv` file, so that it picks the same windows, and it appends the new rows
+to that file.
+
+Reproduced, on main at commit a79b935 on 2026-10-19:
+
+- `vo_clone_check.csv` and `vo_wide.csv` came out byte for byte the same from the first two commands.
+- The front-end rows of `vo_errors.csv` matched exactly, in every column, for the first window and for each of the five
+  wider windows. They were regenerated with the measurement call that the third and fourth commands make, one window at
+  a time. For one window it was run twice, once with only that window's frames on disk and once with all of that
+  sequence's frames. The two runs gave the same rows. The third and fourth commands themselves were not run end to end.
+
+This was measured once on one machine, not checked by CI. CI cannot run it, because the EuRoC frames are not vendored.
+A different machine, NumPy build or library version could change the last digits, and the tests above read the
+committed files instead.
+
 ## Limits
 
 Six windows of five sequences, all from one dataset (the EuRoC Machine Hall) and one front end. In each window the
