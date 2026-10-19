@@ -17,7 +17,7 @@ import pytest
 from navkit.degrade.config import Outage
 from navkit.degrade.inject import apply_gnss_outage
 from navkit.estimators.dead_reckoning import DeadReckoning
-from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig
+from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig, InitialState
 from navkit.fdir import FdirConfig
 from navkit.geometry.rigid import rot_exp, rot_log_batch, rot_right_jacobian
 from navkit.io.imu import ImuNoiseModel, apply_imu_noise
@@ -133,6 +133,45 @@ def test_dead_reckoning_tracks_a_short_horizon(imu, truth) -> None:
 def test_dead_reckoning_attitude_stays_small(imu, truth) -> None:
     result = DeadReckoning().run(imu)
     assert rotation_error(result.trajectory, truth)[-1] < 1e-3
+
+
+@pytest.fixture(scope="module")
+def offset_scene():
+    """The synthetic scene as the benchmark builds it: the first pose is not at the origin."""
+    cfg = SyntheticConfig(duration_s=DURATION_S, rate_hz=100.0)
+    reference = synthetic_trajectory(cfg)
+    assert np.linalg.norm(reference.positions[0]) > 1.0  # the premise of the tests below
+    return reference, synthetic_imu(cfg, rate_hz=200.0)
+
+
+def _true_start(reference) -> InitialState:
+    return InitialState(R=reference.poses[0, :3, :3], p=reference.poses[0, :3, 3])
+
+
+def test_dead_reckoning_given_the_true_start_has_no_error_at_the_first_epoch(offset_scene) -> None:
+    reference, imu = offset_scene
+    result = DeadReckoning().run(imu, initial=_true_start(reference))
+    assert position_error(result.trajectory, reference)[0] == pytest.approx(0.0, abs=1e-12)
+    assert rotation_error(result.trajectory, reference)[0] == pytest.approx(0.0, abs=1e-12)
+    # The scene starts at rest, so a zero velocity is the true one: no offset is left to grow.
+    assert position_error(result.trajectory, reference).max() < 0.5
+
+
+def test_dead_reckoning_carries_the_initial_velocity(offset_scene) -> None:
+    reference, imu = offset_scene
+    base = _true_start(reference)
+    moving = InitialState(R=base.R, p=base.p, v=np.array([1.0, 0.0, 0.0]))
+    at_rest = DeadReckoning().run(imu, initial=base).trajectory.positions
+    carried = DeadReckoning().run(imu, initial=moving).trajectory.positions
+    t = imu.t - imu.t[0]
+    assert np.allclose(carried[:, 0] - at_rest[:, 0], t, atol=1e-9)
+
+
+def test_dead_reckoning_without_an_initial_state_still_starts_at_the_origin(offset_scene) -> None:
+    _, imu = offset_scene
+    first = DeadReckoning().run(imu).trajectory.poses[0]
+    assert np.array_equal(first[:3, 3], np.zeros(3))
+    assert np.array_equal(first[:3, :3], np.eye(3))
 
 
 def test_eskf_gnss_only_beats_dead_reckoning(imu, truth) -> None:
@@ -1213,7 +1252,7 @@ def test_transition_matrix_matches_the_nominal_propagation_to_first_order() -> N
 
 
 def test_a_declared_vertical_sigma_changes_only_the_vertical_weight():
-    from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig
+    from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig, InitialState
     from navkit.io.imu import DEFAULT_NOISE
 
     def correction(vertical):
@@ -1240,7 +1279,7 @@ def test_the_vertical_sigma_is_serialised_whether_or_not_it_is_set():
 
 
 def test_a_fix_variance_replaces_the_scalar_sigma_when_given():
-    from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig
+    from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig, InitialState
     from navkit.io.imu import DEFAULT_NOISE
 
     def corrected(variance):
@@ -1259,7 +1298,7 @@ def test_a_fix_variance_replaces_the_scalar_sigma_when_given():
 
 
 def _fresh_gnss_filter():
-    from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig
+    from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig, InitialState
     from navkit.io.imu import DEFAULT_NOISE
 
     f = ErrorStateKalmanFilter(EskfConfig(imu_noise=DEFAULT_NOISE, gnss_position_sigma_m=1.0))

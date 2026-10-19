@@ -27,7 +27,7 @@ defaults:
     # 1 re-commits the anchor pose at every visual update, so each measurement
     # compares consecutive frames. None holds a single anchor for the whole
     # run, which makes the anchor error one unknown shared by every measurement
-    # and measures measurably worse (mean NEES 23 rather than 3).
+    # and measures measurably worse in mean NEES.
     vision_keyframe_interval: 1
     vision_anchor_modelled: true
     rpe_delta_s: 1.0
@@ -53,8 +53,10 @@ cases:
   dead_reckoning:
     name: dead_reckoning
     description: >-
-      Inertial integration with no aiding at all. Reported as the control for
-      "how much of the result is the filter and how much is the motion model".
+      Inertial integration with no aiding at all, started from the true initial
+      state, so its error is drift and not a start offset. Reported as the
+      control for "how much of the result is the filter and how much is the
+      motion model".
     estimator:
       class: DeadReckoning
     scenario:

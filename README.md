@@ -104,7 +104,7 @@ filter starts in the reference frame, so there is no offset for a fitted transfo
 | Scenario | ATE RMSE (m) | Claimed 1σ (m) | Mean NEES (exp. 3) | Coverage @ 2σ | Verdict |
 | --- | ---: | ---: | ---: | ---: | --- |
 | GNSS only (control) | 0.528 | 0.253 | 4.3 | 100.0% | mixed: bulk overconfident, tail underconfident |
-| Dead reckoning (no aiding) | 2.359 | n/a | n/a | n/a | no covariance reported |
+| Dead reckoning (no aiding) | 1.248 | n/a | n/a | n/a | no covariance reported |
 | Anchor as measurement noise (defect) | 1.063 | 0.094 | 163.7 | 16.3% | overconfident |
 | Vision only | 2.320 | 0.158 | 264.2 | 0.7% | overconfident |
 | GNSS denied 5–20 s, vision off (control) | 3.768 | 0.567 | 4.1 | 100.0% | mixed: bulk overconfident, tail underconfident |

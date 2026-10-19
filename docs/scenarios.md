@@ -16,7 +16,7 @@ GNSS at 5 Hz, no outage, no vision. The reference every other case is read again
 
 ## dead_reckoning
 
-Inertial integration with no aiding at all. Reported as the control for "how much of the result is the filter and how much is the motion model".
+Inertial integration with no aiding at all, started from the true initial state, so its error is drift and not a start offset. Reported as the control for "how much of the result is the filter and how much is the motion model".
 
 **Configuration:** GNSS off; vision off; estimator DeadReckoning.
 

@@ -56,7 +56,7 @@ import yaml
 from .degrade.config import Scenario, scenario_from_dict
 from .degrade.inject import config_hash, inject
 from .estimators.dead_reckoning import DeadReckoning
-from .estimators.eskf import VISION_NOISE_PRESETS, ErrorStateKalmanFilter, EskfConfig
+from .estimators.eskf import VISION_NOISE_PRESETS, ErrorStateKalmanFilter, EskfConfig, InitialState
 from .eval.calibration import (
     normalized_error_squared,
     score_mask,
@@ -277,7 +277,10 @@ def run_case(
     # confidently wrong table.
     estimator_name = keys.get("class", "ErrorStateKalmanFilter")
     if estimator_name == "DeadReckoning":
-        result = DeadReckoning().run(imu)
+        # The control starts from the true initial state, so its error is drift and not a start offset. The ESKF
+        # cases keep their declared prior: that is part of what they measure.
+        start = InitialState(R=reference.poses[0, :3, :3], p=reference.poses[0, :3, 3])
+        result = DeadReckoning().run(imu, initial=start)
     elif estimator_name == "ErrorStateKalmanFilter":
         result = ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, vision=vision)
     else:
