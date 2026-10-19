@@ -42,6 +42,12 @@ the error put the less-calibrated configuration back on top, and the ATE column 
 longer flags it at all. Ranking by error is not a calibration check, and this table is
 a demonstration of that rather than an argument against the fix.
 
+**Relative visual poses must not make the filter more certain about where it is.** Global position cannot be
+observed from relative pose, so a filter with no absolute sensor must not claim a smaller position uncertainty than
+its starting prior. [A test](https://github.com/Telschow/contested-nav/blob/main/tests/test_observability.py)
+checks this on the vision-only rows: the stochastic clone keeps the property, the single-anchor control breaks it
+and is pinned as the defect, and a GNSS-aided run shrinks below the prior, which is correct for an absolute sensor.
+
 **Dead reckoning has no claimed-σ or NEES value.** An integrator with no
 uncertainty model has nothing to calibrate. Printing a covariance it never
 computed would be the same error as printing one it does not deserve, so the
