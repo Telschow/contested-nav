@@ -1266,8 +1266,12 @@ def _fresh_gnss_filter():
     return f, f._initial_state()
 
 
-def test_a_very_small_per_fix_variance_leaves_the_covariance_symmetric_and_semidefinite():
-    """1e-12 m^2 is a near-exact fix. The update must stay finite and keep P a covariance."""
+def _floor_m() -> float:
+    return EskfConfig(imu_noise=ImuNoiseModel()).gnss_per_fix_min_sigma_m
+
+
+def test_a_very_small_per_fix_variance_is_floored_and_leaves_the_covariance_semidefinite():
+    """1e-12 m^2 is below the floor, so the update is the floored one and P stays a covariance."""
     f, x = _fresh_gnss_filter()
     ok, d2 = f._gnss_update(x, np.array([1.0, 1.0, 1.0]), 1.0, variance=np.full(3, 1.0e-12))
     P = x["P"]
@@ -1277,6 +1281,108 @@ def test_a_very_small_per_fix_variance_leaves_the_covariance_symmetric_and_semid
     assert np.allclose(P, P.T, atol=1e-12)
     assert float(la.eigvalsh(0.5 * (P + P.T)).min()) > -1e-9
     assert np.all(np.isfinite(x["p"]))
+    f2, x2 = _fresh_gnss_filter()
+    f2._gnss_update(x2, np.array([1.0, 1.0, 1.0]), 1.0, variance=np.full(3, _floor_m() ** 2))
+    np.testing.assert_array_equal(x["p"], x2["p"])
+    np.testing.assert_array_equal(x["P"], x2["P"])
+
+
+@pytest.mark.parametrize("bad", [np.nan, np.inf, -np.inf, -1.0])
+@pytest.mark.parametrize("axis", [0, 1, 2, None])
+def test_an_unusable_per_fix_variance_raises_and_leaves_the_filter_untouched(bad, axis):
+    """A bad variance is a defect in the data, not a fault of the receiver: it raises, it is not gated."""
+    import copy
+
+    f, x = _fresh_gnss_filter()
+    variance = np.ones(3)
+    variance[slice(None) if axis is None else axis] = bad
+    first_bad = 0 if axis is None else axis
+    before = copy.deepcopy(x)
+    n_innovations, n_bias = len(f.gnss_innovations), len(f.bias_log)
+    with pytest.raises(ValueError) as caught:
+        f._gnss_update(x, np.array([1.0, 1.0, 1.0]), 1.0, t_s=12.5, variance=variance)
+    message = str(caught.value)
+    assert "12.5" in message, message
+    assert f"axis {first_bad}" in message, message
+    assert "not usable" in message, message
+    np.testing.assert_equal(x, before)
+    assert len(f.gnss_innovations) == n_innovations
+    assert len(f.bias_log) == n_bias
+
+
+def test_a_zero_per_fix_variance_gives_the_same_update_as_the_floor():
+    f1, x1 = _fresh_gnss_filter()
+    f1._gnss_update(x1, np.array([1.0, 1.0, 1.0]), 1.0, variance=np.zeros(3))
+    f2, x2 = _fresh_gnss_filter()
+    f2._gnss_update(x2, np.array([1.0, 1.0, 1.0]), 1.0, variance=np.full(3, _floor_m() ** 2))
+    np.testing.assert_array_equal(x1["p"], x2["p"])
+    np.testing.assert_array_equal(x1["P"], x2["P"])
+
+
+def test_each_axis_variance_is_at_least_the_floor_squared():
+    mixed = np.array([0.0, 1.0, 1.0e-9])
+    expected = np.array([_floor_m() ** 2, 1.0, _floor_m() ** 2])
+    f1, x1 = _fresh_gnss_filter()
+    f1._gnss_update(x1, np.array([1.0, 1.0, 1.0]), 1.0, variance=mixed)
+    f2, x2 = _fresh_gnss_filter()
+    f2._gnss_update(x2, np.array([1.0, 1.0, 1.0]), 1.0, variance=expected)
+    np.testing.assert_array_equal(x1["p"], x2["p"])
+    np.testing.assert_array_equal(x1["P"], x2["P"])
+
+
+def test_a_variance_just_above_the_floor_is_used_as_given():
+    above = np.full(3, (2.0 * _floor_m()) ** 2)
+    f1, x1 = _fresh_gnss_filter()
+    f1._gnss_update(x1, np.array([1.0, 1.0, 1.0]), 1.0, variance=above)
+    f2, x2 = _fresh_gnss_filter()
+    f2._gnss_update(x2, np.array([1.0, 1.0, 1.0]), 1.0, variance=np.full(3, _floor_m() ** 2))
+    assert not np.array_equal(x1["P"], x2["P"]), "a variance above the floor was replaced by the floor"
+    assert la.norm(x1["p"] - x2["p"]) > 0.0
+
+
+def test_the_per_fix_floor_is_validated_and_defaults_to_one_centimetre():
+    assert _floor_m() == 0.01
+    for bad in (0.0, -0.01, float("nan"), float("inf")):
+        with pytest.raises(ValueError):
+            EskfConfig(imu_noise=ImuNoiseModel(), gnss_per_fix_min_sigma_m=bad)
+
+
+def _gnss_run_inputs(truth, corrupt: bool):
+    gnss = gnss_fixes(truth, GnssConfig(sigma_m=0.5, rate_hz=5.0))
+    if corrupt:
+        gnss.cov = gnss.cov.copy()
+        gnss.cov[3, 1] = np.nan
+    return gnss
+
+
+def _per_fix_run(imu, truth, *, flag: bool, corrupt: bool, drop_cov: bool = False):
+    cfg = EskfConfig(
+        imu_noise=ImuNoiseModel(2e-4, 2e-3, 2e-6, 1e-4, 1e-5, 2e-3),
+        gnss_position_sigma_m=0.5,
+        gnss_per_fix_covariance=flag,
+    )
+    gnss = _gnss_run_inputs(truth, corrupt)
+    if drop_cov:
+        gnss.cov = None
+    return ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, vision=None)
+
+
+def test_a_bad_covariance_is_ignored_when_the_per_fix_setting_is_off(imu, truth):
+    ignored = _per_fix_run(imu, truth, flag=False, corrupt=True)
+    fixed = _per_fix_run(imu, truth, flag=False, corrupt=False, drop_cov=True)
+    np.testing.assert_array_equal(ignored.trajectory.positions, fixed.trajectory.positions)
+    np.testing.assert_array_equal(ignored.position_cov, fixed.position_cov)
+
+
+def test_a_bad_covariance_in_a_run_with_the_per_fix_setting_on_raises(imu, truth):
+    with pytest.raises(ValueError, match="not usable"):
+        _per_fix_run(imu, truth, flag=True, corrupt=True)
+
+
+def test_the_per_fix_setting_with_no_covariance_on_the_fixes_uses_the_sigma(imu, truth):
+    on = _per_fix_run(imu, truth, flag=True, corrupt=False, drop_cov=True)
+    off = _per_fix_run(imu, truth, flag=False, corrupt=False, drop_cov=True)
+    np.testing.assert_array_equal(on.trajectory.positions, off.trajectory.positions)
 
 
 def test_the_vertical_sigma_is_the_same_r_in_the_gate_and_in_the_update():

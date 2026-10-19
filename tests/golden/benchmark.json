@@ -136,7 +136,7 @@
     }
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "1223eeb545002610",
+   "config_hash": "94a94d13fc6fcf87",
    "data_class": "synthetic",
    "description": "Inertial integration with no aiding at all. Reported as the control for \"how much of the result is the filter and how much is the motion model\".",
    "drift": {
@@ -180,6 +180,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": false,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -554,7 +555,7 @@
     "verdict": "mixed(bulk=overconfident, tail=underconfident)"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "ccb62012b67edde3",
+   "config_hash": "e13676e549c584be",
    "data_class": "synthetic",
    "description": "GNSS at 5 Hz, no outage, no vision. The reference every other case is read against. Its verdict is mixed rather than clean: mean NEES sits slightly above the expected value while no epoch leaves the 2-sigma ellipsoid.",
    "drift": {
@@ -699,6 +700,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": true,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -1121,7 +1123,7 @@
     "verdict": "mixed(bulk=overconfident, tail=underconfident)"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "1a7c2f45502ef823",
+   "config_hash": "7f7198d8aa906be1",
    "data_class": "synthetic",
    "description": "15 s GNSS outage, 5 s to 20 s, with vision off. The baseline for a contested receiver: the error grows and so does the claimed uncertainty, and coverage stays at or above nominal. The verdict is mixed because mean NEES is slightly above the expected value.",
    "drift": {
@@ -1266,6 +1268,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": true,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -1730,7 +1733,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "4b181f8d2114cbd3",
+   "config_hash": "a8f15a97c29c828e",
    "data_class": "synthetic",
    "description": "The same 15 s outage with vision on. Position error is lower than the control in this window, but the claimed uncertainty stays small and coverage collapses: accurate and confidently wrong. That is why vision_enabled defaults to false. The accuracy gain depends on when the outage starts (see the outage sweep); the overconfidence does not.",
    "drift": {
@@ -1875,6 +1878,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": true,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -2367,7 +2371,7 @@
     "verdict": "underconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "2b68db10392c786e",
+   "config_hash": "10671b6b68a409c8",
    "data_class": "synthetic",
    "description": "The outage_visual scenario with the previous visual pose carried as a stochastic clone instead of a stored anchor. Same data, same seeds, same gate.",
    "drift": {
@@ -2512,6 +2516,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": true,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -3004,7 +3009,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "7f7ca12de6ff291e",
+   "config_hash": "12b5e910afe82f86",
    "data_class": "synthetic",
    "description": "The clone with visual errors correlated over 2 s, as they are when consecutive frames share features. The clone assumes independent errors, so it is overconfident again. This is the case the clone does not survive.",
    "drift": {
@@ -3149,6 +3154,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": true,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -3646,7 +3652,7 @@
     "verdict": "mixed(bulk=overconfident, tail=underconfident)"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "f8d5437c7fa67898",
+   "config_hash": "097776d68ba1b6dc",
    "data_class": "synthetic",
    "description": "The same correlated errors with the filter told the visual noise is four times larger than the generator drew. Calibration is restored, at a cost in accuracy that still leaves the position error well inside the no-vision control's.",
    "drift": {
@@ -3791,6 +3797,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": true,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -4288,7 +4295,7 @@
     "verdict": "underconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "daf22bc67a66d404",
+   "config_hash": "db731e1c0dfcad58",
    "data_class": "synthetic",
    "description": "The clone with 5% of visual frames carrying an error twenty times the nominal one, as with a wrong feature match. The chi-square gate rejects them and the filter stays calibrated.",
    "drift": {
@@ -4433,6 +4440,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": true,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -4930,7 +4938,7 @@
     "verdict": "underconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "c5a26f4b1db2bf10",
+   "config_hash": "a9b3705222b2f82a",
    "data_class": "synthetic",
    "description": "The clone with a slowly drifting error of up to 10% on the translation scale, as monocular scale drifts. The inertial unit holds the metric scale, so the filter stays calibrated.",
    "drift": {
@@ -5075,6 +5083,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": true,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -5572,7 +5581,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "d8de44ed569f20ae",
+   "config_hash": "a9ce5efc6aae397f",
    "data_class": "synthetic",
    "description": "Visual aiding through the outage with 30% of camera frames dropped in 1 s bursts. Checks whether an intermittent visual stream changes the result. It does not: the filter is still overconfident, with a smaller error than the clean case.",
    "drift": {
@@ -5717,6 +5726,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": true,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -6213,7 +6223,7 @@
     "verdict": "underconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "b5d84b2ba53dc006",
+   "config_hash": "31dc3116c4edc163",
    "data_class": "synthetic",
    "description": "The degraded-camera scenario with re-referenced measurements and the stochastic clone.",
    "drift": {
@@ -6358,6 +6368,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": true,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -6854,7 +6865,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "965fa5cb304e09c1",
+   "config_hash": "8fb33172dca2c3d7",
    "data_class": "synthetic",
    "description": "The degraded-camera scenario with every delivered measurement taken against the last delivered frame, and the single-anchor model. Separates the effect of the generator from the effect of the clone: the anchor is no better calibrated.",
    "drift": {
@@ -6999,6 +7010,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": true,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -7495,7 +7507,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "5c105af76379cfb6",
+   "config_hash": "4479f5b98061c085",
    "data_class": "synthetic",
    "description": "The pre-refactor arrangement, where the visual anchor error is folded into the measurement covariance. Retained as a regression control, not as a supported configuration.",
    "drift": {
@@ -7640,6 +7652,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": true,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -8090,7 +8103,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "47a0a38fe183580b",
+   "config_hash": "668f2ab498145c6d",
    "data_class": "synthetic",
    "description": "Visual odometry at 20 Hz with no GNSS. In this fixture it is less accurate than dead reckoning and severely overconfident: nothing constrains the absolute pose, and the claimed uncertainty is far smaller than the error.",
    "drift": {
@@ -8235,6 +8248,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": false,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,
@@ -8676,7 +8690,7 @@
     "verdict": "underconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "2a4a9f79225d6a8e",
+   "config_hash": "21ac6a703275141b",
    "data_class": "synthetic",
    "description": "Visual odometry at 20 Hz with no GNSS, with the stochastic clone. Nothing constrains the absolute pose, so the claimed uncertainty has to grow with the error and not stay small.",
    "drift": {
@@ -8821,6 +8835,7 @@
     "gate_sigma": 5.0,
     "gnss_enabled": false,
     "gnss_per_fix_covariance": false,
+    "gnss_per_fix_min_sigma_m": 0.01,
     "gnss_position_sigma_m": 0.8,
     "gnss_vertical_sigma_m": null,
     "gravity": null,

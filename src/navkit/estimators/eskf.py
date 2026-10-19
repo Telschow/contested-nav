@@ -156,6 +156,7 @@ Known simplifications
 
 from __future__ import annotations
 
+import math
 import time
 import warnings
 from dataclasses import InitVar, dataclass, field
@@ -331,6 +332,12 @@ class EskfConfig:
     #: fixes also carry a covariance, so this stays off unless a caller asks for it. ``GnssFix.cov`` holds three
     #: variances per fix (a diagonal), so a correlation between axes, east-north for example, cannot be expressed.
     gnss_per_fix_covariance: bool = False
+    #: The smallest 1-sigma, in metres, that the per-fix path will believe on any axis: each per-fix variance is raised
+    #: to at least this value squared. A receiver that reports a variance of zero claims a perfect fix, and the filter
+    #: would believe it. The floor is used only when ``gnss_per_fix_covariance`` is True, so it changes no default run.
+    #: A variance that is negative, NaN or infinite is not floored: it raises ``ValueError``, because it is a defect in
+    #: the data and not a fault of the receiver. Must be finite and positive.
+    gnss_per_fix_min_sigma_m: float = 0.01
     gnss_enabled: bool = True
     #: Off by default, and the reason is a known limitation rather than caution
     #: about the code: the filter is badly overconfident when vision has to
@@ -413,6 +420,10 @@ class EskfConfig:
     def __post_init__(
         self, anchor_pos_drift_sigma_m_s: float | None, anchor_rot_drift_sigma_deg_s: float | None
     ) -> None:
+        if not (math.isfinite(self.gnss_per_fix_min_sigma_m) and self.gnss_per_fix_min_sigma_m > 0.0):
+            raise ValueError(
+                f"gnss_per_fix_min_sigma_m must be finite and positive, got {self.gnss_per_fix_min_sigma_m!r}"
+            )
         for old, new, value in (
             ("anchor_pos_drift_sigma_m_s", "anchor_pos_drift_sigma_m_sqrt_s", anchor_pos_drift_sigma_m_s),
             ("anchor_rot_drift_sigma_deg_s", "anchor_rot_drift_sigma_deg_sqrt_s", anchor_rot_drift_sigma_deg_s),
@@ -431,6 +442,7 @@ class EskfConfig:
             "gnss_position_sigma_m": self.gnss_position_sigma_m,
             "gnss_vertical_sigma_m": self.gnss_vertical_sigma_m,
             "gnss_per_fix_covariance": self.gnss_per_fix_covariance,
+            "gnss_per_fix_min_sigma_m": self.gnss_per_fix_min_sigma_m,
             "gnss_enabled": self.gnss_enabled,
             "vision_enabled": self.vision_enabled,
             "vision_rot_sigma_deg": self.vision_rot_sigma_deg,
@@ -934,7 +946,16 @@ class ErrorStateKalmanFilter:
         if sigma_vertical is not None:
             Rcov[2, 2] = sigma_vertical**2
         if variance is not None:
-            Rcov = np.diag(np.asarray(variance, dtype=float))
+            per_fix = np.asarray(variance, dtype=float)
+            unusable = ~np.isfinite(per_fix) | (per_fix < 0.0)
+            if unusable.any():
+                axis = int(np.flatnonzero(unusable)[0])
+                raise ValueError(
+                    f"GNSS per-fix variance is not usable at t={t_s:g} s, axis {axis}: {per_fix[axis]!r}. "
+                    "It must be finite and not negative. Drop the fix before it reaches the filter."
+                )
+            floor = self.cfg.gnss_per_fix_min_sigma_m**2
+            Rcov = np.diag(np.maximum(per_fix, floor))
         H = np.zeros((3, _N_STATES))
         H[0, 3] = H[1, 4] = H[2, 5] = 1.0
         return self._update(x, p_meas - x["p"], H, Rcov, sensor="gnss", t_s=t_s)
