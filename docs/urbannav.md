@@ -98,23 +98,23 @@ The filter is the repository's own, with no change to its gating. The settings, 
 
 | Quantity | seed 0 | seed 1 | seed 2 | seed 3 | seed 4 | Unit |
 |---|---:|---:|---:|---:|---:|---|
-| Horizontal position RMSE over the recording | 4878 | 4776 | 4733 | 4806 | 4797 | m |
-| Horizontal mean NEES (2 degrees of freedom, expected 2) | 26.9 | 25.87 | 25.55 | 26.16 | 26.06 |  |
-| Share of epochs inside the horizontal 95% ellipse (expected 0.95) | 0.2334 | 0.2376 | 0.2353 | 0.2363 | 0.2377 |  |
-| Vertical RMSE (the height is almost unused by design) | 33.68 | 30.57 | 29.67 | 30.74 | 30.89 | m |
-| Horizontal error, median before the outage | 7.28 | 7.235 | 7.295 | 7.269 | 7.244 | m |
-| Horizontal mean NEES before the outage | 10.18 | 9.972 | 10.17 | 10.01 | 9.947 |  |
-| Horizontal error when the outage starts | 15.71 | 15.41 | 15.38 | 15.46 | 15.44 | m |
-| Claimed horizontal sigma when the outage starts | 4.413 | 4.414 | 4.413 | 4.414 | 4.413 | m |
-| Attitude error when the outage starts | 4.111 | 0.1512 | 1.6 | 1.144 | 0.7914 | deg |
-| Peak horizontal error in the outage | 3675 | 3598 | 3566 | 3620 | 3613 | m |
-| Horizontal error when the outage ends | 3675 | 3598 | 3566 | 3620 | 3614 | m |
-| Claimed horizontal sigma when the outage ends | 530.8 | 531 | 531 | 531 | 530.9 | m |
-| Attitude error when the outage ends | 4.09 | 4.431 | 5.46 | 3.932 | 4.062 | deg |
+| Horizontal position RMSE over the recording | 4944 | 4786 | 4762 | 4817 | 4836 | m |
+| Horizontal mean NEES (2 degrees of freedom, expected 2) | 27.33 | 25.77 | 25.62 | 26.07 | 26.21 |  |
+| Share of epochs inside the horizontal 95% ellipse (expected 0.95) | 0.2313 | 0.2373 | 0.2348 | 0.2361 | 0.237 |  |
+| Vertical RMSE (the height is almost unused by design) | 35.2 | 30.82 | 30.36 | 31 | 31.97 | m |
+| Horizontal error, median before the outage | 7.265 | 7.225 | 7.286 | 7.26 | 7.233 | m |
+| Horizontal mean NEES before the outage | 10.2 | 9.956 | 10.15 | 9.993 | 9.934 |  |
+| Horizontal error when the outage starts | 15.99 | 15.47 | 15.46 | 15.52 | 15.55 | m |
+| Claimed horizontal sigma when the outage starts | 4.378 | 4.378 | 4.378 | 4.378 | 4.378 | m |
+| Attitude error when the outage starts | 6.369 | 0.2777 | 0.7097 | 1.399 | 2.041 | deg |
+| Peak horizontal error in the outage | 3726 | 3607 | 3588 | 3630 | 3644 | m |
+| Horizontal error when the outage ends | 3726 | 3607 | 3589 | 3630 | 3644 | m |
+| Claimed horizontal sigma when the outage ends | 529.7 | 529.5 | 529.5 | 529.4 | 529.6 | m |
+| Attitude error when the outage ends | 5.439 | 4.309 | 4.841 | 3.858 | 3.743 | deg |
 | For comparison: horizontal error from the accelerometer alone with the reference attitude | 426.7 | 426.7 | 426.7 | 426.7 | 426.7 | m |
-| Vertical error when the outage ends | 20.41 | 10.59 | 15.82 | 11.51 | 13.09 | m |
-| Horizontal mean NEES inside the outage | 19.05 | 18.27 | 17.96 | 18.49 | 18.42 |  |
-| Horizontal error, median from 10 s after the outage | 8753 | 8582 | 8509 | 8631 | 8616 | m |
+| Vertical error when the outage ends | 18.09 | 10.4 | 14.81 | 11.44 | 11.81 | m |
+| Horizontal mean NEES inside the outage | 19.47 | 18.22 | 18.05 | 18.45 | 18.59 |  |
+| Horizontal error, median from 10 s after the outage | 8864 | 8600 | 8559 | 8651 | 8683 | m |
 | The start-bias stretch was judged at rest (1 yes, 0 no) | 0 | 0 | 0 | 0 | 0 | flag |
 | Valid fixes offered to the filter | 248 | 248 | 248 | 248 | 248 | count |
 | Fixes the filter rejected | 118 | 118 | 118 | 118 | 118 | count |
@@ -133,23 +133,23 @@ for it:
 
 | Quantity | seed 0 | seed 1 | seed 2 | seed 3 | seed 4 | Unit |
 |---|---:|---:|---:|---:|---:|---|
-| Horizontal position RMSE over the recording | 4720 | 4651 | 4631 | 4671 | 4670 | m |
-| Horizontal mean NEES (2 degrees of freedom, expected 2) | 29.95 | 29.06 | 28.89 | 29.3 | 29.26 |  |
-| Share of epochs inside the horizontal 95% ellipse (expected 0.95) | 0.2266 | 0.2319 | 0.2298 | 0.2289 | 0.2315 |  |
-| Vertical RMSE (the height is almost unused by design) | 32.55 | 32.14 | 31.16 | 31.79 | 31.93 | m |
-| Horizontal error, median before the outage | 2.922 | 2.856 | 2.863 | 2.87 | 2.862 | m |
-| Horizontal mean NEES before the outage | 20.13 | 19.47 | 19.5 | 19.62 | 19.52 |  |
-| Horizontal error when the outage starts | 8.599 | 7.962 | 7.822 | 8.127 | 8.113 | m |
-| Claimed horizontal sigma when the outage starts | 3.93 | 3.931 | 3.93 | 3.93 | 3.93 | m |
-| Attitude error when the outage starts | 2.892 | 0.13 | 0.8434 | 0.8062 | 0.7478 | deg |
-| Peak horizontal error in the outage | 3543 | 3492 | 3477 | 3507 | 3506 | m |
-| Horizontal error when the outage ends | 3543 | 3492 | 3477 | 3507 | 3506 | m |
-| Claimed horizontal sigma when the outage ends | 514.7 | 514.7 | 514.6 | 514.7 | 514.7 | m |
-| Attitude error when the outage ends | 3.675 | 4.392 | 4.878 | 3.985 | 4.01 | deg |
+| Horizontal position RMSE over the recording | 4760 | 4664 | 4649 | 4688 | 4699 | m |
+| Horizontal mean NEES (2 degrees of freedom, expected 2) | 30.33 | 29.12 | 28.99 | 29.4 | 29.49 |  |
+| Share of epochs inside the horizontal 95% ellipse (expected 0.95) | 0.2236 | 0.2311 | 0.229 | 0.229 | 0.2301 |  |
+| Vertical RMSE (the height is almost unused by design) | 33.76 | 32.59 | 31.74 | 32.33 | 32.93 | m |
+| Horizontal error, median before the outage | 2.935 | 2.849 | 2.858 | 2.867 | 2.864 | m |
+| Horizontal mean NEES before the outage | 20.32 | 19.46 | 19.51 | 19.63 | 19.59 |  |
+| Horizontal error when the outage starts | 8.994 | 8.024 | 7.91 | 8.236 | 8.328 | m |
+| Claimed horizontal sigma when the outage starts | 3.919 | 3.919 | 3.92 | 3.919 | 3.92 | m |
+| Attitude error when the outage starts | 4.489 | 0.4263 | 0.2367 | 1.409 | 1.827 | deg |
+| Peak horizontal error in the outage | 3574 | 3503 | 3491 | 3520 | 3529 | m |
+| Horizontal error when the outage ends | 3574 | 3503 | 3491 | 3521 | 3529 | m |
+| Claimed horizontal sigma when the outage ends | 514.3 | 514.3 | 514.3 | 514.3 | 514.3 | m |
+| Attitude error when the outage ends | 4.196 | 4.158 | 4.482 | 3.781 | 3.693 | deg |
 | For comparison: horizontal error from the accelerometer alone with the reference attitude | 426.7 | 426.7 | 426.7 | 426.7 | 426.7 | m |
-| Vertical error when the outage ends | 7.314 | 2.102 | 1.254 | 0.7907 | 0.2571 | m |
-| Horizontal mean NEES inside the outage | 18.72 | 18.14 | 17.98 | 18.3 | 18.29 |  |
-| Horizontal error, median from 10 s after the outage | 8469 | 8354 | 8321 | 8388 | 8386 | m |
+| Vertical error when the outage ends | 6.03 | 2.527 | 0.6393 | 1.26 | 0.6926 | m |
+| Horizontal mean NEES inside the outage | 19.04 | 18.22 | 18.08 | 18.41 | 18.5 |  |
+| Horizontal error, median from 10 s after the outage | 8536 | 8378 | 8352 | 8417 | 8435 | m |
 | The start-bias stretch was judged at rest (1 yes, 0 no) | 0 | 0 | 0 | 0 | 0 | flag |
 | Valid fixes offered to the filter | 248 | 248 | 248 | 248 | 248 | count |
 | Fixes the filter rejected | 111 | 111 | 111 | 111 | 111 | count |
