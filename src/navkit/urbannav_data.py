@@ -286,6 +286,18 @@ def _checksum_ok(line: str) -> bool:
         return False
 
 
+def _midnight_from_rmc(lines: list[str]) -> float | None:
+    """Unix time of 00:00 UTC on the date of the first valid ``RMC`` sentence, or ``None``."""
+    for raw in lines:
+        line = raw.strip()
+        if line[3:6] == "RMC" and _checksum_ok(line):
+            f = line[1 : line.index("*")].split(",")
+            if len(f) > 9 and len(f[9]) == 6 and f[9].isdigit():
+                day, month, year = int(f[9][0:2]), int(f[9][2:4]), 2000 + int(f[9][4:6])
+                return float(calendar.timegm((year, month, day, 0, 0, 0)))
+    return None
+
+
 def _ddmm(value: str, hemisphere: str, degree_digits: int, positive: str) -> float:
     deg, minutes = int(value[:degree_digits]), float(value[degree_digits:])
     if not 0.0 <= minutes < 60.0:
@@ -303,15 +315,7 @@ def read_gga(path: str | Path) -> GgaFixes:
         lines = Path(path).read_text(encoding="ascii", errors="replace").splitlines()
     except OSError as exc:
         raise SequenceError(f"{path}: cannot read ({exc})") from exc
-    midnight: float | None = None
-    for raw in lines:
-        line = raw.strip()
-        if line[3:6] == "RMC" and _checksum_ok(line):
-            f = line[1 : line.index("*")].split(",")
-            if len(f) > 9 and len(f[9]) == 6 and f[9].isdigit():
-                day, month, year = int(f[9][0:2]), int(f[9][2:4]), 2000 + int(f[9][4:6])
-                midnight = float(calendar.timegm((year, month, day, 0, 0, 0)))
-                break
+    midnight = _midnight_from_rmc(lines)
     if midnight is None:
         raise SequenceError(f"{path}: no valid RMC sentence with a date, so the fixes cannot be placed in UTC")
     out: list[tuple[float, float, float, float, int, int, float]] = []
@@ -411,3 +415,101 @@ def load_gga(root: str | Path, seq: str) -> GgaFixes:
             f"{path} is missing. It is inside the publisher's folder download (the GNSS RINEX link); copy it here."
         )
     return read_gga(path)
+
+
+@dataclass
+class GstSigmas:
+    """The receiver's own estimate of its position error, one row per ``GST`` sentence, in metres (1-sigma)."""
+
+    utc_s: np.ndarray
+    sigma_lat: np.ndarray
+    sigma_lon: np.ndarray
+    sigma_alt: np.ndarray
+
+    def __len__(self) -> int:
+        return int(self.utc_s.shape[0])
+
+
+def read_gst(path: str | Path) -> GstSigmas:
+    """The ``GST`` error estimates of an NMEA file. Sentences with a bad checksum or an empty field are skipped."""
+    try:
+        lines = Path(path).read_text(encoding="ascii", errors="replace").splitlines()
+    except OSError as exc:
+        raise SequenceError(f"{path}: cannot read ({exc})") from exc
+    midnight = _midnight_from_rmc(lines)
+    if midnight is None:
+        raise SequenceError(f"{path}: no valid RMC sentence with a date, so the sigmas cannot be placed in UTC")
+    out: list[tuple[float, float, float, float]] = []
+    day_offset, previous = 0.0, -1.0
+    for raw in lines:
+        line = raw.strip()
+        if line[3:6] != "GST" or not _checksum_ok(line):
+            continue
+        f = line[1 : line.index("*")].split(",")
+        try:
+            tod = int(f[1][0:2]) * 3600 + int(f[1][2:4]) * 60 + float(f[1][4:])
+            sigma_lat, sigma_lon, sigma_alt = float(f[6]), float(f[7]), float(f[8])
+        except (ValueError, IndexError):
+            continue
+        if tod < previous:
+            day_offset += 86400.0
+        previous = tod
+        out.append((midnight + day_offset + tod, sigma_lat, sigma_lon, sigma_alt))
+    if not out:
+        raise SequenceError(f"{path}: no valid GST sentence")
+    a = np.array(out)
+    return GstSigmas(utc_s=a[:, 0], sigma_lat=a[:, 1], sigma_lon=a[:, 2], sigma_alt=a[:, 3])
+
+
+# ------------------------------------------------------------------- attitude
+
+
+def rpy_to_rotation(roll_deg: np.ndarray, pitch_deg: np.ndarray, heading_deg: np.ndarray) -> np.ndarray:
+    """Body-to-ENU rotation matrices, shape (N, 3, 3), from the reference's roll, pitch and heading.
+
+    The convention is the NovAtel one: the body axes are x right, y forward, z up. Heading is the clockwise angle
+    from north to the forward axis. Pitch is positive nose up. Roll is a right-handed rotation about the forward axis.
+    The matrix is ``Rz(-heading) Rx(pitch) Ry(roll)``. :func:`load_sequence` does not use it. The data tests check it
+    against the reference's own velocity and the accelerometer's gravity, so a wrong convention fails there.
+    """
+    r, p, h = np.radians(roll_deg), np.radians(pitch_deg), np.radians(heading_deg)
+    n = r.shape[0]
+    one, zero = np.ones(n), np.zeros(n)
+    ry = np.stack(
+        [
+            np.stack([np.cos(r), zero, np.sin(r)], -1),
+            np.stack([zero, one, zero], -1),
+            np.stack([-np.sin(r), zero, np.cos(r)], -1),
+        ],
+        1,
+    )
+    rx = np.stack(
+        [
+            np.stack([one, zero, zero], -1),
+            np.stack([zero, np.cos(p), -np.sin(p)], -1),
+            np.stack([zero, np.sin(p), np.cos(p)], -1),
+        ],
+        1,
+    )
+    rz = np.stack(
+        [
+            np.stack([np.cos(h), np.sin(h), zero], -1),
+            np.stack([-np.sin(h), np.cos(h), zero], -1),
+            np.stack([zero, zero, one], -1),
+        ],
+        1,
+    )
+    return rz @ rx @ ry  # type: ignore[no-any-return]
+
+
+def rotation_to_rpy(rotation: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Roll, pitch and heading in degrees from body-to-ENU matrices; the inverse of :func:`rpy_to_rotation`.
+
+    ``rotation`` is one matrix or a stack of them. Heading comes back in (-180, 180]. Pitch is taken in [-90, 90], so
+    the result is not defined at 90 degrees of pitch, which a road vehicle does not reach.
+    """
+    r = np.asarray(rotation, dtype=float)
+    pitch = np.arcsin(np.clip(r[..., 2, 1], -1.0, 1.0))
+    roll = np.arctan2(-r[..., 2, 0], r[..., 2, 2])
+    heading = np.arctan2(r[..., 0, 1], r[..., 1, 1])
+    return np.degrees(roll), np.degrees(pitch), np.degrees(heading)

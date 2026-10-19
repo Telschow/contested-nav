@@ -189,7 +189,7 @@ every page is also a Markdown file under `docs/`.
 | To run it | [Getting started](docs/getting-started.md) |
 | The argument and the mechanism | [Concepts](docs/concepts.md), [calibration](docs/calibration.md) |
 | What the filter assumes, every config key, the result format | [Model and interface contract](docs/MODEL.md) |
-| Evidence on recorded data | [EuRoC](docs/euroc.md), [TUM VI](docs/tumvi.md), [where the outage error comes from](docs/attribution.md), [a real front end](docs/real_front_end.md) |
+| Evidence on recorded data | [EuRoC](docs/euroc.md), [TUM VI](docs/tumvi.md), [UrbanNav (real GNSS outage)](docs/urbannav.md), [where the outage error comes from](docs/attribution.md), [a real front end](docs/real_front_end.md) |
 | Spoofing, multipath and fault classes | [Honest returns](docs/separability.md), [slow ramps](docs/slow_ramp.md), [classification](docs/fault_classification.md), [multipath](docs/multipath.md) |
 | How fast it is, measured | [Performance](docs/PERFORMANCE.md) |
 | Decisions of record | [Architecture decision records](docs/adr/index.md) |
@@ -206,6 +206,14 @@ benchmarks/   timing harness for docs/PERFORMANCE.md
 docs/         site pages, ADRs, figures, defense assessment, product management
 tests/        unit, property, golden-snapshot and documentation consistency tests
 ```
+
+## Acknowledgements
+
+The recorded GNSS and IMU data on the [UrbanNav page](docs/urbannav.md) is from the UrbanNav dataset
+([github.com/IPNL-POLYU/UrbanNavDataset](https://github.com/IPNL-POLYU/UrbanNavDataset)). The authors ask for a
+citation of Hsu et al. (2023), NAVIGATION. UrbanNav: an open-sourced multisensory dataset for urban positioning.
+The authors state that the dataset files are MIT licensed. The data is fetched with `navkit urbannav fetch` and is
+not part of this repository. Only aggregate results are published here.
 
 ## License
 

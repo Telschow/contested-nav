@@ -189,7 +189,7 @@ jobs:
           tests/test_mismatch_sweep.py tests/test_multipath.py tests/test_rice.py tests/test_separability_page.py
           tests/test_slow_ramp_page.py tests/test_timing_page.py tests/test_tumvi_page.py
           tests/test_urbannav_check.py tests/test_vision_ramp_page.py tests/test_vo_page.py
-          tests/test_quoted_numbers.py
+          tests/test_quoted_numbers.py tests/test_urbannav_run.py
 
   build:
     name: build

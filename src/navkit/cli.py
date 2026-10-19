@@ -19,6 +19,7 @@ only routes arguments.
     navkit tumvi fetch --sequence room1
     navkit urbannav fetch --sequence tunnel1
     navkit urbannav check --sequence tunnel1
+    navkit urbannav run --sequence tunnel1
     navkit euroc run --sequence MH_01_easy --outage 60:20 --markdown
     python -m navkit run --list
 """
@@ -45,6 +46,7 @@ from . import (
     separability,
     slow_ramp,
     urbannav_check,
+    urbannav_run,
     vision_ramp,
 )
 from .io import tumvi_fetch, urbannav_fetch
@@ -102,12 +104,13 @@ def _tumvi(argv: list[str] | None) -> int:
 def _urbannav(argv: list[str] | None) -> int:
     """Route ``navkit urbannav fetch`` and ``navkit urbannav check``."""
     args = list(argv or [])
-    routes = {"fetch": urbannav_fetch.main, "check": urbannav_check.main}
+    routes = {"fetch": urbannav_fetch.main, "check": urbannav_check.main, "run": urbannav_run.main}
     if not args or args[0] in ("-h", "--help") or args[0] not in routes:
-        usage = "usage: navkit urbannav {fetch,check} [options]"
+        usage = "usage: navkit urbannav {fetch,check,run} [options]"
         notes = (
             "  fetch  download the reference solution and IMU of UrbanNav sequences (MIT, cite Hsu et al. 2023)",
             "  check  measure what the fetched files contain and fill the UrbanNav data page",
+            "  run    run the filter on a fetched sequence with the receiver's own fixes and outage",
         )
         print("\n".join((usage, *notes)), file=sys.stderr)
         return 0 if args and args[0] in ("-h", "--help") else 2
