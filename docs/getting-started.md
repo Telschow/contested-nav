@@ -15,15 +15,19 @@ The last command prints the three rows that carry the headline result:
 ```text
 | Scenario | ATE RMSE (m) | Claimed 1-sigma (m) | Mean NEES (exp. 3) | Coverage at 2 sigma | Verdict |
 | --- | ---: | ---: | ---: | ---: | --- |
-| gnss_only | 0.509 | 0.253 | 3.9 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
-| outage_control | 3.760 | 0.567 | 4.1 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
-| outage_visual | 2.322 | 0.162 | 286.2 | 20.5% | overconfident |
+| gnss_only | 0.528 | 0.253 | 4.3 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
+| outage_control | 3.768 | 0.567 | 4.1 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
+| outage_visual | 2.321 | 0.162 | 286.1 | 20.5% | overconfident |
 ```
+
+This table is checked by CI: `scripts/check_doc_tables.py` compares each row, including the verdict, with the
+benchmark.
 
 **Timed from a fresh clone** on the machine that wrote this page (Python 3.13, a fast
 connection): clone 1.2 s, virtual environment 2.7 s, `pip install -e .` 9.6 s, the three-case
-run 5.2 s, **18.7 s in total**. Your numbers will differ with your network and CPU; the
-printed results will not (see [determinism](adr/0010-determinism-and-seeding.md)).
+run 5.2 s, **18.7 s in total**. These timings were measured once on one machine, not checked by CI. Your
+numbers will differ with your network and CPU; the printed results will not (see
+[determinism](adr/0010-determinism-and-seeding.md)).
 
 Runtime dependencies are NumPy, Matplotlib and PyYAML. There is no SciPy, no GTSAM, no factor
 graph library and no compiled extension: the incomplete gamma function, the chi-square
@@ -57,9 +61,9 @@ pip install -e ".[dev]"
 make repro
 ```
 
-`make repro` runs the benchmark, the three sweeps and the figures, then checks that every
-table in the documentation still matches the result. It took **321 s** end to end, in a clean
-worktree, on the machine that wrote this page. `make help` lists the other targets
+`make repro` runs the benchmark, the three sweeps and the figures, then checks that the generated
+tables in the documentation still match the result. It took **321 s** end to end, in a clean
+worktree (measured once on one machine, not checked by CI). `make help` lists the other targets
 (`check` runs the three local gates; `docker` builds the container image).
 
 The benchmark is bit-reproducible: two runs give byte-identical output once wall-clock timings

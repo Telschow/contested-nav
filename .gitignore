@@ -55,3 +55,6 @@ coverage.json
 
 # Built documentation site (mkdocs build)
 site/
+
+# Claude Code worktrees
+.claude/worktrees/

@@ -4,7 +4,7 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: <!-- metric:tests_collected -->1439<!-- /metric --> tests collected, all of which pass except the deliberate
+Last measured: <!-- metric:tests_collected -->1485<!-- /metric --> tests collected, all of which pass except the deliberate
 xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->94.3<!-- /metric -->%
 line coverage (<!-- metric:coverage_lines_hit -->10033<!-- /metric -->/<!-- metric:coverage_lines_total -->10638<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
@@ -13,7 +13,7 @@ a number taken from a different tool is not comparable with the module figures
 below. The interpreter is named because it is part of the measurement, not a
 detail: `dis` decides what counts as an executable line, and the denominator
 moves with the bytecode. An earlier revision of this tree measured
-3690/4037 (91.40%) on 3.11 and 3678/4196 (87.65%) on 3.14 (not re-measured since). `coverage_report.py`
+3690/4037 (91.40%) on 3.11 and 3678/4196 (87.65%) on 3.14 (measured once on one machine, not checked by CI, and not re-measured since). `coverage_report.py`
 prints the interpreter it ran on, so a figure is never quoted without the one
 thing needed to interpret it. Floors are unaffected by that spread: every total
 clears 75% and every module floor sits well below its measured figure.
@@ -46,10 +46,16 @@ are skips, not passes, and are never counted as passes.
   `(I-KH) P` shortcut. *Enforced by*
   `test_covariance_stays_positive_semidefinite_across_a_visual_run`.
 
-- **C5: No fabricated or extrapolated results.** Every number in README.md
-  and `docs/` is reproducible from a committed config and a fixed seed via
-  `scripts/run_benchmark.py`. Claims are labelled `FACT`, `MEASUREMENT`,
-  `INTERPRETATION`, or `HYPOTHESIS` (`analysis/findings.py`).
+- **C5: No fabricated or extrapolated results.** Every benchmark table in
+  README.md and `docs/` is reproducible from a committed config and a fixed seed via
+  `scripts/run_benchmark.py`, and CI checks it cell by cell against the benchmark
+  (`scripts/check_doc_tables.py`). Counts and two headline values in prose are quoted through metric markers
+  that `scripts/metrics.py` checks. `tests/test_quoted_numbers.py` fails on any other measured number on the
+  first-read pages: README.md, `docs/index.md`, `docs/getting-started.md`, `docs/results.md` and
+  `docs/status.md`. Timings and figures labelled "measured once on one machine, not checked by CI", or
+  "measured at" a date, are one-off measurements and are not checked. Other pages, this one, ROADMAP.md and the
+  dated release notes record what was measured when they were written. Claims are labelled `FACT`,
+  `MEASUREMENT`, `INTERPRETATION`, or `HYPOTHESIS` (`analysis/findings.py`).
 
 - **C6: Synthetic results are never presented as real-sensor performance.**
   The synthetic suite isolates estimator structure; it says nothing about a
@@ -79,11 +85,13 @@ are skips, not passes, and are never counted as passes.
 
 ## Quality ratchets
 
-These are floors, not goals. Each must not regress; raising one is welcome.
+These are floors, not goals. Each must not regress; raising one is welcome. Only the first three rows are
+generated (`scripts/metrics.py`). The per-module figures were measured once on one machine, not checked by CI;
+the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | <!-- metric:tests_collected -->1439<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | <!-- metric:tests_collected -->1485<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
 | Line coverage | 75% | <!-- metric:coverage_percent -->94.3<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
@@ -120,10 +128,10 @@ These are floors, not goals. Each must not regress; raising one is welcome.
   [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md)). The current gate is one-sided: it does not reject an
   uninformative filter, and an IMU-only filter also meets it ([real front end](docs/real_front_end.md)).
 
-  `outage_visual`, over the 15 s outage window (5 s to 20 s, half-open): mean NEES 478.6, with
-  0.0% of epochs inside 2 sigma against 99.3% expected. Over the whole 30 s run, which includes the epochs with GNSS,
-  the same case gives mean NEES 286.1 and 20.5% inside 2 sigma. Both are generated
-  (`python scripts/check_doc_tables.py --print-configuration-table`). A single anchor cannot represent correlated visual
+  `outage_visual`, over the 15 s outage window (5 s to 20 s, half-open): mean NEES <!-- metric:outage_visual_window_nees -->478.6<!-- /metric -->, with
+  <!-- metric:outage_visual_window_coverage_percent -->0.0<!-- /metric -->% of epochs inside 2 sigma against 99.3% expected. The
+  README table gives the full-run values of the same case, which include the epochs with GNSS; it is generated
+  (`python scripts/check_doc_tables.py --print-configuration-table`) and checked by CI. A single anchor cannot represent correlated visual
   drift. Pinned by
   `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`. B2 did not
   change the full-run number, and neither did ADR-0006: correcting a frame is not the

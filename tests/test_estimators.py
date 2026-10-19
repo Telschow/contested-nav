@@ -66,7 +66,7 @@ def test_visual_measurements_telescope(truth) -> None:
     emitted ``R_rel = R_i R_{i-1}^T`` (the rotation of ``T_i^-1 T_{i-1}``) next to
     ``t_rel = R_{i-1}^T (p_i - p_{i-1})`` (the translation of ``T_{i-1}^-1 T_i``).
     Each block was individually exact, so per-step checks passed, but the chain
-    diverged at roughly 0.13 rad and 0.3 m per second.
+    diverged steadily from the trajectory.
     """
     updates = visual_updates(truth, VisionConfig(rot_sigma_deg=1e-9, trans_sigma_m=1e-9))
     R = truth.rotations[0].copy()
@@ -365,7 +365,7 @@ def test_fdir_isolates_a_channel_whose_covariance_has_collapsed() -> None:
     """FDIR catches the collapse, but isolation is not a repair.
 
     Same broken configuration as the test above, now with FDIR on. The channel is
-    isolated and the run is *less* wrong -- 4.7 m instead of 16.1 m -- which is
+    isolated and the run is *less* wrong -- several times smaller error -- which is
     worth stating plainly rather than celebrating: the improvement is an artifact
     of throwing away good fixes, not of fixing the model. The filter is still
     overconfident by two orders of magnitude, so the covariance collapse itself is
@@ -436,9 +436,10 @@ def test_the_anchor_nuisance_correction_is_computed_but_not_applied() -> None:
     == 1 re-commits the anchor immediately after each update. Where the anchor is
     held fixed, c_p and c_t carry no process noise by default, so they are not
     identifiable: the corrected anchor error latches onto any persistent
-    discrepancy and absorbs real navigation drift. Measured on outage_visual with
-    the anchor held fixed, applying the correction moved ATE from 35.9 m to
-    217.5 m and mean NEES from 28.4 to 7118.5.
+    discrepancy and absorbs real navigation drift. Measured once on outage_visual
+    with the anchor held fixed, applying the correction made both the ATE and the
+    mean NEES much worse. That measurement has no generated source, so its figures
+    are not kept here.
 
     This test asserts the current behaviour for two reasons. It stops the line
     being "fixed" without the identifiability decision that CN-003 actually
@@ -526,7 +527,7 @@ def test_covariance_stays_positive_semidefinite_across_a_visual_run() -> None:
     """The (I - K H) P shortcut produced negative eigenvalues here.
 
     The shortcut is symmetric but not positive semidefinite, and with the anchor
-    nuisance blocks the smallest eigenvalue reached -0.31 within two visual
+    nuisance blocks the smallest eigenvalue went negative within two visual
     updates. A covariance with a negative eigenvalue is not a slightly wrong
     answer, it is an unusable one, and the calibration code decomposes it, so
     this is a hard requirement rather than a numerical nicety.
@@ -554,9 +555,9 @@ def test_vision_only_normalised_error_is_not_orders_of_magnitude_out() -> None:
     """Catches the catastrophic signature without over-claiming calibration.
 
     The failure this guards against is a mean NEES in the millions, which is what
-    a filter looks like when it is certain and wrong. Measured values for the
-    current attitude-only path are around 1.5 (noisy inertial data) and 36 (clean
-    data), so the bound is set to catch the collapse and not to assert success.
+    a filter looks like when it is certain and wrong. The measured values for the
+    current attitude-only path, on noisy and on clean inertial data, are far below
+    the bound, which is set to catch the collapse and not to assert success.
     """
     from navkit.eval.calibration import normalized_error_squared, summarise
 
@@ -855,9 +856,9 @@ def test_anchor_attitude_jacobian_is_the_exact_derivative() -> None:
     form is exact there. At a non-zero c_t, BCH contributes
     Log(Exp(-c_t) Exp(c_t + d)) ~ (I - 0.5 [c_t]_x) d = J_r(c_t) d, so the
     analytic block must carry the factor. Measured against this test, dropping
-    it is wrong by 4.5e-3 at |c_t| = 0.012 rad and 3.3e-2 at |c_t| = 0.092 rad --
-    a discrepancy small enough to look like a rounding artifact and large enough
-    to bias the anchor estimate.
+    it is wrong by an amount that grows with |c_t| -- a discrepancy small enough
+    to look like a rounding artifact at small |c_t| and large enough to bias the
+    anchor estimate at larger |c_t|.
     """
     R_vk, p_vk, R, p, c_p, _c_t, t_rel_meas = _setup()
     R_rel_pred = R_vk.T @ R

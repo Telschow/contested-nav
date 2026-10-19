@@ -2,9 +2,10 @@
 
 Sequenced by dependency, not by ambition. Each item names its exit test.
 Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
-blocked.
+blocked. Checked items record what was measured when the item closed. They are not kept current: the
+current values are in the README tables, `docs/results.md` and `CONSTRAINTS.md` (B1).
 
-Measured baseline: <!-- metric:tests_collected -->1439<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1485<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -126,8 +127,9 @@ previously produced by ad-hoc scripts that were not in the repository.
       which paid that cost back).
 - [x] `docs/architecture.md`, `docs/calibration.md`, the documentation site (`mkdocs.yml`).
 - [x] GNSS-denial overconfidence framed explicitly as the headline *negative*
-      result rather than a caveat: mean NEES 286.2 against an expected 3, 20.5%
-      coverage against 99.3% expected, `vision_enabled = False` shipped as the
+      result rather than a caveat: a mean NEES far above its expected value and a
+      2σ coverage far below it (the current values are in the README table and in
+      `CONSTRAINTS.md` B1), `vision_enabled = False` shipped as the
       default, and the failure pinned by
       `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`.
 - [x] Zero-dependency runtime: NumPy, PyYAML, Matplotlib, pytest. No SciPy, no
@@ -233,8 +235,8 @@ Everything in Milestone 1 makes the limitation reproducible and documented;
 this removes it.
 
 - [!] Blocker for the shipped configuration: a single-anchor ESKF cannot
-      represent correlated visual drift. Mean NEES 286.2 on `outage_visual`,
-      20.5% coverage against 99.3% expected. (The figure was 1996.5 before
+      represent correlated visual drift. The mean NEES and the 2σ coverage of
+      `outage_visual` are in the README table and in `CONSTRAINTS.md` B1. (The mean NEES was 1996.5 before
       ADR-0006; the number fell because the filter began taking its own
       uncertainty more seriously, not because the anchor is now modelled
       correctly. See `CONSTRAINTS.md:B1`.)
@@ -270,8 +272,9 @@ this removes it.
       front end, so the default does not change.
 
 **Exit test:** NEES below 10 with vision enabled and GNSS denied, coverage above
-90%, `vision_enabled = True` as the shipped default. Current value 286.2 for the
-shipped single anchor; the clone row is in the results table and meets the gate.
+90%, `vision_enabled = True` as the shipped default. The current value for the
+shipped single anchor is in the README table and in `CONSTRAINTS.md` B1; the clone row is in the results
+table and meets the gate.
 The default has not been changed.
 
 ### Track C: TPM / PM deliverables `[~]`

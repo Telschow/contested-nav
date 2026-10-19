@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""One source for the counts the documents quote: tests collected, ADRs and line coverage.
+"""One source for the numbers the documents quote: tests collected, ADRs, line coverage, and two headline values.
 
 ``docs/data/metrics.json`` holds them. A document quotes one as
 
@@ -12,6 +12,10 @@ and this script rewrites that value from the JSON (``--write``) or fails when it
   ``docs/adr/index.md``.
 * ``tests_collected`` is what ``pytest --collect-only`` reports. It changes whenever a test is
   added, so ``--write`` (a second) refreshes it.
+* ``outage_visual_window_nees`` and ``outage_visual_window_coverage_percent`` are the mean NEES and the 2-sigma
+  coverage of ``outage_visual`` over the GNSS outage window. They are read from the committed golden snapshot,
+  ``tests/golden/benchmark.json``, by ``--write``, and ``--check`` fails when the JSON differs from the snapshot.
+  The full-run values and every other case are in the generated tables, which ``scripts/check_doc_tables.py`` checks.
 * ``coverage_percent`` comes from ``scripts/coverage_report.py``, which takes minutes, so it is
   refreshed only by ``--write --coverage`` and compared by ``--check-coverage`` within
   ``COVERAGE_TOLERANCE`` points. Coverage depends on the interpreter, so the comparison is made
@@ -52,11 +56,22 @@ KEYS = (
     "coverage_lines_hit",
     "coverage_lines_total",
     "coverage_python",
+    "outage_visual_window_nees",
+    "outage_visual_window_coverage_percent",
 )
+
+#: Keys shown with one decimal.
+ONE_DECIMAL = ("coverage_percent", "outage_visual_window_nees", "outage_visual_window_coverage_percent")
+
+#: The two headline values that prose quotes, read from the committed golden snapshot of the benchmark. The golden
+#: file is regenerated with ``python tests/test_golden_benchmark.py --update`` whenever a benchmark number moves, so
+#: these follow it. The full table is in README.md and is checked by ``scripts/check_doc_tables.py``.
+GOLDEN_PATH = ("tests", "golden", "benchmark.json")
+HEADLINE_CASE = "outage_visual"
 
 #: Documents that quote counts. History is left out: the changelog and the dated release
 #: notes record what was true when they were written.
-LIVE_FILES = ("README.md", "CONSTRAINTS.md", "ROADMAP.md", "CONTRIBUTING.md", "CLAUDE.md")
+LIVE_FILES = ("README.md", "CONSTRAINTS.md", "ROADMAP.md", "CONTRIBUTING.md", "CLAUDE.md", "RISKS.md", "SECURITY.md")
 LIVE_DIRS = ("docs",)
 HISTORY = ("docs/releases/",)
 
@@ -123,10 +138,20 @@ def coverage_from(path: Path = COVERAGE_PATH) -> dict[str, Any]:
     }
 
 
+def headline_from_golden(root: Path = ROOT) -> dict[str, float]:
+    """The outage-window NEES and 2-sigma coverage of the headline case, from the golden snapshot."""
+    golden = json.loads(root.joinpath(*GOLDEN_PATH).read_text(encoding="utf-8"))
+    window = golden["cases"][HEADLINE_CASE]["outage_calibration"]
+    return {
+        "outage_visual_window_nees": round(float(window["nees_mean"]), 2),
+        "outage_visual_window_coverage_percent": round(100.0 * float(window["coverage_2sigma"]), 2),
+    }
+
+
 def render(key: str, metrics: dict[str, Any]) -> str:
     """How a value is shown in a document."""
     value = metrics[key]
-    return f"{value:.1f}" if key == "coverage_percent" else str(value)
+    return f"{value:.1f}" if key in ONE_DECIMAL else str(value)
 
 
 def rewrite(text: str, metrics: dict[str, Any]) -> str:
@@ -168,6 +193,9 @@ def check(root: Path = ROOT, collected: int | None = None) -> list[str]:
     seen = count_collected(root) if collected is None else collected
     if metrics["tests_collected"] != seen:
         problems.append(f"tests_collected is {metrics['tests_collected']}, pytest collects {seen}")
+    for key, value in headline_from_golden(root).items():
+        if metrics[key] != value:
+            problems.append(f"{key} is {metrics[key]}, the golden snapshot has {value}: run scripts/metrics.py --write")
     for path in live_documents(root):
         problems.extend(marker_problems(path.read_text(encoding="utf-8"), metrics, path.relative_to(root).as_posix()))
     return problems
@@ -194,6 +222,7 @@ def write(root: Path = ROOT, with_coverage: bool = False) -> dict[str, Any]:
     metrics: dict[str, Any] = read_metrics(path) if path.is_file() else {}
     metrics["adr_count"] = len(adr_files(root))
     metrics["tests_collected"] = count_collected(root)
+    metrics.update(headline_from_golden(root))
     if with_coverage:
         metrics.update(coverage_from(root / "coverage.json"))
     if not all(k in metrics for k in KEYS):
