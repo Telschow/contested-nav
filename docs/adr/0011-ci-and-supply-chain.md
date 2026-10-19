@@ -82,4 +82,4 @@ are automated review services, not gates, are not required.
 - **`uv.lock` is not used by CI.** It is stale and either needs to be adopted or deleted.
 - **No branch protection is configured by the repository's own files.** It is a setting.
 
-Note (2026-10-19): the history secret scan in the list above no longer has a known finding. Since the history rewrite of 2026-10-19 it accepts none. See [SECURITY.md](../../SECURITY.md). The text above is unchanged.
+Note (2026-10-19): the history secret scan in the list above no longer has a known finding. Since the history rewrite of 2026-10-19 it accepts none. See SECURITY.md in the repository root. The text above is unchanged.
