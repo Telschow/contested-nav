@@ -328,7 +328,8 @@ class EskfConfig:
     gnss_vertical_sigma_m: float | None = None
     #: False weights every fix with the two sigmas above. True weights each fix with the variances in its own
     #: ``GnssFix.cov`` when it has them, for a receiver that reports an error estimate with every fix. Simulated
-    #: fixes also carry a covariance, so this stays off unless a caller asks for it.
+    #: fixes also carry a covariance, so this stays off unless a caller asks for it. ``GnssFix.cov`` holds three
+    #: variances per fix (a diagonal), so a correlation between axes, east-north for example, cannot be expressed.
     gnss_per_fix_covariance: bool = False
     gnss_enabled: bool = True
     #: Off by default, and the reason is a known limitation rather than caution

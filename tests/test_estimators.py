@@ -1256,3 +1256,47 @@ def test_a_fix_variance_replaces_the_scalar_sigma_when_given():
     assert same == pytest.approx(scalar, rel=1e-9)
     assert np.all(np.abs(loose) < 0.01 * np.abs(scalar))
     assert mixed[:2] == pytest.approx(scalar[:2], rel=1e-6) and abs(mixed[2]) < 0.01 * abs(scalar[2])
+
+
+def _fresh_gnss_filter():
+    from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig
+    from navkit.io.imu import DEFAULT_NOISE
+
+    f = ErrorStateKalmanFilter(EskfConfig(imu_noise=DEFAULT_NOISE, gnss_position_sigma_m=1.0))
+    return f, f._initial_state()
+
+
+def test_a_very_small_per_fix_variance_leaves_the_covariance_symmetric_and_semidefinite():
+    """1e-12 m^2 is a near-exact fix. The update must stay finite and keep P a covariance."""
+    f, x = _fresh_gnss_filter()
+    ok, d2 = f._gnss_update(x, np.array([1.0, 1.0, 1.0]), 1.0, variance=np.full(3, 1.0e-12))
+    P = x["P"]
+    assert ok
+    assert np.isfinite(d2), "the innovation test divided by zero or overflowed"
+    assert np.all(np.isfinite(P))
+    assert np.allclose(P, P.T, atol=1e-12)
+    assert float(la.eigvalsh(0.5 * (P + P.T)).min()) > -1e-9
+    assert np.all(np.isfinite(x["p"]))
+
+
+def test_the_vertical_sigma_is_the_same_r_in_the_gate_and_in_the_update():
+    """The innovation covariance the gate sees must contain the R the update uses."""
+    sigma_v = 7.0
+    f, x = _fresh_gnss_filter()
+    P_before = x["P"].copy()
+    f._gnss_update(x, np.array([0.1, 0.1, 0.1]), 1.0, sigma_vertical=sigma_v)
+    _, _, S = f.gnss_innovations[-1]
+    assert S[2, 2] == pytest.approx(P_before[5, 5] + sigma_v**2, rel=1e-12)
+    assert S[0, 0] == pytest.approx(P_before[3, 3] + 1.0**2, rel=1e-12)
+    assert S[0, 1] == pytest.approx(0.0, abs=1e-15)
+
+
+def test_a_declared_vertical_sigma_decides_whether_a_height_jump_passes_the_gate():
+    """With the same 12 m height residual, the declared sigma alone moves the verdict."""
+    jump = np.array([0.0, 0.0, 12.0])
+    f, x = _fresh_gnss_filter()
+    tight_ok, _ = f._gnss_update(x, jump, 1.0)
+    f, x = _fresh_gnss_filter()
+    loose_ok, _ = f._gnss_update(x, jump, 1.0, sigma_vertical=20.0)
+    assert not tight_ok, "a 12 m height jump against a 1 m sigma should be gated"
+    assert loose_ok, "the gate did not use the declared vertical sigma"
