@@ -17,27 +17,30 @@ the filter on this data, from sources that do not depend on how the filter does:
   estimated from the quietest stretch of the first seconds.
 
 Not corrected: the antenna offset from the IMU (about 0.9 m, measured by hand to 0.1 m) and the 0.14 m offset between
-the IMU and the reference point. The clock offset is not applied, since it measured as zero.
+the IMU and the reference point. No clock offset is applied: the offset search found none within its step, which a
+1 Hz reference cannot resolve finely.
 """
 
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import math
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from . import urbannav_data as ud
+from .estimators.eskf import ErrorStateKalmanFilter, EskfConfig
 from .euroc_eval import RunOptions, run_sequence
 from .fdir.gating import chi2_threshold
 from .io.imu import DEFAULT_NOISE, ImuNoiseModel
 from .recorded import EurocSequence, SequenceError
-from .types import GRAVITY, GnssFix, Trajectory, rot_log_batch
+from .types import GRAVITY, GnssFix, Trajectory, interpolate_trajectory, rot_log_batch
 
 SEQUENCE = "tunnel1"
 DEG = math.pi / 180.0
@@ -76,8 +79,35 @@ DECLARED: dict[str, tuple[str, str]] = {
         "receiver sigma per fix",
         "added AFTER the first run, because one scalar over-weights the fixes at the tunnel mouth. Not blind",
     ),
+    "variant: oracle_tilt": (
+        "reference roll and pitch in the outage",
+        "ORACLE DIAGNOSTIC, not a filter: it uses the reference. Inside the outage the roll and pitch are set to the "
+        "reference's at every IMU step and the yaw is the filter's own. Otherwise the declared settings",
+    ),
+    "variant: oracle_yaw": (
+        "reference yaw in the outage",
+        "ORACLE DIAGNOSTIC, not a filter: it uses the reference. Inside the outage the yaw is set to the reference's "
+        "at every IMU step and the roll and pitch are the filter's own. Otherwise the declared settings",
+    ),
+    "variant: oracle_attitude": (
+        "reference attitude in the outage",
+        "ORACLE DIAGNOSTIC, not a filter: it uses the reference. Inside the outage the whole attitude is set to the "
+        "reference's at every IMU step. Otherwise the declared settings",
+    ),
 }
 VARIANTS = ("declared", "per_fix")
+#: Diagnostics that separate where the outage error comes from. They use the reference, so they are not filters.
+ORACLE_VARIANTS = ("oracle_tilt", "oracle_yaw", "oracle_attitude")
+ALL_VARIANTS = VARIANTS + ORACLE_VARIANTS
+ORACLE_LABELS = {
+    "declared": "declared filter",
+    "oracle_tilt": "ORACLE DIAGNOSTIC: reference roll and pitch in the outage",
+    "oracle_yaw": "ORACLE DIAGNOSTIC: reference yaw in the outage",
+    "oracle_attitude": "ORACLE DIAGNOSTIC: reference attitude in the outage",
+}
+#: The smallest per-fix sigma the filter believes (``EskfConfig.gnss_per_fix_min_sigma_m``); the run reports how many
+#: fixes are below it.
+FLOOR_SIGMA_M = EskfConfig(imu_noise=DEFAULT_NOISE).gnss_per_fix_min_sigma_m
 SEEDS = (0, 1, 2, 3, 4)
 GNSS_VERTICAL_SIGMA_M = 100.0
 #: Valid fixes whose horizontal difference from the reference exceeds this are 'wrong though marked valid'.
@@ -104,6 +134,66 @@ def receiver_sigma_m(root: str | Path, seq: str, fixes: ud.GgaFixes) -> float:
         raise SequenceError(f"{seq}: fewer than 10 valid fixes have a matching GST sentence")
     i = idx[ok]
     return float(np.sqrt(np.mean(0.5 * (gst.sigma_lat[i] ** 2 + gst.sigma_lon[i] ** 2))))
+
+
+def usable_variance_mask(cov: np.ndarray) -> np.ndarray:
+    """True for a fix whose three variances are finite and not negative: the filter raises on any other."""
+    c = np.asarray(cov, dtype=float)
+    return np.asarray(np.all(np.isfinite(c) & (c >= 0.0), axis=1))
+
+
+def variance_report(cov: np.ndarray, floor_sigma_m: float = FLOOR_SIGMA_M) -> dict[str, int]:
+    """Fixes the filter would refuse (``unusable``) and usable ones it would raise to the floor (``below_floor``)."""
+    c = np.asarray(cov, dtype=float)
+    ok = usable_variance_mask(c)
+    below = ok & np.any(c < floor_sigma_m**2, axis=1)
+    return {"unusable": int((~ok).sum()), "below_floor": int(below.sum())}
+
+
+def epochs_not_valid(fixes: ud.GgaFixes) -> int:
+    """GGA epochs the reader does not hand to the filter: quality 0 or no position."""
+    return int(np.sum((fixes.quality <= 0) | ~np.isfinite(fixes.lat_deg)))
+
+
+@contextlib.contextmanager
+def oracle_attitude(seq: EurocSequence, span: tuple[float, float], mode: str) -> Iterator[None]:
+    """ORACLE DIAGNOSTIC, not a filter: replace part of the attitude with the reference's inside one outage.
+
+    After every IMU step whose time lies in ``[span[0], span[1])`` the filter's attitude is rebuilt from roll, pitch
+    and heading (the dataset's convention): ``oracle_tilt`` takes the reference's roll and pitch and keeps the filter's
+    heading, ``oracle_yaw`` takes the reference's heading and keeps the filter's roll and pitch, ``oracle_attitude``
+    takes all three. The covariance is not touched. The filter's code is not changed: the method is wrapped for the
+    length of the ``with`` block and restored on exit, also on an error. The step times are the sum of the steps taken,
+    from the first IMU sample, which is how the run steps through the IMU, so the result is deterministic.
+    """
+    if mode not in ORACLE_VARIANTS:
+        raise ValueError(f"oracle mode must be one of {', '.join(ORACLE_VARIANTS)}, got {mode!r}")
+    t0 = float(seq.imu.t[0])
+    start, stop = span[0] - t0, span[1] - t0
+    timeline = seq.imu.t - t0
+    ref_roll, ref_pitch, ref_heading = ud.rotation_to_rpy(interpolate_trajectory(seq.truth, seq.imu.t).rotations)
+    original = ErrorStateKalmanFilter._propagate
+    clock = {"t": 0.0}
+
+    def wrapped(self: ErrorStateKalmanFilter, x: Any, accel: np.ndarray, gyro: np.ndarray, dt: float) -> None:
+        original(self, x, accel, gyro, dt)
+        clock["t"] += dt
+        t = clock["t"]
+        if not start <= t < stop:
+            return
+        k = min(int(np.searchsorted(timeline, t)), len(timeline) - 1)
+        roll, pitch, heading = (float(v) for v in ud.rotation_to_rpy(x["R"]))
+        if mode in ("oracle_tilt", "oracle_attitude"):
+            roll, pitch = float(ref_roll[k]), float(ref_pitch[k])
+        if mode in ("oracle_yaw", "oracle_attitude"):
+            heading = float(ref_heading[k])
+        x["R"] = ud.rpy_to_rotation(np.array([roll]), np.array([pitch]), np.array([heading]))[0]
+
+    ErrorStateKalmanFilter._propagate = wrapped  # type: ignore[method-assign]
+    try:
+        yield
+    finally:
+        ErrorStateKalmanFilter._propagate = original  # type: ignore[method-assign]
 
 
 def build(
@@ -146,12 +236,23 @@ def build(
     own[found, 1] = gst.sigma_lon[idx[found]] ** 2
     own[:, 2] = GNSS_VERTICAL_SIGMA_M**2
     own[~found, :2] = sigma_h**2  # a fix with no GST sentence takes the scalar
-    gnss = GnssFix(t=fixes.utc_s[valid] - base.epoch_unix_s, positions=enu, cov=own, name="f9p")
+    # The filter raises on a negative, NaN or infinite variance, so such a fix is dropped here and counted.
+    report = variance_report(own)
+    keep = usable_variance_mask(own)
+    enu, own = enu[keep], own[keep]
+    gnss = GnssFix(t=(fixes.utc_s[valid] - base.epoch_unix_s)[keep], positions=enu, cov=own, name="f9p")
     spans = [(a - base.epoch_unix_s, b - base.epoch_unix_s) for a, b in ud.outage_intervals(fixes)]
     horiz = np.linalg.norm(
         enu[:, :2] - np.column_stack([np.interp(gnss.t, base.truth_t, base.truth_enu[:, k]) for k in range(2)]), axis=1
     )
-    info = {"sigma_h": sigma_h, "fix_difference_m": horiz, "fix_t": gnss.t}
+    info = {
+        "sigma_h": sigma_h,
+        "fix_difference_m": horiz,
+        "fix_t": gnss.t,
+        "epochs_not_valid": epochs_not_valid(fixes),
+        "fixes_variance_unusable": report["unusable"],
+        "fixes_variance_below_floor": report["below_floor"],
+    }
     return seq, gnss, spans, info
 
 
@@ -207,7 +308,14 @@ def run_once(
     )
     inn: list[tuple[float, np.ndarray, np.ndarray]] = []
     detail: dict[str, Any] = {}
-    record = run_sequence(seq, opts, innovations_out=inn, gnss_override=gnss, detail_out=detail)
+    if variant in ORACLE_VARIANTS:
+        if not spans:
+            raise SequenceError("an oracle diagnostic needs an outage to act in")
+        guard: contextlib.AbstractContextManager[None] = oracle_attitude(seq, spans[0], variant)
+    else:
+        guard = contextlib.nullcontext()
+    with guard:
+        record = run_sequence(seq, opts, innovations_out=inn, gnss_override=gnss, detail_out=detail)
     t_i, nis = _nis(inn)
     level = chi2_threshold(3, GATE_ALPHA)
     wrong = np.interp(t_i, info["fix_t"], info["fix_difference_m"]) > WRONG_FIX_M
@@ -237,6 +345,9 @@ def run_once(
         "gnss_channel_faulted": int(record["stats"].get("fdir_gnss_faulted", 0)),
         "gnss_reaccepted": int(record["stats"].get("fdir_gnss_reaccepted", 0)),
         "start_bias_at_rest": int(bool(record["inputs"]["static_bias"]["quiet"])),
+        "epochs_not_valid": int(info["epochs_not_valid"]),
+        "fixes_variance_unusable": int(info["fixes_variance_unusable"]),
+        "fixes_variance_below_floor": int(info["fixes_variance_below_floor"]),
     }
     if spans:
         a, b = spans[0][0] - t0, spans[0][1] - t0
@@ -255,6 +366,19 @@ def run_once(
         out["att_err_at_start_deg"] = float(att[i_a])
         out["att_err_at_end_deg"] = float(att[i_b])
         out["accel_only_hor_err_at_end_m"] = accel_only_error_m(seq, spans[0])
+        e_roll, e_pitch, e_head = ud.rotation_to_rpy(est.rotations)
+        r_roll, r_pitch, r_head = ud.rotation_to_rpy(ref.rotations)
+        d_roll, d_pitch = e_roll - r_roll, e_pitch - r_pitch
+        d_yaw = (e_head - r_head + 180.0) % 360.0 - 180.0
+        for when, idx in (("start", i_a), ("end", i_b)):
+            out[f"att_roll_err_at_{when}_deg"] = float(d_roll[idx])
+            out[f"att_pitch_err_at_{when}_deg"] = float(d_pitch[idx])
+            out[f"att_yaw_err_at_{when}_deg"] = float(d_yaw[idx])
+        returned = (t_i - t0) >= b
+        out["fixes_after_outage"] = int(returned.sum())
+        out["fixes_after_outage_over_gate"] = int((nis[returned] > level).sum())
+        if returned.any():
+            out["nis_first_return"] = float(nis[returned][0])
         after = t >= b + 10.0
         if after.any():
             out["hor_err_median_after_m"] = float(np.median(eh[after]))
@@ -283,6 +407,18 @@ QUANTITIES = (
     ("ver_err_at_end_m", "Vertical error when the outage ends", "m"),
     ("hor_nees_outage", "Horizontal mean NEES inside the outage", ""),
     ("hor_err_median_after_m", "Horizontal error, median from 10 s after the outage", "m"),
+    ("att_roll_err_at_start_deg", "Roll error when the outage starts (estimate minus reference)", "deg"),
+    ("att_pitch_err_at_start_deg", "Pitch error when the outage starts (estimate minus reference)", "deg"),
+    ("att_yaw_err_at_start_deg", "Yaw error when the outage starts (estimate minus reference)", "deg"),
+    ("att_roll_err_at_end_deg", "Roll error when the outage ends (estimate minus reference)", "deg"),
+    ("att_pitch_err_at_end_deg", "Pitch error when the outage ends (estimate minus reference)", "deg"),
+    ("att_yaw_err_at_end_deg", "Yaw error when the outage ends (estimate minus reference)", "deg"),
+    ("nis_first_return", "NIS of the first fix after the outage (3 degrees of freedom)", ""),
+    ("fixes_after_outage", "Fixes offered after the outage", "count"),
+    ("fixes_after_outage_over_gate", "Of those, over the 0.1% chi-square level", "count"),
+    ("epochs_not_valid", "Receiver epochs the reader did not pass on (no fix or no position)", "count"),
+    ("fixes_variance_unusable", "Fixes dropped because a reported variance was negative, NaN or infinite", "count"),
+    ("fixes_variance_below_floor", "Fixes with a reported sigma below the filter's floor", "count"),
     ("start_bias_at_rest", "The start-bias stretch was judged at rest (1 yes, 0 no)", "flag"),
     ("fixes_total", "Valid fixes offered to the filter", "count"),
     ("gnss_updates_rejected", "Fixes the filter rejected", "count"),
@@ -342,10 +478,33 @@ def _block(variant: str) -> Callable[[list[dict[str, Any]]], str]:
     return render
 
 
+ORACLE_QUANTITIES = ("hor_err_at_end_m", "gnss_updates_rejected")
+
+
+def oracle_markdown(rows: list[dict[str, Any]]) -> str:
+    """The declared filter next to the oracle diagnostics, per seed. Every oracle row is labelled as one."""
+    seeds = sorted({int(r["seed"]) for r in rows})
+    by = {(r["variant"], int(r["seed"]), r["quantity"]): r["value"] for r in rows}
+    meta = {k: (label, unit) for k, label, unit in QUANTITIES}
+    head = "| Variant | Quantity | " + " | ".join(f"seed {s}" for s in seeds) + " | Unit |"
+    lines = [head, "|---|---|" + "---:|" * len(seeds) + "---|"]
+    for variant in ("declared", *ORACLE_VARIANTS):
+        for n, key in enumerate(ORACLE_QUANTITIES):
+            if not any((variant, s, key) in by for s in seeds):
+                continue
+            label, unit = meta[key]
+            cells = " | ".join(str(by.get((variant, s, key), "")) for s in seeds)
+            lines.append(f"| {ORACLE_LABELS[variant] if n == 0 else ''} | {label} | {cells} | {unit} |")
+    return "\n".join(lines)
+
+
 BLOCKS: dict[str, Callable[[list[dict[str, Any]]], str]] = {
     f"urbannav-run-{v.replace('_', '-')}": _block(v) for v in VARIANTS
 }
-CODE_BLOCKS: dict[str, Callable[[list[dict[str, Any]]], str]] = {"urbannav-declared": declared_markdown}
+CODE_BLOCKS: dict[str, Callable[[list[dict[str, Any]]], str]] = {
+    "urbannav-declared": declared_markdown,
+    "urbannav-run-oracle": oracle_markdown,
+}
 
 
 def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
@@ -391,11 +550,14 @@ def main(argv: list[str] | None = None) -> int:
         else:
             seq, gnss, spans, info = build(args.root, args.sequence)
             print(
-                f"{len(gnss)} valid fixes, {len(spans)} outage(s), declared horizontal sigma {info['sigma_h']:.3f} m",
+                f"{len(gnss)} fixes passed on, {info['epochs_not_valid']} epochs not passed on (no fix or no "
+                f"position), {info['fixes_variance_unusable']} dropped for an unusable variance, "
+                f"{info['fixes_variance_below_floor']} below the filter's floor, {len(spans)} outage(s), "
+                f"declared horizontal sigma {info['sigma_h']:.3f} m",
                 file=sys.stderr,
             )
             results = []
-            for variant in VARIANTS:
+            for variant in ALL_VARIANTS:
                 for seed in SEEDS:
                     results.append(run_once(seq, gnss, spans, info, seed, variant))
                     print(f"{variant} seed {seed} done", file=sys.stderr)
@@ -414,7 +576,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: {exc}", file=sys.stderr)
             return 1
     if not (args.csv or args.page):
-        print(declared_markdown() + "".join(f"\n\n{v}\n\n{run_markdown(rows, v)}" for v in VARIANTS))
+        print(
+            declared_markdown()
+            + "".join(f"\n\n{v}\n\n{run_markdown(rows, v)}" for v in VARIANTS)
+            + f"\n\n{oracle_markdown(rows)}"
+        )
     return 0
 
 

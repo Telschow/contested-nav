@@ -500,3 +500,16 @@ def rpy_to_rotation(roll_deg: np.ndarray, pitch_deg: np.ndarray, heading_deg: np
         1,
     )
     return rz @ rx @ ry  # type: ignore[no-any-return]
+
+
+def rotation_to_rpy(rotation: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Roll, pitch and heading in degrees from body-to-ENU matrices; the inverse of :func:`rpy_to_rotation`.
+
+    ``rotation`` is one matrix or a stack of them. Heading comes back in (-180, 180]. Pitch is taken in [-90, 90], so
+    the result is not defined at 90 degrees of pitch, which a road vehicle does not reach.
+    """
+    r = np.asarray(rotation, dtype=float)
+    pitch = np.arcsin(np.clip(r[..., 2, 1], -1.0, 1.0))
+    roll = np.arctan2(-r[..., 2, 0], r[..., 2, 2])
+    heading = np.arctan2(r[..., 0, 1], r[..., 1, 1])
+    return np.degrees(roll), np.degrees(pitch), np.degrees(heading)

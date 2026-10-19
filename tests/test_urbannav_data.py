@@ -498,3 +498,19 @@ def test_the_real_static_accelerometer_reading_rotated_with_this_convention_poin
     k = int(np.argmin(np.abs(real.truth_t - 1.5)))
     up = r[k] @ f
     assert up[2] > 9.3 and abs(up[0]) < 0.6 and abs(up[1]) < 0.6
+
+
+def test_rotation_to_rpy_inverts_rpy_to_rotation():
+    rng = np.random.default_rng(3)
+    roll, pitch, heading = rng.uniform(-60, 60, 200), rng.uniform(-80, 80, 200), rng.uniform(-180, 180, 200)
+    r, p, h = ud.rotation_to_rpy(ud.rpy_to_rotation(roll, pitch, heading))
+    assert r == pytest.approx(roll, abs=1e-9)
+    assert p == pytest.approx(pitch, abs=1e-9)
+    assert (h - heading + 180.0) % 360.0 - 180.0 == pytest.approx(0.0, abs=1e-9)
+
+
+def test_rotation_to_rpy_gives_the_same_angles_for_a_single_matrix_and_for_a_stack():
+    r = ud.rpy_to_rotation(np.array([10.0]), np.array([-5.0]), np.array([200.0]))
+    single = ud.rotation_to_rpy(r[0])
+    stack = ud.rotation_to_rpy(r)
+    assert single[0] == pytest.approx(stack[0][0]) and single[2] == pytest.approx(stack[2][0])
