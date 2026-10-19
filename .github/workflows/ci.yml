@@ -39,12 +39,12 @@ jobs:
             files=$(git diff --name-only "$BASE" HEAD)
             echo "$files"
             # Docs-only means every changed path is a Markdown page or a figure under docs/, or a Markdown
-            # file at the root. The three pages that carry generated benchmark tables are checked against a
+            # file at the root. The four pages that carry generated benchmark tables are checked against a
             # fresh benchmark by the benchmark job, so a change to them counts as code. An empty diff counts
             # as code too, so a mistake here runs more jobs, never fewer.
             if [ -n "$files" ] \
                && ! echo "$files" | grep -Evq '^(docs/.*\.md|docs/figures/.*|[^/]+\.md)$' \
-               && ! echo "$files" | grep -Eq '^(README\.md|docs/index\.md|docs/results\.md)$'; then
+               && ! echo "$files" | grep -Eq '^(README\.md|docs/index\.md|docs/results\.md|docs/getting-started\.md)$'; then
               code=false
             fi
           fi
@@ -189,6 +189,7 @@ jobs:
           tests/test_mismatch_sweep.py tests/test_multipath.py tests/test_rice.py tests/test_separability_page.py
           tests/test_slow_ramp_page.py tests/test_timing_page.py tests/test_tumvi_page.py
           tests/test_urbannav_check.py tests/test_vision_ramp_page.py tests/test_vo_page.py
+          tests/test_quoted_numbers.py
 
   build:
     name: build
