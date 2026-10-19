@@ -89,6 +89,9 @@ The filter is the repository's own, with no change to its gating. The settings, 
 | seeds | 0 1 2 3 4 | perturb the start state only; the data is one recording |
 | variant: declared | scalar sigma | the settings above, fixed before the first run |
 | variant: per_fix | receiver sigma per fix | added AFTER the first run, because one scalar over-weights the fixes at the tunnel mouth. Not blind |
+| variant: oracle_tilt | reference roll and pitch in the outage | ORACLE DIAGNOSTIC, not a filter: it uses the reference. Inside the outage the roll and pitch are set to the reference's at every IMU step and the yaw is the filter's own. Otherwise the declared settings |
+| variant: oracle_yaw | reference yaw in the outage | ORACLE DIAGNOSTIC, not a filter: it uses the reference. Inside the outage the yaw is set to the reference's at every IMU step and the roll and pitch are the filter's own. Otherwise the declared settings |
+| variant: oracle_attitude | reference attitude in the outage | ORACLE DIAGNOSTIC, not a filter: it uses the reference. Inside the outage the whole attitude is set to the reference's at every IMU step. Otherwise the declared settings |
 
 <!-- urbannav-declared:end -->
 
@@ -115,6 +118,18 @@ The filter is the repository's own, with no change to its gating. The settings, 
 | Vertical error when the outage ends | 18.09 | 10.4 | 14.81 | 11.44 | 11.81 | m |
 | Horizontal mean NEES inside the outage | 19.47 | 18.22 | 18.05 | 18.45 | 18.59 |  |
 | Horizontal error, median from 10 s after the outage | 8864 | 8600 | 8559 | 8651 | 8683 | m |
+| Roll error when the outage starts (estimate minus reference) | -0.1578 | -0.06654 | -0.05381 | -0.08395 | -0.09397 | deg |
+| Pitch error when the outage starts (estimate minus reference) | -0.1452 | -0.1377 | -0.1348 | -0.1396 | -0.1407 | deg |
+| Yaw error when the outage starts (estimate minus reference) | 6.369 | 0.2332 | -0.6937 | 1.391 | 2.036 | deg |
+| Roll error when the outage ends (estimate minus reference) | -3.789 | -3.697 | -3.682 | -3.715 | -3.726 | deg |
+| Pitch error when the outage ends (estimate minus reference) | 0.217 | 0.1596 | 0.1568 | 0.172 | 0.1774 | deg |
+| Yaw error when the outage ends (estimate minus reference) | 3.607 | -2.518 | -3.444 | -1.362 | -0.7188 | deg |
+| NIS of the first fix after the outage (3 degrees of freedom) | 51 | 47.37 | 46.95 | 48.06 | 48.46 |  |
+| Fixes offered after the outage | 111 | 111 | 111 | 111 | 111 | count |
+| Of those, over the 0.1% chi-square level | 111 | 111 | 111 | 111 | 111 | count |
+| Receiver epochs the reader did not pass on (no fix or no position) | 151 | 151 | 151 | 151 | 151 | count |
+| Fixes dropped because a reported variance was negative, NaN or infinite | 0 | 0 | 0 | 0 | 0 | count |
+| Fixes with a reported sigma below the filter's floor | 0 | 0 | 0 | 0 | 0 | count |
 | The start-bias stretch was judged at rest (1 yes, 0 no) | 0 | 0 | 0 | 0 | 0 | flag |
 | Valid fixes offered to the filter | 248 | 248 | 248 | 248 | 248 | count |
 | Fixes the filter rejected | 118 | 118 | 118 | 118 | 118 | count |
@@ -150,6 +165,18 @@ for it:
 | Vertical error when the outage ends | 6.03 | 2.527 | 0.6393 | 1.26 | 0.6926 | m |
 | Horizontal mean NEES inside the outage | 19.04 | 18.22 | 18.08 | 18.41 | 18.5 |  |
 | Horizontal error, median from 10 s after the outage | 8536 | 8378 | 8352 | 8417 | 8435 | m |
+| Roll error when the outage starts (estimate minus reference) | -0.06422 | -0.008905 | -0.0008733 | -0.02251 | -0.02826 | deg |
+| Pitch error when the outage starts (estimate minus reference) | -0.1307 | -0.1243 | -0.1226 | -0.126 | -0.1269 | deg |
+| Yaw error when the outage starts (estimate minus reference) | 4.488 | 0.4078 | -0.2024 | 1.403 | 1.823 | deg |
+| Roll error when the outage ends (estimate minus reference) | -3.682 | -3.625 | -3.616 | -3.639 | -3.646 | deg |
+| Pitch error when the outage ends (estimate minus reference) | 0.1661 | 0.1342 | 0.1328 | 0.1432 | 0.1459 | deg |
+| Yaw error when the outage ends (estimate minus reference) | 1.736 | -2.337 | -2.946 | -1.343 | -0.9246 | deg |
+| NIS of the first fix after the outage (3 degrees of freedom) | 49.74 | 47.52 | 47.25 | 48.04 | 48.28 |  |
+| Fixes offered after the outage | 111 | 111 | 111 | 111 | 111 | count |
+| Of those, over the 0.1% chi-square level | 111 | 111 | 111 | 111 | 111 | count |
+| Receiver epochs the reader did not pass on (no fix or no position) | 151 | 151 | 151 | 151 | 151 | count |
+| Fixes dropped because a reported variance was negative, NaN or infinite | 0 | 0 | 0 | 0 | 0 | count |
+| Fixes with a reported sigma below the filter's floor | 0 | 0 | 0 | 0 | 0 | count |
 | The start-bias stretch was judged at rest (1 yes, 0 no) | 0 | 0 | 0 | 0 | 0 | flag |
 | Valid fixes offered to the filter | 248 | 248 | 248 | 248 | 248 | count |
 | Fixes the filter rejected | 111 | 111 | 111 | 111 | 111 | count |
@@ -161,28 +188,65 @@ for it:
 
 <!-- urbannav-run-per-fix:end -->
 
+**Oracle diagnostics.** These are not filters. They use the reference, to find out where the outage error comes
+from. Inside the outage, at every IMU step, part of the filter's attitude is replaced by the reference's, and
+everything else is the declared filter. Outside the outage they are the declared filter, so they start from the same
+place. One sequence, one receiver; the seeds perturb only the start state.
+
+<!-- urbannav-run-oracle:start -->
+
+| Variant | Quantity | seed 0 | seed 1 | seed 2 | seed 3 | seed 4 | Unit |
+|---|---|---:|---:|---:|---:|---:|---|
+| declared filter | Horizontal error when the outage ends | 3726 | 3607 | 3589 | 3630 | 3644 | m |
+|  | Fixes the filter rejected | 118 | 118 | 118 | 118 | 118 | count |
+| ORACLE DIAGNOSTIC: reference roll and pitch in the outage | Horizontal error when the outage ends | 159.8 | 115 | 108.7 | 122.9 | 127.3 | m |
+|  | Fixes the filter rejected | 16 | 16 | 16 | 16 | 16 | count |
+| ORACLE DIAGNOSTIC: reference yaw in the outage | Horizontal error when the outage ends | 3738 | 3607 | 3586 | 3632 | 3648 | m |
+|  | Fixes the filter rejected | 118 | 118 | 118 | 118 | 118 | count |
+| ORACLE DIAGNOSTIC: reference attitude in the outage | Horizontal error when the outage ends | 148.9 | 117.6 | 113.7 | 122.6 | 125.5 | m |
+|  | Fixes the filter rejected | 16 | 16 | 16 | 16 | 16 | count |
+
+<!-- urbannav-run-oracle:end -->
+
+The last rows of the two run tables above are counts from the data: the receiver epochs the reader did not pass on
+(no fix or no position), the fixes dropped for a negative, NaN or infinite reported variance, and the fixes whose
+reported sigma is below the filter's floor, which the filter raises to the floor. The filter raises an error on an
+unusable variance, so the run drops such a fix before the filter sees it and reports how many.
+
 ### What the run shows
 
-1. **Through the real outage the filter is wrong and far more confident than it should be.** The horizontal error at
-   the end of the outage is several times the sigma the filter claims, in both variants and every seed.
-2. **The drift is much more than the accelerometer alone would give.** Integrating the accelerometer with the reference
-   attitude and no gyroscope gives an error that is a small fraction of the filter's. The filter's attitude error
-   grows to several degrees across the outage. That fits the attitude as the driver. No run here removes the attitude
-   error, so it is not shown to be the cause.
-3. **The GNSS channel is lost for good.** After the outage the gate rejects every fix, the channel is declared faulty
-   and it is never taken back, so the error keeps growing to the end of the recording. This is the lockout behaviour of
-   the existing gate, reached here on real data. The filter has no way to recover from an error this large.
-4. **Before the tunnel, weighting each fix by the receiver's own sigma follows the fixes more closely**, and the
-   filter is still not calibrated: the normalised error is above its expected value in both variants. The receiver's own
-   sigma is optimistic against the reference.
-5. **The receiver's sigma already marks the worst fixes.** The fixes just before the receiver gives up are far from the
+Every statement is about one sequence and one receiver, and points at rows of the generated tables above.
+
+1. **With GNSS available the filter is already inconsistent on this sequence.** The horizontal mean NEES before the
+   outage is above its expected value in both variants and every seed. The yaw error when the outage starts reaches
+   several degrees on one of the five seeds. Neither is caused by the outage. This does not say how much comes from the start attitude
+   and how much from the IMU model.
+2. **The outage error is driven by tilt error (roll and pitch) inside the outage.** The roll error when the outage
+   ends is far larger than when it starts. The pitch error is small at both moments, so the rows do not show pitch
+   growing, and the oracle row for roll and pitch together does not separate the two. The horizontal error at the
+   end is several times the sigma the filter claims. Integrating the accelerometer with the reference attitude and no gyroscope gives an error that is a
+   small fraction of the filter's. The oracle rows separate the cause: with the reference roll and pitch inside the
+   outage the end error falls by an order of magnitude, and with the reference yaw alone it does not change. A tilt
+   error leaks gravity into horizontal acceleration, so the position error grows with the square of time. The oracle
+   rows say where the error comes from. They are not a better filter.
+3. **A link between statement 1, the inconsistency before the outage, and statement 2, the tilt growth in the
+   outage, is not shown.** At the start of the outage the tilt error is small and the yaw error does not drive the outage error.
+4. **The lost channel is a consequence of the position error, not a separate finding.** The gate rejects every fix after
+   the outage, including the first, whose NIS is several times the 0.1% chi-square level, and the channel is declared
+   faulty and never taken back (rows "NIS of the first fix after the outage" and "Fixes offered after the outage").
+   That follows from an error many times the claimed sigma. With the reference roll and pitch inside the outage,
+   far fewer fixes are rejected. This is the lockout behaviour of the existing gate, reached on real data.
+5. **Before the tunnel, weighting each fix by the receiver's own sigma follows the fixes more closely**, and the filter
+   is still not calibrated: the normalised error is above its expected value in both variants. The receiver's own sigma
+   is optimistic against the reference.
+6. **The receiver's sigma already marks the worst fixes.** The fixes just before the receiver gives up are far from the
    reference and carry a large reported sigma. The scalar variant rejects most of the wrong ones. The per-fix variant
    accepts most of them, because it believes the sigma that came with them.
-6. **The start biases were a guess.** The stretch used to estimate them is judged not at rest, because the vehicle moves
+7. **The start biases were a guess.** The stretch used to estimate them is judged not at rest, because the vehicle moves
    off within seconds of the start. The accelerometer-only comparison does not depend on it.
-7. **The seeds agree**, because the start perturbation is small against the effect.
+8. **The seeds agree**, because the start perturbation is small against the effect.
 
-### What this does not show
+### What the run does not show
 
 - It does not say how another IMU, another tunnel or a better start alignment would do. The Xsens MTi-10 is an
   industrial MEMS unit, and its noise figures were declared from two datasheets that disagree.
@@ -190,14 +254,19 @@ for it:
   estimate. Its error there is unknown. The gap between it and the filter is far larger than the accelerometer-only
   drift, so it is not plausibly all reference error.
 - The antenna offset from the IMU is not corrected, and the height is almost unused by design.
+- **The cause of the tilt growth is not shown.** HYPOTHESIS, not tested here: the gyroscope bias, and so the tilt, is
+  weakly observable during driving at roughly constant velocity. The tilt growth is of the same size as a gyroscope
+  bias inferred from the data over the stretch before the outage, but starting the filter from the inferred biases in
+  a scratch run (no code in the repository reproduces it) still ended with a kilometre-scale error, so the growth is
+  not explained.
 - Deep-Urban-1, the planned unseen check, has not been fetched or run.
 
 ## What it shows about the data
 
 1. **One real outage.** The F9P reports no fix for one continuous stretch, and the rule finds a single outage there.
-2. **The two clocks agree.** The offset between the reference and the IMU is within one search step of zero. The
-   method was checked by shifting a synthetic reference by known amounts, and it recovered each. The 1 Hz reference
-   limits how sharply it can say so, and the estimate uses only the yaw axis.
+2. **No clock offset was applied.** The offset search above returned zero within its step. The reference is 1 Hz and
+   the search uses only the yaw axis, so it cannot rule out a shift of a fraction of a second. The method was checked
+   by shifting a synthetic reference by known amounts, and it recovered each.
 3. **The edges of the outage are the hard part.** The fixes just before the receiver gives up are the worst of the
    valid ones, and the first fixes after it recovers are wrong too.
 
