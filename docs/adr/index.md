@@ -31,3 +31,4 @@ what it cost, and what was rejected.
 | [ADR-0024](0024-assumed-noise-for-the-opt-in-clone.md) | The assumed visual noise of the opt-in clone | accepted |
 | [ADR-0025](0025-calibrated-stage-one-for-fault-detection.md) | A calibrated stage 1 for fault detection | proposed |
 | [ADR-0026](0026-urbannav-as-a-real-gnss-dataset.md) | UrbanNav as a dataset with real GNSS outages | proposed |
+| [ADR-0027](0027-how-the-synthetic-runs-are-initialised.md) | How the synthetic runs are initialised | accepted |
