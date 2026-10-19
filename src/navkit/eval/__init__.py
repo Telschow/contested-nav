@@ -30,7 +30,16 @@ from .metrics import (
     relative_pose_error,
     time_to_recovery,
 )
-from .statistics import chi2_cdf, chi2_ppf, ellipsoid_coverage, ellipsoid_sigma
+from .statistics import (
+    AutocorrelationEstimate,
+    autocorrelation_estimate,
+    chi2_cdf,
+    chi2_ppf,
+    effective_sample_size,
+    ellipsoid_coverage,
+    ellipsoid_sigma,
+    integrated_autocorrelation_time,
+)
 from .thresholds import FailureEvent, FailureReport, ThresholdSet, detect_failures
 
 __all__ = [
@@ -60,10 +69,14 @@ __all__ = [
     "pose_errors_with_alignment",
     "relative_pose_error",
     "time_to_recovery",
+    "AutocorrelationEstimate",
+    "autocorrelation_estimate",
     "chi2_cdf",
     "chi2_ppf",
+    "effective_sample_size",
     "ellipsoid_coverage",
     "ellipsoid_sigma",
+    "integrated_autocorrelation_time",
     "FailureEvent",
     "FailureReport",
     "ThresholdSet",
