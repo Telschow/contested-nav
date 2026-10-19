@@ -150,6 +150,7 @@ nav:
       - "0024 Assumed noise of the opt-in clone": adr/0024-assumed-noise-for-the-opt-in-clone.md
       - "0025 Calibrated stage 1 for fault detection": adr/0025-calibrated-stage-one-for-fault-detection.md
       - "0026 UrbanNav as a real GNSS dataset": adr/0026-urbannav-as-a-real-gnss-dataset.md
+      - "0027 How the synthetic runs are initialised": adr/0027-how-the-synthetic-runs-are-initialised.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md
