@@ -61,7 +61,7 @@ cross-check never runs. Measured across a truthful return and 5 m, 12 m, 20 m,
 On the 22 m case that motivated ADR-0007 the branch is entered once, with
 `d2 = 217.3`, under the 225 threshold, and the grant is applied.
 
-This is the same root cause the ADR-0007 xfails describe from the other side.
+This is the same root cause the ADR-0007 xfail describes from the other side.
 One grant, then permanent adoption, means there is no second grant to count. The
 escalation trigger and the cross-check guard are both waiting for a second grant
 that the NIS monitor's one-grant-per-episode policy never produces.
@@ -79,7 +79,7 @@ that the NIS monitor's one-grant-per-episode policy never produces.
   `docs/status.md`, and the choice is left to the maintainer: it must not be made as a drive-by.
 - **`test_the_guard_is_never_satisfied_during_a_sustained_offset_spoof` is
   `strict=True` on purpose.** It asserts the gap is still open, so the day the
-  guard is fixed the suite fails loudly and forces the ADR-0007 xfails, the
+  guard is fixed the suite fails loudly and forces the ADR-0007 xfail, the
   audit's security table, and the B1 discussion to be revisited deliberately.
   A test that quietly kept passing after the gap closed would be the failure
   mode this project is built to avoid.

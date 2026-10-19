@@ -873,54 +873,70 @@ class TestPermanenceIsStillUndetected:
     small relative to that corrupted mean. Nothing is ever rejected a second
     time, so the second-grant trigger has nothing to fire on.
 
-    `xfail(strict=False)` is deliberate. Turning these green requires a second
-    modality to cross-check GNSS against, not more hysteresis on one channel --
-    see the open question in ADR-0007.
+    `xfail(strict=True)` is deliberate on the open gap. Turning it green
+    requires a second modality to cross-check GNSS against, not more hysteresis
+    on one channel -- see the open question in ADR-0007. When that gap closes,
+    the test XPASSes, strict mode turns the run red, and the marker has to be
+    removed in the same change.
+
+    The second test is not a gap. It pins what the data shows about the one
+    discriminator that exists, so a change to the grant arithmetic is seen.
     """
 
-    @pytest.mark.xfail(strict=False, reason="one grant, then permanent adoption; no second grant to count")
+    @pytest.mark.xfail(strict=True, reason="one grant, then permanent adoption; no second grant to count")
     def test_a_permanently_adopted_offset_is_locked_out(self):
         _, result = _denial_then_spoof(22.0)
         lockouts = [e for e in result.trajectory.metadata["fdir_events"] if e["status"] == STATUS_REJECTED_SPOOF]
         assert lockouts, "audit finding H5: 22 m admitted with no escalation"
 
-    @pytest.mark.xfail(strict=False, reason="same cause as the lockout test above")
-    def test_the_admitted_offset_exceeds_what_the_drift_budget_can_explain(self):
-        """The measurable form of the gap.
+    def test_honest_return_and_large_spoof_ratios_stay_in_their_measured_bands(self):
+        """Pin the drift-budget ratio of the grant for three post-outage offsets.
 
-        A truthful return consumes about 1.1 drift-sigma of the grant; a spoof
-        consumes 1.4 to 2.0. The bands overlap below ~1.4, so a threshold on
-        this ratio cannot separate an honest re-acquisition from a modest spoof
-        -- it only separates large offsets from small ones.
+        The ratio is the innovation norm over the square root of the inflation
+        variance, taken on the grant. Measured on this scenario, an honest
+        return and a 10 m offset both land near one drift-sigma, and a 22 m
+        offset lands near two. The honest and the modest-spoof values coincide,
+        so a threshold on this ratio cannot separate an honest re-acquisition
+        from a modest spoof. It only separates large offsets from small ones.
+
+        The scenario has fixed seeds and no randomness at run time, so the
+        measured values repeat to full precision. The margin is therefore not
+        for noise. It is for floating-point differences between platforms and
+        library versions, and it is kept tight so that a real change to the
+        inflation arithmetic (for example a factor of two in the variance,
+        which moves a ratio by about 40%) fails the test.
         """
         from navkit.fdir import FdirManager
+
+        honest_measured = 1.0942792661487726
+        modest_spoof_measured = 1.094659199498256
+        large_spoof_measured = 1.9893961981661243
+        margin = 0.05  # relative, about 5%: platform float drift, far below a 2x variance change
 
         orig = FdirManager._reaccept_with_inflation
 
         def spy(self, sensor, innovation, S, P, H, block, decision, t_s):
             d = orig(self, sensor, innovation, S, P, H, block, decision, t_s)
-            spy.ratio = (
-                float(np.linalg.norm(innovation)) / np.sqrt(d.inflation_variance)
-                if d.accepted and d.inflated and d.inflation_variance > 0
-                else None
-            )
+            if d.accepted and d.inflated and d.inflation_variance > 0:
+                grants.append(float(np.linalg.norm(innovation)) / np.sqrt(d.inflation_variance))
             return d
 
+        ratios: dict[float, float] = {}
         FdirManager._reaccept_with_inflation = spy
         try:
-            for offset in (0.0, 22.0):
-                spy.ratio = None
+            for offset in (0.0, 10.0, 22.0):
+                grants: list[float] = []
                 _denial_then_spoof(offset)
-                assert spy.ratio is not None
-                if offset == 22.0:
-                    spoofed_ratio = spy.ratio
+                assert len(grants) == 1, f"offset {offset} m: expected exactly one grant, saw {len(grants)}"
+                ratios[offset] = grants[0]
         finally:
             FdirManager._reaccept_with_inflation = orig
-        assert spy.ratio is not None
-        assert spoofed_ratio < 2.2, (
-            "ratio fell under the honest-recovery band; the discriminator may "
-            "now be separable and the ADR's open question can be answered"
-        )
+
+        assert ratios[0.0] == pytest.approx(honest_measured, rel=margin)
+        assert ratios[10.0] == pytest.approx(modest_spoof_measured, rel=margin)
+        assert ratios[22.0] == pytest.approx(large_spoof_measured, rel=margin)
+        # The overlap the docstring describes: the modest spoof sits in the honest band.
+        assert ratios[10.0] == pytest.approx(ratios[0.0], rel=margin)
 
 
 class TestFrozenAnchorCrossCheck:
@@ -1125,7 +1141,7 @@ class TestFrozenAnchorCrossCheck:
         assert observed, "no inflation grant observed; the probe is not measuring"
         assert reachable == [], (
             f"the frozen-anchor cross-check is now reachable at {reachable}; the "
-            "gap it was written for may be closed -- revisit the ADR-0007 xfails, "
+            "gap it was written for may be closed -- revisit the ADR-0007 xfail, "
             "audit doc 06 item N1, and whether B1 is still open"
         )
         assert all(grants == 0 for grants, _, _ in observed), (
