@@ -231,7 +231,7 @@ def test_the_scanner_ignores_parameters_thresholds_versions_and_counts(text: str
 def test_the_scanner_accepts_the_label_and_a_pinned_measurement() -> None:
     assert measured_numbers(f"It took 18.7 s ({LABEL}).\n") == []
     assert measured_numbers("The error was 2.5 m, measured at 2026-10-18.\n") == []
-    assert measured_numbers("The error was 2.5 m, measured at d20c757.\n") == []
+    assert measured_numbers("The error was 2.5 m, measured at 4038fef.\n") == []
 
 
 def test_the_scanner_skips_code_fences_and_the_verified_tables() -> None:

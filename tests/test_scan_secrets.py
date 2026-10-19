@@ -94,8 +94,8 @@ def test_history_scan_finds_a_secret_that_was_later_removed(repo: Path) -> None:
 
 
 def test_known_history_is_accepted_only_for_its_commit_and_rule() -> None:
-    assert scan.is_known("commit fbeb4290d0bf", "provider-key")
-    assert not scan.is_known("commit fbeb4290d0bf", "github-token")
+    assert scan.is_known("commit b80db1ad0636", "provider-key")
+    assert not scan.is_known("commit b80db1ad0636", "github-token")
     assert not scan.is_known("commit 0123456789ab", "provider-key")
 
 

@@ -437,7 +437,7 @@ Earlier entries, from the 2026-09-29 audit:
 
 ## [0.1.0] and earlier
 
-Commits `abb62bb`, `cc998d1`, `c571e91`, `8f6fcd7` and their ancestors. (These
+Commits `2f1a22f`, `cc998d1`, `c571e91`, `8f6fcd7` and their ancestors. (These
 were `c81c6f9`, `5d83216`, `4fa780b` and `466ab48` until the history rewrite
 described in `docs/PROJECT_STATE.md` §5 replaced the author identity.) No
 changelog was kept; see `git log` and `docs/audit/`.
