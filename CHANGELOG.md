@@ -221,6 +221,13 @@ this project uses [semantic versioning](https://semver.org/).
   slope 2 gave 4). Interior points now use the central difference over their two neighbours, exact for a line on
   a non-uniform grid. `Trajectory.velocities()` inherited the defect; nothing in the benchmark called it.
 
+### Security
+
+- 2026-10-19: the history was rewritten, which removed a rotated provider key from the branches of this
+  repository. Commit ids in the pages changed with it. The secret scan's accepted-findings list
+  (`KNOWN_HISTORY`) is now empty and a test pins that, and `SECURITY.md` and `RISKS.md` (R4) describe what the
+  rewrite cannot reach: GitHub's hidden pull-request refs and cached views of old commits.
+
 ## [0.2.0] - 2026-10-08
 
 ### Added

@@ -93,10 +93,31 @@ def test_history_scan_finds_a_secret_that_was_later_removed(repo: Path) -> None:
     assert [r for _, _, r, _ in found] == ["provider-key"]
 
 
-def test_known_history_is_accepted_only_for_its_commit_and_rule() -> None:
-    assert scan.is_known("commit b80db1ad0636", "provider-key")
-    assert not scan.is_known("commit b80db1ad0636", "github-token")
-    assert not scan.is_known("commit 0123456789ab", "provider-key")
+def test_known_history_is_accepted_only_for_its_commit_and_rule(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The mechanism is tested with a made-up entry, not with a real incident."""
+    monkeypatch.setattr(scan, "KNOWN_HISTORY", {("abc1234", "github-token"): "a made-up accepted finding"})
+    assert scan.is_known("commit abc1234def5678", "github-token")
+    assert not scan.is_known("commit abc1234def5678", "provider-key")
+    assert not scan.is_known("commit 0123456789ab", "github-token")
+
+
+def test_the_shipped_known_history_is_empty() -> None:
+    """Adding an accepted finding must be a visible change that a reviewer reads."""
+    assert scan.KNOWN_HISTORY == {}
+
+
+def test_history_scan_command_exits_nonzero_on_a_key_shaped_line(repo: Path) -> None:
+    (repo / "doc.md").write_text(f"apiKey: {_samples()['provider-key']}\n")
+    _git(repo, "add", "doc.md")
+    _git(repo, "commit", "-q", "-m", "add")
+    run = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "scan_secrets.py"), "--history", "--root", str(repo)],
+        capture_output=True,
+        text=True,
+    )
+    assert run.returncode != 0
+    assert "provider-key" in run.stderr
+    assert "k" * 8 not in run.stderr
 
 
 def test_main_exits_nonzero_on_a_new_finding_and_zero_when_clean(

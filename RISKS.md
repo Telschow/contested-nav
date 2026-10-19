@@ -64,12 +64,14 @@ deliberate decision to live with it). A risk's status changes only with evidence
   settle it.
 
 ### R4. A secret reaches the repository history
-- **What happened.** A provider API key was committed in an early commit. It was rotated by
-  the maintainer; the value is still readable in history (`SECURITY.md`, section "Known incident").
-- **In place.** `scripts/scan_secrets.py` runs in CI including history; the one known value is
-  listed as accepted by commit and rule name, never printed.
-- **Residual.** History was not rewritten. The key is rotated, so the exposure is closed, but
-  the string remains visible.
+- **What happened.** A provider API key was committed in an early commit. The maintainer
+  rotated it, then rewrote the history on 2026-10-19, which removed the value from the
+  branches (`SECURITY.md`, section "Known incident").
+- **In place.** `scripts/scan_secrets.py` runs in CI including history. Its list of accepted
+  findings is empty, and a test pins that, so an accepted finding would be a reviewed change.
+- **Residual.** GitHub keeps hidden pull-request refs and cached views of old commits until
+  its Support removes them, so the old value may still be readable there. The key is rotated,
+  so the exposure is closed.
 
 ### R5. Numbers differ across platforms and break CI
 - **What happened.** The claimed-sigma series differed by 1.1e-8 between runners and turned
