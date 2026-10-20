@@ -524,7 +524,7 @@ def rate_tables(rows: list[dict[str, Any]]) -> str:
     pooled = _pooled(rows)
     t1 = [
         "| Case | Updates counted | Updates | Rejections | Observed rate | 95% Wilson interval, raw count "
-        "| Summed effective updates | Effective rejections | 95% Wilson interval, effective count | Stated α |",
+        + "| Summed effective updates | Effective rejections | 95% Wilson interval, effective count | Stated α |",
         "|---|---|---:|---:|---:|---|---:|---:|---|---:|",
     ]
     for r in pooled:
@@ -535,7 +535,7 @@ def rate_tables(rows: list[dict[str, Any]]) -> str:
         )
     t2 = [
         f"| Case | Updates counted | Mean NIS (expected {DOF}) | c = mean NIS / {DOF} | Threshold "
-        "| Predicted rate P(χ²₃ > threshold / c) | Observed rate | Stated α |",
+        + "| Predicted rate P(χ²₃ > threshold / c) | Observed rate | Stated α |",
         "|---|---|---:|---:|---:|---:|---:|---:|",
     ]
     for r in pooled:
@@ -545,9 +545,9 @@ def rate_tables(rows: list[dict[str, Any]]) -> str:
         )
     t3 = [
         "| Case | Updates counted | Runs | Runs where the estimator returned a value for the indicator "
-        "| Indicator, per-run effective size, min / median / max "
-        "| NIS series, per-run effective size, min / median / max (diagnostic, in neither interval) "
-        "| Per-run updates, median |",
+        + "| Indicator, per-run effective size, min / median / max "
+        + "| NIS series, per-run effective size, min / median / max (diagnostic, in neither interval) "
+        + "| Per-run updates, median |",
         "|---|---|---:|---:|---|---|---:|",
     ]
     for r in pooled:
@@ -639,7 +639,7 @@ def sensitivity_tables(rows: list[dict[str, Any]]) -> str:
         "| Setting | "
         + " | ".join(f"{b} control declared" for b in bases)
         + " | Cells whose detected count differs from the defaults"
-        " | Cells whose declared count differs from the defaults |",
+        + " | Cells whose declared count differs from the defaults |",
         "|---|" + "---:|" * len(bases) + "---:|---:|",
     ]
     for constant, setting, value in settings:

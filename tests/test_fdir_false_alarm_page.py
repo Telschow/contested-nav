@@ -280,9 +280,8 @@ def test_the_control_sentences_follow_the_control_rows(sens_rows, section):
     for base in fault_matrix.BASES:
         counts = {r["declared_n"] for r in sens_rows if r["fault"] == "control" and r["base"] == base}
         if len(counts) == 1:
-            assert (
-                f"The `{base}` control declared a channel faulty in {counts.pop()} of 5 seeds at every setting." in text
-            )
+            (only,) = counts
+            assert f"The `{base}` control declared a channel faulty in {only} of 5 seeds at every setting." in text
         else:
             assert f"The `{base}` control declared a channel faulty in between" in text
 
