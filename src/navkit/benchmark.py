@@ -285,8 +285,9 @@ def run_case(
     bias that appears part-way through. Like ``gnss_hook`` it is not in ``config_hash``.
 
     ``nees_out``, when given, receives ``squared`` (the per-epoch NEES the calibration report scores), ``dof``,
-    ``t`` (the epoch times) and ``windows`` (the half-open GNSS-outage windows, or ``None``), for the ensemble over
-    seeds. It is left empty for an estimator with no covariance, and it changes nothing in the record.
+    ``t`` (the epoch times), ``windows`` (the half-open GNSS-outage windows, or ``None``), ``error`` (estimate minus
+    reference, ``(K, 3)``) and ``sigma`` (the claimed per-axis standard deviation, ``(K, 3)``), for the ensemble over
+    seeds and the B1 gate. It is left empty for an estimator with no covariance, and it changes nothing in the record.
 
     ``fdir_events`` adds the FDIR event log (declarations, lockouts, inflation grants) to the record
     as ``fdir_events``. It is off by default so the benchmark JSON is unchanged.
@@ -414,6 +415,9 @@ def run_case(
                 dof=series.dof,
                 t=est.t,
                 windows=[(o.start_s, o.start_s + o.duration_s) for o in scenario.gnss_outages] or None,
+                error=np.asarray(est.positions, float).reshape(-1, 3)
+                - np.asarray(ref_on_est.positions, float).reshape(-1, 3),
+                sigma=np.sqrt(np.einsum("kii->ki", np.asarray(result.position_cov, float).reshape(-1, 3, 3))),
             )
         cal = summarise(
             estimator="eskf",

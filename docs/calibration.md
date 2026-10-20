@@ -173,6 +173,73 @@ What the table shows. Each sentence is checked against the CSV by `tests/test_en
 This table does not replace the single-run verdicts, which stay descriptive. How a gate would use the ensemble is
 decided separately, with an ADR.
 
+## The B1 gate on the development seeds
+
+[ADR-0028](adr/0028-the-b1-gate.md) sets the gate for blocker B1. This section is the development set, seeds 0 to 24.
+The decision run is separate. It uses seeds 100 to 124, it is evaluated once, and its result is not on this page.
+
+The candidate is the `outage_visual` scenario with the stochastic clone and the `measured-front-end` noise preset. Its
+control is `outage_control` on the same seed, with vision off. Everything is scored over the GNSS-outage window only,
+the half-open interval the calibration report uses. The table is generated from
+[`data/b1_gate_dev.csv`](data/b1_gate_dev.csv) and checked against it by a test. Regenerate it with:
+
+```bash
+navkit gate b1 --seeds 0-24 --csv docs/data/b1_gate_dev.csv --page docs/calibration.md
+```
+
+What each condition means. The value and the threshold of every one are in the second table.
+
+- **Upper edge.** The grand mean NEES is the mean over all runs and all window epochs. It must not exceed the upper
+  edge of the 95% chi-square band. The band's degrees of freedom come from the effective sample size of each run
+  (`effective_sample_size` in `navkit.eval.statistics`), not from the epoch count, because epochs within a run are
+  strongly autocorrelated. This is the test for overconfidence. A truncated run is one whose autocorrelation estimate
+  reached its largest window; its effective sample size is then an upper bound, so the band for it may be narrower
+  than it should be.
+- **Lower bound.** The same grand mean must not fall below a floor, which says that the claimed standard deviation is
+  at most 1.5 times the actual error. This is an engineering tolerance for conservatism, not a statistical test.
+- **Coverage.** The share of (run, epoch, axis) triples whose error is within 2 sigma on that axis, pooled. It is per
+  axis, so it is not the ellipsoid coverage reported elsewhere.
+- **Lower ATE.** The number of seeds in which the candidate has the lower ATE than its control over the window.
+- **Median ratio.** The median over seeds of the candidate's ATE divided by the control's.
+- **Largest ratio.** The worst seed's ratio.
+
+The DIAGNOSTIC rows apply the same function to the same seeds. They are not gate decisions. The single-anchor
+`outage_visual` is there to show that the gate can say no, and the plain clone `outage_visual_clone` is there to show
+what the preset changes.
+
+<!-- b1-gate-dev:start -->
+
+| Role | Subject | Seeds | Runs | Window epochs | Sum of n_eff | Band degrees of freedom | Truncated runs | All conditions hold |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| candidate | outage_visual+clone+measured-front-end | 0-24 | 25 | 3000 | 144.0 | 432 | 22 | yes |
+| DIAGNOSTIC | outage_visual | 0-24 | 25 | 3000 | 100.8 | 302 | 25 | no |
+| DIAGNOSTIC | outage_visual_clone | 0-24 | 25 | 3000 | 265.1 | 795 | 15 | yes |
+
+| Role | Subject | Condition | Value | Threshold | Holds |
+|---|---|---|---:|---:|---|
+| candidate | outage_visual+clone+measured-front-end | Grand mean NEES, at most the upper edge of the band | 1.891 | <= 3.413 | yes |
+| candidate | outage_visual+clone+measured-front-end | Grand mean NEES, at least the lower bound | 1.891 | >= 1.32 | yes |
+| candidate | outage_visual+clone+measured-front-end | Pooled 2-sigma per-axis coverage | 96.14% | >= 95.00% | yes |
+| candidate | outage_visual+clone+measured-front-end | Runs where the candidate has the lower ATE | 25 | >= 20 | yes |
+| candidate | outage_visual+clone+measured-front-end | Median ATE ratio, candidate over control | 0.1185 | <= 0.8 | yes |
+| candidate | outage_visual+clone+measured-front-end | Largest ATE ratio | 0.5476 | <= 1.5 | yes |
+| DIAGNOSTIC | outage_visual | Grand mean NEES, at most the upper edge of the band | 1.822e+04 | <= 3.497 | no |
+| DIAGNOSTIC | outage_visual | Grand mean NEES, at least the lower bound | 1.822e+04 | >= 1.32 | yes |
+| DIAGNOSTIC | outage_visual | Pooled 2-sigma per-axis coverage | 12.63% | >= 95.00% | no |
+| DIAGNOSTIC | outage_visual | Runs where the candidate has the lower ATE | 9 | >= 20 | no |
+| DIAGNOSTIC | outage_visual | Median ATE ratio, candidate over control | 1.12 | <= 0.8 | no |
+| DIAGNOSTIC | outage_visual | Largest ATE ratio | 11.27 | <= 1.5 | no |
+| DIAGNOSTIC | outage_visual_clone | Grand mean NEES, at most the upper edge of the band | 1.874 | <= 3.302 | yes |
+| DIAGNOSTIC | outage_visual_clone | Grand mean NEES, at least the lower bound | 1.874 | >= 1.32 | yes |
+| DIAGNOSTIC | outage_visual_clone | Pooled 2-sigma per-axis coverage | 98.49% | >= 95.00% | yes |
+| DIAGNOSTIC | outage_visual_clone | Runs where the candidate has the lower ATE | 25 | >= 20 | yes |
+| DIAGNOSTIC | outage_visual_clone | Median ATE ratio, candidate over control | 0.07325 | <= 0.8 | yes |
+| DIAGNOSTIC | outage_visual_clone | Largest ATE ratio | 0.3923 | <= 1.5 | yes |
+
+<!-- b1-gate-dev:end -->
+
+This is the development set. It does not decide B1 and it does not change `vision_enabled`.
+
 ## Worked example: reading the defect
 
 From the generated benchmark (`python scripts/run_benchmark.py`, GNSS available

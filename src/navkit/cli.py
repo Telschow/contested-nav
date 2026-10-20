@@ -33,6 +33,7 @@ from collections.abc import Callable
 from . import (
     __version__,
     attribution,
+    b1_gate,
     benchmark,
     euroc_cli,
     fault_classification,
@@ -101,6 +102,17 @@ def _tumvi(argv: list[str] | None) -> int:
     return tumvi_fetch.main(args[1:])
 
 
+def _gate(argv: list[str] | None) -> int:
+    """Route ``navkit gate b1``: the B1 gate of ADR-0028."""
+    args = list(argv or [])
+    if not args or args[0] in ("-h", "--help") or args[0] != "b1":
+        usage = "usage: navkit gate b1 --seeds A-B --csv PATH [--page PATH] [--held-out]"
+        note = "  b1  apply the B1 gate of ADR-0028 to the candidate over 25 seeds (seeds 100 to 124 need --held-out)"
+        print("\n".join((usage, note)), file=sys.stderr)
+        return 0 if args and args[0] in ("-h", "--help") else 2
+    return b1_gate.main(args[1:])
+
+
 def _urbannav(argv: list[str] | None) -> int:
     """Route ``navkit urbannav fetch`` and ``navkit urbannav check``."""
     args = list(argv or [])
@@ -124,6 +136,7 @@ _COMMANDS: dict[str, tuple[Callable[[list[str] | None], int], str]] = {
         _sweep,
         "repeat the benchmark over seeds, trajectories, outages, wrong noise, faults or removed error sources",
     ),
+    "gate": (_gate, "apply the B1 gate of ADR-0028 to the visual candidate over seeded runs"),
     "figures": (figures.main, "render the benchmark figures from a result JSON"),
     "tumvi": (_tumvi, "fetch TUM VI room sequences (CC BY 4.0); run them with `navkit euroc run --dataset tumvi`"),
     "urbannav": (
