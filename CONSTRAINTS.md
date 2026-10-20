@@ -112,7 +112,7 @@ the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
 | `outage_sweep.py` coverage | 80% | 98.4% | as above |
 | `fdir/nis_monitor.py` coverage | 80% | 98.8% | as above |
 | `degrade/` coverage | 50% | 78.0% (`config.py`) / 84.2% (`inject.py`) | as above |
-| Docs | README + architecture + calibration + every ADR | <!-- metric:adr_count -->28<!-- /metric --> ADRs, all in the index | `scripts/metrics.py --check` |
+| Docs | README + architecture + calibration + every ADR | <!-- metric:adr_count -->29<!-- /metric --> ADRs, all in the index | `scripts/metrics.py --check` |
 | Documented tables match the generated benchmark | exact | yes | `scripts/check_doc_tables.py` |
 | Open blockers documented | all | see ROADMAP | manual |
 
