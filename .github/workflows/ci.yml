@@ -190,7 +190,7 @@ jobs:
           tests/test_slow_ramp_page.py tests/test_timing_page.py tests/test_tumvi_page.py
           tests/test_urbannav_check.py tests/test_vision_ramp_page.py tests/test_vo_page.py
           tests/test_quoted_numbers.py tests/test_urbannav_run.py tests/test_ensemble_page.py
-          tests/test_b1_gate_page.py tests/test_b1_gate_heldout_page.py
+          tests/test_b1_gate_page.py tests/test_b1_gate_heldout_page.py tests/test_fdir_false_alarm_page.py
 
   build:
     name: build
@@ -397,6 +397,20 @@ jobs:
       - name: The committed fault matrix matches a fresh run
         # Same idea for docs/faults.md and docs/data/fault_matrix.csv.
         run: python scripts/fault_matrix.py --out /tmp/fault_full.json --compare docs/data/fault_matrix.csv
+
+      - name: The committed FDIR false-alarm and sensitivity CSVs match a fresh reduced run
+        # docs/faults.md has two generated blocks from docs/data/fdir_false_alarm.csv and docs/data/fdir_sensitivity.csv.
+        # The full grids take several minutes, so this runs a reduced one twice and compares it with the committed files:
+        # the false-alarm rate on seeds 0 to 2 (the per-seed rows are compared, the pooled rows only when the seeds
+        # match) and the sensitivity sweep on one fault and one constant at the full five seeds. The two runs must
+        # also agree byte for byte. Numbers are compared to 1e-6 relative, as in ADR-0009.
+        run: |
+          for n in 1 2; do
+            python scripts/fdir_false_alarm.py rate --seeds 3 --csv /tmp/fdir_rate_$n.csv --compare docs/data/fdir_false_alarm.csv
+            python scripts/fdir_false_alarm.py sensitivity --faults gnss_spoof_sustained --constants reacq_sigma_m --csv /tmp/fdir_sens_$n.csv --compare docs/data/fdir_sensitivity.csv
+          done
+          cmp /tmp/fdir_rate_1.csv /tmp/fdir_rate_2.csv
+          cmp /tmp/fdir_sens_1.csv /tmp/fdir_sens_2.csv
 
   ensemble:
     name: ensemble reproducibility
