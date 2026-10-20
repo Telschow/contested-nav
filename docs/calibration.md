@@ -176,7 +176,7 @@ decided separately, with an ADR.
 ## The B1 gate on the development seeds
 
 [ADR-0028](adr/0028-the-b1-gate.md) sets the gate for blocker B1. This section is the development set, seeds 0 to 24.
-The decision run is separate. It uses seeds 100 to 124, it is evaluated once, and its result is not on this page.
+The decision run is separate. It uses seeds 100 to 124, it is evaluated once, and its result is in the next section.
 
 The candidate is the `outage_visual` scenario with the stochastic clone and the `measured-front-end` noise preset. Its
 control is `outage_control` on the same seed, with vision off. Everything is scored over the GNSS-outage window only,
@@ -239,6 +239,34 @@ what the preset changes.
 <!-- b1-gate-dev:end -->
 
 This is the development set. It does not decide B1 and it does not change `vision_enabled`.
+
+## The B1 gate: the decision run on the held-out seeds
+
+This is the decision run of [ADR-0028](adr/0028-the-b1-gate.md): seeds 100 to 124, the candidate above, over the
+GNSS-outage window. It was run once, with the code at commit 4c88341 on 2026-10-20. The held-out set is single use, so
+it is not run again. A second run to a scratch path reproduced the committed file to the tolerance used for the
+ensemble; it was a check and not a second decision.
+
+The table is generated from [`data/b1_gate_heldout.csv`](data/b1_gate_heldout.csv) and checked against it by a test.
+The conditions are the same as in the section above. The DIAGNOSTIC rows are not computed on the held-out seeds, and
+the command does not do so. The status of B1 is in `CONSTRAINTS.md`. It does not change `vision_enabled`.
+
+<!-- b1-gate-heldout:start -->
+
+| Role | Subject | Seeds | Runs | Window epochs | Sum of n_eff | Band degrees of freedom | Truncated runs | All conditions hold |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| candidate | outage_visual+clone+measured-front-end | 100-124 | 25 | 3000 | 154.2 | 462 | 22 | no |
+
+| Role | Subject | Condition | Value | Threshold | Holds |
+|---|---|---|---:|---:|---|
+| candidate | outage_visual+clone+measured-front-end | Grand mean NEES, at most the upper edge of the band | 1.176 | <= 3.399 | yes |
+| candidate | outage_visual+clone+measured-front-end | Grand mean NEES, at least the lower bound | 1.176 | >= 1.32 | no |
+| candidate | outage_visual+clone+measured-front-end | Pooled 2-sigma per-axis coverage | 99.49% | >= 95.00% | yes |
+| candidate | outage_visual+clone+measured-front-end | Runs where the candidate has the lower ATE | 25 | >= 20 | yes |
+| candidate | outage_visual+clone+measured-front-end | Median ATE ratio, candidate over control | 0.1551 | <= 0.8 | yes |
+| candidate | outage_visual+clone+measured-front-end | Largest ATE ratio | 0.2726 | <= 1.5 | yes |
+
+<!-- b1-gate-heldout:end -->
 
 ## Worked example: reading the defect
 
