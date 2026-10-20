@@ -60,8 +60,9 @@ Each statement below is checked against the CSV by `tests/test_fault_matrix.py`.
    GNSS receiver is declared faulty after it returns. That comes from the single-anchor filter failing under the
    start attitude error drawn from its own prior ([ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)), so
    it rejects fixes the receiver gets right. It is not a stand-alone false-alarm rate for the FDIR layer, and a
-   cell whose own no-fault control also fires says nothing about detection. The proper false-alarm measurement is
-   a separate package (T2-7) and is not done.
+   cell whose own no-fault control also fires says nothing about detection. The per-update false-alarm measurement
+   is in [FDIR false alarms and constant sensitivity](#fdir-false-alarms-and-constant-sensitivity), further down this
+   page.
 2. **A large sustained spoof is declared fast.** At 10 m and 40 m the GNSS channel is declared
    faulty in every seed, 0.8 s after the offset starts, which is five consecutive rejected fixes at
    5 Hz.
