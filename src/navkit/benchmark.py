@@ -257,6 +257,7 @@ def run_case(
     gnss_hook: Callable[[GnssFix], GnssFix] | None = None,
     imu_hook: Callable[[ImuSample], ImuSample] | None = None,
     fdir_events: bool = False,
+    nees_out: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Run one scenario end to end and return its result record.
 
@@ -282,6 +283,10 @@ def run_case(
     ``imu_hook`` is the same for the inertial stream: it receives the IMU after the scenario's noise and bias are
     applied and returns what the filter sees. It is for a fault the scenario schema does not describe, such as a
     bias that appears part-way through. Like ``gnss_hook`` it is not in ``config_hash``.
+
+    ``nees_out``, when given, receives ``squared`` (the per-epoch NEES the calibration report scores), ``dof``,
+    ``t`` (the epoch times) and ``windows`` (the half-open GNSS-outage windows, or ``None``), for the ensemble over
+    seeds. It is left empty for an estimator with no covariance, and it changes nothing in the record.
 
     ``fdir_events`` adds the FDIR event log (declarations, lockouts, inflation grants) to the record
     as ``fdir_events``. It is off by default so the benchmark JSON is unchanged.
@@ -403,6 +408,13 @@ def run_case(
     # has no uncertainty model, and reporting a NEES for it would be meaningless.
     if result.position_cov is not None:
         series = normalized_error_squared(est.positions, ref_on_est.positions, result.position_cov)
+        if nees_out is not None:
+            nees_out.update(
+                squared=series.squared,
+                dof=series.dof,
+                t=est.t,
+                windows=[(o.start_s, o.start_s + o.duration_s) for o in scenario.gnss_outages] or None,
+            )
         cal = summarise(
             estimator="eskf",
             scenario=scenario.name,

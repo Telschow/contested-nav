@@ -59,12 +59,15 @@ import numpy as np
 from .statistics import chi2_ppf, ellipsoid_coverage
 
 __all__ = [
+    "EnsembleNees",
     "MahalanobisSeries",
     "CoveragePoint",
     "CoverageReport",
     "CalibrationReport",
     "normalized_error_squared",
     "coverage_report",
+    "ensemble_nees",
+    "ensemble_nees_band",
     "inflation_factor",
     "conformal_radius",
     "shift_sensitivity",
@@ -322,6 +325,83 @@ def score_mask(series: MahalanobisSeries, mask: np.ndarray) -> MaskScore:
         coverage_2sigma=float(np.count_nonzero(squared <= 4.0 * series.dof)) / n if n else None,
         nees_expected=float(series.dof),
         coverage_2sigma_expected=ellipsoid_coverage(2.0, series.dof),
+    )
+
+
+def ensemble_nees_band(n_runs: int, dof: int, level: float = 0.95) -> tuple[float, float]:
+    """The two-sided band for the mean NEES over ``n_runs`` independent runs at one epoch.
+
+    If the filter is consistent, each run's NEES at an epoch is chi-square with ``dof`` degrees of freedom, so the sum
+    over ``n_runs`` independent runs is chi-square with ``n_runs * dof``, and the mean has the band
+    ``chi2_ppf((1 - level) / 2, n_runs * dof) / n_runs`` to ``chi2_ppf((1 + level) / 2, n_runs * dof) / n_runs``. It
+    narrows as the ensemble grows. A single run (``n_runs`` = 1) is not an ensemble and is refused.
+    """
+    if n_runs < 2:
+        raise ValueError(f"an ensemble needs at least two runs, got {n_runs}")
+    if dof < 1:
+        raise ValueError(f"degrees of freedom must be positive, got {dof}")
+    if not 0.0 < level < 1.0:
+        raise ValueError(f"level must lie strictly inside (0, 1), got {level}")
+    total = n_runs * dof
+    # Rounded so that 0.95 gives the quantiles 0.025 and 0.975 exactly, not the neighbouring doubles that
+    # `(1 - level) / 2` gives, which would move the last digits of a committed band.
+    tail = round((1.0 - level) / 2.0, 15)
+    return chi2_ppf(tail, total) / n_runs, chi2_ppf(round(1.0 - tail, 15), total) / n_runs
+
+
+@dataclass(frozen=True)
+class EnsembleNees:
+    """The ensemble mean NEES over seeded runs, against its chi-square band.
+
+    ``mean`` is the mean over runs at each scored epoch. ``fraction_inside``, ``fraction_below`` and ``fraction_above``
+    are shares of the scored epochs whose ensemble mean is inside, below or above ``[low, high]``. **They are
+    descriptive, not a p-value:** epochs within a run are strongly autocorrelated (see
+    :func:`navkit.eval.statistics.effective_sample_size`), so the epochs are far from independent and the share
+    inside the band does not have a binomial distribution. Independence across runs is the caller's job: the function
+    scores what it is given and cannot tell that the runs repeat one another.
+    """
+
+    n_runs: int
+    n_epochs: int
+    dof: int
+    mean: np.ndarray
+    low: float
+    high: float
+    fraction_inside: float
+    fraction_below: float
+    fraction_above: float
+    grand_mean: float
+
+
+def ensemble_nees(series: np.ndarray, dof: int = 3, level: float = 0.95) -> EnsembleNees:
+    """Score per-epoch NEES from ``N`` runs, ``series`` of shape ``(N, K)``, against :func:`ensemble_nees_band`."""
+    arr = np.asarray(series, dtype=float)
+    if arr.ndim != 2:
+        raise ValueError(f"series must be two-dimensional (runs, epochs), got shape {arr.shape}")
+    n_runs, n_epochs = arr.shape
+    if n_runs < 2:
+        raise ValueError(f"an ensemble needs at least two runs, got {n_runs}")
+    if n_epochs < 1:
+        raise ValueError("series needs at least one epoch")
+    if not np.all(np.isfinite(arr)):
+        raise ValueError("series must be finite: it has a NaN or an infinite value")
+    if np.any(arr < 0.0):
+        raise ValueError("a NEES cannot be negative")
+    low, high = ensemble_nees_band(n_runs, dof, level)
+    mean = arr.mean(axis=0)
+    below = float(np.mean(mean < low))
+    above = float(np.mean(mean > high))
+    return EnsembleNees(
+        n_runs=int(n_runs),
+        n_epochs=int(n_epochs),
+        dof=int(dof),
+        mean=mean,
+        low=low,
+        high=high,
+        fraction_inside=1.0 - below - above,
+        fraction_below=below,
+        fraction_above=above,
+        grand_mean=float(arr.mean()),
     )
 
 
