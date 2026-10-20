@@ -93,7 +93,39 @@ def test_statement_6_a_small_and_a_moderate_bias_fault_are_not_noticed(rows):
 def test_statement_7_a_large_bias_fault_makes_the_filter_reject_the_healthy_gnss(rows):
     assert at._mean(rows, "fault", FAULT, 1.0, "gnss_rejected") > 0.0
     assert at._mean(rows, "fault", FAULT, 1.0, "gnss_faulted") == 1.0
-    assert at._mean(rows, "fault", FAULT, 1.0, "error_after_return_m") > at._mean(rows, "fault", FAULT, 1.0)
+    peak = at._mean(rows, "fault", FAULT, 1.0)
+    assert at._mean(rows, "fault", FAULT, 1.0, "recovery_median_m") > peak  # the statement, over the window
+    assert at._mean(rows, "fault", FAULT, 1.0, "recovery_max_m") > peak
+    assert at._mean(rows, "fault", FAULT, 1.0, "error_after_return_m") > peak  # the legacy instant agrees
+
+
+def test_the_committed_csv_has_the_two_window_columns_and_a_median_not_above_the_maximum(rows):
+    assert tuple(rows[0]) == at.CSV_COLUMNS and "recovery_median_m" in rows[0] and "recovery_max_m" in rows[0]
+    assert all(float(r["recovery_median_m"]) <= float(r["recovery_max_m"]) for r in rows)
+
+
+@pytest.mark.parametrize(
+    ("experiment", "arm", "param", "kwargs"),
+    [
+        ("ablation", "baseline", "", {}),
+        ("fault", FAULT, "1.0", {"imu_hook": at.bias_step_hook(1.0)}),
+    ],
+)
+def test_a_rerun_gives_the_committed_row_in_every_column_old_and_new(rows, experiment, arm, param, kwargs):
+    """The old columns keep their old values and the new ones are what the code gives now (seed 0, both ends)."""
+    key = (experiment, arm, param, "0")
+    row = next(r for r in rows if (r["experiment"], r["arm"], str(r["param"]), r["seed"]) == key)
+    out = at.run_arm(0, **kwargs)
+    for column in at.CSV_COLUMNS[4:]:
+        assert out[column] == pytest.approx(float(row[column]), rel=1e-9, abs=1e-12), column
+
+
+def test_the_page_defines_the_window_and_marks_the_single_instant_as_legacy():
+    text = " ".join(PAGE.read_text(encoding="utf-8").split())
+    lo, hi = at.RECOVERY_WINDOW_S
+    assert f"from {lo:g} s to {hi:g} s after the outage ends" in text
+    assert at.RECOVERY_MIN_EPOCHS == 10 and "fewer than ten epochs" in text  # the page says the minimum in words
+    assert "legacy" in text and "(legacy, one instant)" in text
 
 
 def test_the_page_states_what_it_does_not_show():

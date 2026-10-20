@@ -15,6 +15,13 @@ page (L8) listed a related one: would a bias fault be noticed? This page runs th
   after the outage collapses the error, so the last instant measures the recovery. (An early version of this
   experiment used the last instant, and concluded wrongly that inertial errors did not matter and that GNSS noise sets
   the floor. A test now pins the distinction.)
+- **Recovery is measured over a window.** Where this page says where the error is after GNSS returns, it uses two
+  numbers over the epochs from 2 s to 6 s after the outage ends, the window being half-open (it includes its first
+  instant and not its last). The *median* error is where the run is a few seconds after the return. The *largest*
+  error shows a late spike that the median hides. A window with fewer than ten epochs is an error and not a guess.
+  The older figure, the error at a single instant 4 s after the outage ends, is kept as the **legacy** column in the
+  CSV and the fault table. It is not a measure of the end state: a recovery that happens slightly earlier or later
+  moves it a lot while the run ends up in the same place.
 - **The generator and the filter are told the same noise.** Removing a source removes it from the data and from the
   filter's model together. The filter is re-tuned for what remains.
 - **Means over a few seeds.** Eight for the first two tables, five for the third and six for the fourth, so the
@@ -84,16 +91,17 @@ Textbook exponents: velocity error at the start 1, accelerometer white noise 1.5
 ## 4. A bias fault
 
 A step in the accelerometer bias on one axis at the start of the outage, of several sizes. During the denial nothing is
-measured, so nothing can notice it. The question is what happens when GNSS returns.
+measured, so nothing can notice it. The question is what happens when GNSS returns. The last three columns are the
+recovery: the median and the largest error over the window, then the legacy single instant.
 
 <!-- attribution-fault:start -->
 
-| Bias step, m/s² | Peak error inside the outage, m | Change | GNSS fixes rejected after the outage | Runs with the GNSS channel declared faulty | Error 4 s after the outage, m |
-|---:|---:|---:|---:|---:|---:|
-| 0 | 29.6 | +0% | 0 | 0% | 0.3 |
-| 0.05 | 29.9 | +1% | 0 | 0% | 0.3 |
-| 0.2 | 35.1 | +19% | 0 | 0% | 0.6 |
-| 1 | 113.0 | +282% | 51 | 100% | 181.2 |
+| Bias step, m/s² | Peak error inside the outage, m | Change | GNSS fixes rejected after the outage | Runs with the GNSS channel declared faulty | Median error 2 to 6 s after the outage, m | Largest error 2 to 6 s after the outage, m | Error at 4 s after the outage (legacy, one instant), m |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 29.6 | +0% | 0 | 0% | 0.3 | 0.7 | 0.3 |
+| 0.05 | 29.9 | +1% | 0 | 0% | 0.3 | 0.6 | 0.3 |
+| 0.2 | 35.1 | +19% | 0 | 0% | 0.6 | 0.8 | 0.6 |
+| 1 | 113.0 | +282% | 51 | 100% | 181.1 | 220.8 | 181.2 |
 
 <!-- attribution-fault:end -->
 
@@ -123,8 +131,8 @@ Each statement is checked against the CSV by `tests/test_attribution_page.py`.
    by under ten percent, and a step of 0.2 m/s² by about a fifth; in neither case is a GNSS fix rejected when GNSS
    returns, or the channel declared faulty.
 7. **A large bias fault makes the filter reject the healthy GNSS.** A step of 1 m/s² makes the filter reject the fixes
-   that follow the outage and declare the receiver faulty in every run, and four seconds after the return the error
-   is larger than at the worst point of the outage. The receiver is blamed for a fault in the inertial unit. This is
+   that follow the outage and declare the receiver faulty in every run, and over the window after the return the
+   median error is larger than at the worst point of the outage (the legacy single instant says the same). The receiver is blamed for a fault in the inertial unit. This is
    the lockout mechanism behind the lost runs on the [EuRoC](euroc.md) and [TUM VI](tumvi.md) recordings.
 
 ## What it does not show

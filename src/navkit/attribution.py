@@ -22,6 +22,11 @@ Three experiments, all on the synthetic fixture and all reporting the **peak pos
 
 The metric is the peak *inside* the outage. The error at the outage's last instant is not: the first fix after the
 outage collapses it, so it measures the recovery and not the denial.
+
+Recovery is measured over a window, not at one instant: the median and the maximum of the position error from 2 s to
+6 s after the outage ends (``recovery_median_m``, ``recovery_max_m``). The single value 4 s after the end
+(``error_after_return_m``) is kept as the legacy column. It moves a lot when a recovery happens a little earlier or
+later, with no change in where the run ends up.
 """
 
 from __future__ import annotations
@@ -54,6 +59,8 @@ CSV_COLUMNS = (
     "gnss_rejected",
     "gnss_faulted",
     "error_after_return_m",
+    "recovery_median_m",
+    "recovery_max_m",
 )
 
 _BASE = DEFAULT_NOISE.as_dict()
@@ -65,6 +72,15 @@ SOURCES: dict[str, tuple[str, ...]] = {
 }
 ALL_IMU_KEYS = tuple(k for keys in SOURCES.values() for k in keys)
 START_KNOWN = {"initial_pos_sigma_m": 0.0, "initial_vel_sigma_m_s": 0.0, "initial_rot_sigma_deg": 0.0}
+
+#: The recovery window, in seconds after the outage ends: half-open, [2, 6). It has the same 4 s centre as the legacy
+#: single instant.
+RECOVERY_WINDOW_S = (2.0, 6.0)
+#: The fewest epochs the window may hold. The benchmark's series has 200 epochs a second, so a full window holds
+#: 800. Ten is far below that and is the least for which a median and a maximum are more than a single reading: it
+#: stops only a series that ends inside the window or is sampled far too sparsely, which would otherwise quietly
+#: fall back to the single instant this window replaces.
+RECOVERY_MIN_EPOCHS = 10
 
 ESCALATION_SCALES = (3.0, 10.0, 30.0, 100.0)
 #: The scale at which each source is inflated for the growth test. Chosen to make that source clearly the largest.
@@ -110,6 +126,26 @@ def _longer(defaults: dict[str, Any], factor: int) -> dict[str, Any]:
     return out
 
 
+def recovery_window(t: np.ndarray, outage_end_s: float) -> np.ndarray:
+    """The epochs with ``end + 2 <= t < end + 6``: a boolean mask over ``t``."""
+    lo, hi = RECOVERY_WINDOW_S
+    return (t >= outage_end_s + lo) & (t < outage_end_s + hi)
+
+
+def recovery_stats(
+    t: np.ndarray, err: np.ndarray, outage_end_s: float, min_epochs: int = RECOVERY_MIN_EPOCHS
+) -> tuple[float, float]:
+    """The median and the maximum of ``err`` over the recovery window. Raises ``ValueError`` on too few epochs."""
+    window = err[recovery_window(t, outage_end_s)]
+    if len(window) < min_epochs:
+        lo, hi = RECOVERY_WINDOW_S
+        raise ValueError(
+            f"the recovery window [{outage_end_s + lo:g}, {outage_end_s + hi:g}) s holds {len(window)} epochs, "
+            f"fewer than the minimum of {min_epochs}"
+        )
+    return float(np.median(window)), float(window.max())
+
+
 def run_arm(
     seed: int,
     *,
@@ -141,12 +177,15 @@ def run_arm(
     end = OUTAGE_START_S + outage_s
     inside = (t >= OUTAGE_START_S) & (t < end)
     after = float(e[min(int(np.searchsorted(t, end + 4.0)), len(e) - 1)])
+    median, window_max = recovery_stats(t, e, end)
     stats = record["stats"]
     return {
         "peak_error_m": float(e[inside].max()),
         "gnss_rejected": float(stats["gnss_updates_rejected"]),
         "gnss_faulted": float(stats.get("fdir_gnss_faulted", 0.0)),
         "error_after_return_m": after,
+        "recovery_median_m": median,
+        "recovery_max_m": window_max,
     }
 
 
@@ -283,8 +322,9 @@ def fault_markdown(rows: list[dict[str, Any]]) -> str:
     base = _mean(rows, "fault", "accelerometer bias step", sizes[0])
     lines = [
         "| Bias step, m/s² | Peak error inside the outage, m | Change | GNSS fixes rejected after the outage | "
-        "Runs with the GNSS channel declared faulty | Error 4 s after the outage, m |",
-        "|---:|---:|---:|---:|---:|---:|",
+        "Runs with the GNSS channel declared faulty | Median error 2 to 6 s after the outage, m | "
+        "Largest error 2 to 6 s after the outage, m | Error at 4 s after the outage (legacy, one instant), m |",
+        "|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for s in sizes:
         arm = "accelerometer bias step"
@@ -292,8 +332,13 @@ def fault_markdown(rows: list[dict[str, Any]]) -> str:
         faulted = _mean(rows, "fault", arm, s, "gnss_faulted")
         rejected = _mean(rows, "fault", arm, s, "gnss_rejected")
         after = _mean(rows, "fault", arm, s, "error_after_return_m")
+        median = _mean(rows, "fault", arm, s, "recovery_median_m")
+        window_max = _mean(rows, "fault", arm, s, "recovery_max_m")
         change = _pct(peak / base)
-        lines.append(f"| {s:g} | {peak:.1f} | {change} | {rejected:.0f} | {100 * faulted:.0f}% | {after:.1f} |")
+        lines.append(
+            f"| {s:g} | {peak:.1f} | {change} | {rejected:.0f} | {100 * faulted:.0f}% | "
+            f"{median:.1f} | {window_max:.1f} | {after:.1f} |"
+        )
     return "\n".join(lines)
 
 

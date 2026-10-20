@@ -17,7 +17,14 @@ from navkit.types import ImuSample
 
 def test_a_run_reports_the_peak_inside_the_outage_and_the_gnss_outcome():
     out = at.run_arm(0)
-    assert set(out) == {"peak_error_m", "gnss_rejected", "gnss_faulted", "error_after_return_m"}
+    assert set(out) == {
+        "peak_error_m",
+        "gnss_rejected",
+        "gnss_faulted",
+        "error_after_return_m",
+        "recovery_median_m",
+        "recovery_max_m",
+    }
     assert out["peak_error_m"] > out["error_after_return_m"] > 0.0  # the fix after the outage collapses the error
     assert out["gnss_rejected"] == 0.0
 
@@ -85,6 +92,8 @@ def _synthetic_growth(power: float) -> list[dict]:
             "gnss_rejected": 0.0,
             "gnss_faulted": 0.0,
             "error_after_return_m": 0.0,
+            "recovery_median_m": 0.0,
+            "recovery_max_m": 0.0,
         }
         for d in (5.0, 15.0, 45.0, 90.0)
         for s in (0, 1)
@@ -132,3 +141,115 @@ def test_the_command_rebuilds_tables_and_a_page_from_a_saved_csv(tmp_path, capsy
     assert "| baseline |" in text and "| Bias step" in text
     assert cli_main(["sweep", "attribution", "--from-csv", str(csv_path), "--markdown"]) == 0
     assert "Peak error inside the outage" in capsys.readouterr().out
+
+
+# ------------------------------------------------------- the recovery window (T2-8)
+#
+# A regular grid of 0.25 s is exact in binary floating point, so the half-open bounds are exact too. The outage ends
+# at END; the window is [END + 2, END + 6) = [22, 26) and holds 16 epochs; the legacy instant is END + 4 = 24.
+END = 20.0
+GRID = np.arange(0.0, 40.0, 0.25)
+
+
+def _step(t_s: float, high: float = 3.0, low: float = 1.0) -> np.ndarray:
+    """An error series that is ``high`` before ``t_s`` and ``low`` from ``t_s`` on."""
+    return np.where(t_s > GRID, high, low)
+
+
+def _legacy(t: np.ndarray, e: np.ndarray, end: float) -> float:
+    """What ``run_arm`` reports as ``error_after_return_m``: the value at the first epoch at or after end + 4."""
+    return float(e[min(int(np.searchsorted(t, end + 4.0)), len(e) - 1)])
+
+
+def test_the_window_is_two_to_six_seconds_after_the_end_and_needs_ten_epochs():
+    assert at.RECOVERY_WINDOW_S == (2.0, 6.0) and at.RECOVERY_MIN_EPOCHS == 10
+
+
+def test_the_window_is_half_open_and_holds_the_exact_epochs_of_a_regular_grid():
+    mask = at.recovery_window(GRID, END)
+    assert GRID[mask][0] == 22.0 and GRID[mask][-1] == 25.75  # 22 is in, 26 is out
+    assert int(mask.sum()) == 16
+    fine = np.arange(6001) / 200.0  # the 200 Hz series of the benchmark; 22.0 and 26.0 are exact on it
+    assert int(at.recovery_window(fine, END).sum()) == 800
+
+
+def test_the_statistics_use_exactly_the_epochs_of_the_window():
+    """The error is the time itself, so the median and the maximum say which epochs were used."""
+    median, peak = at.recovery_stats(GRID, GRID.copy(), END)
+    assert peak == 25.75  # the epoch at 26 is outside; a closed window would give 26
+    assert median == pytest.approx((23.75 + 24.0) / 2)  # 16 epochs 22 .. 25.75; a window shifted by one epoch differs
+
+
+def test_the_legacy_value_jumps_when_the_step_crosses_its_instant_and_the_median_moves_in_two_steps():
+    """Error 3 m, then 1 m from t_s. Move t_s one grid step at a time across the window [22, 26).
+
+    The legacy instant is 24: it reads 3 for every t_s above 24 and 1 for every t_s at or below it, one jump of 2 m.
+    With k epochs of the window before t_s, the window holds k threes and 16 - k ones. The median of 16 values is the
+    mean of the 8th and 9th: 1 for k <= 7, 2 for k = 8, 3 for k >= 9. So it changes only when more than half of the
+    window is on the other side, and by 1 m per grid step where it does. The maximum is 3 whenever any epoch is 3.
+    """
+    legacy, median, peak = [], [], []
+    ks = range(0, 17)
+    for k in ks:
+        e = _step(22.0 + 0.25 * k)
+        legacy.append(_legacy(GRID, e, END))
+        m, p = at.recovery_stats(GRID, e, END)
+        median.append(m)
+        peak.append(p)
+    assert legacy == [1.0] * 9 + [3.0] * 8  # t_s = 24 reads 1 (the epoch at 24 is already low); 24.25 reads 3
+    assert median == [1.0] * 8 + [2.0] + [3.0] * 8
+    assert peak == [1.0] + [3.0] * 16  # t_s = 22 leaves the whole window low
+    assert max(abs(np.diff(legacy))) == 2.0 and max(abs(np.diff(median))) == 1.0
+    assert int(np.count_nonzero(np.diff(legacy))) == 1 and int(np.count_nonzero(np.diff(median))) == 2
+
+
+def test_a_step_outside_the_window_changes_the_median_and_the_maximum_by_nothing():
+    before, after = _step(10.0), _step(30.0)  # all low in the window; all high in the window
+    assert at.recovery_stats(GRID, before, END) == (1.0, 1.0)
+    assert at.recovery_stats(GRID, after, END) == (3.0, 3.0)
+
+
+def test_one_late_spike_moves_the_maximum_and_not_the_median():
+    e = np.full_like(GRID, 1.0)
+    e[GRID == 25.75] = 9.0
+    assert at.recovery_stats(GRID, e, END) == (1.0, 9.0)
+    e[GRID == 25.75] = 1.0
+    e[GRID == 26.0] = 9.0  # one epoch after the window: not seen
+    assert at.recovery_stats(GRID, e, END) == (1.0, 1.0)
+
+
+def test_a_window_with_too_few_epochs_is_an_error_at_the_stated_minimum():
+    coarse = np.arange(0.0, 40.0, 0.5)  # 8 epochs in [22, 26): below the default minimum of 10
+    with pytest.raises(ValueError, match="8 epochs"):
+        at.recovery_stats(coarse, np.ones_like(coarse), END)
+    assert at.recovery_stats(GRID, np.ones_like(GRID), END, min_epochs=16) == (1.0, 1.0)  # exactly 16: allowed
+    with pytest.raises(ValueError, match="16 epochs"):
+        at.recovery_stats(GRID, np.ones_like(GRID), END, min_epochs=17)
+
+
+def test_a_series_that_stops_inside_the_window_is_an_error_and_not_a_clamped_last_value():
+    t = GRID[GRID < 24.0]  # the run ends 4 s after the outage: the legacy instant clamps to the last epoch
+    with pytest.raises(ValueError, match="epochs"):
+        at.recovery_stats(t, np.ones_like(t), END)
+    with pytest.raises(ValueError, match="0 epochs"):
+        at.recovery_stats(GRID[GRID < 20.0], np.ones(int((GRID < 20.0).sum())), END)
+
+
+def test_a_run_reports_the_window_next_to_the_legacy_instant():
+    out = at.run_arm(0)
+    assert 0.0 < out["recovery_median_m"] <= out["recovery_max_m"]
+    assert out["peak_error_m"] > out["recovery_max_m"]  # the fix after the outage collapses the error
+
+
+def test_the_csv_has_the_old_columns_first_and_unchanged_then_the_two_new_ones():
+    assert at.CSV_COLUMNS[:8] == (
+        "experiment",
+        "arm",
+        "param",
+        "seed",
+        "peak_error_m",
+        "gnss_rejected",
+        "gnss_faulted",
+        "error_after_return_m",
+    )
+    assert at.CSV_COLUMNS[8:] == ("recovery_median_m", "recovery_max_m")
