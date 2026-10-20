@@ -36,7 +36,7 @@ dependencies = [
 # B2 was that no lint or typecheck gate could be run outside CI. The two
 # tools are here so `uv run ruff check` and `uv run mypy src` work locally and
 # resolve to the same versions the CI job installs, which are unpinned there.
-dev = ["pytest>=7.4", "hypothesis>=6.100", "pre-commit>=3.7", "ruff==0.17.0", "mypy==2.4.0"]
+dev = ["pytest>=7.4", "hypothesis>=6.100", "pre-commit>=3.7", "ruff==0.17.1", "mypy==2.4.0"]
 # The documentation site. Pinned exactly so the site builds the same way everywhere; MkDocs is held
 # below 2.0, which removes the plugin system the site uses.
 docs = [
