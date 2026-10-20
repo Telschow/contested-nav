@@ -4,7 +4,7 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: <!-- metric:tests_collected -->1746<!-- /metric --> tests collected, all of which pass except the deliberate
+Last measured: <!-- metric:tests_collected -->1754<!-- /metric --> tests collected, all of which pass except the deliberate
 xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->94.3<!-- /metric -->%
 line coverage (<!-- metric:coverage_lines_hit -->10033<!-- /metric -->/<!-- metric:coverage_lines_total -->10638<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
@@ -91,7 +91,7 @@ the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | <!-- metric:tests_collected -->1746<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | <!-- metric:tests_collected -->1754<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
 | Line coverage | 75% | <!-- metric:coverage_percent -->94.3<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
@@ -119,6 +119,20 @@ the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
 ## Known blockers
 
 - **B1: Visual fusion is overconfident under GNSS denial.**
+
+  <!-- b1-heldout-status:start -->
+
+Status: open. The gate of ADR-0028 failed on the held-out seeds 100 to 124 for the candidate configuration on condition 2 (Grand mean NEES, at least the lower bound). Any change to the candidate is tested on a new held-out set, starting at seed 125 (ADR-0028). vision_enabled stays False.
+
+<!-- b1-heldout-status:end -->
+
+  The table of the decision run is in [the calibration guide](docs/calibration.md) and its data in
+  [`docs/data/b1_gate_heldout.csv`](docs/data/b1_gate_heldout.csv). The status block above is generated from that file
+  by `scripts/render_b1_heldout.py` and checked by a test.
+
+  History, dated 2026-10. The gate described below (mean NEES under 10 and 2-sigma coverage over 90% across the full
+  run, in one run) is superseded by [ADR-0028](docs/adr/0028-the-b1-gate.md). It is kept as the record of how B1 was
+  judged until then.
 
   B1 is open for the shipped configuration: the single-anchor visual update is overconfident under GNSS denial, and
   `vision_enabled` stays `False`. The opt-in stochastic clone meets the current gate on the synthetic fixture when its

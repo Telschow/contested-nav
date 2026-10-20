@@ -1,0 +1,7 @@
+role,subject,seeds,n_runs,n_epochs,dof,sum_n_eff,degrees_of_freedom,n_truncated,condition,relation,value,threshold,passed,subject_passed
+candidate,outage_visual+clone+measured-front-end,100-124,25,3000,3,154.21308771728349,462,22,nees_upper,<=,1.176329540869918,3.3990185298925963,true,false
+candidate,outage_visual+clone+measured-front-end,100-124,25,3000,3,154.21308771728349,462,22,nees_lower,>=,1.176329540869918,1.32,false,false
+candidate,outage_visual+clone+measured-front-end,100-124,25,3000,3,154.21308771728349,462,22,coverage,>=,0.9949288888888889,0.95,true,false
+candidate,outage_visual+clone+measured-front-end,100-124,25,3000,3,154.21308771728349,462,22,ate_better,>=,25.0,20.0,true,false
+candidate,outage_visual+clone+measured-front-end,100-124,25,3000,3,154.21308771728349,462,22,ate_median,<=,0.15505967664254178,0.8,true,false
+candidate,outage_visual+clone+measured-front-end,100-124,25,3000,3,154.21308771728349,462,22,ate_worst,<=,0.2726286871176738,1.5,true,false
