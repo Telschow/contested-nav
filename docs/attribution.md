@@ -88,12 +88,12 @@ measured, so nothing can notice it. The question is what happens when GNSS retur
 
 <!-- attribution-fault:start -->
 
-| Bias step, m/s² | Peak error inside the outage, m | Change | GNSS fixes rejected after the outage | Runs with the GNSS channel declared faulty | Error 4 s after the outage, m |
-|---:|---:|---:|---:|---:|---:|
-| 0 | 29.6 | +0% | 0 | 0% | 0.3 |
-| 0.05 | 29.9 | +1% | 0 | 0% | 0.3 |
-| 0.2 | 35.1 | +19% | 0 | 0% | 0.6 |
-| 1 | 113.0 | +282% | 51 | 100% | 181.2 |
+| Bias step, m/s² | Peak error inside the outage, m | Change | GNSS fixes rejected after the outage | Runs with the GNSS channel declared faulty | Median error 2 to 6 s after the outage, m | Largest error 2 to 6 s after the outage, m | Error at 4 s after the outage (legacy, one instant), m |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 29.6 | +0% | 0 | 0% | 0.3 | 0.7 | 0.3 |
+| 0.05 | 29.9 | +1% | 0 | 0% | 0.3 | 0.6 | 0.3 |
+| 0.2 | 35.1 | +19% | 0 | 0% | 0.6 | 0.8 | 0.6 |
+| 1 | 113.0 | +282% | 51 | 100% | 181.1 | 220.8 | 181.2 |
 
 <!-- attribution-fault:end -->
 
