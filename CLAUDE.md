@@ -14,7 +14,7 @@ coverage). Synthetic evidence only unless a results row says otherwise.
 
 ## Invariants (see CONSTRAINTS.md)
 - Runtime deps stay numpy, matplotlib, pyyaml (S1). No vendored third-party data (S2).
-- `vision_enabled` stays False until the B1 gate is met (mean NEES < 10, coverage > 90%).
+- `vision_enabled` stays False until the B1 gate of ADR-0028 passes on its held-out seeds and the maintainer decides to change the default. Passing the gate alone does not change it.
 - Quaternions (w, x, y, z) internally; poses are T_wb; Joseph-form covariance update.
 - Numbers on the first-read pages (README.md, docs/index.md, docs/getting-started.md, docs/results.md, docs/status.md) are generated and checked by CI: benchmark tables by `scripts/check_doc_tables.py`, counts and two headline values through metric markers (`scripts/metrics.py`), and `tests/test_quoted_numbers.py` fails on any other measured number there. Figures labelled "measured once on one machine, not checked by CI" or "measured at <date>" are not checked, and neither are other pages. Never type a number by hand.
 - Keep the overconfident single-anchor case as a control row after any fix.
