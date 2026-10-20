@@ -1,0 +1,148 @@
+constant,setting,value,fault,base,level,unit,n_seeds,detected_n,declared_n
+default,default,,control,gnss_only,0.0,,5,0,0
+default,default,,control,outage_visual,0.0,,5,5,5
+default,default,,control,vision_only,0.0,,5,0,0
+default,default,,gnss_spoof_sustained,gnss_only,3.0,m,5,5,2
+default,default,,gnss_spoof_sustained,gnss_only,10.0,m,5,5,5
+default,default,,gnss_spoof_sustained,gnss_only,40.0,m,5,5,5
+default,default,,gnss_multipath_spike,gnss_only,20.0,m,5,5,0
+default,default,,gnss_slow_bias,gnss_only,1.0,m (1 sigma),5,2,0
+default,default,,gnss_slow_bias,gnss_only,3.0,m (1 sigma),5,5,2
+default,default,,gnss_time_offset,gnss_only,0.05,s,5,0,0
+default,default,,gnss_time_offset,gnss_only,0.2,s,5,0,0
+default,default,,gnss_time_offset,gnss_only,0.5,s,5,1,0
+default,default,,imu_sample_loss,gnss_only,0.5,s lost at 10 s,5,1,0
+default,default,,imu_sample_loss,gnss_only,2.0,s lost at 10 s,5,5,5
+default,default,,gnss_spoof_after_outage,outage_visual,3.0,m,5,5,5
+default,default,,gnss_spoof_after_outage,outage_visual,10.0,m,5,5,5
+default,default,,gnss_spoof_after_outage,outage_visual,22.0,m,5,5,5
+default,default,,vision_time_offset,vision_only,0.05,s,5,0,0
+default,default,,vision_time_offset,vision_only,0.2,s,5,0,0
+default,default,,vision_outage,vision_only,2.0,s lost at 10 s,5,5,0
+default,default,,vision_outage,vision_only,5.0,s lost at 10 s,5,5,0
+max_consecutive_rejections,half,3,control,gnss_only,0.0,,5,0,0
+max_consecutive_rejections,half,3,control,outage_visual,0.0,,5,5,5
+max_consecutive_rejections,half,3,control,vision_only,0.0,,5,0,0
+max_consecutive_rejections,half,3,gnss_spoof_sustained,gnss_only,3.0,m,5,5,3
+max_consecutive_rejections,half,3,gnss_spoof_sustained,gnss_only,10.0,m,5,5,5
+max_consecutive_rejections,half,3,gnss_spoof_sustained,gnss_only,40.0,m,5,5,5
+max_consecutive_rejections,half,3,gnss_multipath_spike,gnss_only,20.0,m,5,5,0
+max_consecutive_rejections,half,3,gnss_slow_bias,gnss_only,1.0,m (1 sigma),5,2,0
+max_consecutive_rejections,half,3,gnss_slow_bias,gnss_only,3.0,m (1 sigma),5,5,2
+max_consecutive_rejections,half,3,gnss_time_offset,gnss_only,0.05,s,5,0,0
+max_consecutive_rejections,half,3,gnss_time_offset,gnss_only,0.2,s,5,0,0
+max_consecutive_rejections,half,3,gnss_time_offset,gnss_only,0.5,s,5,1,0
+max_consecutive_rejections,half,3,imu_sample_loss,gnss_only,0.5,s lost at 10 s,5,1,0
+max_consecutive_rejections,half,3,imu_sample_loss,gnss_only,2.0,s lost at 10 s,5,5,5
+max_consecutive_rejections,half,3,gnss_spoof_after_outage,outage_visual,3.0,m,5,5,5
+max_consecutive_rejections,half,3,gnss_spoof_after_outage,outage_visual,10.0,m,5,5,5
+max_consecutive_rejections,half,3,gnss_spoof_after_outage,outage_visual,22.0,m,5,5,5
+max_consecutive_rejections,half,3,vision_time_offset,vision_only,0.05,s,5,0,0
+max_consecutive_rejections,half,3,vision_time_offset,vision_only,0.2,s,5,0,0
+max_consecutive_rejections,half,3,vision_outage,vision_only,2.0,s lost at 10 s,5,5,0
+max_consecutive_rejections,half,3,vision_outage,vision_only,5.0,s lost at 10 s,5,5,0
+max_consecutive_rejections,double,10,control,gnss_only,0.0,,5,0,0
+max_consecutive_rejections,double,10,control,outage_visual,0.0,,5,5,5
+max_consecutive_rejections,double,10,control,vision_only,0.0,,5,0,0
+max_consecutive_rejections,double,10,gnss_spoof_sustained,gnss_only,3.0,m,5,5,0
+max_consecutive_rejections,double,10,gnss_spoof_sustained,gnss_only,10.0,m,5,5,5
+max_consecutive_rejections,double,10,gnss_spoof_sustained,gnss_only,40.0,m,5,5,5
+max_consecutive_rejections,double,10,gnss_multipath_spike,gnss_only,20.0,m,5,5,0
+max_consecutive_rejections,double,10,gnss_slow_bias,gnss_only,1.0,m (1 sigma),5,2,0
+max_consecutive_rejections,double,10,gnss_slow_bias,gnss_only,3.0,m (1 sigma),5,5,1
+max_consecutive_rejections,double,10,gnss_time_offset,gnss_only,0.05,s,5,0,0
+max_consecutive_rejections,double,10,gnss_time_offset,gnss_only,0.2,s,5,0,0
+max_consecutive_rejections,double,10,gnss_time_offset,gnss_only,0.5,s,5,1,0
+max_consecutive_rejections,double,10,imu_sample_loss,gnss_only,0.5,s lost at 10 s,5,1,0
+max_consecutive_rejections,double,10,imu_sample_loss,gnss_only,2.0,s lost at 10 s,5,5,5
+max_consecutive_rejections,double,10,gnss_spoof_after_outage,outage_visual,3.0,m,5,5,5
+max_consecutive_rejections,double,10,gnss_spoof_after_outage,outage_visual,10.0,m,5,5,5
+max_consecutive_rejections,double,10,gnss_spoof_after_outage,outage_visual,22.0,m,5,5,5
+max_consecutive_rejections,double,10,vision_time_offset,vision_only,0.05,s,5,0,0
+max_consecutive_rejections,double,10,vision_time_offset,vision_only,0.2,s,5,0,0
+max_consecutive_rejections,double,10,vision_outage,vision_only,2.0,s lost at 10 s,5,5,0
+max_consecutive_rejections,double,10,vision_outage,vision_only,5.0,s lost at 10 s,5,5,0
+reacq_consecutive_rejections,half,2,control,gnss_only,0.0,,5,0,0
+reacq_consecutive_rejections,half,2,control,outage_visual,0.0,,5,5,5
+reacq_consecutive_rejections,half,2,control,vision_only,0.0,,5,0,0
+reacq_consecutive_rejections,half,2,gnss_spoof_sustained,gnss_only,3.0,m,5,5,2
+reacq_consecutive_rejections,half,2,gnss_spoof_sustained,gnss_only,10.0,m,5,5,5
+reacq_consecutive_rejections,half,2,gnss_spoof_sustained,gnss_only,40.0,m,5,5,5
+reacq_consecutive_rejections,half,2,gnss_multipath_spike,gnss_only,20.0,m,5,5,0
+reacq_consecutive_rejections,half,2,gnss_slow_bias,gnss_only,1.0,m (1 sigma),5,2,0
+reacq_consecutive_rejections,half,2,gnss_slow_bias,gnss_only,3.0,m (1 sigma),5,5,2
+reacq_consecutive_rejections,half,2,gnss_time_offset,gnss_only,0.05,s,5,0,0
+reacq_consecutive_rejections,half,2,gnss_time_offset,gnss_only,0.2,s,5,0,0
+reacq_consecutive_rejections,half,2,gnss_time_offset,gnss_only,0.5,s,5,1,0
+reacq_consecutive_rejections,half,2,imu_sample_loss,gnss_only,0.5,s lost at 10 s,5,1,0
+reacq_consecutive_rejections,half,2,imu_sample_loss,gnss_only,2.0,s lost at 10 s,5,5,5
+reacq_consecutive_rejections,half,2,gnss_spoof_after_outage,outage_visual,3.0,m,5,5,5
+reacq_consecutive_rejections,half,2,gnss_spoof_after_outage,outage_visual,10.0,m,5,5,5
+reacq_consecutive_rejections,half,2,gnss_spoof_after_outage,outage_visual,22.0,m,5,5,5
+reacq_consecutive_rejections,half,2,vision_time_offset,vision_only,0.05,s,5,0,0
+reacq_consecutive_rejections,half,2,vision_time_offset,vision_only,0.2,s,5,0,0
+reacq_consecutive_rejections,half,2,vision_outage,vision_only,2.0,s lost at 10 s,5,5,0
+reacq_consecutive_rejections,half,2,vision_outage,vision_only,5.0,s lost at 10 s,5,5,0
+reacq_consecutive_rejections,double,6,control,gnss_only,0.0,,5,0,0
+reacq_consecutive_rejections,double,6,control,outage_visual,0.0,,5,5,5
+reacq_consecutive_rejections,double,6,control,vision_only,0.0,,5,0,0
+reacq_consecutive_rejections,double,6,gnss_spoof_sustained,gnss_only,3.0,m,5,5,2
+reacq_consecutive_rejections,double,6,gnss_spoof_sustained,gnss_only,10.0,m,5,5,5
+reacq_consecutive_rejections,double,6,gnss_spoof_sustained,gnss_only,40.0,m,5,5,5
+reacq_consecutive_rejections,double,6,gnss_multipath_spike,gnss_only,20.0,m,5,5,0
+reacq_consecutive_rejections,double,6,gnss_slow_bias,gnss_only,1.0,m (1 sigma),5,2,0
+reacq_consecutive_rejections,double,6,gnss_slow_bias,gnss_only,3.0,m (1 sigma),5,5,2
+reacq_consecutive_rejections,double,6,gnss_time_offset,gnss_only,0.05,s,5,0,0
+reacq_consecutive_rejections,double,6,gnss_time_offset,gnss_only,0.2,s,5,0,0
+reacq_consecutive_rejections,double,6,gnss_time_offset,gnss_only,0.5,s,5,1,0
+reacq_consecutive_rejections,double,6,imu_sample_loss,gnss_only,0.5,s lost at 10 s,5,1,0
+reacq_consecutive_rejections,double,6,imu_sample_loss,gnss_only,2.0,s lost at 10 s,5,5,5
+reacq_consecutive_rejections,double,6,gnss_spoof_after_outage,outage_visual,3.0,m,5,5,5
+reacq_consecutive_rejections,double,6,gnss_spoof_after_outage,outage_visual,10.0,m,5,5,5
+reacq_consecutive_rejections,double,6,gnss_spoof_after_outage,outage_visual,22.0,m,5,5,5
+reacq_consecutive_rejections,double,6,vision_time_offset,vision_only,0.05,s,5,0,0
+reacq_consecutive_rejections,double,6,vision_time_offset,vision_only,0.2,s,5,0,0
+reacq_consecutive_rejections,double,6,vision_outage,vision_only,2.0,s lost at 10 s,5,5,0
+reacq_consecutive_rejections,double,6,vision_outage,vision_only,5.0,s lost at 10 s,5,5,0
+reacq_sigma_m,half,1.5,control,gnss_only,0.0,,5,0,0
+reacq_sigma_m,half,1.5,control,outage_visual,0.0,,5,5,5
+reacq_sigma_m,half,1.5,control,vision_only,0.0,,5,0,0
+reacq_sigma_m,half,1.5,gnss_spoof_sustained,gnss_only,3.0,m,5,5,2
+reacq_sigma_m,half,1.5,gnss_spoof_sustained,gnss_only,10.0,m,5,5,5
+reacq_sigma_m,half,1.5,gnss_spoof_sustained,gnss_only,40.0,m,5,5,5
+reacq_sigma_m,half,1.5,gnss_multipath_spike,gnss_only,20.0,m,5,5,0
+reacq_sigma_m,half,1.5,gnss_slow_bias,gnss_only,1.0,m (1 sigma),5,2,0
+reacq_sigma_m,half,1.5,gnss_slow_bias,gnss_only,3.0,m (1 sigma),5,5,2
+reacq_sigma_m,half,1.5,gnss_time_offset,gnss_only,0.05,s,5,0,0
+reacq_sigma_m,half,1.5,gnss_time_offset,gnss_only,0.2,s,5,0,0
+reacq_sigma_m,half,1.5,gnss_time_offset,gnss_only,0.5,s,5,1,0
+reacq_sigma_m,half,1.5,imu_sample_loss,gnss_only,0.5,s lost at 10 s,5,1,0
+reacq_sigma_m,half,1.5,imu_sample_loss,gnss_only,2.0,s lost at 10 s,5,5,5
+reacq_sigma_m,half,1.5,gnss_spoof_after_outage,outage_visual,3.0,m,5,5,5
+reacq_sigma_m,half,1.5,gnss_spoof_after_outage,outage_visual,10.0,m,5,5,5
+reacq_sigma_m,half,1.5,gnss_spoof_after_outage,outage_visual,22.0,m,5,5,5
+reacq_sigma_m,half,1.5,vision_time_offset,vision_only,0.05,s,5,0,0
+reacq_sigma_m,half,1.5,vision_time_offset,vision_only,0.2,s,5,0,0
+reacq_sigma_m,half,1.5,vision_outage,vision_only,2.0,s lost at 10 s,5,5,0
+reacq_sigma_m,half,1.5,vision_outage,vision_only,5.0,s lost at 10 s,5,5,0
+reacq_sigma_m,double,6,control,gnss_only,0.0,,5,0,0
+reacq_sigma_m,double,6,control,outage_visual,0.0,,5,5,5
+reacq_sigma_m,double,6,control,vision_only,0.0,,5,0,0
+reacq_sigma_m,double,6,gnss_spoof_sustained,gnss_only,3.0,m,5,5,2
+reacq_sigma_m,double,6,gnss_spoof_sustained,gnss_only,10.0,m,5,5,5
+reacq_sigma_m,double,6,gnss_spoof_sustained,gnss_only,40.0,m,5,5,5
+reacq_sigma_m,double,6,gnss_multipath_spike,gnss_only,20.0,m,5,5,0
+reacq_sigma_m,double,6,gnss_slow_bias,gnss_only,1.0,m (1 sigma),5,2,0
+reacq_sigma_m,double,6,gnss_slow_bias,gnss_only,3.0,m (1 sigma),5,5,2
+reacq_sigma_m,double,6,gnss_time_offset,gnss_only,0.05,s,5,0,0
+reacq_sigma_m,double,6,gnss_time_offset,gnss_only,0.2,s,5,0,0
+reacq_sigma_m,double,6,gnss_time_offset,gnss_only,0.5,s,5,1,0
+reacq_sigma_m,double,6,imu_sample_loss,gnss_only,0.5,s lost at 10 s,5,1,0
+reacq_sigma_m,double,6,imu_sample_loss,gnss_only,2.0,s lost at 10 s,5,5,5
+reacq_sigma_m,double,6,gnss_spoof_after_outage,outage_visual,3.0,m,5,5,5
+reacq_sigma_m,double,6,gnss_spoof_after_outage,outage_visual,10.0,m,5,5,5
+reacq_sigma_m,double,6,gnss_spoof_after_outage,outage_visual,22.0,m,5,5,5
+reacq_sigma_m,double,6,vision_time_offset,vision_only,0.05,s,5,0,0
+reacq_sigma_m,double,6,vision_time_offset,vision_only,0.2,s,5,0,0
+reacq_sigma_m,double,6,vision_outage,vision_only,2.0,s lost at 10 s,5,5,0
+reacq_sigma_m,double,6,vision_outage,vision_only,5.0,s lost at 10 s,5,5,0
