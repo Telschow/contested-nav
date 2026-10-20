@@ -190,7 +190,7 @@ jobs:
           tests/test_slow_ramp_page.py tests/test_timing_page.py tests/test_tumvi_page.py
           tests/test_urbannav_check.py tests/test_vision_ramp_page.py tests/test_vo_page.py
           tests/test_quoted_numbers.py tests/test_urbannav_run.py tests/test_ensemble_page.py
-          tests/test_b1_gate_page.py tests/test_b1_gate_heldout_page.py
+          tests/test_b1_gate_page.py tests/test_b1_gate_heldout_page.py tests/test_fdir_false_alarm_page.py
 
   build:
     name: build
@@ -398,6 +398,20 @@ jobs:
         # Same idea for docs/faults.md and docs/data/fault_matrix.csv.
         run: python scripts/fault_matrix.py --out /tmp/fault_full.json --compare docs/data/fault_matrix.csv
 
+      - name: The committed FDIR false-alarm and sensitivity CSVs match a fresh reduced run
+        # docs/faults.md has two generated blocks from docs/data/fdir_false_alarm.csv and docs/data/fdir_sensitivity.csv.
+        # The full grids take several minutes, so this runs a reduced one twice and compares it with the committed files:
+        # the false-alarm rate on seeds 0 to 2 (the per-seed rows are compared, the pooled rows only when the seeds
+        # match) and the sensitivity sweep on one fault and one constant at the full five seeds. The two runs must
+        # also agree byte for byte. Numbers are compared to 1e-6 relative, as in ADR-0009.
+        run: |
+          for n in 1 2; do
+            python scripts/fdir_false_alarm.py rate --seeds 3 --csv /tmp/fdir_rate_$n.csv --compare docs/data/fdir_false_alarm.csv
+            python scripts/fdir_false_alarm.py sensitivity --faults gnss_spoof_sustained --constants reacq_sigma_m --csv /tmp/fdir_sens_$n.csv --compare docs/data/fdir_sensitivity.csv
+          done
+          cmp /tmp/fdir_rate_1.csv /tmp/fdir_rate_2.csv
+          cmp /tmp/fdir_sens_1.csv /tmp/fdir_sens_2.csv
+
   ensemble:
     name: ensemble reproducibility
     runs-on: ubuntu-latest
@@ -419,3 +433,26 @@ jobs:
         # Text and integers must match exactly. Floats are compared to 1e-6 relative, as in ADR-0009, because
         # the runner is not the machine that wrote the file and the last digits of a float can differ across platforms.
         run: python scripts/seed_sweep.py --seeds 25 --out /tmp/ensemble_sweep.json --ensemble-compare docs/data/ensemble_nees.csv
+
+      - name: The committed development gate matches a fresh run
+        # The B1 gate of ADR-0028 on the development seeds 0 to 24, once. Never the held-out seeds 100 to 124: they
+        # are single use. The same comparison as above: text, integers and flags exactly, floats to 1e-6 relative.
+        run: |
+          navkit gate b1 --seeds 0-24 --csv /tmp/b1_gate_dev.csv
+          python - <<'PY'
+          import math
+          from pathlib import Path
+          from navkit import b1_gate
+
+          new = b1_gate.parse_csv(Path("/tmp/b1_gate_dev.csv").read_text(encoding="utf-8"))
+          old = b1_gate.parse_csv(Path("docs/data/b1_gate_dev.csv").read_text(encoding="utf-8"))
+          problems = [] if len(new) == len(old) else [f"{len(new)} rows against {len(old)}"]
+          for a, b in zip(new, old, strict=False):
+              for key in b1_gate.CSV_FIELDS:
+                  x, y = a[key], b[key]
+                  same = math.isclose(x, y, rel_tol=1e-6, abs_tol=1e-12) if isinstance(x, float) else x == y
+                  if not same:
+                      problems.append(f"{a['subject']} {a['condition']} {key}: {x!r} against {y!r}")
+          print("\n".join(problems) or "the development gate matches docs/data/b1_gate_dev.csv")
+          raise SystemExit(1 if problems else 0)
+          PY

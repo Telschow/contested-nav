@@ -125,3 +125,219 @@ on the control. **It is not met.**
 - "Detected" and "declared" describe what the filter's own gate did. Nothing here is a protection
   level or an integrity claim, and there is no detector for a slow bias or a timing error to
   measure.
+
+## FDIR false alarms and constant sensitivity
+
+This section reports two measurements of the FDIR layer. It tunes nothing: no `FdirConfig` default changes here, and
+no sentence below recommends a value. Point 1 above counted control false alarms over five seeds on three cases. This
+section counts them per update, against the false-alarm probability the gate states, and then moves three constants one
+at a time. Every number in the generated blocks is read from a committed CSV, and `tests/test_fdir_false_alarm_page.py`
+fails if a block, a sentence or a CSV drifts. The data is synthetic.
+
+### Per-update false-alarm rate
+
+```bash
+navkit sweep fdir rate --csv docs/data/fdir_false_alarm.csv --page docs/faults.md
+```
+
+**What is counted.** A rejection is the per-update chi-square test of [`navkit.fdir.gating`](api/fdir.md): the squared
+Mahalanobis distance of a GNSS position innovation, recomputed from the residual and the innovation covariance the filter
+recorded before it decided, above the threshold for the stated α. It is not a fault declaration, which needs several
+rejections in a row. The gating module says the stated rate holds only if the innovation covariance is the right size,
+and the predicted-rate table below tests that statement.
+
+**The cases.** `gnss_only` has healthy GNSS throughout. `outage_control` has a GNSS outage, and the fixes inside the
+outage do not exist. The fixes in the settling period after the return are reported on their own row and are not in the
+false-alarm count, because rejecting the first fixes after an outage is the gate doing its job on a filter that has
+drifted. The settling period was chosen before the first run and has not been varied. The seeds are the development set
+of the [ensemble](calibration.md). The seeds reserved for the B1 gate ([ADR-0028](adr/0028-the-b1-gate.md)) are not used,
+and the code refuses them.
+
+**Autocorrelation.** Successive updates in one run are not independent, because the filter state carries over from one
+update to the next, so the raw Wilson interval, which treats them as independent, is too narrow. The second interval
+replaces the update count by the sum over runs of the effective sample size of the rejection indicator
+(`navkit.eval.statistics`, Sokal windowing) and scales each run's rejection count by the same ratio. A run with no
+rejection is a constant series, for which the estimator returns no value, and it is counted as that many independent
+updates. A run with a lone rejection gets a value equal to its length, because one event has no measurable
+autocorrelation. With few rejections the two intervals can therefore be equal, and equality there does not show that the
+updates are independent. For that reason the effective size of the NIS series, which is where the dependence
+would sit, is listed too. It enters neither interval.
+
+**The predicted rate.** The scale factor c is the mean NIS of the counted healthy updates over the three degrees of
+freedom. If the innovation covariance were too small by the factor c, the rejection rate would be the chi-square tail
+above the threshold divided by c. That assumes one factor for all directions and treats c as exact, though the mean NIS
+carries its own sampling error. The block reports where the predicted rate falls relative to the observed rate and its
+intervals, and says nothing more about it.
+
+**What this does not cover.** The innovations are the filter's own, in closed loop: a rejected fix leaves the state as
+it was, so the updates after a rejection are not drawn from the same distribution as the ones before. The filter is told
+the noise the generator used. A receiver whose real error differs from the noise the filter assumes is a different
+measurement (see [the mismatch sweep](mismatch.md)). The path is one synthetic trajectory.
+
+<!-- fdir-false-alarm:start -->
+
+Seeds 0 to 24 (25 runs per case). The stated α is 0.100%, which is a threshold of 16.266 for 3 degrees of freedom. The settling period after an outage is 5 s, the half-open interval from the return to 5 s after it.
+
+Per-update gate rejections of healthy GNSS fixes:
+
+| Case | Updates counted | Updates | Rejections | Observed rate | 95% Wilson interval, raw count | Summed effective updates | Effective rejections | 95% Wilson interval, effective count | Stated α |
+|---|---|---:|---:|---:|---|---:|---:|---|---:|
+| gnss_only | all updates | 3775 | 5 | 0.132% | [0.057%, 0.310%] | 3775.0 | 5.00 | [0.057%, 0.310%] | 0.100% |
+| outage_control | outside the outage and its settling period | 1275 | 0 | 0.000% | [0.000%, 0.300%] | 1275.0 | 0.00 | [0.000%, 0.300%] | 0.100% |
+| outage_control | first 5 s after the return (reported apart) | 625 | 1 | 0.160% | [0.028%, 0.901%] | 625.0 | 1.00 | [0.028%, 0.901%] | 0.100% |
+
+Predicted rate from the scale factor c, next to the observed rate:
+
+| Case | Updates counted | Mean NIS (expected 3) | c = mean NIS / 3 | Threshold | Predicted rate P(χ²₃ > threshold / c) | Observed rate | Stated α |
+|---|---|---:|---:|---:|---:|---:|---:|
+| gnss_only | all updates | 2.982 | 0.994 | 16.266 | 0.096% | 0.132% | 0.100% |
+| outage_control | outside the outage and its settling period | 2.951 | 0.984 | 16.266 | 0.088% | 0.000% | 0.100% |
+| outage_control | first 5 s after the return (reported apart) | 3.170 | 1.057 | 16.266 | 0.151% | 0.160% | 0.100% |
+
+Effective sample size of the rejection indicator, per run:
+
+| Case | Updates counted | Runs | Runs where the estimator returned a value for the indicator | Indicator, per-run effective size, min / median / max | NIS series, per-run effective size, min / median / max (diagnostic, in neither interval) | Per-run updates, median |
+|---|---|---:|---:|---|---|---:|
+| gnss_only | all updates | 25 | 5 | 151.0 / 151.0 / 151.0 | 111.5 / 151.0 / 151.0 | 151 |
+| outage_control | outside the outage and its settling period | 25 | 0 | 51.0 / 51.0 / 51.0 | 29.7 / 51.0 / 51.0 | 51 |
+| outage_control | first 5 s after the return (reported apart) | 25 | 1 | 25.0 / 25.0 / 25.0 | 22.2 / 25.0 / 25.0 | 25 |
+
+- **gnss_only, all updates.** The gate rejected 5 of 3775 updates, 0.132%. The stated α is 0.100%, which is inside the raw-count interval [0.057%, 0.310%] and inside the effective-count interval [0.057%, 0.310%]. The mean NIS is 2.982, so c is 0.994 and the predicted rate is 0.096%. The predicted rate is inside the raw-count interval and inside the effective-count interval, and it is farther from the observed rate than α is.
+- **outage_control, outside the outage and its settling period.** The gate rejected 0 of 1275 updates, 0.000%. The stated α is 0.100%, which is inside the raw-count interval [0.000%, 0.300%] and inside the effective-count interval [0.000%, 0.300%]. The mean NIS is 2.951, so c is 0.984 and the predicted rate is 0.088%. The predicted rate is inside the raw-count interval and inside the effective-count interval, and it is closer to the observed rate than α is.
+- **outage_control, first 5 s after the return (reported apart).** The gate rejected 1 of 625 updates, 0.160%. The stated α is 0.100%, which is inside the raw-count interval [0.028%, 0.901%] and inside the effective-count interval [0.028%, 0.901%]. The mean NIS is 3.170, so c is 1.057 and the predicted rate is 0.151%. The predicted rate is inside the raw-count interval and inside the effective-count interval, and it is closer to the observed rate than α is.
+
+<!-- fdir-false-alarm:end -->
+
+### One constant at a time
+
+```bash
+navkit sweep fdir sensitivity --csv docs/data/fdir_sensitivity.csv --page docs/faults.md
+```
+
+**What is changed.** One of `max_consecutive_rejections`, `reacq_consecutive_rejections` and `reacq_sigma_m` is set to
+half and to double its default while the other two and every other field keep their defaults. An integer is rounded
+half up. The cells are the cells of the fault matrix above, with the same faults, levels and seeds. *Detected* and
+*declared* mean what they mean in the matrix: the seeds in which the gate rejected at least one measurement, and the
+seeds in which the FDIR layer declared a channel faulty. The control rows are the no-fault runs of each base case, so
+their declared count is the false-alarm count for that setting. The counts at the defaults are those of the matrix, and
+a test checks that they agree.
+
+<!-- fdir-sensitivity:start -->
+
+Seeds 0 to 4, as the fault matrix above uses. The defaults are the ones in `FdirConfig`, and the table is read from them:
+
+| Constant | Default | Half | Double | Type |
+|---|---:|---:|---:|---|
+| `max_consecutive_rejections` | 5 | 3 | 10 | integer, rounded half up |
+| `reacq_consecutive_rejections` | 3 | 2 | 6 | integer, rounded half up |
+| `reacq_sigma_m` | 3 | 1.5 | 6 | float |
+
+False alarms: seeds in which the no-fault control declared a channel faulty, out of 5:
+
+| Setting | gnss_only control declared | outage_visual control declared | vision_only control declared | Cells whose detected count differs from the defaults | Cells whose declared count differs from the defaults |
+|---|---:|---:|---:|---:|---:|
+| defaults | 0/5 | 5/5 | 0/5 | 0 | 0 |
+| max_consecutive_rejections = 3 (half; default 5) | 0/5 | 5/5 | 0/5 | 0 | 1 |
+| max_consecutive_rejections = 10 (double; default 5) | 0/5 | 5/5 | 0/5 | 0 | 2 |
+| reacq_consecutive_rejections = 2 (half; default 3) | 0/5 | 5/5 | 0/5 | 0 | 0 |
+| reacq_consecutive_rejections = 6 (double; default 3) | 0/5 | 5/5 | 0/5 | 0 | 0 |
+| reacq_sigma_m = 1.5 (half; default 3) | 0/5 | 5/5 | 0/5 | 0 | 0 |
+| reacq_sigma_m = 6 (double; default 3) | 0/5 | 5/5 | 0/5 | 0 | 0 |
+
+`max_consecutive_rejections`, detected / declared, out of 5 seeds:
+
+| Case | Fault | Level | max_consecutive_rejections = 5 (default) | max_consecutive_rejections = 3 (half) | max_consecutive_rejections = 10 (double) |
+|---|---|---:|---|---|---|
+| gnss_only | none (control) |  | 0/0 | 0/0 | 0/0 |
+| gnss_only | GNSS spoof, sustained offset | 3 m | 5/2 | 5/3 | 5/0 |
+| gnss_only | GNSS spoof, sustained offset | 10 m | 5/5 | 5/5 | 5/5 |
+| gnss_only | GNSS spoof, sustained offset | 40 m | 5/5 | 5/5 | 5/5 |
+| gnss_only | GNSS single spike | 20 m | 5/0 | 5/0 | 5/0 |
+| gnss_only | GNSS slow bias | 1 m (1 sigma) | 2/0 | 2/0 | 2/0 |
+| gnss_only | GNSS slow bias | 3 m (1 sigma) | 5/2 | 5/2 | 5/1 |
+| gnss_only | GNSS timestamp offset | 0.05 s | 0/0 | 0/0 | 0/0 |
+| gnss_only | GNSS timestamp offset | 0.2 s | 0/0 | 0/0 | 0/0 |
+| gnss_only | GNSS timestamp offset | 0.5 s | 1/0 | 1/0 | 1/0 |
+| gnss_only | IMU sample loss | 0.5 s lost at 10 s | 1/0 | 1/0 | 1/0 |
+| gnss_only | IMU sample loss | 2 s lost at 10 s | 5/5 | 5/5 | 5/5 |
+| outage_visual | none (control) |  | 5/5 | 5/5 | 5/5 |
+| outage_visual | GNSS spoof after an outage | 3 m | 5/5 | 5/5 | 5/5 |
+| outage_visual | GNSS spoof after an outage | 10 m | 5/5 | 5/5 | 5/5 |
+| outage_visual | GNSS spoof after an outage | 22 m | 5/5 | 5/5 | 5/5 |
+| vision_only | none (control) |  | 0/0 | 0/0 | 0/0 |
+| vision_only | Vision timestamp offset | 0.05 s | 0/0 | 0/0 | 0/0 |
+| vision_only | Vision timestamp offset | 0.2 s | 0/0 | 0/0 | 0/0 |
+| vision_only | Vision outage | 2 s lost at 10 s | 5/0 | 5/0 | 5/0 |
+| vision_only | Vision outage | 5 s lost at 10 s | 5/0 | 5/0 | 5/0 |
+
+`reacq_consecutive_rejections`, detected / declared, out of 5 seeds:
+
+| Case | Fault | Level | reacq_consecutive_rejections = 3 (default) | reacq_consecutive_rejections = 2 (half) | reacq_consecutive_rejections = 6 (double) |
+|---|---|---:|---|---|---|
+| gnss_only | none (control) |  | 0/0 | 0/0 | 0/0 |
+| gnss_only | GNSS spoof, sustained offset | 3 m | 5/2 | 5/2 | 5/2 |
+| gnss_only | GNSS spoof, sustained offset | 10 m | 5/5 | 5/5 | 5/5 |
+| gnss_only | GNSS spoof, sustained offset | 40 m | 5/5 | 5/5 | 5/5 |
+| gnss_only | GNSS single spike | 20 m | 5/0 | 5/0 | 5/0 |
+| gnss_only | GNSS slow bias | 1 m (1 sigma) | 2/0 | 2/0 | 2/0 |
+| gnss_only | GNSS slow bias | 3 m (1 sigma) | 5/2 | 5/2 | 5/2 |
+| gnss_only | GNSS timestamp offset | 0.05 s | 0/0 | 0/0 | 0/0 |
+| gnss_only | GNSS timestamp offset | 0.2 s | 0/0 | 0/0 | 0/0 |
+| gnss_only | GNSS timestamp offset | 0.5 s | 1/0 | 1/0 | 1/0 |
+| gnss_only | IMU sample loss | 0.5 s lost at 10 s | 1/0 | 1/0 | 1/0 |
+| gnss_only | IMU sample loss | 2 s lost at 10 s | 5/5 | 5/5 | 5/5 |
+| outage_visual | none (control) |  | 5/5 | 5/5 | 5/5 |
+| outage_visual | GNSS spoof after an outage | 3 m | 5/5 | 5/5 | 5/5 |
+| outage_visual | GNSS spoof after an outage | 10 m | 5/5 | 5/5 | 5/5 |
+| outage_visual | GNSS spoof after an outage | 22 m | 5/5 | 5/5 | 5/5 |
+| vision_only | none (control) |  | 0/0 | 0/0 | 0/0 |
+| vision_only | Vision timestamp offset | 0.05 s | 0/0 | 0/0 | 0/0 |
+| vision_only | Vision timestamp offset | 0.2 s | 0/0 | 0/0 | 0/0 |
+| vision_only | Vision outage | 2 s lost at 10 s | 5/0 | 5/0 | 5/0 |
+| vision_only | Vision outage | 5 s lost at 10 s | 5/0 | 5/0 | 5/0 |
+
+`reacq_sigma_m`, detected / declared, out of 5 seeds:
+
+| Case | Fault | Level | reacq_sigma_m = 3 (default) | reacq_sigma_m = 1.5 (half) | reacq_sigma_m = 6 (double) |
+|---|---|---:|---|---|---|
+| gnss_only | none (control) |  | 0/0 | 0/0 | 0/0 |
+| gnss_only | GNSS spoof, sustained offset | 3 m | 5/2 | 5/2 | 5/2 |
+| gnss_only | GNSS spoof, sustained offset | 10 m | 5/5 | 5/5 | 5/5 |
+| gnss_only | GNSS spoof, sustained offset | 40 m | 5/5 | 5/5 | 5/5 |
+| gnss_only | GNSS single spike | 20 m | 5/0 | 5/0 | 5/0 |
+| gnss_only | GNSS slow bias | 1 m (1 sigma) | 2/0 | 2/0 | 2/0 |
+| gnss_only | GNSS slow bias | 3 m (1 sigma) | 5/2 | 5/2 | 5/2 |
+| gnss_only | GNSS timestamp offset | 0.05 s | 0/0 | 0/0 | 0/0 |
+| gnss_only | GNSS timestamp offset | 0.2 s | 0/0 | 0/0 | 0/0 |
+| gnss_only | GNSS timestamp offset | 0.5 s | 1/0 | 1/0 | 1/0 |
+| gnss_only | IMU sample loss | 0.5 s lost at 10 s | 1/0 | 1/0 | 1/0 |
+| gnss_only | IMU sample loss | 2 s lost at 10 s | 5/5 | 5/5 | 5/5 |
+| outage_visual | none (control) |  | 5/5 | 5/5 | 5/5 |
+| outage_visual | GNSS spoof after an outage | 3 m | 5/5 | 5/5 | 5/5 |
+| outage_visual | GNSS spoof after an outage | 10 m | 5/5 | 5/5 | 5/5 |
+| outage_visual | GNSS spoof after an outage | 22 m | 5/5 | 5/5 | 5/5 |
+| vision_only | none (control) |  | 0/0 | 0/0 | 0/0 |
+| vision_only | Vision timestamp offset | 0.05 s | 0/0 | 0/0 | 0/0 |
+| vision_only | Vision timestamp offset | 0.2 s | 0/0 | 0/0 | 0/0 |
+| vision_only | Vision outage | 2 s lost at 10 s | 5/0 | 5/0 | 5/0 |
+| vision_only | Vision outage | 5 s lost at 10 s | 5/0 | 5/0 | 5/0 |
+
+What the counts show:
+
+- The `gnss_only` control declared a channel faulty in 0 of 5 seeds at every setting.
+- The `outage_visual` control declared a channel faulty in 5 of 5 seeds at every setting.
+- The `vision_only` control declared a channel faulty in 0 of 5 seeds at every setting.
+- max_consecutive_rejections = 3 (half): 1 cell(s) differ from the defaults (gnss_only, GNSS spoof, sustained offset 3 m: detected 5 to 5, declared 2 to 3; of 5 seeds).
+- max_consecutive_rejections = 10 (double): 2 cell(s) differ from the defaults (gnss_only, GNSS spoof, sustained offset 3 m: detected 5 to 5, declared 2 to 0; gnss_only, GNSS slow bias 3 m (1 sigma): detected 5 to 5, declared 2 to 1; of 5 seeds).
+- reacq_consecutive_rejections = 2 (half): no cell differs from the defaults in its detected or declared count.
+- reacq_consecutive_rejections = 6 (double): no cell differs from the defaults in its detected or declared count.
+- reacq_sigma_m = 1.5 (half): no cell differs from the defaults in its detected or declared count.
+- reacq_sigma_m = 6 (double): no cell differs from the defaults in its detected or declared count.
+
+<!-- fdir-sensitivity:end -->
+
+**What this does not show.** Five seeds and one fault window per fault. A changed count is a count of seeds, not a rate.
+One constant at a time says nothing about two moved together. The counts are all the table reports, so it would not show
+a change in error or coverage that leaves every count as it was. A control that declares in every seed at a setting
+cannot separate detection from false alarm at that setting (point 1). Nothing here ranks the settings or says which one
+to use.

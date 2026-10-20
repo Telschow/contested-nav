@@ -79,12 +79,14 @@ __all__ = [
 _Z95 = math.sqrt(chi2_ppf(0.95, 1))
 
 
-def wilson_interval(successes: int, trials: int, z: float = _Z95) -> tuple[float, float]:
+def wilson_interval(successes: float, trials: float, z: float = _Z95) -> tuple[float, float]:
     """Wilson score interval for a binomial proportion.
 
     Preferred over the normal approximation, which is badly behaved at the
     coverage values that matter here: a filter that claims 95% coverage and
     achieves 0% is exactly the case where a Wald interval produces nonsense.
+
+    The counts may be non-integer, for an effective count (trials scaled by an effective sample size).
     """
     if trials <= 0:
         return (0.0, 1.0)

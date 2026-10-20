@@ -5,7 +5,7 @@ Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked. Checked items record what was measured when the item closed. They are not kept current: the
 current values are in the README tables, `docs/results.md` and `CONSTRAINTS.md` (B1).
 
-Measured baseline: <!-- metric:tests_collected -->1754<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->1814<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -254,6 +254,8 @@ this removes it.
 - [x] Hold `vision_enabled = False` until that gate is met. Decided in ADR-0017: the gate is met by the
       opt-in clone for a front end with independent errors, `vision_enabled` stays `False`, and it is
       reconsidered when a front end's error correlation is measured.
+      Note (2026-10-20): the gate in this item and the one above is the old one. The gate is now
+      [ADR-0028](docs/adr/0028-the-b1-gate.md). Its status is in `CONSTRAINTS.md` (B1).
 - [x] Keep the overconfident single-anchor case in the benchmark as a control
       row after the fix lands. Deleting the number that motivated the work would
       destroy the evidence that the work mattered.
@@ -271,11 +273,10 @@ this removes it.
       windows of five Machine Hall sequences only with the assumed noise inflated by four. One dataset and one
       front end, so the default does not change.
 
-**Exit test:** NEES below 10 with vision enabled and GNSS denied, coverage above
-90%, `vision_enabled = True` as the shipped default. The current value for the
-shipped single anchor is in the README table and in `CONSTRAINTS.md` B1; the clone row is in the results
-table and meets the gate.
-The default has not been changed.
+**Exit test:** the gate of [ADR-0028](docs/adr/0028-the-b1-gate.md) passes on its held-out seeds, and
+`vision_enabled = True` as the shipped default is then a separate maintainer decision. The status is in
+`CONSTRAINTS.md` (B1) and the decision run is in [the calibration guide](docs/calibration.md). The current value for
+the shipped single anchor is in the README table. The default has not been changed.
 
 ### Track C: TPM / PM deliverables `[~]`
 
