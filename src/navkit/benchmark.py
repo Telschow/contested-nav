@@ -45,7 +45,7 @@ import sys
 import time
 import warnings
 from collections.abc import Callable
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -69,6 +69,7 @@ from .eval.metrics import (
     outage_summary,
     relative_pose_error,
 )
+from .geometry.rigid import rot_exp
 from .sensors.models import gnss_fixes, visual_updates
 from .synthetic import SyntheticConfig, seeded_scene, synthetic_imu, synthetic_trajectory
 from .types import GnssFix, ImuSample
@@ -94,6 +95,55 @@ def default_config_path() -> Path:
     if packaged.is_file():
         return Path(str(packaged))
     raise FileNotFoundError("benchmark.yaml not found next to the source tree or inside the package; pass --config")
+
+
+#: Where an ESKF case starts (ADR-0027). ``origin`` is the identity pose at the origin, as before the ADR.
+#: ``truth`` is the true initial state exactly. ``prior_draw`` is the true initial state plus an error drawn from
+#: the filter's own declared prior. The dead-reckoning control always starts at the truth (T2-4).
+START_MODES = ("origin", "truth", "prior_draw")
+
+#: The stream index of the start draw. ``SeedSequence([seed, PRIOR_DRAW_STREAM])`` is a different stream from
+#: ``default_rng(seed)``, which the sensor generators use, so drawing the start consumes nothing from a sensor stream
+#: and a change to the draw does not change any sensor sample. The value is arbitrary and fixed.
+PRIOR_DRAW_STREAM = 0x5EED
+
+
+@dataclass(frozen=True)
+class StartError:
+    """The start error of one draw, in the filter's own error convention (error state = truth minus estimate)."""
+
+    dp: np.ndarray
+    dv: np.ndarray
+    dtheta: np.ndarray
+
+
+def draw_start_error(cfg: EskfConfig, base_seed: int) -> StartError:
+    """Draw the start error from the prior ``cfg`` declares: each axis independent, zero mean, its own sigma.
+
+    ``base_seed`` is the case's effective seed (the one its GNSS stream gets). The sigmas are the ones the filter was
+    built with, after any per-case override, so the draw is a sample of the distribution the filter says it has.
+    """
+    rng = np.random.default_rng(np.random.SeedSequence([int(base_seed), PRIOR_DRAW_STREAM]))
+    z = rng.standard_normal(9)
+    return StartError(
+        dp=z[0:3] * cfg.initial_pos_sigma_m,
+        dv=z[3:6] * cfg.initial_vel_sigma_m_s,
+        dtheta=z[6:9] * np.deg2rad(cfg.initial_rot_sigma_deg),
+    )
+
+
+def start_state(true_R: np.ndarray, true_p: np.ndarray, true_v: np.ndarray, err: StartError) -> InitialState:
+    """The estimate that is off from the truth by ``err``. Biases start at zero (ADR-0027).
+
+    The filter injects a correction as ``x <- x + dx`` for position and velocity and ``R <- R Exp(dtheta)`` for
+    attitude, so its error state is truth minus estimate, and the truth is ``R_est Exp(dtheta)``. The estimate is
+    therefore ``p_true - dp``, ``v_true - dv`` and ``R_est = R_true Exp(dtheta)^T``.
+    """
+    return InitialState(
+        R=np.asarray(true_R, float) @ rot_exp(err.dtheta).T,
+        p=np.asarray(true_p, float) - err.dp,
+        v=np.asarray(true_v, float) - err.dv,
+    )
 
 
 # Claim types, from navkit.analysis.findings. Every scalar this script emits is
@@ -271,6 +321,10 @@ def run_case(
 
     cfg = _eskf_config(scenario, keys)
 
+    mode = str(keys.get("initial_start", "origin"))
+    if mode not in START_MODES:
+        raise ValueError(f"estimator key 'initial_start' must be one of {', '.join(START_MODES)}, got {mode!r}")
+
     # Dispatch on the declared estimator rather than assuming the ESKF, so a
     # config can name a control case and get the control it asked for. Silently
     # running an ESKF for a case labelled DeadReckoning would produce a
@@ -281,8 +335,19 @@ def run_case(
         # cases keep their declared prior: that is part of what they measure.
         start = InitialState(R=reference.poses[0, :3, :3], p=reference.poses[0, :3, 3])
         result = DeadReckoning().run(imu, initial=start)
+        mode = "truth"
     elif estimator_name == "ErrorStateKalmanFilter":
-        result = ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, vision=vision)
+        # ADR-0027. The synthetic truth starts at rest (the motion is built from 1 - cos terms, so its velocity is
+        # exactly zero at t = 0), at the configured start position with the identity attitude.
+        initial: InitialState | None = None
+        if mode != "origin":
+            zero = StartError(dp=np.zeros(3), dv=np.zeros(3), dtheta=np.zeros(3))
+            err = draw_start_error(cfg, scenario.gnss.seed) if mode == "prior_draw" else zero
+            initial = start_state(reference.poses[0, :3, :3], reference.poses[0, :3, 3], np.zeros(3), err)
+        if initial is None:
+            result = ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, vision=vision)
+        else:
+            result = ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, vision=vision, initial=initial)
     else:
         raise ValueError(
             f"case {name!r} requests unknown estimator {estimator_name!r}; known: ErrorStateKalmanFilter, DeadReckoning"
@@ -310,12 +375,14 @@ def run_case(
         # The estimator block goes into the hash as well as the record: it
         # changes the filter without changing the scenario, so a scenario-only
         # hash would let two different filters claim the same provenance.
-        "config_hash": config_hash(scenario, estimator={"class": estimator_name, **cfg.as_dict()}),
+        "config_hash": config_hash(
+            scenario, estimator={"class": estimator_name, **cfg.as_dict(), "initial_start": mode}
+        ),
         "seed": scenario.gnss.seed,
         "scene_seed": scene_seed,
         "synthetic": syn.as_dict(),
         "scenario": scenario.as_dict(),
-        "estimator": {"class": estimator_name, **cfg.as_dict()},
+        "estimator": {"class": estimator_name, **cfg.as_dict(), "initial_start": mode},
         "runtime_s": result.runtime_s,
         "stats": dict(result.stats),
         "summary": result.summary(),

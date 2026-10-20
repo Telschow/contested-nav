@@ -31,6 +31,10 @@ defaults:
     vision_keyframe_interval: 1
     vision_anchor_modelled: true
     rpe_delta_s: 1.0
+    # Where an ESKF case starts (ADR-0027): "origin", "truth", or "prior_draw", which is the true initial state plus
+    # an error drawn from the filter's own declared prior, from a stream seeded by the case seed. Every case with the
+    # same seed and prior gets the same draw, so cases stay comparable. The dead-reckoning control starts at the truth.
+    initial_start: prior_draw
 
 cases:
   # --- controls -------------------------------------------------------------
