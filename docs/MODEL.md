@@ -73,7 +73,9 @@ part of why visual aiding stays overconfident ([ADR-0001](adr/0001-anchor-as-fil
   independent.
 - The motion is built from `1 - cos(w t)` terms, so position, velocity and angular rate
   are exactly zero at `t = 0`. A filter initialised at the identity pose is exactly
-  right at the first sample, which is what makes the fixture a known-answer test.
+  right at the first sample, which is what makes the fixture a known-answer test. The benchmark no longer starts
+  the filter there: it starts at the truth plus an error drawn from the filter's declared prior (`initial_start`
+  below, [ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)).
 - The same code on the same machine gives byte-identical output once timing fields are
   stripped, and CI enforces that for the benchmark and the sweeps. Across platforms the
   benchmark is compared with the golden snapshot at a relative tolerance of 1e-9 plus an
@@ -262,6 +264,7 @@ default in the benchmark:
 | `anchor_pos_sigma_m`, `anchor_rot_sigma_deg` | as in `EskfConfig` |
 | `anchor_pos_drift_sigma_m_sqrt_s`, `anchor_rot_drift_sigma_deg_sqrt_s` | as in `EskfConfig`; the old `_m_s` and `_deg_s` names are accepted with a deprecation warning |
 | `rpe_delta_s` | spacing of the relative-pose-error metric, s |
+| `initial_start` | where an ESKF case starts: `origin` (the identity pose at the origin), `truth`, or `prior_draw` (the true initial state plus a draw from the filter's declared position, velocity and attitude priors, from a stream seeded by the case seed; biases start at zero). The benchmark file sets `prior_draw`. The dead-reckoning control always starts at the truth ([ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)) |
 | `gnss_sigma_scale`, `vision_sigma_scale` | multiply the GNSS or vision noise the *filter* assumes (default 1); the generator keeps the true noise |
 | `vision_noise_preset` | a named value for `vision_sigma_scale`, only with `vision_model: clone` and not together with it. `measured-front-end` is four times the measured visual noise ([ADR-0024](adr/0024-assumed-noise-for-the-opt-in-clone.md), [real front end](real_front_end.md)) |
 
@@ -341,9 +344,10 @@ rediscover them. Items 1 to 4 were changed since; the others are still as descri
    scenario's GNSS and vision sigmas feed both the generator and the filter. Mismatched
    noise is not exercised by any benchmark case; `navkit sweep mismatch` measures it
    ([Noise mismatch](mismatch.md)).
-6. **The reference frame is the filter's frame.** The filter starts at the identity pose
-   and the fixture starts there too, so ATE with `alignment: none` is the headline and
-   there is no alignment error to absorb.
+6. **The reference frame is the filter's frame.** The fixture and the filter share a frame. The filter starts at
+   the truth plus an error drawn from its declared prior (`initial_start: prior_draw`,
+   [ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)), so ATE with `alignment: none` is the headline,
+   there is no alignment error to absorb, and the start error is part of what it scores.
 
 ## FMEA-lite
 
@@ -355,7 +359,7 @@ accuracy or calibration. This is a map of what is known, not a safety analysis.
 | Fault mode | Injected by | Detection and mitigation | Evidence | Status and residual gap |
 |---|---|---|---|---|
 | GNSS denial | `gnss_outages` | The filter dead-reckons; covariance grows. Re-acquisition after the outage can use bounded adaptive inflation ([ADR-0006](adr/0006-nis-window-monitor.md)). | Benchmark `outage_control` (README table); `navkit sweep outages`; `tests/test_nis_monitor.py` | Benchmarked, and swept over 8 outage windows: stays calibrated (coverage 97.3% to 100.0% in all 40 runs). |
-| GNSS denial with visual aiding | `gnss_outages` with `vision_fuse` | Visual relative pose with an anchor modelled as state ([ADR-0001](adr/0001-anchor-as-filter-state.md)). | Benchmark `outage_visual`; `navkit sweep outages` | Benchmarked and swept. Overconfident in all 40 sweep runs (coverage 10.4% to 39.2%), including 5 s outages. More accurate than the control only when the outage starts early. Structural, not a fault: shipped disabled ([ADR-0003](adr/0003-ship-visual-disabled.md)). |
+| GNSS denial with visual aiding | `gnss_outages` with `vision_fuse` | Visual relative pose with an anchor modelled as state ([ADR-0001](adr/0001-anchor-as-filter-state.md)). | Benchmark `outage_visual`; `navkit sweep outages` | Benchmarked and swept. Overconfident in all 40 sweep runs, including 5 s outages (measured once on one machine, not checked by CI, at e94c107). Not more accurate than the control in any of the 8 windows with the start drawn from the declared prior. Structural, not a fault: shipped disabled ([ADR-0003](adr/0003-ship-visual-disabled.md)). |
 | Camera frame loss | `camera_drop`, `vision_outages` | Missed frames are simply absent; the relative pose then spans a longer baseline. | Benchmark `outage_visual_degraded_camera`; `test_camera_drop_*` in `tests/test_thresholds_and_injection.py`; `navkit sweep faults` | Benchmarked for one bursty pattern (30% of frames, 1 s bursts). Vision outages of 2 s and 5 s are measured in the [fault matrix](faults.md): error rises slowly and nothing is detected, because a missing measurement is not an outlier. |
 | IMU sample loss | `imu_outages` | The previous reading is held over the gap. An outage that removes almost every sample is refused. | `test_imu_outage_*` in `tests/test_thresholds_and_injection.py`; `navkit sweep faults` | Measured ([fault matrix](faults.md)). A 2 s loss raises position error by two orders of magnitude and the FDIR layer declares the healthy GNSS channel faulty; a 0.5 s loss is not declared but costs calibration. |
 | Timestamp offset (IMU, GNSS, vision) | `*_time_offset_s` | None: no latency compensation. | `test_inject_applies_a_vision_time_offset` (injection only); `navkit sweep faults` | GNSS and vision measured ([fault matrix](faults.md)). A GNSS offset degrades calibration with no detection; a vision offset shows nothing on an already uncalibrated case. IMU offset not measured. Every scenario goes through the injection layer, so a time offset on its own takes effect ([ADR-0012](adr/0012-every-scenario-is-injected.md)). |

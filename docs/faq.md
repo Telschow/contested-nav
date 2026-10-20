@@ -14,17 +14,18 @@ an analytic trajectory. No number here is a field measurement.
 
 ## Why is visual fusion off by default?
 
-Because with GNSS denied it makes the filter confidently wrong: mean NEES 286.2 against an
-expected 3, and 20.5% coverage where 99.3% is expected. A caller who did not ask for that should
+Because with GNSS denied it makes the filter confidently wrong: its mean NEES is far above the
+expected 3 and its 2σ coverage far below the expected 99.3% (see [Results](results.md); the table there
+is one run with one start draw). A caller who did not ask for that should
 not receive it ([ADR-0003](adr/0003-ship-visual-disabled.md)).
 
 ## So does vision make the estimate more accurate or not?
 
-It depends on when the outage starts. In the benchmark's outage (5 s to 20 s) it lowers the
-error from 3.760 m to 2.322 m. In an outage sweep, vision beat the no-vision control in every seed
-for outages of 10 s or longer starting at 5 s, and was worse than the control in all 20 runs
-starting at 10 s. The overconfidence did not depend on the window at all. The cause of the
-timing dependence has not been tested. See [Results](results.md).
+With the single anchor, mostly not. It depends on the start draw. In the benchmark's single run the aided
+case has the larger error. Over 10 seeds it had the larger ATE in 9, and in an outage sweep it was less accurate
+than the no-vision control in all 8 windows with the seeds averaged (measured once on one machine, not checked by CI, at e94c107). The overconfidence did not depend
+on the window or the draw at all. Switching the start attitude draw off removes most of the extra error
+(MEASUREMENT); why is a HYPOTHESIS, not tested. See [Results](results.md).
 
 ## Why does the "calibrated" control say "mixed"?
 

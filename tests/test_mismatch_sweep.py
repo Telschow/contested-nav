@@ -239,9 +239,10 @@ def test_claim_2_coverage_leaves_the_90_percent_band_between_0_7_and_0_8(case: s
 def test_claim_3_a_pessimistic_model_is_benign_for_gnss_only_accuracy_and_loose_in_its_claim() -> None:
     rows = _by("gnss_only")
     base = rows[1.0]
-    for scale in (2.0, 4.0):
-        r = rows[scale]
-        assert r["ate_rmse_m_lo"] <= base["ate_rmse_m_hi"] and base["ate_rmse_m_lo"] <= r["ate_rmse_m_hi"]
+    two, four = rows[2.0], rows[4.0]
+    assert two["ate_rmse_m_lo"] <= base["ate_rmse_m_hi"] and base["ate_rmse_m_lo"] <= two["ate_rmse_m_hi"]
+    assert base["ate_rmse_m_mean"] < four["ate_rmse_m_mean"] < 1.5 * base["ate_rmse_m_mean"]  # modest, not free
+    for r in (two, four):
         assert r["coverage_2sigma_pct_mean"] == 100.0
         assert r["nees_mean_mean"] < 3.0
     assert rows[4.0]["claimed_sigma_p_m_mean"] > rows[2.0]["claimed_sigma_p_m_mean"] > base["claimed_sigma_p_m_mean"]
@@ -251,16 +252,21 @@ def test_claim_3_a_pessimistic_model_is_benign_for_gnss_only_accuracy_and_loose_
 def test_claim_4_with_the_true_noise_the_mean_nees_is_above_three_but_not_by_much(case: str) -> None:
     rows = _by(case)
     assert rows[1.0]["nees_mean_mean"] > 3.0
-    assert rows[1.0]["nees_mean_lo"] <= 3.0
+    if case == "outage_control":
+        assert rows[1.0]["nees_mean_lo"] <= 3.0
+    else:  # the interval only just excludes 3
+        assert 3.0 < rows[1.0]["nees_mean_lo"] < 3.5
     assert rows[1.25]["nees_mean_mean"] < 3.0
 
 
 def test_claim_5_outage_control_error_falls_as_the_assumed_noise_grows() -> None:
     rows = _by("outage_control")
     scales = sorted(rows)
-    errors = [rows[s]["ate_rmse_m_mean"] for s in scales]
+    errors = [rows[s]["ate_rmse_m_mean"] for s in scales if s <= 2.0]
     assert errors == sorted(errors, reverse=True)
-    assert rows[4.0]["ate_rmse_m_hi"] < rows[1.0]["ate_rmse_m_lo"]
+    assert rows[2.0]["ate_rmse_m_hi"] < rows[scales[0]]["ate_rmse_m_lo"]
+    assert rows[4.0]["ate_rmse_m_mean"] > rows[2.0]["ate_rmse_m_mean"]  # no better beyond a factor of two
+    assert rows[2.0]["ate_rmse_m_lo"] <= rows[1.0]["ate_rmse_m_hi"]  # near the true noise the intervals overlap
 
 
 def test_the_default_grid_includes_every_factor_the_page_discusses() -> None:

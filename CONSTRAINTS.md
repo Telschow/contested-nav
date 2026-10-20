@@ -4,7 +4,7 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: <!-- metric:tests_collected -->1631<!-- /metric --> tests collected, all of which pass except the deliberate
+Last measured: <!-- metric:tests_collected -->1643<!-- /metric --> tests collected, all of which pass except the deliberate
 xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->94.3<!-- /metric -->%
 line coverage (<!-- metric:coverage_lines_hit -->10033<!-- /metric -->/<!-- metric:coverage_lines_total -->10638<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
@@ -91,7 +91,7 @@ the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | <!-- metric:tests_collected -->1631<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | <!-- metric:tests_collected -->1643<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
 | Line coverage | 75% | <!-- metric:coverage_percent -->94.3<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
@@ -128,17 +128,20 @@ the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
   [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md)). The current gate is one-sided: it does not reject an
   uninformative filter, and an IMU-only filter also meets it ([real front end](docs/real_front_end.md)).
 
-  `outage_visual`, over the 15 s outage window (5 s to 20 s, half-open): mean NEES <!-- metric:outage_visual_window_nees -->478.6<!-- /metric -->, with
-  <!-- metric:outage_visual_window_coverage_percent -->0.0<!-- /metric -->% of epochs inside 2 sigma against 99.3% expected. The
+  `outage_visual`, over the 15 s outage window (5 s to 20 s, half-open): mean NEES <!-- metric:outage_visual_window_nees -->2777.2<!-- /metric -->, with
+  <!-- metric:outage_visual_window_coverage_percent -->4.3<!-- /metric -->% of epochs inside 2 sigma against 99.3% expected. The
   README table gives the full-run values of the same case, which include the epochs with GNSS; it is generated
-  (`python scripts/check_doc_tables.py --print-configuration-table`) and checked by CI. A single anchor cannot represent correlated visual
+  (`python scripts/check_doc_tables.py --print-configuration-table`) and checked by CI. Both are one run with one
+  start draw ([ADR-0027](docs/adr/0027-how-the-synthetic-runs-are-initialised.md)), and far higher than they were on
+  the old fixed start, because the single anchor does not recover from a start attitude error inside its own
+  declared prior (MEASUREMENT, measured once on one machine, not checked by CI, at e94c107; the mechanism is a HYPOTHESIS and was not tested). The clone is unaffected. A single anchor cannot represent correlated visual
   drift. Pinned by
   `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`. B2 did not
   change the full-run number, and neither did ADR-0006: correcting a frame is not the
   same as modelling correlated error, and re-admitting the GNSS fixes that B5
   caused to be discarded shrank the error without repairing the model that made
-  `P` wrong. The number fell from 1996.5 to 419.4 as a side effect of taking the
-  filter's own uncertainty more seriously, not because the anchor is now
+  `P` wrong. The number fell from 1996.5 to 419.4 (on the old fixed start, when ADR-0006 was accepted) as a side effect of
+  taking the filter's own uncertainty more seriously, not because the anchor is now
   modelled correctly.
 
   Spike result ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md), accepted): carrying the
@@ -208,7 +211,8 @@ residual numerically.
   assumption about the threat model, and a channel streaming at 5 Hz earns no
   drift budget however long the attack runs.
 
-  Measured: `outage_visual` 5.059 m to 2.541 m, 51 rejections to 5, mean NEES
+  Measured when ADR-0006 was accepted, on the old fixed start (before ADR-0027): `outage_visual` 5.059 m to
+  2.541 m, 51 rejections to 5, mean NEES
   1996.5 to 419.4. `outage_visual_degraded_camera` 3.339 m to 2.005 m, 931.4
   to 264.8 (20% drop; the config key was misspelled, see ADR-0006 correction).
   Re-measured at the intended 30%: 2.008 m and 203.7. Pinned by
@@ -225,8 +229,10 @@ residual numerically.
   - **The ATE column stopped being an accidental honesty check.** Before this
     fix the dishonest aided case was also the more inaccurate one, so sorting
     by error happened to separate them. Recovering the error put the dishonest
-    filter back on top of the table, and `outage_visual` now reports a
-    *lower* ATE than the honest 3.760 m control while being less calibrated.
+    filter back on top of the table, and `outage_visual` then reported a
+    *lower* ATE than the honest 3.760 m control while being less calibrated. That was true of the old fixed
+    start only: with the start drawn from the declared prior, `outage_visual` had the larger ATE in 9 of 10 seeds
+    (measured once on one machine, not checked by CI, at e94c107).
     Any comparison in this repository must read the coverage and NEES columns
     too, and a table sorted on ATE alone is not evidence of a good filter.
 

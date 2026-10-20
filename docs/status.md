@@ -28,44 +28,42 @@
   rate unchanged (R2 in [CONSTRAINTS.md](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md)
   records the figures at the time). B1 is still open, see below.
 - **The filter is still overconfident under visual aiding.** Over the GNSS outage window, `outage_visual`
-  has a mean NEES of <!-- metric:outage_visual_window_nees -->478.6<!-- /metric --> against a nominal 3 and a
-  2σ coverage of <!-- metric:outage_visual_window_coverage_percent -->0.0<!-- /metric -->% where the SRS requires
+  has a mean NEES of <!-- metric:outage_visual_window_nees -->2777.2<!-- /metric --> against a nominal 3 and a
+  2σ coverage of <!-- metric:outage_visual_window_coverage_percent -->4.3<!-- /metric -->% where the SRS requires
   95% (AC-04) and the roadmap gate for turning vision on is above 90%. The full-run values are in the table in
   the [README](https://github.com/Telschow/contested-nav/blob/main/README.md). It converges and
   is confidently wrong. This is blocker B1, and it is a pose-graph problem that
-  no threshold in the FDIR subsystem will move. In the sweeps it held across 10 noise seeds and
-  across all 8 scenes (see the dated note on the sweeps below).
+  no threshold in the FDIR subsystem will move. In the seed and outage sweeps it held in every run (measured once on one machine, not checked by CI, at e94c107). The
+  scene sweep was last measured on the old fixed start (see the provenance note below).
 
 - **ADR-0008 frozen-anchor cross-check: implemented but unreachable under the
   current state-transition logic; the security gap remains documented as open.**
-- **The published numbers are single draws.** A 10-seed sweep showed the NEES varying
-  by large factors between cases, and the two controls
-  (`gnss_only`, `outage_control`) flip verdict across seeds, and `outage_control` is
-  never clean in 10 draws. The shipped tables remain the seed-0 benchmark, which
-  is the committed artefact; treat the magnitudes as order-of-magnitude and the
-  verdicts as the claim.
-- **Provenance of the sweep results.** The seed, scene and outage sweeps below were last measured at
-  2026-10-09, before the attitude reset fix (R6 in
-  [CONSTRAINTS.md](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md)). Their outputs are not
-  committed and were not re-run, so this page quotes their conclusions and counts, not their figures.
-  `navkit sweep seeds`, `navkit sweep scenes` and `navkit sweep outages` regenerate them.
+- **The published numbers are single draws.** The shipped tables are the seed-0 benchmark with one start draw
+  ([ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)), which is the committed artefact, and a single run
+  is descriptive. Over 10 seeds the `outage_control` verdict was underconfident in 5, mixed (bulk overconfident, tail
+  underconfident) in 2, mixed (bulk overconfident, tail calibrated) in 2 and overconfident in 1, and the mean NEES of
+  the anchor rows spanned one to two orders of magnitude (measured once on one machine, not checked by CI, at e94c107). Treat the magnitudes of the anchor rows as
+  order-of-magnitude, and their verdict, not a control's, as the claim.
+- **Provenance of the sweep results.** The seed and outage sweeps were re-run on the start drawn from the declared
+  prior at e94c107, once on one machine (not checked by CI). The scene sweep was last measured at 2026-10-09, before
+  the attitude reset fix (R6 in
+  [CONSTRAINTS.md](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md)) and on the old fixed start,
+  and was not re-run. None of their outputs is committed, so this page quotes counts, not figures, except where it
+  labels a one-off figure. `navkit sweep seeds`, `navkit sweep scenes` and `navkit sweep outages` regenerate them.
 - **Scene generalisation is demonstrated, external validity is not.** The
-  8-scene sweep varied trajectory geometry over a wide path-length range and all
-  seven verdicts held, so the failure above is not a property of one path. What is
+  8-scene sweep (measured on the old fixed start, not re-run) varied trajectory geometry over a wide path-length
+  range and all seven verdicts held, so the failure above is not a property of one path. What is
   *not* shown: any real capture, any measured sensor characteristic, or any scene
   outside an analytic trajectory generator. Eight synthetic scenes bound the
   claim "the anchor model is structurally wrong under visual aiding"; they do not
   bound its behaviour on real imagery. Scenario duration remains fixed at 30 s.
-- **The outage window matters for accuracy, not for calibration.** The outage
-  sweep (`navkit sweep outages`, 8 windows, 5 seeds each, one synthetic path)
-  gave `outage_visual` a 2-sigma coverage far below its expected value and a mean NEES far above it in
-  **all 40 runs**, including 5 s outages; `outage_control` stayed well covered in all 40. Accuracy is
-  different. With the
-  outage starting at 5 s, vision beats the control in all 5 seeds for 10 s, 15 s
-  and 20 s outages and in 2 of 5 for 5 s. With the outage
-  starting at 10 s, vision is **worse** than the control in all 20 runs. The cause is not tested here.
-  So "vision improves ATE"
-  is a property of the benchmark's early outage, not a general result.
+- **The anchor model's overconfidence does not depend on the outage window, and neither does its lack of an
+  accuracy gain.** The outage sweep (`navkit sweep outages`, 8 windows, 5 seeds each, one synthetic path, each seed
+  with its own start draw) gave `outage_visual` a 2-sigma coverage far below its expected value and a mean NEES far
+  above it in **all 40 runs**, including 5 s outages (measured once on one machine, not checked by CI, at e94c107). In all 8 windows, with the seeds averaged, its ATE
+  was larger than the control's. An earlier version of this page said vision beat the control when the outage started
+  early; that was measured on the old fixed start and no longer holds. So "vision improves ATE" is not a result of
+  this fixture with a start error drawn from the prior.
 
   ![Outage sweep](figures/outage-sweep.png)
 - **Not flight-ready.** No sensor driver, no live front end, no real-time loop,

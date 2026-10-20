@@ -31,6 +31,10 @@ defaults:
     vision_keyframe_interval: 1
     vision_anchor_modelled: true
     rpe_delta_s: 1.0
+    # Where an ESKF case starts (ADR-0027): "origin", "truth", or "prior_draw", which is the true initial state plus
+    # an error drawn from the filter's own declared prior, from a stream seeded by the case seed. Every case with the
+    # same seed and prior gets the same draw, so cases stay comparable. The dead-reckoning control starts at the truth.
+    initial_start: prior_draw
 
 cases:
   # --- controls -------------------------------------------------------------
@@ -147,11 +151,14 @@ cases:
   outage_visual:
     name: outage_visual
     description: >-
-      The same 15 s outage with vision on. Position error is lower than the
-      control in this window, but the claimed uncertainty stays small and coverage
-      collapses: accurate and confidently wrong. That is why vision_enabled
-      defaults to false. The accuracy gain depends on when the outage starts
-      (see the outage sweep); the overconfidence does not.
+      The same 15 s outage with vision on. The claimed uncertainty stays
+      small and coverage collapses: confidently wrong. In a single run with
+      one start draw the position error is larger than the control's, and
+      over 10 seeds it was larger in 9 (measured once on one machine, not
+      checked by CI, at e94c107), so the accuracy gain that the earlier
+      fixed start showed does not hold. That is why vision_enabled defaults
+      to false. The overconfidence does not depend on the start draw or on
+      when the outage starts (see the outage sweep).
     estimator:
       vision_fuse: true
     scenario:
@@ -180,8 +187,7 @@ cases:
     description: >-
       Visual aiding through the outage with 30% of camera frames dropped in 1 s
       bursts. Checks whether an intermittent visual stream changes the result. It
-      does not: the filter is still overconfident, with a smaller error than the
-      clean case.
+      does not: the filter is still overconfident.
     estimator:
       vision_fuse: true
     scenario:

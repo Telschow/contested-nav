@@ -218,12 +218,13 @@ def test_the_csv_has_a_control_for_every_base_and_a_row_for_every_fault_level() 
 
 
 def test_claim_1_false_alarms_are_zero_on_two_controls_and_not_on_the_third() -> None:
+    """The third control fires in every seed because the single-anchor filter fails (ADR-0027); that is not a rate."""
     for base in ("gnss_only", "vision_only"):
         c = _control(base)
         assert c["detected_n"] == 0 and c["declared_n"] == 0 and c["rejected_pct_mean"] == 0.0
     c = _control("outage_visual")
     assert c["detected_n"] == c["n_seeds"] == 5
-    assert c["declared_n"] == 3
+    assert c["declared_n"] == c["n_seeds"]
 
 
 @pytest.mark.parametrize("level", [10.0, 40.0])
@@ -260,7 +261,7 @@ def test_claim_5_a_single_spike_is_rejected_never_declared_and_does_not_move_the
 
 def test_claim_6_a_slow_bias_is_mostly_invisible_and_makes_the_filter_overconfident() -> None:
     c, ctl = _cell("gnss_slow_bias", 1.0), _control("gnss_only")
-    assert c["detected_n"] <= 1 and c["declared_n"] == 0
+    assert c["detected_n"] <= 2 and c["declared_n"] == 0
     assert c["nees_mean_mean"] > 10 * ctl["nees_mean_mean"]
     assert c["coverage_2sigma_pct_mean"] < 50.0
     assert _cell("gnss_slow_bias", 3.0)["detected_n"] == 5
@@ -272,7 +273,7 @@ def test_claim_7_a_gnss_timestamp_offset_degrades_calibration_without_detection(
     ate = [c["ate_rmse_m_mean"] for c in cells]
     cov = [c["coverage_2sigma_pct_mean"] for c in cells]
     assert ate == sorted(ate) and cov == sorted(cov, reverse=True)
-    assert cells[2]["coverage_2sigma_pct_mean"] < 60.0 and cells[2]["detected_n"] == 2
+    assert cells[2]["coverage_2sigma_pct_mean"] < 60.0 and cells[2]["detected_n"] == 1
     ctl = _control("gnss_only")
     assert cells[0]["ate_rmse_m_lo"] <= ctl["ate_rmse_m_hi"]  # 0.05 s is not visible
 
@@ -296,21 +297,23 @@ def test_claim_8_two_seconds_of_imu_loss_is_catastrophic_and_blames_the_healthy_
     assert short["ate_rmse_m_mean"] > ctl["ate_rmse_m_mean"] and short["coverage_2sigma_pct_mean"] < 70.0
 
 
-def test_claim_9_a_modest_spoof_after_an_outage_is_not_declared_beyond_the_controls_false_alarms() -> None:
+def test_claim_9_the_spoof_after_outage_cells_are_not_informative_because_their_control_fires() -> None:
     ctl = _control("outage_visual")
-    for lv in (3.0, 10.0):
-        assert _cell("gnss_spoof_after_outage", lv)["declared_n"] == ctl["declared_n"]
-    assert _cell("gnss_spoof_after_outage", 10.0)["ate_rmse_m_mean"] > 1.5 * ctl["ate_rmse_m_mean"]
-    big = _cell("gnss_spoof_after_outage", 22.0)
-    assert big["declared_n"] == big["n_seeds"] and big["granted_n"] <= 1
-    assert big["ate_rmse_m_lo"] > ctl["ate_rmse_m_hi"]
+    assert ctl["declared_n"] == ctl["detected_n"] == ctl["n_seeds"]
+    for lv in (3.0, 10.0, 22.0):
+        c = _cell("gnss_spoof_after_outage", lv)
+        assert c["declared_n"] == ctl["declared_n"] and c["detected_n"] == ctl["detected_n"]
+        assert abs(c["ate_rmse_m_mean"] / ctl["ate_rmse_m_mean"] - 1.0) < 0.10
 
 
-def test_claim_10_vision_outages_raise_the_error_slowly_and_nothing_is_detected() -> None:
+def test_claim_10_vision_outages_raise_the_error_slowly_and_the_gate_rejects_but_nothing_is_declared() -> None:
+    """The rejections are the single-anchor filter rejecting its own resumed measurements, not a detection result."""
     ctl = _control("vision_only")
     errors = [ctl["ate_rmse_m_mean"]] + [_cell("vision_outage", lv)["ate_rmse_m_mean"] for lv in (2.0, 5.0)]
     assert errors == sorted(errors)
-    assert all(_cell("vision_outage", lv)["detected_n"] == 0 for lv in (2.0, 5.0))
+    assert ctl["detected_n"] == 0
+    assert all(_cell("vision_outage", lv)["detected_n"] == 5 for lv in (2.0, 5.0))
+    assert all(_cell("vision_outage", lv)["declared_n"] == 0 for lv in (2.0, 5.0))
 
 
 def test_the_track_a_restatement_counts_match_the_csv() -> None:
@@ -318,6 +321,8 @@ def test_the_track_a_restatement_counts_match_the_csv() -> None:
     assert len(faulted) == 18
     always = [(r["fault"], r["level"]) for r in faulted if r["declared_n"] == r["n_seeds"]]
     assert sorted(always) == [
+        ("gnss_spoof_after_outage", 3.0),
+        ("gnss_spoof_after_outage", 10.0),
         ("gnss_spoof_after_outage", 22.0),
         ("gnss_spoof_sustained", 10.0),
         ("gnss_spoof_sustained", 40.0),

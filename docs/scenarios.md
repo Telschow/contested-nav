@@ -40,13 +40,13 @@ Visual odometry at 20 Hz with no GNSS. In this fixture it is less accurate than 
 
 ## outage_visual
 
-The same 15 s outage with vision on. Position error is lower than the control in this window, but the claimed uncertainty stays small and coverage collapses: accurate and confidently wrong. That is why vision_enabled defaults to false. The accuracy gain depends on when the outage starts (see the outage sweep); the overconfidence does not.
+The same 15 s outage with vision on. The claimed uncertainty stays small and coverage collapses: confidently wrong. In a single run with one start draw the position error is larger than the control's, and over 10 seeds it was larger in 9 (measured once on one machine, not checked by CI, at e94c107), so the accuracy gain that the earlier fixed start showed does not hold. That is why vision_enabled defaults to false. The overconfidence does not depend on the start draw or on when the outage starts (see the outage sweep).
 
 **Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision 20.0 Hz, fused; GNSS outage 5 s to 20 s.
 
 ## outage_visual_degraded_camera
 
-Visual aiding through the outage with 30% of camera frames dropped in 1 s bursts. Checks whether an intermittent visual stream changes the result. It does not: the filter is still overconfident, with a smaller error than the clean case.
+Visual aiding through the outage with 30% of camera frames dropped in 1 s bursts. Checks whether an intermittent visual stream changes the result. It does not: the filter is still overconfident.
 
 **Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision 20.0 Hz, fused; GNSS outage 5 s to 20 s; camera drop 30% in 1 s bursts.
 

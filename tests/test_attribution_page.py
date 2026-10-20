@@ -64,8 +64,8 @@ def test_statement_3_a_source_has_to_be_far_larger_than_the_units_before_it_matt
     for source in at.SOURCES:
         for scale in (3.0, 10.0):
             assert abs(_esc(rows, source, scale) / base - 1) < 0.10, (source, scale)
-        assert _esc(rows, source, 100.0) / base - 1 > 0.20, source
-    first = [s for s in at.SOURCES if _esc(rows, s, 30.0) / base - 1 > 0.25]
+        assert _esc(rows, source, 100.0) / base - 1 > 0.10, source
+    first = [s for s in at.SOURCES if _esc(rows, s, 30.0) / base - 1 > 0.15]
     assert first == ["gyroscope white noise"]
 
 
@@ -84,7 +84,7 @@ def test_statement_5_the_method_finds_a_source_when_there_is_one(rows):
 def test_statement_6_a_small_and_a_moderate_bias_fault_are_not_noticed(rows):
     base = at._mean(rows, "fault", FAULT, 0.0)
     assert abs(at._mean(rows, "fault", FAULT, 0.05) / base - 1) < 0.10
-    assert 0.25 < at._mean(rows, "fault", FAULT, 0.2) / base - 1 < 0.50
+    assert 0.10 < at._mean(rows, "fault", FAULT, 0.2) / base - 1 < 0.30
     for size in (0.05, 0.2):
         assert at._mean(rows, "fault", FAULT, size, "gnss_rejected") == 0.0
         assert at._mean(rows, "fault", FAULT, size, "gnss_faulted") == 0.0

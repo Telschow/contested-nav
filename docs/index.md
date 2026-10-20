@@ -17,12 +17,13 @@ filter reports is honest.
 
 | Configuration | ATE RMSE, full run | Claimed 1σ, full run | Mean NEES, full run (expected 3) | 2σ-per-axis coverage, full run (expected 99.3%) | Mean NEES, outage window (expected 3) | 2σ-per-axis coverage, outage window (expected 99.3%) |
 |---|---:|---:|---:|---:|---:|---:|
-| GNSS denied, vision off | 3.768 m | 0.567 m | 4.1 | 100.0% | 5.9 | 100.0% |
-| GNSS denied, vision on | **2.321 m** | **0.162 m** | **286.1** | **20.5%** | **478.6** | **0.0%** |
+| GNSS denied, vision off | 6.530 m | 0.567 m | 3.2 | 100.0% | 4.3 | 100.0% |
+| GNSS denied, vision on | **17.425 m** | **0.156 m** | **13783.2** | **18.8%** | **2777.2** | **4.3%** |
 
-**Accuracy improved. Calibration failed.** The filter converges and is confidently wrong, so visual
-fusion ships off by default. The overconfidence held in every run of every sweep; the accuracy gain
-did not (see [Results](results.md)).
+**Calibration failed, and accuracy did not improve.** The filter is confidently wrong, so visual
+fusion ships off by default. The table is one run with one start draw. In that run the aided case is also less
+accurate than the case without vision, and over 10 seeds it was less accurate in 9 (measured once on one machine, not checked by CI, at e94c107). The
+overconfidence held in every run of every sweep (see [Results](results.md)).
 
 !!! warning "Mostly synthetic evidence"
     The table above comes from a deterministic known-answer fixture. The recorded-data pages use a

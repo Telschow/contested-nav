@@ -28,8 +28,8 @@ Everything here is built from public sources and synthetic data, and the documen
 or restricted, but that is not a legal determination; if you intend to use any of it in a
 regulated or operational setting, check your own obligations first.
 
-The failure this project documents, that a filter can become more accurate while becoming far
-more overconfident, is a reason to be careful with visual aiding under GNSS denial. It is not a
+The failure this project documents, that a filter can become far
+more overconfident without becoming more accurate, is a reason to be careful with visual aiding under GNSS denial. It is not a
 recipe for exploiting a navigation system. The [dual-use analysis](defense/DUAL_USE_ANALYSIS.md)
 and the [limitations](defense/LIMITATIONS.md) say more, and a vulnerability in the code itself
 goes through the process in the [security policy](security.md).
