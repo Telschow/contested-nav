@@ -152,6 +152,7 @@ nav:
       - "0026 UrbanNav as a real GNSS dataset": adr/0026-urbannav-as-a-real-gnss-dataset.md
       - "0027 How the synthetic runs are initialised": adr/0027-how-the-synthetic-runs-are-initialised.md
       - "0028 The B1 gate": adr/0028-the-b1-gate.md
+      - "0029 How a single run's verdict is formed": adr/0029-how-a-single-runs-verdict-is-formed.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md
