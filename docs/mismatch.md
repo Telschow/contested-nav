@@ -23,24 +23,24 @@ reruns the sweep and fails if the committed CSV no longer matches it.
 
 | Case | Assumed noise x | ATE rmse m [95% CI] | NEES mean [95% CI] | Coverage @2σ % [95% CI] | Claimed 1σ m | GNSS fixes rejected % [95% CI] | Verdicts |
 |---|---:|---|---|---|---:|---|---|
-| gnss_only | 0.25 | 45.26 [26.83, 62.99] | 67.9 [45.4, 94.8] | 10.8 [3.7, 17.9] | 7.205 | 94.4 [92.1, 96.8] | overconfident x5 |
-| gnss_only | 0.5 | 9.36 [0.68, 18.47] | 18.7 [14.8, 24.2] | 32.6 [17.2, 46.4] | 2.204 | 43.2 [21.7, 68.9] | overconfident x5 |
-| gnss_only | 0.7 | 0.57 [0.53, 0.61] | 7.6 [6.0, 9.0] | 80.5 [71.5, 90.3] | 0.189 | 4.5 [4.0, 5.3] | overconfident x5 |
-| gnss_only | 0.8 | 0.53 [0.50, 0.57] | 5.6 [4.5, 6.7] | 92.5 [87.3, 97.0] | 0.207 | 0.9 [0.7, 1.2] | mixed(bulk xoverconfident, tail xunderconfident) x1, overconfident x4 |
-| gnss_only | 0.9 | 0.52 [0.48, 0.56] | 4.3 [3.4, 5.2] | 99.1 [98.1, 100.0] | 0.230 | 0.1 [0.0, 0.4] | mixed(bulk xoverconfident, tail xunderconfident) x3, overconfident x2 |
-| gnss_only | 1 | 0.51 [0.48, 0.56] | 3.6 [2.8, 4.3] | 100.0 [100.0, 100.0] | 0.253 | 0.0 [0.0, 0.0] | mixed(bulk xoverconfident, tail xunderconfident) x3, underconfident x2 |
-| gnss_only | 1.25 | 0.51 [0.47, 0.55] | 2.4 [1.8, 2.9] | 100.0 [100.0, 100.0] | 0.313 | 0.0 [0.0, 0.0] | mixed(bulk xcalibrated, tail xunderconfident) x1, mixed(bulk xoverconfident, tail xunderconfident) x1, underconfident x3 |
-| gnss_only | 2 | 0.50 [0.45, 0.55] | 1.0 [0.8, 1.2] | 100.0 [100.0, 100.0] | 0.489 | 0.0 [0.0, 0.0] | underconfident x5 |
-| gnss_only | 4 | 0.55 [0.49, 0.61] | 0.4 [0.3, 0.5] | 100.0 [100.0, 100.0] | 0.921 | 0.0 [0.0, 0.0] | underconfident x5 |
-| outage_control | 0.25 | 35.05 [15.33, 57.62] | 45.2 [28.4, 65.5] | 38.5 [14.4, 62.3] | 6.883 | 87.4 [81.1, 93.7] | overconfident x5 |
-| outage_control | 0.5 | 21.16 [12.66, 32.02] | 17.0 [11.4, 25.0] | 33.5 [14.7, 54.9] | 2.671 | 43.2 [20.3, 67.9] | overconfident x5 |
-| outage_control | 0.7 | 11.56 [6.82, 16.31] | 6.9 [4.7, 8.7] | 79.2 [62.8, 95.0] | 0.420 | 3.7 [2.4, 5.3] | overconfident x5 |
-| outage_control | 0.8 | 11.35 [6.73, 15.96] | 5.6 [3.8, 7.2] | 96.7 [91.4, 99.6] | 0.464 | 0.8 [0.0, 1.8] | mixed(bulk xoverconfident, tail xunderconfident) x1, mixed(bulk xunderconfident, tail xcalibrated) x1, overconfident x3 |
-| outage_control | 0.9 | 10.56 [6.23, 14.89] | 4.4 [2.9, 5.6] | 99.0 [97.0, 100.0] | 0.512 | 0.0 [0.0, 0.0] | mixed(bulk xoverconfident, tail xunderconfident) x3, overconfident x1, underconfident x1 |
-| outage_control | 1 | 9.75 [5.68, 13.81] | 3.5 [2.4, 4.5] | 99.7 [99.2, 100.0] | 0.567 | 0.0 [0.0, 0.0] | mixed(bulk xcalibrated, tail xunderconfident) x1, mixed(bulk xoverconfident, tail xunderconfident) x2, overconfident x1, underconfident x1 |
-| outage_control | 1.25 | 8.05 [4.55, 11.54] | 2.1 [1.5, 2.9] | 100.0 [100.0, 100.0] | 0.703 | 0.0 [0.0, 0.0] | mixed(bulk xoverconfident, tail xunderconfident) x1, underconfident x4 |
-| outage_control | 2 | 5.06 [2.71, 8.09] | 0.9 [0.6, 1.3] | 100.0 [100.0, 100.0] | 0.944 | 0.0 [0.0, 0.0] | underconfident x5 |
-| outage_control | 4 | 3.38 [2.42, 4.79] | 0.5 [0.3, 0.6] | 100.0 [100.0, 100.0] | 1.713 | 0.0 [0.0, 0.0] | underconfident x5 |
+| gnss_only | 0.25 | 48.81 [22.30, 75.32] | 53.6 [35.7, 71.4] | 7.7 [3.6, 14.0] | 8.369 | 94.6 [92.2, 96.4] | overconfident x5 |
+| gnss_only | 0.5 | 17.05 [0.68, 33.59] | 29.1 [15.1, 50.3] | 31.8 [14.7, 48.8] | 2.470 | 47.7 [21.2, 75.6] | overconfident x5 |
+| gnss_only | 0.7 | 0.59 [0.55, 0.62] | 7.6 [6.2, 8.9] | 80.4 [72.8, 88.5] | 0.189 | 4.8 [3.8, 5.6] | overconfident x5 |
+| gnss_only | 0.8 | 0.55 [0.50, 0.59] | 5.5 [4.8, 6.2] | 94.2 [92.6, 95.7] | 0.207 | 0.9 [0.4, 1.3] | overconfident x5 |
+| gnss_only | 0.9 | 0.53 [0.49, 0.58] | 4.4 [3.7, 5.1] | 98.7 [97.7, 99.7] | 0.229 | 0.1 [0.0, 0.4] | mixed(bulk xoverconfident, tail xunderconfident) x2, overconfident x3 |
+| gnss_only | 1 | 0.53 [0.49, 0.58] | 3.7 [3.1, 4.2] | 99.9 [99.6, 100.0] | 0.253 | 0.0 [0.0, 0.0] | mixed(bulk xoverconfident, tail xunderconfident) x3, mixed(bulk xunderconfident, tail xcalibrated) x1, underconfident x1 |
+| gnss_only | 1.25 | 0.54 [0.49, 0.58] | 2.5 [2.1, 2.9] | 100.0 [100.0, 100.0] | 0.313 | 0.0 [0.0, 0.0] | mixed(bulk xcalibrated, tail xunderconfident) x1, underconfident x4 |
+| gnss_only | 2 | 0.56 [0.52, 0.61] | 1.2 [1.0, 1.4] | 100.0 [100.0, 100.0] | 0.489 | 0.0 [0.0, 0.0] | underconfident x5 |
+| gnss_only | 4 | 0.72 [0.65, 0.79] | 0.6 [0.5, 0.6] | 100.0 [100.0, 100.0] | 0.921 | 0.0 [0.0, 0.0] | underconfident x5 |
+| outage_control | 0.25 | 67.15 [39.13, 92.84] | 38.2 [22.8, 61.8] | 10.5 [3.5, 22.7] | 11.682 | 90.8 [86.8, 94.5] | overconfident x5 |
+| outage_control | 0.5 | 18.36 [10.65, 29.97] | 17.8 [13.0, 25.4] | 35.2 [17.8, 51.9] | 2.369 | 35.0 [18.7, 59.2] | overconfident x5 |
+| outage_control | 0.7 | 12.74 [9.08, 16.02] | 7.1 [5.4, 8.6] | 84.5 [67.6, 95.7] | 0.432 | 3.9 [3.2, 4.7] | overconfident x5 |
+| outage_control | 0.8 | 11.76 [8.66, 14.85] | 5.6 [4.2, 7.0] | 95.4 [88.6, 99.6] | 0.464 | 0.8 [0.0, 1.8] | calibrated x1, mixed(bulk xoverconfident, tail xcalibrated) x1, mixed(bulk xoverconfident, tail xunderconfident) x1, overconfident x2 |
+| outage_control | 0.9 | 11.55 [8.72, 14.23] | 4.5 [3.3, 5.6] | 98.9 [97.6, 100.0] | 0.512 | 0.0 [0.0, 0.0] | mixed(bulk xoverconfident, tail xunderconfident) x2, overconfident x2, underconfident x1 |
+| outage_control | 1 | 10.88 [8.47, 13.34] | 3.6 [2.8, 4.5] | 99.7 [99.5, 100.0] | 0.567 | 0.0 [0.0, 0.0] | mixed(bulk xoverconfident, tail xcalibrated) x2, mixed(bulk xoverconfident, tail xunderconfident) x2, underconfident x1 |
+| outage_control | 1.25 | 9.51 [7.11, 11.90] | 2.4 [1.9, 3.0] | 100.0 [100.0, 100.0] | 0.703 | 0.0 [0.0, 0.0] | mixed(bulk xoverconfident, tail xunderconfident) x1, underconfident x4 |
+| outage_control | 2 | 8.15 [5.56, 10.70] | 1.2 [0.9, 1.5] | 100.0 [100.0, 100.0] | 0.944 | 0.0 [0.0, 0.0] | underconfident x5 |
+| outage_control | 4 | 10.21 [7.21, 13.65] | 0.9 [0.5, 1.3] | 100.0 [100.0, 100.0] | 1.713 | 0.0 [0.0, 0.0] | underconfident x5 |
 
 <!-- mismatch:end -->
 

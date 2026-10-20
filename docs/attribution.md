@@ -30,16 +30,16 @@ are. The generated table is from [`data/attribution.csv`](data/attribution.csv);
 
 | What changes | Peak error inside the outage, m | Change from baseline |
 |---|---:|---:|
-| baseline | 21.88 | +0% |
-| no accelerometer bias | 21.78 | +0% |
-| no gyroscope bias | 21.86 | +0% |
-| no accelerometer white noise | 21.87 | +0% |
-| no gyroscope white noise | 21.84 | +0% |
-| no inertial errors | 21.72 | -1% |
-| start known exactly | 1.94 | -91% |
-| start known exactly, no inertial errors | 1.88 | -91% |
-| GNSS noise x0.5 | 17.29 | -21% |
-| GNSS noise x0.1 | 4.82 | -78% |
+| baseline | 26.92 | +0% |
+| no accelerometer bias | 26.90 | +0% |
+| no gyroscope bias | 26.92 | +0% |
+| no accelerometer white noise | 26.89 | +0% |
+| no gyroscope white noise | 26.95 | +0% |
+| no inertial errors | 26.89 | +0% |
+| start known exactly | 0.95 | -96% |
+| start known exactly, no inertial errors | 0.03 | -100% |
+| GNSS noise x0.5 | 19.40 | -28% |
+| GNSS noise x0.1 | 5.59 | -79% |
 
 <!-- attribution-ablation:end -->
 
@@ -52,10 +52,10 @@ the baseline.
 
 | Source scaled up | x3 | x10 | x30 | x100 |
 |---|---:|---:|---:|---:|
-| accelerometer bias | 22.09 (+1%) | 22.97 (+5%) | 25.76 (+18%) | 34.39 (+57%) |
-| gyroscope bias | 21.92 (+0%) | 22.09 (+1%) | 22.76 (+4%) | 26.81 (+23%) |
-| accelerometer white noise | 21.89 (+0%) | 21.98 (+0%) | 22.83 (+4%) | 31.15 (+42%) |
-| gyroscope white noise | 22.01 (+1%) | 23.12 (+6%) | 33.04 (+51%) | 86.82 (+297%) |
+| accelerometer bias | 26.99 (+0%) | 27.32 (+1%) | 28.86 (+7%) | 35.03 (+30%) |
+| gyroscope bias | 26.94 (+0%) | 27.01 (+0%) | 27.34 (+2%) | 29.86 (+11%) |
+| accelerometer white noise | 26.99 (+0%) | 27.25 (+1%) | 28.34 (+5%) | 35.84 (+33%) |
+| gyroscope white noise | 26.93 (+0%) | 27.44 (+2%) | 33.07 (+23%) | 84.32 (+213%) |
 
 <!-- attribution-escalation:end -->
 
@@ -70,12 +70,12 @@ its exponent.
 
 | Case | 5 s | 15 s | 45 s | 90 s | Fitted exponent |
 |---|---:|---:|---:|---:|---:|
-| baseline | 5.4 | 28.1 | 204.6 | 781.5 | 1.72 |
-| no inertial errors | 5.4 | 28.0 | 202.7 | 765.2 | 1.72 |
-| accelerometer bias x100 | 6.5 | 37.7 | 276.9 | 1071.2 | 1.77 |
-| gyroscope bias x300 | 6.8 | 48.1 | 741.3 | 6187.3 | 2.35 |
-| accelerometer white noise x100 | 6.3 | 28.1 | 192.1 | 724.6 | 1.64 |
-| gyroscope white noise x30 | 6.4 | 42.6 | 343.3 | 1249.3 | 1.83 |
+| baseline | 5.9 | 31.5 | 230.8 | 880.3 | 1.73 |
+| no inertial errors | 5.9 | 31.5 | 229.5 | 867.6 | 1.73 |
+| accelerometer bias x100 | 6.9 | 39.4 | 286.9 | 1107.3 | 1.76 |
+| gyroscope bias x300 | 7.0 | 47.5 | 777.3 | 6532.7 | 2.36 |
+| accelerometer white noise x100 | 6.1 | 27.5 | 197.5 | 761.8 | 1.68 |
+| gyroscope white noise x30 | 6.7 | 41.4 | 332.8 | 1319.7 | 1.83 |
 
 Textbook exponents: velocity error at the start 1, accelerometer white noise 1.5, accelerometer bias 2, attitude error at the start 2, gyroscope white noise 2.5, gyroscope bias 3.
 
@@ -90,10 +90,10 @@ measured, so nothing can notice it. The question is what happens when GNSS retur
 
 | Bias step, m/s² | Peak error inside the outage, m | Change | GNSS fixes rejected after the outage | Runs with the GNSS channel declared faulty | Error 4 s after the outage, m |
 |---:|---:|---:|---:|---:|---:|
-| 0 | 26.6 | +0% | 0 | 0% | 0.3 |
-| 0.05 | 27.4 | +3% | 0 | 0% | 0.3 |
-| 0.2 | 36.3 | +36% | 0 | 0% | 0.6 |
-| 1 | 114.6 | +330% | 51 | 100% | 183.6 |
+| 0 | 29.6 | +0% | 0 | 0% | 0.3 |
+| 0.05 | 29.9 | +1% | 0 | 0% | 0.3 |
+| 0.2 | 35.1 | +19% | 0 | 0% | 0.6 |
+| 1 | 113.0 | +282% | 51 | 100% | 181.2 |
 
 <!-- attribution-fault:end -->
 

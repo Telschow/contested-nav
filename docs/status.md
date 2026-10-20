@@ -28,8 +28,8 @@
   rate unchanged (R2 in [CONSTRAINTS.md](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md)
   records the figures at the time). B1 is still open, see below.
 - **The filter is still overconfident under visual aiding.** Over the GNSS outage window, `outage_visual`
-  has a mean NEES of <!-- metric:outage_visual_window_nees -->478.6<!-- /metric --> against a nominal 3 and a
-  2σ coverage of <!-- metric:outage_visual_window_coverage_percent -->0.0<!-- /metric -->% where the SRS requires
+  has a mean NEES of <!-- metric:outage_visual_window_nees -->2777.2<!-- /metric --> against a nominal 3 and a
+  2σ coverage of <!-- metric:outage_visual_window_coverage_percent -->4.3<!-- /metric -->% where the SRS requires
   95% (AC-04) and the roadmap gate for turning vision on is above 90%. The full-run values are in the table in
   the [README](https://github.com/Telschow/contested-nav/blob/main/README.md). It converges and
   is confidently wrong. This is blocker B1, and it is a pose-graph problem that

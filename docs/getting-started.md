@@ -15,9 +15,9 @@ The last command prints the three rows that carry the headline result:
 ```text
 | Scenario | ATE RMSE (m) | Claimed 1-sigma (m) | Mean NEES (exp. 3) | Coverage at 2 sigma | Verdict |
 | --- | ---: | ---: | ---: | ---: | --- |
-| gnss_only | 0.528 | 0.253 | 4.3 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
-| outage_control | 3.768 | 0.567 | 4.1 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
-| outage_visual | 2.321 | 0.162 | 286.1 | 20.5% | overconfident |
+| gnss_only | 0.512 | 0.254 | 4.2 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
+| outage_control | 6.530 | 0.567 | 3.2 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
+| outage_visual | 17.425 | 0.156 | 13783.2 | 18.8% | overconfident |
 ```
 
 This table is checked by CI: `scripts/check_doc_tables.py` compares each row, including the verdict, with the

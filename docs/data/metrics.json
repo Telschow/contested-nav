@@ -4,7 +4,7 @@
   "coverage_lines_total": 10638,
   "coverage_percent": 94.31,
   "coverage_python": "3.13",
-  "outage_visual_window_coverage_percent": 0.0,
-  "outage_visual_window_nees": 478.64,
-  "tests_collected": 1631
+  "outage_visual_window_coverage_percent": 4.33,
+  "outage_visual_window_nees": 2777.15,
+  "tests_collected": 1643
 }
