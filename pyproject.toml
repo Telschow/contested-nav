@@ -125,6 +125,9 @@ ignore = [
 # Same Markdown-table typography as the seed sweep: "Coverage @2sigma" and an
 # en-dash range separator are intended, not typos.
 "src/navkit/scene_sweep.py" = ["RUF001"]
+# The false-alarm tables name the stated alpha as "α" and the chi-square tail as "χ²", as the gating docstring and
+# the fault page do for sigma. Spelling them "a" and "x2" in a table header would be a regression.
+"src/navkit/fdir_false_alarm.py" = ["RUF001"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["navkit"]
