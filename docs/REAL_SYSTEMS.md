@@ -11,8 +11,8 @@ to concrete interfaces and does not repeat them. The model the code implements i
 ## What the repository shows, and does not
 
 It shows one reproducible result on a synthetic fixture: with GNSS denied, visual
-aiding can make a navigation filter more accurate in position while its reported
-uncertainty becomes badly wrong. It is a tool for measuring that, not a navigation
+aiding with a single anchor leaves a navigation filter's reported
+uncertainty badly wrong, and it does not reliably make the position better. It is a tool for measuring that, not a navigation
 system.
 
 It does not show performance on any real sensor, a comparison with an established

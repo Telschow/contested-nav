@@ -1738,7 +1738,7 @@
    "claim_type": "MEASUREMENT",
    "config_hash": "d59127ea66b0af6d",
    "data_class": "synthetic",
-   "description": "The same 15 s outage with vision on. Position error is lower than the control in this window, but the claimed uncertainty stays small and coverage collapses: accurate and confidently wrong. That is why vision_enabled defaults to false. The accuracy gain depends on when the outage starts (see the outage sweep); the overconfidence does not.",
+   "description": "The same 15 s outage with vision on. The claimed uncertainty stays small and coverage collapses: confidently wrong. In a single run with one start draw the position error is larger than the control's, and over 10 seeds it was larger in 9 (measured once on one machine, not checked by CI, at e94c107), so the accuracy gain that the earlier fixed start showed does not hold. That is why vision_enabled defaults to false. The overconfidence does not depend on the start draw or on when the outage starts (see the outage sweep).",
    "drift": {
     "duration_s": 30.0,
     "final_drift_pct_path_length": 114.33952899834685,
@@ -5592,7 +5592,7 @@
    "claim_type": "MEASUREMENT",
    "config_hash": "e5672e27f8151537",
    "data_class": "synthetic",
-   "description": "Visual aiding through the outage with 30% of camera frames dropped in 1 s bursts. Checks whether an intermittent visual stream changes the result. It does not: the filter is still overconfident, with a smaller error than the clean case.",
+   "description": "Visual aiding through the outage with 30% of camera frames dropped in 1 s bursts. Checks whether an intermittent visual stream changes the result. It does not: the filter is still overconfident.",
    "drift": {
     "duration_s": 30.0,
     "final_drift_pct_path_length": 49.49136102714255,
@@ -9096,7 +9096,7 @@
  },
  "claim_type": "MEASUREMENT",
  "config_file": "configs/benchmark.yaml",
- "config_sha256": "7ca99309a4efffa81d2e021acdd300f3cb398163eedd42608c68d066d61579c2",
+ "config_sha256": "b8e70cf52fc01d90c24d629cfc86d956a7259674150ede7efc9cec888e46dc86",
  "data_class": "synthetic",
  "disclaimer": "All numbers are from a known-answer synthetic fixture. They are not field measurements and must not be presented as real-sensor performance.",
  "schema": "navkit-benchmark/1"

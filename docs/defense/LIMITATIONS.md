@@ -16,7 +16,8 @@ programme claim.
 ### L1: No field data
 
 The benchmark is a synthetic fixture: an analytic trajectory with the filter
-initialised exactly at the truth. Two public recorded datasets (EuRoC and TUM VI)
+initialised at the truth plus an error drawn from its own declared prior
+([ADR-0027](../adr/0027-how-the-synthetic-runs-are-initialised.md)). Two public recorded datasets (EuRoC and TUM VI)
 can be fetched and evaluated, with GNSS simulated from their ground truth, and one
 study uses real camera frames. None of that data is vendored.
 
@@ -32,8 +33,9 @@ an independent reference. The recorded-data path exists; the field data does not
 
 ### L2: The documented failure is not fixed
 
-Visual aiding under GNSS denial is badly overconfident: mean NEES 286.2 against
-an expected 3, 2σ coverage 20.5%. The configuration ships disabled.
+Visual aiding under GNSS denial is badly overconfident: the mean NEES is far above the
+expected 3 and the 2σ coverage far below the expected 99.3% (one run with one start draw; the overconfidence
+held in every seed of a 10-seed sweep, measured once on one machine, not checked by CI, at e94c107). The configuration ships disabled.
 
 **Consequence:** the repository demonstrates a problem rather than solving it.
 
@@ -87,8 +89,8 @@ These do not block the repository, but they bound what its results mean.
 ### L5: Synthetic scenes are not a distribution over reality
 
 Eight scenes vary trajectory geometry over a 4.65× path-length range, holding
-duration, sample rate and the exact `t=0` initial state fixed. All seven case
-verdicts are stable across them.
+duration, sample rate and the true `t=0` initial state fixed. All seven case
+verdicts were stable across them (measured on the old fixed start, not re-run).
 
 **Consequence:** the claim that survives is "the anchor model is structurally
 overconfident under visual aiding", not "this filter has X% error in
@@ -98,8 +100,8 @@ degradations, or real outage patterns.
 **Qualifier.** The scene sweep holds the outage fixed (5 s to 20 s). A separate
 outage-window sweep (`navkit sweep outages`, [MODEL.md](../MODEL.md)) varies the
 start time and duration over 8 windows with 5 seeds each (40 runs). There the
-visual case is overconfident in every run, while its accuracy advantage over the
-control depends on when the outage starts. So "stable verdict" means the
+visual case is overconfident in every run, and with the start drawn from the declared prior it was less accurate
+than the control in all 8 windows with the seeds averaged (measured once on one machine, not checked by CI, at e94c107). So "stable verdict" means the
 overconfidence is stable, not that the filter is more accurate in general.
 
 **Not varied:** scene duration, sensor rate configurations, motion classes beyond

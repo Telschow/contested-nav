@@ -8,19 +8,19 @@ The filter runs, converges, and produces a bounded, well-behaved, wrong answer. 
 crash, no NaN, no divergence. So the response was measurement and a shipping
 decision, not a tuning pass:
 
-- **It is a design property, not a bad seed.** Over **10 noise realisations** of
-  the same trajectory, `outage_visual` is overconfident at **every** seed: mean
-  NEES **656**, range **113.5 to 1589.1**, coverage **6.8% to 35.2%**. Over **8
-  scenes** with trajectory geometry varied: path length **17.3 m to 80.6 m**, a
-  **4.65×** range. **All seven case verdicts are identical in all eight scenes**,
-  and `outage_visual` holds mean NEES **286.4 [282.4, 290.2]** at 20.5% coverage.
+- **It is a design property, not a bad seed.** Over 10 seeds, each with its own start
+  draw, `outage_visual` and `vision_only` are overconfident at every seed (measured once on one machine, not checked by CI, at e94c107). The scene
+  sweep varied trajectory geometry over 8 scenes and left all seven case verdicts unchanged; it was measured on the
+  old fixed start and was not re-run since the start was drawn from the declared prior
+  ([ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)).
 - **Sweeps cannot disagree with themselves.** Intervals are deterministic
   percentile bootstrap, 10 000 resamples, fixed RNG seed. CI runs the benchmark
   and the sweeps twice and fails if any two runs differ.
 - **The fix is partly shipped, and is still not enough.** Adaptive covariance
   inflation ([ADR-0006](adr/0006-nis-window-monitor.md)) took this case from
-  ATE **5.059 m to 2.541 m** and rejections **51 to 5**, and in doing so made
-  the filter *more* accurate and therefore *harder* to catch by ranking on error.
+  ATE **5.059 m to 2.541 m** and rejections **51 to 5** on the old fixed start, and in doing so made
+  the filter *more* accurate and therefore *harder* to catch by ranking on error. With the start drawn from the
+  declared prior the anchor model is no longer the more accurate one in most draws, but the lesson stands.
 - **So the mitigation is to refuse the feature.** Visual fusion ships
   `vision_enabled=False`, and the residual NEES gap is an open blocker recorded in
   [CONSTRAINTS.md](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md), not a caveat in a footnote.

@@ -55,25 +55,26 @@ Each statement below is checked against the CSV by `tests/test_mismatch_sweep.py
    column), the filter dead-reckons through the gap, and error grows. In `gnss_only` it grows by
    more than an order of magnitude at the strongest mismatch; in `outage_control`, which starts
    from a large error, it still more than doubles. The gate meant to protect the filter from bad data turns an
-   optimistic noise model into data loss. I checked this mechanism on one run (seed 0, factor
-   0.5, `gnss_only`): 116 of 151 fixes were rejected and one fault was declared. That one run is
-   an observation, not part of the table.
+   optimistic noise model into data loss. The rejection column shows it directly.
 2. **Calibration is lost well before the gate does much damage.** Mean 2σ coverage leaves a
    90% band between factors 0.7 and 0.8 in both cases, while the rejection share is still in
    single digits. An underestimate of the sensor noise of between 20% and 30% is enough. The
    90% band is my choice, not a derived threshold.
-3. **A pessimistic noise model is benign for accuracy and honest about it.** With the assumed
-   noise above the true noise, the position error in `gnss_only` barely moves, the claimed
-   uncertainty scales up with the assumption, coverage stays at 100% and the filter reads as
-   underconfident. Looser, not wrong.
+3. **A pessimistic noise model costs little accuracy and is honest about it.** With the assumed
+   noise above the true noise, the position error in `gnss_only` barely moves at a factor of two and rises
+   modestly at four, the claimed uncertainty scales up with the assumption, coverage stays at 100% and the
+   filter reads as underconfident. Looser, not wrong.
 4. **With the true noise, the bulk test already reads slightly overconfident.** At factor 1
-   the mean NEES is above 3 in both cases, although its interval includes 3, which matches the
-   benchmark's `mixed` verdicts. By factor 1.25 the mean NEES is below 3.
+   the mean NEES is above 3 in both cases. Its interval includes 3 in `outage_control` and only just excludes it in
+   `gnss_only`, which matches the benchmark's `mixed` verdicts. By factor 1.25 the mean NEES is below 3.
 5. **One result I did not expect and have not explained.** In `outage_control`, position error
-   falls as the assumed noise grows, and the intervals at factors 1 and 4 do not overlap. A
-   plausible reason is that a larger assumed noise keeps the bias states from fitting GNSS
-   noise before the outage, which would make dead reckoning through it better. That is a
-   hypothesis; I did not test it.
+   falls as the assumed noise grows from the strongest mismatch up to a factor of two, and the intervals at those
+   two ends do not overlap. At four it is no better than at two. Between the true noise and a factor of two the
+   intervals overlap, so five seeds do not establish a trend near the true noise. An earlier version of this page
+   saw the error fall all the way to four, with non-overlapping intervals at one and four; that did not survive the
+   start being drawn from the declared prior. A plausible reason for the fall is that a larger assumed noise keeps
+   the bias states from fitting GNSS noise before the outage, which would make dead reckoning through it better.
+   That is a hypothesis; I did not test it.
 
 ## What this does not show
 

@@ -54,10 +54,14 @@ disagree, and CI reruns the sweep and fails if the committed CSV no longer match
 
 Each statement below is checked against the CSV by `tests/test_fault_matrix.py`.
 
-1. **False alarms are zero on two controls and not on the third.** On `gnss_only` and
-   `vision_only` the gate rejects nothing and no fault is declared. On `outage_visual`, the case
-   with the outage, the gate rejects measurements in every seed and a fault is declared in three of
-   five: the healthy GNSS receiver is declared faulty after it returns.
+1. **False alarms are zero on two controls and not on the third, and the third is not a false-alarm rate.** On
+   `gnss_only` and `vision_only` the gate rejects nothing and no fault is declared. On `outage_visual`, the case
+   with the outage, the gate rejects measurements in every seed and a fault is declared in every seed: the healthy
+   GNSS receiver is declared faulty after it returns. That comes from the single-anchor filter failing under the
+   start attitude error drawn from its own prior ([ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)), so
+   it rejects fixes the receiver gets right. It is not a stand-alone false-alarm rate for the FDIR layer, and a
+   cell whose own no-fault control also fires says nothing about detection. The proper false-alarm measurement is
+   a separate package (T2-7) and is not done.
 2. **A large sustained spoof is declared fast.** At 10 m and 40 m the GNSS channel is declared
    faulty in every seed, 0.8 s after the offset starts, which is five consecutive rejected fixes at
    5 Hz.
@@ -73,26 +77,28 @@ Each statement below is checked against the CSV by `tests/test_fault_matrix.py`.
 5. **A single 20 m spike is handled.** The gate rejects it in every seed, no fault is declared, and
    the error does not move.
 6. **A slow GNSS bias is mostly invisible and makes the filter overconfident.** At 1 σ the gate
-   rejects fixes in at most one seed and nothing is declared, yet the mean NEES is more than ten
+   rejects fixes in at most two seeds and nothing is declared, yet the mean NEES is more than ten
    times the control's and coverage is under half. At 3 σ the gate reacts in every seed.
 7. **A GNSS timestamp offset degrades calibration without detection.** No fault is declared at any
    level. Error, NEES and the loss of coverage all grow with the offset; at 0.5 s coverage is under
-   60% and the gate rejected in only two seeds. A 0.05 s offset is not visible. A vision timestamp
+   60% and the gate rejected in only one seed. A 0.05 s offset is not visible. A vision timestamp
    offset shows no measurable effect, but its control is already badly uncalibrated, so this case
    cannot show one.
 8. **Losing 2 s of IMU samples is catastrophic, and the wrong sensor is blamed.** The error rises by
    two orders of magnitude over the control, and in every seed the FDIR layer declares the GNSS
    channel faulty, which is the healthy sensor. A 0.5 s loss is not declared, but it raises error
    and costs coverage.
-9. **A modest spoof after an outage is not detected beyond the control's false alarms.** At 3 m and
-   10 m the declarations match the control's (three of five seeds), so they cannot be told apart
-   from the false alarms in point 1. At 22 m the spoof is declared in every seed, with an inflation
-   grant in at most one, and the error is still above the control's. (The count was one in five
-   seeds before the initial IMU bias was drawn, [ADR-0015](adr/0015-initial-imu-bias-sigmas-are-read.md),
-   and is none in five after; it moves with the noise realisation.) This is the open problem recorded in
-   [ADR-0007](adr/0007-spoof-permanence-hysteresis.md). It stays open.
+9. **The spoof-after-outage cells are not informative.** The control on this case declares a fault in every seed
+   (point 1), so the 3 m, 10 m and 22 m cells declare in every seed too, with the same detection count, and cannot
+   be told apart from the control. Their error is within a few percent of the control's. The 22 m cell, which was a
+   clear case before the start was drawn from the prior, no longer separates from the control. The open problem
+   recorded in [ADR-0007](adr/0007-spoof-permanence-hysteresis.md) stays open, and this sweep does not measure it
+   until the control stops firing.
 10. **Vision outages of 2 s and 5 s** raise the error slowly on a case that is already
-    uncalibrated, and nothing is detected, because a missing measurement is not an outlier.
+    uncalibrated. The gate now rejects measurements in every seed of these cells, where the no-outage control
+    rejects none. That is not a detection result: it is the single-anchor filter, already inconsistent after the
+    start attitude error, rejecting its own visual measurements when they resume after the gap. No fault is
+    declared, and the cells do not show that fault detection got better.
 
 ## The Track A exit test, restated
 
@@ -100,8 +106,9 @@ Each statement below is checked against the CSV by `tests/test_fault_matrix.py`.
 on the control. **It is not met.**
 
 - Zero false alarms holds for two of the three controls (point 1).
-- By the strict test, a fault declared in every seed, four of the eighteen fault cells qualify:
-  the 10 m and 40 m sustained spoofs, the 22 m post-outage spoof, and the 2 s IMU loss, where the
+- By the strict test, a fault declared in every seed, six of the eighteen fault cells qualify. Three of them
+  are the spoof-after-outage cells, whose control also declares in every seed, so they show nothing about
+  detection (point 9). The other three are the 10 m and 40 m sustained spoofs and the 2 s IMU loss, where the
   channel declared is the wrong one.
 - Five seeds cannot establish a 95% rate in any case. Zero misses in *n* runs supports a rate above
   95% at 95% confidence only when *n* is at least 59 (ln 0.05 / ln 0.95 is 58.4).

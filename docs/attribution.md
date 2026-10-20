@@ -103,13 +103,16 @@ Each statement is checked against the CSV by `tests/test_attribution_page.py`.
 
 1. **Removing an inertial error source does not change the outage error.** No single source, and not all of them
    together, moves the peak error inside the outage by as much as two percent.
-2. **Making the filter's start exact does.** Telling the filter that its starting pose, velocity and attitude are
-   exact cuts the peak error by more than eighty-five percent, with or without the inertial errors; and a GNSS ten
-   times quieter cuts it by more than seventy percent. The error is set by how the filter handled the GNSS noise
-   before the outage, not by the inertial unit.
+2. **Making the filter's start exact does, partly by construction.** Telling the filter that its starting pose,
+   velocity and attitude are exact cuts the peak error by more than eighty-five percent, with or without the
+   inertial errors; and a GNSS ten times quieter cuts it by more than seventy percent. But the baseline now injects a
+   start error drawn from the filter's declared prior ([ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)),
+   so removing the start error removes that error. The experiment shows how large a prior-sized start error is next
+   to the other error sources in this fixture. It does not show that the start error happens to dominate in nature.
+   The error is not set by the inertial unit here.
 3. **A source has to be far larger than the unit's before it matters.** Scaled by three or by ten, no source moves
-   the error by as much as ten percent; scaled by a hundred, every source raises it by more than twenty percent, and
-   gyroscope white noise is the first to matter.
+   the error by as much as ten percent; scaled by a hundred, every source raises it by more than ten percent, and
+   gyroscope white noise is the first to matter and by far the largest.
 4. **The error grows the same way with or without inertial errors.** The fitted exponent of the baseline equals that
    of the run without any inertial error to within a twentieth, and lies between one and two, which is a mixture of
    a velocity error and an attitude error at the start and not a constant accelerometer bias (two) or gyroscope
@@ -117,7 +120,7 @@ Each statement is checked against the CSV by `tests/test_attribution_page.py`.
 5. **The method finds a source when there is one.** Inflating the gyroscope bias raises the exponent by more than
    half; inflating any other source leaves it within a fifth of the baseline's.
 6. **A small bias fault is not noticed and a moderate one is not either.** A step of 0.05 m/s² changes the peak error
-   by under ten percent, and a step of 0.2 m/s² by about a third; in neither case is a GNSS fix rejected when GNSS
+   by under ten percent, and a step of 0.2 m/s² by about a fifth; in neither case is a GNSS fix rejected when GNSS
    returns, or the channel declared faulty.
 7. **A large bias fault makes the filter reject the healthy GNSS.** A step of 1 m/s² makes the filter reject the fixes
    that follow the outage and declare the receiver faulty in every run, and four seconds after the return the error

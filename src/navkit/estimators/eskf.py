@@ -286,8 +286,9 @@ _SPOOF_CROSS_CHECK_SIGMA = 15.0
 class InitialState:
     """Where a run starts, when it does not start at the origin at rest.
 
-    The default start is the identity pose at rest with zero biases, which is right for the
-    synthetic benchmark and wrong for any recorded sequence. A caller that knows the pose,
+    The default start is the identity pose at rest with zero biases, which is wrong for any recorded
+    sequence and no longer how the synthetic benchmark starts (it passes the true initial state plus a
+    draw from the declared prior, ADR-0027). A caller that knows the pose,
     velocity and biases at the first sample (from a reference trajectory, or from an initial
     alignment) passes them here. The covariance is not part of it: the declared
     ``initial_*_sigma`` terms in :class:`EskfConfig` still say how far from the truth the

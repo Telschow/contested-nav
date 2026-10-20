@@ -1,9 +1,12 @@
 # Results
 
 Synthetic 30 s run, 5 Hz GNSS, 20 Hz vision, noisy IMU, 21-state ESKF. ATE is
-reported with `alignment=none`: the filter is initialised in the reference
-frame, so there is no global offset for a fitted transform to absorb. This is
-the strictest of the four conventions the code supports.
+reported with `alignment=none`: no fitted transform absorbs an offset, so the start error is part of
+what is measured. This is the strictest of the four conventions the code supports. Every ESKF case starts at the
+true initial state plus an error drawn from the filter's own declared prior
+([ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)), from a stream seeded by the case seed.
+**The table is a single run with one start draw (seed 0), and is descriptive:** other draws give other numbers, and
+some control verdicts change with the draw (see below).
 
 | Scenario | ATE RMSE (m) | Claimed 1σ (m) | Mean NEES (exp. 3) | Coverage @ 2σ | Verdict |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -31,16 +34,28 @@ drops coverage far below its expected value (the `vision_anchor_in_measurement_n
 are in the benchmark so the comparison is
 reproducible, and the broken one is kept in the default run on purpose.
 
-**Turning vision on makes the filter much less calibrated, though not much less
-accurate.** The outage control with vision off has the larger ATE RMSE of the two, and its
-uncertainty grew to match, so its coverage stays at the expected level. The aided case claims
-centimetres of uncertainty while being metres wrong. Note what adaptive inflation did to this
-comparison: before it, the FDIR gate made the aided case *worse* on ATE (R2 in
-[CONSTRAINTS.md](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md) has the figures),
-so a reader sorting by ATE at least got sent to the more honest filter. Recovering
-the error put the less-calibrated configuration back on top, and the ATE column no
-longer flags it at all. Ranking by error is not a calibration check, and this table is
-a demonstration of that rather than an argument against the fix.
+**Turning vision on makes the filter much less calibrated, and with the single anchor it does not make it more
+accurate.** In this single run with one start draw, the outage control with vision off has the smaller ATE RMSE of
+the two, and its uncertainty grew to match, so its coverage stays at the expected level. The aided case claims
+centimetres of uncertainty while being metres wrong. Over 10 seeds the aided case had the larger ATE in 9 (measured once on one machine, not checked by CI, at e94c107),
+so which filter is more accurate depends on the start draw, and on this fixture it is mostly the one without vision.
+That is a change from the earlier fixed start, which had a position offset and no attitude error: there the
+FDIR gate had first made the aided case worse on ATE, then the fix for that (R2 in
+[CONSTRAINTS.md](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md), which describes the state at
+the time) put it ahead, and the ATE column stopped flagging it. With the start drawn from the prior, the ATE and
+calibration columns point the same way for the anchor model. Ranking by error is still not a calibration check.
+
+**The anchor model does not recover from a start attitude error inside its own prior (MEASUREMENT).** Over 10 seeds
+the median ATE of `outage_visual` was 25.18 m with the full start draw and 4.33 m with the attitude draw switched
+off; for `vision_only` it was 54.15 m and 7.66 m. With only the attitude drawn the medians were 27.02 m and
+52.04 m. The clone's results did not change in any variant (measured once on one machine, not checked by CI, at e94c107). The mechanism is a HYPOTHESIS and was not tested:
+gravity leakage from the start tilt error plus absolute information that the anchor model invents.
+
+**One run is one draw.** Over 10 seeds the verdict of the `outage_control` row was underconfident in 5,
+mixed (bulk overconfident, tail underconfident) in 2, mixed (bulk overconfident, tail calibrated) in 2 and
+overconfident in 1. The mean NEES of `outage_visual` spanned about two orders of magnitude over the seeds and that
+of `vision_only` about one, while the verdict of both anchor rows stayed overconfident (measured once on one machine, not checked by CI, at e94c107). Read a control
+row's verdict above as one draw. The ensemble statistics that will replace it are a later package.
 
 **Relative visual poses must not make the filter more certain about where it is.** Global position cannot be
 observed from relative pose, so a filter with no absolute sensor must not claim a smaller position uncertainty than
@@ -95,7 +110,7 @@ an attitude error several times smaller than reality.
 "stochastic clone" run the same scenarios with the previous visual pose carried as six error states that start
 perfectly correlated with the live pose ([ADR-0017](adr/0017-stochastic-clone-for-the-visual-update.md)). With
 GNSS denied, the clone is calibrated where the single anchor is not, and its position error is below the
-no-vision control's. The two degraded-camera rows use a stream in which each delivered measurement is taken
+no-vision control's in this run and in 10 of 10 seeds for the first clone row (measured once on one machine, not checked by CI, at e94c107). The two degraded-camera rows use a stream in which each delivered measurement is taken
 against the last delivered frame; the single-anchor row on that stream is the control and stays
 overconfident, so the generator was not what made the anchor fail. This is a synthetic result with a Gaussian
 surrogate front end. The clone is opt-in: the shipped setting is still the single anchor, with visual fusion

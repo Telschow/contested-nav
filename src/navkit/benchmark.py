@@ -16,8 +16,9 @@ Design decisions worth stating, because they change the numbers:
 * The reference trajectory is the analytic one the synthetic generator is built
   from, so the ground truth is exact rather than another estimate. Motion is
   parameterised as ``1 - cos(w t)`` so position, velocity, rotation and angular
-  rate are all zero at ``t = 0``; an estimator initialised at the identity pose
-  is then *exactly* correct at t=0 and every later error belongs to the filter.
+  rate are all zero at ``t = 0``, so the true initial state is known exactly. The ESKF cases do not
+  start there: ``initial_start`` (ADR-0027) starts them at the truth plus an error drawn from the filter's own
+  declared prior, so the start error is part of what a case scores. The dead-reckoning control starts at the truth.
 
 * ATE is reported four ways, never one. ``none`` is the honest number for a
   filter that is already in the reference frame; ``rigid`` fits a transform to
@@ -356,8 +357,9 @@ def run_case(
     est = result.trajectory
 
     # Score the estimate against the analytic reference at the estimate's own
-    # timestamps. `none` is the headline: the synthetic filter is initialised in
-    # the reference frame, so there is no global offset for a fit to absorb.
+    # timestamps. `none` is the headline: the filter and the reference share a frame,
+    # so no fitted transform is needed to absorb a global offset. The start error
+    # (ADR-0027) is part of what is scored.
     ate = ate_bundle(est, reference)
     headline = ate["none"]
 

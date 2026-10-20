@@ -65,10 +65,10 @@ constrained only by itself, and the filter's covariance stops describing its
 actual error.
 
 **VERIFIED BY REPOSITORY**: with GNSS denied for 15 s and visual odometry on,
-the filter reports 0.161 m of 1σ position uncertainty while being 2.54 m wrong;
-mean NEES 286.2 against an expected 3; 2σ coverage 20.5% where 99.3% is
-expected. The result holds at all 10 noise realisations and in all 8 scenes
-tested, with a 4.65× range of path length.
+the filter reports centimetres of 1σ position uncertainty while being metres wrong;
+its mean NEES is far above the expected 3 and its 2σ coverage far below the
+expected 99.3%. The overconfidence held at all 10 seeds, each with its own start draw (measured once on one machine, not checked by CI, at e94c107). The
+scene sweep (8 scenes) was measured on an earlier, fixed start and was not re-run.
 
 ---
 

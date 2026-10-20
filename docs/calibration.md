@@ -36,24 +36,23 @@ reference does not grow with the size of the state vector.
 | far below | underconfident: claims less certainty than it has |
 
 The number to be suspicious of is the gap, not the value. The generated
-`outage_visual` case reports a mean NEES of 286.2 against a nominal 3, and
-`vision_only` reports 264.2. Two orders of magnitude, against a nominal 3, is
-not a filter that is slightly miscalibrated.
+`outage_visual` and `vision_only` cases report a mean NEES that is thousands of times the nominal 3 in the seed-0
+run, which is one run with one start draw
+([ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)). That is not a filter that is slightly
+miscalibrated.
 
-Those figures fell from 1996.5 when ADR-0006 stopped the filter discarding the
-GNSS fixes that B5 caused it to reject. The remaining gap is the unmodelled
-visual anchor error, which is a separate defect: the filter is more honest now
-because it stopped throwing away evidence, not because the model behind `P` was
-repaired. Read NEES and the coverage column together with ATE, see the note in
-`CONSTRAINTS.md` on why ATE alone stopped flagging this case.
+The gap once fell when ADR-0006 stopped the filter discarding the GNSS fixes that B5 caused it to reject (R2 in
+`CONSTRAINTS.md`, measured on the old fixed start). The remaining gap is the unmodelled visual anchor error, which
+is a separate defect: the filter was more honest then because it stopped throwing away evidence, not because the
+model behind `P` was repaired. Read NEES and the coverage column together with ATE. On the old fixed start ATE alone
+stopped flagging this case; with the start drawn from the declared prior it flags it again, but that is no reason to
+rank by error.
 
-A 10-seed sweep changes the reading of the digits, not the verdict. `outage_visual`
-gives mean NEES 656 across noise realisations (range 113.5 to 1589.1) and
-`vision_only` 264 to 2629, so 286.2 and 264.2 are individual draws. The
-conclusion is unaffected: the minimum over 10 seeds is still 113.5 against a
-nominal 3, and coverage never exceeds 35.2% where 99.3% is required. Two orders
-of magnitude is the right order to write down, but not two orders of magnitude
-*specifically*.
+A 10-seed sweep changes the reading of the digits, not the verdict. Over 10 seeds, each with its own start draw,
+`outage_visual` and `vision_only` were overconfident at every one, and their mean NEES spanned about two orders of
+magnitude and about one (measured once on one machine, not checked by CI, at e94c107). So the order of magnitude is the right thing to write down, not a single digit.
+A control's verdict string is also one draw: `outage_control` was underconfident in 5 of the 10 seeds and mixed or
+overconfident in the others.
 
 **Why it is decisive:** NEES only blows up when the error is large *and*
 `P` is small. A filter that merely tracks badly has a large error but an
@@ -102,20 +101,20 @@ mode as the original bug, one level up.
 ## Worked example: reading the defect
 
 From the generated benchmark (`python scripts/run_benchmark.py`, GNSS available
-throughout, 30 s):
+throughout, 30 s). This is one run with one start draw (seed 0), so it is descriptive:
 
 | Configuration | ATE RMSE | 1-sigma claimed | Mean NEES | Coverage at 2 sigma |
 |---|---:|---:|---:|---:|
-| GNSS only (control) | 0.509 m | 0.253 m | 3.9 | 100.0% |
-| GNSS + vision, anchor as measurement noise (defect) | 1.063 m | 0.094 m | 163.7 | 16.3% |
-| Vision only, anchor as filter state | 2.321 m | 0.158 m | 264.2 | 0.7% |
+| GNSS only (control) | 0.512 m | 0.254 m | 4.2 | 100.0% |
+| GNSS + vision, anchor as measurement noise (defect) | 11.405 m | 0.100 m | 13322.0 | 9.0% |
+| Vision only, anchor as filter state | 26.605 m | 0.158 m | 31789.6 | 1.5% |
 
 Row 1 is the reference: error and claimed uncertainty are the same order, and
 coverage is complete.
 
-Row 2 is the defect. Note the combination: the claimed 1-sigma is an order of
-magnitude below the error it is attached to, the mean NEES is 405 against a
-nominal 3, and coverage is 16.3% where 99.3% is expected. Any one of these would
+Row 2 is the defect. Note the combination: the claimed 1-sigma is far
+below the error it is attached to, the mean NEES is thousands of times the
+nominal 3, and coverage is a few percent where 99.3% is expected. Any one of these would
 warrant investigation. Together they say the filter is confidently wrong, and
 the *direction* of the error matters -- it is overconfident, not merely
 inaccurate.
@@ -132,12 +131,10 @@ was first visible as a *sensor* problem rather than a covariance problem:
 | Configuration | GNSS used | GNSS rejected | Vision used | Vision rejected |
 |---|---:|---:|---:|---:|
 | GNSS only (control) | 151 | 0 | 0 | 0 |
-| GNSS + vision, anchor as measurement noise (defect) | 151 | 0 | 599 | 0 |
+| GNSS + vision, anchor as measurement noise (defect) | 49 | 102 | 599 | 0 |
 | Vision only, anchor as filter state | 0 | 0 | 599 | 0 |
 
-An earlier ad hoc run of the defective configuration did show the companion
-symptom: the visual update shrank the position covariance far enough that valid
-GNSS fixes began failing their own gating test, so the filter was discarding its
-most reliable sensor. The current generated cases do not reproduce that, because
-the scenarios were re-specified with different seeds and rates. It is recorded
-here as a mechanism to watch for, not as a current measurement.
+The defect row now shows the companion symptom in this run: the visual update shrinks the position covariance far
+enough that valid GNSS fixes fail their own gating test, so the filter discards its most reliable sensor. An earlier
+version of this page said the generated cases did not reproduce that; that was on the old fixed start. Here it is one
+run with one start draw, and it was not swept, so it is an observation and not a rate.
