@@ -5,6 +5,12 @@ visual errors and found it fails when they are correlated over about 0.5 to 2 s.
 has. [ADR-0020](adr/0020-second-source-against-a-ramp.md) made the answer the next step. This page measures the errors
 of a small two-view front end on real camera frames, and runs the clone against them.
 
+Note (2026-10-20): "the gate" on this page is the old B1 gate, mean NEES below 10 and 2-sigma coverage above 90%
+over a run. It is superseded by [ADR-0028](adr/0028-the-b1-gate.md), which is an ensemble over seeds, two-sided, and
+asks whether vision helps. The columns and findings below are measurements against the old gate and stay as they were
+measured. They are not the B1 gate. The status of B1 is in `CONSTRAINTS.md` (B1) and the decision run is on the
+[calibration page](calibration.md).
+
 ## Method
 
 The front end is [`navkit.vo_frontend`](api/index.md), in NumPy only: Shi-Tomasi corners, pyramidal Lucas-Kanade
@@ -110,6 +116,8 @@ numbers below for that window have three, so they differ slightly.
 <!-- vo-wide-clone:end -->
 
 ## What it shows
+
+"The gate" in the findings below is the old gate named in the note at the top of this page, not ADR-0028.
 
 1. **The front end's errors are smaller than the surrogate's.** At one frame the rotation error is 0.08° RMS and the
    lateral error 8 mm, against the surrogate's defaults of 0.35° and 5 cm. The translation has the true scale.

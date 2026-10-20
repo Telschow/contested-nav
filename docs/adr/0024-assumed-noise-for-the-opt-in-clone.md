@@ -46,3 +46,5 @@ Option 3 is not taken. It needs a monocular scale, a second dataset and a front 
 
 Whatever is chosen, the claim stays limited to the Machine Hall windows measured, this front end and a known scale. The
 factor of four is an empirical value, not a derived constant.
+
+Note (2026-10-20): "the gate" above is the old one, mean NEES below 10 and 2-sigma coverage above 90%. The gate is now [ADR-0028](0028-the-b1-gate.md). The clone with this preset failed it on the held-out seeds, on condition 2 (the grand mean NEES is below the lower bound), and the maintainer accepted that as final. The status is in `CONSTRAINTS.md` (B1), which is outside the documentation tree. The text above is unchanged.

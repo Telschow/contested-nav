@@ -419,3 +419,26 @@ jobs:
         # Text and integers must match exactly. Floats are compared to 1e-6 relative, as in ADR-0009, because
         # the runner is not the machine that wrote the file and the last digits of a float can differ across platforms.
         run: python scripts/seed_sweep.py --seeds 25 --out /tmp/ensemble_sweep.json --ensemble-compare docs/data/ensemble_nees.csv
+
+      - name: The committed development gate matches a fresh run
+        # The B1 gate of ADR-0028 on the development seeds 0 to 24, once. Never the held-out seeds 100 to 124: they
+        # are single use. The same comparison as above: text, integers and flags exactly, floats to 1e-6 relative.
+        run: |
+          navkit gate b1 --seeds 0-24 --csv /tmp/b1_gate_dev.csv
+          python - <<'PY'
+          import math
+          from pathlib import Path
+          from navkit import b1_gate
+
+          new = b1_gate.parse_csv(Path("/tmp/b1_gate_dev.csv").read_text(encoding="utf-8"))
+          old = b1_gate.parse_csv(Path("docs/data/b1_gate_dev.csv").read_text(encoding="utf-8"))
+          problems = [] if len(new) == len(old) else [f"{len(new)} rows against {len(old)}"]
+          for a, b in zip(new, old, strict=False):
+              for key in b1_gate.CSV_FIELDS:
+                  x, y = a[key], b[key]
+                  same = math.isclose(x, y, rel_tol=1e-6, abs_tol=1e-12) if isinstance(x, float) else x == y
+                  if not same:
+                      problems.append(f"{a['subject']} {a['condition']} {key}: {x!r} against {y!r}")
+          print("\n".join(problems) or "the development gate matches docs/data/b1_gate_dev.csv")
+          raise SystemExit(1 if problems else 0)
+          PY
