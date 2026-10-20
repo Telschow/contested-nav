@@ -37,6 +37,7 @@ import numpy as np
 import yaml
 
 from .benchmark import MEASUREMENT, _config_label, _jsonable, default_config_path, run_case
+from .ensemble import Collector, compare_rows, csv_text, markdown_table, parse_csv, splice_table
 
 # Fields worth spreading. ATE and NEES and coverage are the three the docs quote,
 # and they fail differently: ATE is a physical error, NEES is calibration, and
@@ -83,6 +84,24 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--seeds", type=int, default=10, help="number of seeds, starting at 0")
     ap.add_argument("--only", nargs="*", default=None, help="run only these case names")
     ap.add_argument("--markdown", action="store_true", help="print a summary table")
+    ap.add_argument(
+        "--ensemble-csv",
+        type=Path,
+        default=None,
+        help="also write the ensemble NEES over the seeds, with its chi-square band, to this CSV (navkit.ensemble)",
+    )
+    ap.add_argument(
+        "--ensemble-page",
+        type=Path,
+        default=None,
+        help="with --ensemble-csv: write the table between the ensemble markers of this page",
+    )
+    ap.add_argument(
+        "--ensemble-compare",
+        type=Path,
+        default=None,
+        help="exit 1 if the ensemble differs from this committed CSV (text and integers exactly, floats to 1e-6)",
+    )
     args = ap.parse_args(argv)
     config_given = args.config is not None
     if args.config is None:
@@ -100,11 +119,14 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"unknown case(s): {', '.join(unknown)}; known: {', '.join(cases)}")
 
     per_case: dict[str, list[dict[str, Any]]] = {}
+    collector = Collector()
     for name in selected:
         rows: list[dict[str, Any]] = []
         for seed in range(args.seeds):
             t0 = time.perf_counter()
-            rec = run_case(name, cases[name], defaults, seed=seed)
+            nees_box: dict[str, Any] = {}
+            rec = run_case(name, cases[name], defaults, seed=seed, nees_out=nees_box)
+            collector.add(name, nees_box)
             row = _collect(rec)
             row["wall_s"] = round(time.perf_counter() - t0, 3)
             rows.append(row)
@@ -181,6 +203,22 @@ def main(argv: list[str] | None = None) -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(_jsonable(payload), indent=2, sort_keys=True) + "\n")
     print(f"wrote {args.out}", file=sys.stderr)
+    if args.ensemble_csv is not None:
+        args.ensemble_csv.parent.mkdir(parents=True, exist_ok=True)
+        args.ensemble_csv.write_text(csv_text(collector.rows()), encoding="utf-8")
+        print(f"wrote {args.ensemble_csv}", file=sys.stderr)
+        if args.ensemble_page is not None:
+            page = args.ensemble_page.read_text(encoding="utf-8")
+            args.ensemble_page.write_text(splice_table(page, markdown_table(collector.rows())), encoding="utf-8")
+            print(f"wrote the ensemble table into {args.ensemble_page}", file=sys.stderr)
+    if args.ensemble_compare is not None:
+        problems = compare_rows(collector.rows(), parse_csv(args.ensemble_compare.read_text(encoding="utf-8")))
+        if problems:
+            print(f"the ensemble differs from {args.ensemble_compare}:", file=sys.stderr)
+            for line in problems[:20]:
+                print(f"  {line}", file=sys.stderr)
+            return 1
+        print(f"the ensemble matches {args.ensemble_compare}", file=sys.stderr)
 
     if args.markdown:
         print()

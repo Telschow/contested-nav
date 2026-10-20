@@ -98,6 +98,81 @@ proportion still includes 0.5, so no verdict should be declared. Without the
 interval, short runs produce confident nonsense, which is the same failure
 mode as the original bug, one level up.
 
+## The ensemble over seeds
+
+Each seed starts from its own draw of the declared prior
+([ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)), so one run, where absolute position cannot be
+observed, is close to one sample. The test that fits is an ensemble. Run a case for many seeds and, at each epoch,
+average the NEES over the runs. If the filter is consistent, that average times the number of runs is chi-square with
+the number of runs times the degrees of freedom, so the average has a two-sided band: the 2.5% and 97.5% quantiles of
+that chi-square, divided by the number of runs. The band narrows as the number of runs grows. The table uses 25
+runs, because with 10 the band is too wide to separate a mildly conservative filter from a calibrated one.
+
+The table is generated from [`data/ensemble_nees.csv`](data/ensemble_nees.csv) and checked against it by a test. It
+gives, for each case, the share of scored epochs at which the ensemble mean is inside, below or above the band. The
+`outage` scope scores only the epochs inside the GNSS outage. Dead reckoning has no covariance and is not in the
+table. Regenerate it with:
+
+```bash
+navkit sweep seeds --seeds 25 --ensemble-csv docs/data/ensemble_nees.csv --ensemble-page docs/calibration.md
+```
+
+<!-- ensemble:start -->
+
+Band for the ensemble mean over N = 25 runs with 3 degrees of freedom: 2.118 to 4.034. Shares are of the scored epochs.
+
+| Case | Scope | Scored epochs | Grand mean NEES | Inside the band | Below | Above |
+|---|---|---:|---:|---:|---:|---:|
+| gnss_only | full | 6001 | 3.353 | 92.3% | 0.0% | 7.7% |
+| vision_anchor_in_measurement_noise | full | 6001 | 4.087e+05 | 0.0% | 0.0% | 100.0% |
+| vision_only | full | 6001 | 1.931e+05 | 0.3% | 0.0% | 99.7% |
+| outage_control | full | 6001 | 3.303 | 96.0% | 0.0% | 4.0% |
+| outage_control | outage | 3000 | 3.474 | 100.0% | 0.0% | 0.0% |
+| outage_visual | full | 6001 | 8.221e+04 | 0.0% | 0.0% | 100.0% |
+| outage_visual | outage | 3000 | 1.822e+04 | 0.0% | 0.0% | 100.0% |
+| outage_visual_degraded_camera | full | 6001 | 3.669e+04 | 0.0% | 0.0% | 100.0% |
+| outage_visual_degraded_camera | outage | 3000 | 7962 | 0.0% | 0.0% | 100.0% |
+| outage_visual_clone | full | 6001 | 2.346 | 58.8% | 40.6% | 0.7% |
+| outage_visual_clone | outage | 3000 | 1.874 | 26.7% | 73.3% | 0.0% |
+| outage_visual_degraded_camera_rereferenced | full | 6001 | 3.67e+04 | 0.0% | 0.0% | 100.0% |
+| outage_visual_degraded_camera_rereferenced | outage | 3000 | 7978 | 0.0% | 0.0% | 100.0% |
+| outage_visual_degraded_camera_clone | full | 6001 | 2.35 | 72.3% | 27.0% | 0.7% |
+| outage_visual_degraded_camera_clone | outage | 3000 | 2.076 | 47.4% | 52.6% | 0.0% |
+| vision_only_clone | full | 6001 | 2.65 | 89.0% | 11.0% | 0.0% |
+| outage_visual_clone_outliers | full | 6001 | 2.344 | 57.1% | 42.2% | 0.7% |
+| outage_visual_clone_outliers | outage | 3000 | 1.908 | 23.7% | 76.3% | 0.0% |
+| outage_visual_clone_scale_drift | full | 6001 | 2.886 | 72.6% | 17.0% | 10.4% |
+| outage_visual_clone_scale_drift | outage | 3000 | 2.653 | 55.6% | 33.0% | 11.4% |
+| outage_visual_clone_correlated | full | 6001 | 30.43 | 4.0% | 0.0% | 96.0% |
+| outage_visual_clone_correlated | outage | 3000 | 43.17 | 0.0% | 0.0% | 100.0% |
+| outage_visual_clone_correlated_inflated | full | 6001 | 3.397 | 93.8% | 0.0% | 6.2% |
+| outage_visual_clone_correlated_inflated | outage | 3000 | 3.613 | 94.3% | 0.0% | 5.7% |
+
+<!-- ensemble:end -->
+
+How to read it:
+
+- The 25 runs of every case use seeds 0 to 24, so the cases are not independent of one another: they see the same
+  noise draws and the same start draws.
+- Because every case shares the start draws, the ensemble mean at the first epoch is the same sample in every row. It
+  can sit outside the band for that reason alone. The first epoch is not excluded.
+- The shares are descriptive, not a p-value. Epochs within a run are strongly autocorrelated, so the scored epochs
+  are far from independent. `effective_sample_size` in `navkit.eval.statistics` measures that; the text of
+  [pull request 134](https://github.com/Telschow/contested-nav/pull/134) has its measured values for these cases.
+
+What the table shows. Each sentence is checked against the CSV by `tests/test_ensemble_page.py`.
+
+- The no-vision controls (`gnss_only` and `outage_control`) are inside the band for most scored epochs.
+- The single-anchor rows (`vision_anchor_in_measurement_noise`, `vision_only`, `outage_visual`,
+  `outage_visual_degraded_camera` and `outage_visual_degraded_camera_rereferenced`) are above the band for nearly
+  all scored epochs.
+- The clone rows with independent visual errors are inside or below the band for most scored epochs.
+- The clone with visual errors correlated over time is above the band for nearly all scored epochs, and the same case
+  with the assumed visual noise inflated is inside the band for most of them.
+
+This table does not replace the single-run verdicts, which stay descriptive. How a gate would use the ensemble is
+decided separately, with an ADR.
+
 ## Worked example: reading the defect
 
 From the generated benchmark (`python scripts/run_benchmark.py`, GNSS available
