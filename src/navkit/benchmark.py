@@ -46,7 +46,7 @@ import sys
 import time
 import warnings
 from collections.abc import Callable
-from dataclasses import asdict, dataclass, is_dataclass
+from dataclasses import asdict, dataclass, is_dataclass, replace
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -258,6 +258,8 @@ def run_case(
     imu_hook: Callable[[ImuSample], ImuSample] | None = None,
     fdir_events: bool = False,
     nees_out: dict[str, Any] | None = None,
+    fdir_overrides: dict[str, Any] | None = None,
+    innovations_out: list[tuple[float, np.ndarray, np.ndarray]] | None = None,
 ) -> dict[str, Any]:
     """Run one scenario end to end and return its result record.
 
@@ -291,6 +293,13 @@ def run_case(
 
     ``fdir_events`` adds the FDIR event log (declarations, lockouts, inflation grants) to the record
     as ``fdir_events``. It is off by default so the benchmark JSON is unchanged.
+
+    ``fdir_overrides`` replaces named fields of the case's :class:`~navkit.fdir.config.FdirConfig`, for a sweep that
+    moves one FDIR constant at a time. The result is validated by ``FdirConfig`` and goes into ``config_hash`` with
+    the rest of the estimator block. ``None`` leaves the config, the hash and the record exactly as they were.
+
+    ``innovations_out``, when given, is extended with one ``(t_s, residual, S)`` per GNSS update the filter gated,
+    in order, as the filter saw them before the gate decided. It adds nothing to the record.
 
     Every scenario goes through the injection layer, including one with no outage or camera drop.
     The synthetic IMU has no noise of its own; the IMU noise and bias come from that layer, so
@@ -327,6 +336,8 @@ def run_case(
         imu = imu_hook(imu)
 
     cfg = _eskf_config(scenario, keys)
+    if fdir_overrides:
+        cfg.fdir_config = replace(cfg.fdir_config, **fdir_overrides)  # cfg is built fresh for this run
 
     mode = str(keys.get("initial_start", "origin"))
     if mode not in START_MODES:
@@ -361,6 +372,8 @@ def run_case(
         )
 
     est = result.trajectory
+    if innovations_out is not None:
+        innovations_out.extend(est.metadata.get("gnss_innovations", []))
 
     # Score the estimate against the analytic reference at the estimate's own
     # timestamps. `none` is the headline: the filter and the reference share a frame,
