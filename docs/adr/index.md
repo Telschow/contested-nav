@@ -34,3 +34,4 @@ what it cost, and what was rejected.
 | [ADR-0027](0027-how-the-synthetic-runs-are-initialised.md) | How the synthetic runs are initialised | accepted |
 | [ADR-0028](0028-the-b1-gate.md) | The B1 gate: when visual fusion may ship | accepted |
 | [ADR-0029](0029-how-a-single-runs-verdict-is-formed.md) | How a single run's verdict is formed | accepted |
+| [ADR-0030](0030-the-gate-for-the-next-visual-update-candidate.md) | The gate for the next visual-update candidate | accepted |
