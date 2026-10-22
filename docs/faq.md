@@ -27,12 +27,13 @@ than the no-vision control in all 8 windows with the seeds averaged (measured on
 on the window or the draw at all. Switching the start attitude draw off removes most of the extra error
 (MEASUREMENT); why is a HYPOTHESIS, not tested. See [Results](results.md).
 
-## Why does the "calibrated" control say "mixed"?
+## Why does the `gnss_only` control say "mixed"?
 
-Calibration is reported as a bulk test (mean NEES against its expectation) and a tail test
-(coverage inside the 2σ ellipsoid), and a disagreement is named instead of resolved. The control
-has a mean NEES a little above 3 (a real, detectable overconfidence) while no epoch escapes the
-ellipsoid. Both statements are true. See [Results](results.md).
+Calibration is reported as a bulk test (mean NEES against a band built on the run's effective sample size) and a
+tail test (coverage inside the 2σ ellipsoid), and a disagreement is named instead of resolved. On the seed of the
+table the control has a mean NEES above that band while no epoch escapes the ellipsoid. Both statements are true.
+It is one run and it is descriptive: the ensemble over seeds puts the same case inside its band for most scored
+epochs. See [Results](results.md) and [the ensemble over seeds](calibration.md#the-ensemble-over-seeds).
 
 ## Why 99.3% coverage for "2σ"?
 

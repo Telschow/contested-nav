@@ -78,6 +78,7 @@ def _collect(record: dict[str, Any]) -> dict[str, Any]:
         "coverage_2sigma_pct": None if cov is None else cov * 100.0,
         "claimed_sigma_p_m": head.get("claimed_sigma_p_m"),
         "verdict": head.get("calibration_verdict") or "n/a",
+        "n_eff_truncated": bool(head.get("n_eff_truncated")),
     }
 
 
@@ -102,6 +103,9 @@ def summarise_cell(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for r in rows:
         verdicts[r["verdict"]] = verdicts.get(r["verdict"], 0) + 1
     out["verdicts"] = dict(sorted(verdicts.items()))
+    # Runs whose effective sample size is an upper bound (ADR-0029). Counted here, not marked on the verdict words, so
+    # that the verdict counts are not split.
+    out["n_eff_truncated_runs"] = sum(1 for r in rows if r.get("n_eff_truncated"))
     return out
 
 

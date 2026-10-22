@@ -33,6 +33,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
+
+from navkit.eval.calibration import verdict_label
 
 
 def _fmt(value: float | None, *, percent: bool = False) -> str | None:
@@ -216,8 +219,23 @@ def _named_row_cells(case: dict) -> list[str]:
         _fmt(head.get("claimed_sigma_p_m")) or "n/a",
         f"{nees:.1f}" if nees is not None else "n/a",
         _fmt(coverage.get("2sigma"), percent=True) or "n/a",
-        str(head.get("calibration_verdict") or "n/a"),
+        verdict_label(str(head.get("calibration_verdict") or "n/a"), bool(head.get("n_eff_truncated"))),
     ]
+
+
+def _scenario_verdict(head: dict) -> str | None:
+    """The verdict as the scenario tables of README.md and docs/results.md print it, or ``None`` when there is none.
+
+    ``mixed(bulk=A, tail=B)`` is printed as ``mixed: bulk A, tail B``, and a verdict whose effective sample size is
+    an upper bound carries a dagger (ADR-0029). The shared helper is :func:`navkit.eval.calibration.verdict_label`.
+    """
+    verdict = head.get("calibration_verdict")
+    if not verdict:
+        return None
+    text = verdict_label(str(verdict), bool(head.get("n_eff_truncated")))
+    if text.startswith("mixed(bulk="):
+        text = text.replace("mixed(bulk=", "mixed: bulk ").replace(", tail=", ", tail ").replace(")", "", 1)
+    return text
 
 
 def _named_row_table(text: str) -> list[list[str]] | None:
@@ -304,6 +322,12 @@ def check(results_path: Path, documents: list[Path]) -> int:
                 want_text = f"{float(w):.1f}" if column == "mean NEES" else w
                 if got is None or not got.startswith(want_text):
                     failures.append(f"{name}: {case} {column}: document says {got}, generated value is {want_text}")
+            want_verdict = _scenario_verdict(results["cases"][index]["headline"])
+            got_verdict = _cell(found, index, 5)
+            if want_verdict is not None and got_verdict is not None and got_verdict != want_verdict:
+                failures.append(
+                    f"{name}: {case} verdict: document says {got_verdict}, generated value is {want_verdict}"
+                )
 
     if failures:
         print("documentation tables disagree with the generated benchmark:", file=sys.stderr)

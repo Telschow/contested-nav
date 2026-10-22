@@ -146,7 +146,7 @@ def test_coverage_report_agrees_with_expectation_for_a_correct_filter() -> None:
     assert report.mean_normalised_error == pytest.approx(3.0, abs=0.2)
     for point in report.points:
         assert point.observed == pytest.approx(point.expected, abs=0.02)
-        assert point.verdict == "calibrated"
+        assert point.verdict == "consistent"
     assert report.at(1.0) is not None
     assert report.at(1.5) is None
 
@@ -282,7 +282,7 @@ def test_low_nees_is_underconfident() -> None:
 
 
 def test_nees_at_the_expectation_is_calibrated() -> None:
-    assert _report(3.0, 0.992).bulk_verdict == "calibrated"
+    assert _report(3.0, 0.992).bulk_verdict == "consistent"
 
 
 def test_bulk_and_tail_can_disagree_and_the_report_says_so() -> None:
@@ -296,31 +296,31 @@ def test_bulk_and_tail_can_disagree_and_the_report_says_so() -> None:
     assert rep.bulk_verdict == "overconfident"
     assert rep.tail_verdict == "underconfident"
     assert rep.verdict == "mixed(bulk=overconfident, tail=underconfident)"
-    assert rep.calibrated is False
+    assert rep.consistent is False
 
 
 def test_agreeing_bulk_and_tail_give_a_plain_verdict() -> None:
     rep = _report(3.0, 0.992)
-    assert rep.verdict == "calibrated"
-    assert rep.calibrated is True
+    assert rep.verdict == "consistent"
+    assert rep.consistent is True
 
 
 def test_a_firmly_overconfident_filter_is_not_called_mixed() -> None:
     rep = _report(1000.0, 0.16)
     assert rep.verdict == "overconfident"
-    assert rep.calibrated is False
+    assert rep.consistent is False
 
 
 def test_calibrated_requires_both_diagnostics_to_pass() -> None:
     """A filter that passes only the tail test is not calibrated."""
-    assert _report(3.74, 1.0).calibrated is False
-    assert _report(3.0, 0.992).calibrated is True
+    assert _report(3.74, 1.0).consistent is False
+    assert _report(3.0, 0.992).consistent is True
 
 
 def test_no_epochs_is_insufficient_data_not_a_verdict() -> None:
     rep = _report(float("nan"), 0.0, epochs=0)
     assert rep.bulk_verdict == "insufficient_data"
-    assert rep.calibrated is False
+    assert rep.consistent is False
 
 
 def test_report_dict_exposes_both_verdicts_and_the_nees_pair() -> None:

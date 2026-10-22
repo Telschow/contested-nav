@@ -10,7 +10,7 @@ Run one with `navkit run --only <name>`; list them with `navkit run --list`.
 
 ## gnss_only
 
-GNSS at 5 Hz, no outage, no vision. The reference every other case is read against. Its verdict is mixed rather than clean: mean NEES sits slightly above the expected value while no epoch leaves the 2-sigma ellipsoid.
+GNSS at 5 Hz, no outage, no vision. The reference every other case is read against. The verdict of one run is descriptive and changes with the seed (ADR-0029); the ensemble over seeds is the test of consistency.
 
 **Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision off.
 
@@ -34,7 +34,7 @@ Visual odometry at 20 Hz with no GNSS. In this fixture it is less accurate than 
 
 ## outage_control
 
-15 s GNSS outage, 5 s to 20 s, with vision off. The baseline for a contested receiver: the error grows and so does the claimed uncertainty, and coverage stays at or above nominal. The verdict is mixed because mean NEES is slightly above the expected value.
+15 s GNSS outage, 5 s to 20 s, with vision off. The baseline for a contested receiver: the error grows and so does the claimed uncertainty, and coverage stays at or above nominal. The verdict of one run is descriptive and changes with the seed (ADR-0029); the ensemble over seeds is the test of consistency.
 
 **Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision off; GNSS outage 5 s to 20 s.
 
@@ -76,13 +76,13 @@ Visual odometry at 20 Hz with no GNSS, with the stochastic clone. Nothing constr
 
 ## outage_visual_clone_outliers
 
-The clone with 5% of visual frames carrying an error twenty times the nominal one, as with a wrong feature match. The chi-square gate rejects them and the filter stays calibrated.
+The clone with 5% of visual frames carrying an error twenty times the nominal one, as with a wrong feature match. The chi-square gate rejects them and the single-run verdict stays consistent.
 
 **Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision 20.0 Hz, fused, 5% of frames with a twenty-fold error; GNSS outage 5 s to 20 s; stochastic clone.
 
 ## outage_visual_clone_scale_drift
 
-The clone with a slowly drifting error of up to 10% on the translation scale, as monocular scale drifts. The inertial unit holds the metric scale, so the filter stays calibrated.
+The clone with a slowly drifting error of up to 10% on the translation scale, as monocular scale drifts. The inertial unit holds the metric scale, so the single-run verdict stays consistent.
 
 **Configuration:** GNSS 5.0 Hz, sigma 0.8 m; vision 20.0 Hz, fused, translation scale drifting up to 10% (correlation time 30 s); GNSS outage 5 s to 20 s; stochastic clone.
 

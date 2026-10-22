@@ -27,7 +27,7 @@ from typing import Any
 import numpy as np
 
 from .benchmark import run_case
-from .eval.calibration import ensemble_nees, window_mask
+from .eval.calibration import effective_samples, ensemble_nees, window_mask
 
 CSV_FIELDS = (
     "case",
@@ -44,7 +44,17 @@ CSV_FIELDS = (
     "ensemble_mean_min",
     "ensemble_mean_max",
 )
-_INT_FIELDS = {"n_runs", "dof", "n_epochs"}
+ESS_FIELDS = (
+    "case",
+    "scope",
+    "n_runs",
+    "epochs",
+    "n_eff_min",
+    "n_eff_median",
+    "n_eff_max",
+    "truncated_runs",
+)
+_INT_FIELDS = {"n_runs", "dof", "n_epochs", "epochs", "truncated_runs"}
 _TEXT_FIELDS = {"case", "scope"}
 
 
@@ -104,6 +114,36 @@ class Collector:
                 )
         return out
 
+    def ess_rows(self) -> list[dict[str, Any]]:
+        """Per case and scope: the effective sample size of each run's scored NEES series, summarised.
+
+        The runs are the ones :meth:`rows` scores, so the two tables describe the same runs. ``truncated_runs`` counts
+        the runs whose estimate reached its largest window, for which ``n_eff`` is an upper bound.
+        """
+        out: list[dict[str, Any]] = []
+        for case, runs in self._full.items():
+            scopes = [("full", runs)]
+            if case in self._window:
+                scopes.append(("outage", self._window[case]))
+            for scope, series in scopes:
+                estimates = [effective_samples(s) for s in series]
+                if any(not math.isfinite(n) for n, _ in estimates):
+                    raise ValueError(f"{case} {scope}: a run's series has no effective sample size")
+                sizes = [n for n, _ in estimates]
+                out.append(
+                    {
+                        "case": case,
+                        "scope": scope,
+                        "n_runs": len(series),
+                        "epochs": int(series[0].shape[0]),
+                        "n_eff_min": float(min(sizes)),
+                        "n_eff_median": float(np.median(sizes)),
+                        "n_eff_max": float(max(sizes)),
+                        "truncated_runs": sum(1 for _, t in estimates if t),
+                    }
+                )
+        return out
+
 
 def run_ensemble(
     names: list[str], cases: dict[str, Any], defaults: dict[str, Any], n_runs: int
@@ -118,25 +158,22 @@ def run_ensemble(
     return collector.rows()
 
 
-def csv_text(rows: list[dict[str, Any]]) -> str:
+def csv_text(rows: list[dict[str, Any]], fields: tuple[str, ...] = CSV_FIELDS) -> str:
     """The rows as CSV text. Floats are written with ``repr`` (shortest round trip), so the bytes are deterministic."""
     buffer = io.StringIO()
     writer = csv.writer(buffer, lineterminator="\n")
-    writer.writerow(CSV_FIELDS)
+    writer.writerow(fields)
     for row in rows:
-        writer.writerow([row[k] if k in _INT_FIELDS or k in _TEXT_FIELDS else repr(float(row[k])) for k in CSV_FIELDS])
+        writer.writerow([row[k] if k in _INT_FIELDS or k in _TEXT_FIELDS else repr(float(row[k])) for k in fields])
     return buffer.getvalue()
 
 
-def parse_csv(text: str) -> list[dict[str, Any]]:
+def parse_csv(text: str, fields: tuple[str, ...] = CSV_FIELDS) -> list[dict[str, Any]]:
     """The inverse of :func:`csv_text`."""
     out: list[dict[str, Any]] = []
     for raw in csv.DictReader(io.StringIO(text)):
         out.append(
-            {
-                k: (raw[k] if k in _TEXT_FIELDS else int(raw[k]) if k in _INT_FIELDS else float(raw[k]))
-                for k in CSV_FIELDS
-            }
+            {k: (raw[k] if k in _TEXT_FIELDS else int(raw[k]) if k in _INT_FIELDS else float(raw[k])) for k in fields}
         )
     return out
 
@@ -169,22 +206,52 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def _splice(page: str, table: str, start: str, end: str) -> str:
+    if start not in page or end not in page or page.index(start) > page.index(end):
+        raise ValueError(f"the page needs the lines {start} and {end}, in that order")
+    head, rest = page.split(start, 1)
+    _, tail = rest.split(end, 1)
+    return f"{head}{start}\n\n{table}\n\n{end}{tail}"
+
+
 def splice_table(page: str, table: str) -> str:
     """``page`` with the text between the ensemble markers replaced by ``table``."""
-    if START not in page or END not in page or page.index(START) > page.index(END):
-        raise ValueError(f"the page needs the lines {START} and {END}, in that order")
-    head, rest = page.split(START, 1)
-    _, tail = rest.split(END, 1)
-    return f"{head}{START}\n\n{table}\n\n{END}{tail}"
+    return _splice(page, table, START, END)
 
 
-def compare_rows(new: list[dict[str, Any]], old: list[dict[str, Any]]) -> list[str]:
+ESS_START, ESS_END = "<!-- ess:start -->", "<!-- ess:end -->"
+
+
+def splice_ess_table(page: str, table: str) -> str:
+    """``page`` with the text between the effective-sample-size markers replaced by ``table``."""
+    return _splice(page, table, ESS_START, ESS_END)
+
+
+def ess_markdown_table(rows: list[dict[str, Any]]) -> str:
+    """The generated block for the effective sample sizes: one line per case and scope."""
+    if not rows:
+        raise ValueError("no rows to tabulate")
+    lines = [
+        "| Case | Scope | Runs | Scored epochs | n_eff, smallest | n_eff, median | n_eff, largest | Truncated runs |",
+        "|---|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for r in rows:
+        lines.append(
+            f"| {r['case']} | {r['scope']} | {r['n_runs']} | {r['epochs']} | {r['n_eff_min']:.1f} | "
+            f"{r['n_eff_median']:.1f} | {r['n_eff_max']:.1f} | {r['truncated_runs']} |"
+        )
+    return "\n".join(lines)
+
+
+def compare_rows(
+    new: list[dict[str, Any]], old: list[dict[str, Any]], fields: tuple[str, ...] = CSV_FIELDS
+) -> list[str]:
     """Differences between two row lists: text and integers exactly, floats to :data:`COMPARE_RTOL`."""
     if len(new) != len(old):
         return [f"{len(new)} rows against {len(old)}"]
     problems: list[str] = []
     for a, b in zip(new, old, strict=True):
-        for key in CSV_FIELDS:
+        for key in fields:
             x, y = a[key], b[key]
             same = (
                 x == y

@@ -189,8 +189,8 @@ class TestSummary:
             },
             "split": {
                 "n_runs": 3,
-                "verdict_counts": {"overconfident": 2, "calibrated": 1},
-                "verdict_stable": len({"overconfident": 2, "calibrated": 1}) == 1,
+                "verdict_counts": {"overconfident": 2, "consistent": 1},
+                "verdict_stable": len({"overconfident": 2, "consistent": 1}) == 1,
             },
         }
         assert summary["all_same"]["verdict_stable"] is True
@@ -205,12 +205,12 @@ class TestSummary:
                     "ate_rmse_m": {"mean": 2.5, "ci95": {"lo": 2.4, "hi": 2.6}},
                     "coverage_2sigma_pct": {"mean": 20.0, "ci95": {"lo": 19.0, "hi": 21.0}},
                     "verdict_stable": False,
-                    "verdict_counts": {"overconfident": 3, "calibrated": 1},
+                    "verdict_counts": {"overconfident": 3, "consistent": 1},
                 }
             }
         )
         assert "NO" in md
-        assert "overconfident" in md and "calibrated" in md
+        assert "overconfident" in md and "consistent" in md
 
     def test_markdown_says_na_rather_than_inventing_a_number(self, sweep):
         md = sweep.as_markdown(

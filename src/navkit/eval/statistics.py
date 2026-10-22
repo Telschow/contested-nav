@@ -104,7 +104,7 @@ def _lower_gamma_p(a: float, t: float) -> float:
     return min(max(1.0 - math.exp(log_prefactor) * h, 0.0), 1.0)
 
 
-def chi2_cdf(x: float, dof: int) -> float:
+def chi2_cdf(x: float, dof: float) -> float:
     """``P(X <= x)`` for a chi-square variate with ``dof`` degrees of freedom."""
     if dof < 1:
         raise ValueError(f"degrees of freedom must be positive, got {dof}")
@@ -113,7 +113,7 @@ def chi2_cdf(x: float, dof: int) -> float:
     return _lower_gamma_p(dof / 2.0, x / 2.0)
 
 
-def chi2_ppf(q: float, dof: int) -> float:
+def chi2_ppf(q: float, dof: float) -> float:
     """Inverse of :func:`chi2_cdf` by bisection.
 
     ``q`` is a probability in ``[0, 1]``. Bisection is used rather than a

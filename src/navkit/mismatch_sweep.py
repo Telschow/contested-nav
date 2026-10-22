@@ -68,6 +68,7 @@ CSV_FIELDS = (
     "gnss_rejected_pct_lo",
     "gnss_rejected_pct_hi",
     "verdicts",
+    "n_eff_truncated_runs",
 )
 
 
@@ -111,6 +112,7 @@ def cell_row(cell: dict[str, Any], channel: str) -> dict[str, Any]:
         "channel": channel,
         "n_seeds": cell["n_seeds"],
         "verdicts": ";".join(f"{k}={v}" for k, v in cell["verdicts"].items()),
+        "n_eff_truncated_runs": cell["n_eff_truncated_runs"],
     }
     for metric in (*METRICS, "gnss_rejected_pct"):
         m = cell[metric]
@@ -139,7 +141,7 @@ def read_csv(path: Path) -> list[dict[str, Any]]:
             for key, value in raw.items():
                 if key in ("case", "channel", "verdicts"):
                     row[key] = value
-                elif key == "n_seeds":
+                elif key in ("n_seeds", "n_eff_truncated_runs"):
                     row[key] = int(value)
                 else:
                     row[key] = None if value == "" else float(value)
@@ -187,18 +189,21 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
         "Claimed 1σ m",
         "GNSS fixes rejected % [95% CI]",
         "Verdicts",
+        "Runs with truncated n_eff",
     )
     lines = [
         "| " + " | ".join(columns) + " |",
-        "|---|---:|---|---|---|---:|---|---|",
+        "|---|---:|---|---|---|---:|---|---|---:|",
     ]
     for r in rows:
         claimed = r["claimed_sigma_p_m_mean"]
         claimed_s = "n/a" if claimed is None else f"{claimed:.3f}"
-        verdicts = r["verdicts"].replace(";", ", ").replace("=", " x")
+        # "name=count;name=count": only the last "=" of an item is the separator, a mixed verdict has its own.
+        verdicts = ", ".join(f"{item.rsplit('=', 1)[0]} x{item.rsplit('=', 1)[1]}" for item in r["verdicts"].split(";"))
         lines.append(
             f"| {r['case']} | {r['scale']:g} | {_fmt(r, 'ate_rmse_m', 2)} | {_fmt(r, 'nees_mean', 1)} "
-            f"| {_fmt(r, 'coverage_2sigma_pct', 1)} | {claimed_s} | {_fmt(r, 'gnss_rejected_pct', 1)} | {verdicts} |"
+            f"| {_fmt(r, 'coverage_2sigma_pct', 1)} | {claimed_s} | {_fmt(r, 'gnss_rejected_pct', 1)} | {verdicts} | "
+            f"{r['n_eff_truncated_runs']} of {r['n_seeds']} |"
         )
     return "\n".join(lines)
 

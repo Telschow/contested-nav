@@ -31,7 +31,7 @@ reference does not grow with the size of the state vector.
 
 | NEES vs nominal | Meaning |
 |---|---|
-| near nominal | calibrated |
+| near nominal | consistent with calibration |
 | far above | **overconfident**: claims more certainty than it has |
 | far below | underconfident: claims less certainty than it has |
 
@@ -50,9 +50,9 @@ rank by error.
 
 A 10-seed sweep changes the reading of the digits, not the verdict. Over 10 seeds, each with its own start draw,
 `outage_visual` and `vision_only` were overconfident at every one, and their mean NEES spanned about two orders of
-magnitude and about one (measured once on one machine, not checked by CI, at e94c107). So the order of magnitude is the right thing to write down, not a single digit.
-A control's verdict string is also one draw: `outage_control` was underconfident in 5 of the 10 seeds and mixed or
-overconfident in the others.
+magnitude and about one (measured once on one machine, not checked by CI, at 7e33158). So the order of magnitude is the right thing to write down, not a single digit.
+A control's verdict string is also one draw: `outage_control` read consistent in 5 of the 10 seeds and mixed in the
+others.
 
 **Why it is decisive:** NEES only blows up when the error is large *and*
 `P` is small. A filter that merely tracks badly has a large error but an
@@ -89,8 +89,12 @@ output.
 ## Calibration verdict
 
 `navkit/eval/calibration.py` classifies each run as overconfident, underconfident
-or calibrated, using both NEES against its nominal and a **Wilson interval**
-on the coverage fraction.
+or consistent. `consistent` means that the run did not reject calibration; one run cannot establish it. The bulk
+test compares the mean NEES with its chi-square band, and the tail test puts a **Wilson interval** on the coverage
+fraction. Both are formed with the effective sample size of the run's scored NEES series, not with its epoch count,
+because the epochs of a run are strongly autocorrelated
+([ADR-0029](adr/0029-how-a-single-runs-verdict-is-formed.md)). A series of fewer than ten epochs, or a constant one,
+has no estimate and reads `insufficient_data`.
 
 The Wilson interval matters. A naive coverage estimate from 10 steps that
 hits 9/10 looks perfect; a Wilson interval says the 95% interval on that
@@ -106,7 +110,7 @@ observed, is close to one sample. The test that fits is an ensemble. Run a case 
 average the NEES over the runs. If the filter is consistent, that average times the number of runs is chi-square with
 the number of runs times the degrees of freedom, so the average has a two-sided band: the 2.5% and 97.5% quantiles of
 that chi-square, divided by the number of runs. The band narrows as the number of runs grows. The table uses 25
-runs, because with 10 the band is too wide to separate a mildly conservative filter from a calibrated one.
+runs, because with 10 the band is too wide to separate a mildly conservative filter from a consistent one.
 
 The table is generated from [`data/ensemble_nees.csv`](data/ensemble_nees.csv) and checked against it by a test. It
 gives, for each case, the share of scored epochs at which the ensemble mean is inside, below or above the band. The
@@ -157,8 +161,8 @@ How to read it:
 - Because every case shares the start draws, the ensemble mean at the first epoch is the same sample in every row. It
   can sit outside the band for that reason alone. The first epoch is not excluded.
 - The shares are descriptive, not a p-value. Epochs within a run are strongly autocorrelated, so the scored epochs
-  are far from independent. `effective_sample_size` in `navkit.eval.statistics` measures that; the text of
-  [pull request 134](https://github.com/Telschow/contested-nav/pull/134) has its measured values for these cases.
+  are far from independent. `effective_sample_size` in `navkit.eval.statistics` measures that, and the next table
+  gives its value for each case.
 
 What the table shows. Each sentence is checked against the CSV by `tests/test_ensemble_page.py`.
 
@@ -172,6 +176,55 @@ What the table shows. Each sentence is checked against the CSV by `tests/test_en
 
 This table does not replace the single-run verdicts, which stay descriptive. How a gate would use the ensemble is
 decided separately, with an ADR.
+
+### How many independent samples a run is worth
+
+A run of thousands of epochs is worth far fewer independent samples, because its epochs are strongly autocorrelated.
+The table gives, for each case and scope, the smallest, median and largest effective sample size over the 25 runs,
+and how many of those runs have a truncated estimate. It is generated from
+[`data/effective_sample_size.csv`](data/effective_sample_size.csv) and checked against it by a test. The runs are the
+same as in the ensemble table above, so the two describe one set of runs. Regenerate both with:
+
+```bash
+navkit sweep seeds --seeds 25 --ensemble-csv docs/data/ensemble_nees.csv --ensemble-page docs/calibration.md \
+    --ess-csv docs/data/effective_sample_size.csv --ess-page docs/calibration.md
+```
+
+<!-- ess:start -->
+
+| Case | Scope | Runs | Scored epochs | n_eff, smallest | n_eff, median | n_eff, largest | Truncated runs |
+|---|---|---:|---:|---:|---:|---:|---:|
+| gnss_only | full | 25 | 6001 | 10.4 | 19.8 | 48.1 | 0 |
+| vision_anchor_in_measurement_noise | full | 25 | 6001 | 3.2 | 4.3 | 5.1 | 25 |
+| vision_only | full | 25 | 6001 | 3.6 | 4.3 | 4.6 | 25 |
+| outage_control | full | 25 | 6001 | 5.8 | 15.9 | 55.8 | 2 |
+| outage_control | outage | 25 | 3000 | 3.3 | 4.0 | 14.4 | 23 |
+| outage_visual | full | 25 | 6001 | 4.2 | 4.5 | 14.1 | 22 |
+| outage_visual | outage | 25 | 3000 | 3.6 | 4.0 | 4.4 | 25 |
+| outage_visual_degraded_camera | full | 25 | 6001 | 4.0 | 4.7 | 15.1 | 22 |
+| outage_visual_degraded_camera | outage | 25 | 3000 | 3.5 | 4.1 | 4.6 | 25 |
+| outage_visual_clone | full | 25 | 6001 | 5.5 | 13.7 | 30.9 | 4 |
+| outage_visual_clone | outage | 25 | 3000 | 3.7 | 6.2 | 31.8 | 15 |
+| outage_visual_degraded_camera_rereferenced | full | 25 | 6001 | 4.2 | 4.8 | 14.4 | 21 |
+| outage_visual_degraded_camera_rereferenced | outage | 25 | 3000 | 3.5 | 4.1 | 4.4 | 25 |
+| outage_visual_degraded_camera_clone | full | 25 | 6001 | 5.5 | 13.9 | 40.8 | 4 |
+| outage_visual_degraded_camera_clone | outage | 25 | 3000 | 3.3 | 6.2 | 22.5 | 17 |
+| vision_only_clone | full | 25 | 6001 | 3.4 | 4.8 | 22.0 | 18 |
+| outage_visual_clone_outliers | full | 25 | 6001 | 5.2 | 13.9 | 29.3 | 3 |
+| outage_visual_clone_outliers | outage | 25 | 3000 | 3.6 | 7.4 | 18.6 | 13 |
+| outage_visual_clone_scale_drift | full | 25 | 6001 | 6.6 | 15.1 | 43.2 | 5 |
+| outage_visual_clone_scale_drift | outage | 25 | 3000 | 3.6 | 10.2 | 29.8 | 12 |
+| outage_visual_clone_correlated | full | 25 | 6001 | 5.4 | 13.5 | 26.4 | 3 |
+| outage_visual_clone_correlated | outage | 25 | 3000 | 3.3 | 10.3 | 17.8 | 11 |
+| outage_visual_clone_correlated_inflated | full | 25 | 6001 | 7.3 | 16.0 | 29.2 | 2 |
+| outage_visual_clone_correlated_inflated | outage | 25 | 3000 | 3.4 | 5.3 | 17.3 | 16 |
+
+<!-- ess:end -->
+
+A truncated estimate means that the autocorrelation did not die away within the largest window the estimator allows,
+which is half the series. The effective sample size is then an upper bound, because the estimated autocorrelation time
+is a lower bound. A band built on it is narrower than it should be. A dagger after a verdict in a table means that the
+effective sample size behind that verdict is truncated ([ADR-0029](adr/0029-how-a-single-runs-verdict-is-formed.md)).
 
 ## The B1 gate on the development seeds
 
@@ -290,7 +343,7 @@ the *direction* of the error matters -- it is overconfident, not merely
 inaccurate.
 
 Row 3 is the anchor modelled as filter state, and it is the honest failure. It
-is not overconfident in the same way, but it is still not calibrated, and its
+is not overconfident in the same way, but its mean NEES is still far above the expected value, and its
 ATE is worse than the GNSS-only control it was meant to replace. Modelling the
 anchor as state is necessary and not sufficient; the numbers are quoted because
 they are unflattering, not because they are reassuring.

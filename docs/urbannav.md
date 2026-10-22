@@ -238,7 +238,13 @@ Every statement is about one sequence and one receiver, and points at rows of th
    far fewer fixes are rejected. This is the lockout behaviour of the existing gate, reached on real data.
 5. **Before the tunnel, weighting each fix by the receiver's own sigma follows the fixes more closely**, and the filter
    is still not calibrated: the normalised error is above its expected value in both variants. The receiver's own sigma
-   is optimistic against the reference.
+   is optimistic against the reference. Note (2026-10-22): the sentence holds under the rule of
+   [ADR-0029](adr/0029-how-a-single-runs-verdict-is-formed.md), which forms a single run's verdict with the effective
+   sample size. The bulk verdict of the horizontal normalised error before the outage is overconfident for both
+   variants on all five seeds. For the scalar variant the effective sample size is a handful of samples and
+   truncated, so an upper bound; for the per-fix variant it is a little larger and not truncated. The result was
+   recomputed once, to a scratch path, measured once on one machine, not checked by CI. The committed tables are
+   unchanged.
 6. **The receiver's sigma already marks the worst fixes.** The fixes just before the receiver gives up are far from the
    reference and carry a large reported sigma. The scalar variant rejects most of the wrong ones. The per-fix variant
    accepts most of them, because it believes the sigma that came with them.

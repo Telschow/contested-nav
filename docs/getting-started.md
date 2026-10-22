@@ -15,13 +15,15 @@ The last command prints the three rows that carry the headline result:
 ```text
 | Scenario | ATE RMSE (m) | Claimed 1-sigma (m) | Mean NEES (exp. 3) | Coverage at 2 sigma | Verdict |
 | --- | ---: | ---: | ---: | ---: | --- |
-| gnss_only | 0.512 | 0.254 | 4.2 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
-| outage_control | 6.530 | 0.567 | 3.2 | 100.0% | mixed(bulk=overconfident, tail=underconfident) |
-| outage_visual | 17.425 | 0.156 | 13783.2 | 18.8% | overconfident |
+| gnss_only | 0.512 | 0.254 | 4.2 | 100.0% | mixed(bulk=overconfident, tail=consistent) |
+| outage_control | 6.530 | 0.567 | 3.2 | 100.0% | consistent |
+| outage_visual | 17.425 | 0.156 | 13783.2 | 18.8% | overconfident† |
 ```
 
 This table is checked by CI: `scripts/check_doc_tables.py` compares each row, including the verdict, with the
-benchmark.
+benchmark. A dagger after a verdict means that the effective sample size behind it is truncated, so an upper bound
+([ADR-0029](adr/0029-how-a-single-runs-verdict-is-formed.md)). `consistent` means that the run did not reject
+calibration; one run cannot establish it.
 
 **Timed from a fresh clone** on the machine that wrote this page (Python 3.13, a fast
 connection): clone 1.2 s, virtual environment 2.7 s, `pip install -e .` 9.6 s, the three-case

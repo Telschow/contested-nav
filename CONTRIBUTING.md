@@ -52,7 +52,7 @@ mypy src --ignore-missing-imports
 `ruff format src tests scripts` applies formatting; the `--check` form is the
 gate.
 
-The suite collects <!-- metric:tests_collected -->1828<!-- /metric --> tests and all of them pass on a fresh clone, except the deliberate
+The suite collects <!-- metric:tests_collected -->1897<!-- /metric --> tests and all of them pass on a fresh clone, except the deliberate
 xfails and the skips. `pytest -rs` lists the skips: two need TUM VI reference data that is not
 vendored (see below), and the doc-table check runs once `python scripts/run_benchmark.py` has
 written `results/benchmark.json`. The count and the other numbers the docs quote are in
@@ -79,7 +79,8 @@ the docs; it adds a new claim, and new claims need the claim-type tagging in
 ## Conventions worth knowing
 
 **Never hand-type a number.** The benchmark tables in `README.md`, `docs/index.md`, `docs/results.md` and
-`docs/getting-started.md` are generated and checked by `scripts/check_doc_tables.py`, which CI runs. Counts
+`docs/getting-started.md` are generated and checked by `scripts/check_doc_tables.py`, which CI runs, including the
+verdict column of the scenario tables. Counts
 and two headline values in prose are quoted through `<!-- metric:key -->` markers that `scripts/metrics.py`
 checks. `tests/test_quoted_numbers.py` fails on any other measured number on the five first-read pages: the
 README, `docs/index.md`, `docs/getting-started.md`, `docs/results.md` and `docs/status.md`. Timings and
