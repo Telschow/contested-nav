@@ -198,7 +198,8 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
     for r in rows:
         claimed = r["claimed_sigma_p_m_mean"]
         claimed_s = "n/a" if claimed is None else f"{claimed:.3f}"
-        verdicts = r["verdicts"].replace(";", ", ").replace("=", " x")
+        # "name=count;name=count": only the last "=" of an item is the separator, a mixed verdict has its own.
+        verdicts = ", ".join(f"{item.rsplit('=', 1)[0]} x{item.rsplit('=', 1)[1]}" for item in r["verdicts"].split(";"))
         lines.append(
             f"| {r['case']} | {r['scale']:g} | {_fmt(r, 'ate_rmse_m', 2)} | {_fmt(r, 'nees_mean', 1)} "
             f"| {_fmt(r, 'coverage_2sigma_pct', 1)} | {claimed_s} | {_fmt(r, 'gnss_rejected_pct', 1)} | {verdicts} | "

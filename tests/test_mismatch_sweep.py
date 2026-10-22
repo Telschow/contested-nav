@@ -308,3 +308,83 @@ def test_a_cell_counts_its_truncated_runs_without_splitting_the_verdicts() -> No
     cell = summarise_cell([row(True), row(False), row(True)])
     assert cell["verdicts"] == {"overconfident": 3}
     assert cell["n_eff_truncated_runs"] == 2
+
+
+# --- ADR-0029: what one run's verdict can and cannot resolve ---------------------------------------
+
+
+def _counts(row: dict[str, Any]) -> list[tuple[str, int]]:
+    return [(item.rsplit("=", 1)[0], int(item.rsplit("=", 1)[1])) for item in row["verdicts"].split(";")]
+
+
+def _bulk(verdict: str) -> str:
+    """The bulk word of a verdict: a pure verdict has the same word for the bulk and the tail."""
+    return verdict.split("bulk=")[1].split(",")[0] if verdict.startswith("mixed(bulk=") else verdict
+
+
+def _bulk_count(row: dict[str, Any], word: str) -> int:
+    return sum(n for verdict, n in _counts(row) if _bulk(verdict) == word)
+
+
+def test_the_rendered_verdicts_keep_the_equals_sign_of_a_mixed_verdict() -> None:
+    row = dict.fromkeys(mismatch_sweep.CSV_FIELDS)
+    row.update(
+        case="c",
+        scale=1.0,
+        n_seeds=5,
+        n_eff_truncated_runs=0,
+        claimed_sigma_p_m_mean=None,
+        verdicts="consistent=3;mixed(bulk=overconfident, tail=consistent)=2",
+    )
+    for metric in ("ate_rmse_m", "nees_mean", "coverage_2sigma_pct", "gnss_rejected_pct"):
+        row[f"{metric}_mean"] = None
+    text = mismatch_sweep.markdown_table([row])
+    assert "consistent x3, mixed(bulk=overconfident, tail=consistent) x2" in text
+    assert "xoverconfident" not in text
+
+
+def test_the_committed_page_has_no_broken_mixed_verdicts() -> None:
+    assert "bulk xover" not in PAGE.read_text(encoding="utf-8")
+    assert "bulk xunder" not in PAGE.read_text(encoding="utf-8")
+
+
+def test_the_csv_uses_only_the_current_verdict_words() -> None:
+    words = {"overconfident", "underconfident", "consistent", "insufficient_data"}
+    for row in mismatch_sweep.read_csv(CSV):
+        for verdict, _ in _counts(row):
+            parts = verdict.replace("mixed(", "").replace(")", "").replace("bulk=", "").replace("tail=", "").split(", ")
+            assert set(parts) <= words, verdict
+
+
+@pytest.mark.parametrize("case", ["gnss_only", "outage_control"])
+def test_claim_6_a_large_optimistic_mismatch_gets_a_clear_verdict_from_one_run(case: str) -> None:
+    rows = _by(case)
+    for scale in (0.25, 0.5):
+        assert rows[scale]["verdicts"] == f"overconfident={rows[scale]['n_seeds']}"
+    assert _bulk_count(rows[0.8], "overconfident") >= 4  # still flagged, a 20% understatement
+
+
+@pytest.mark.parametrize("case", ["gnss_only", "outage_control"])
+def test_claim_6_a_large_pessimistic_mismatch_reads_underconfident_in_the_bulk(case: str) -> None:
+    rows = _by(case)
+    for scale in (2.0, 4.0):
+        assert _bulk_count(rows[scale], "underconfident") >= 4
+
+
+def test_claim_6_a_mild_pessimistic_mismatch_mostly_reads_consistent_in_one_run() -> None:
+    assert _bulk_count(_by("gnss_only")[1.25], "consistent") == 3
+    assert _bulk_count(_by("outage_control")[1.25], "consistent") == 4
+    assert _bulk_count(_by("gnss_only")[1.25], "overconfident") == 0
+    assert _bulk_count(_by("outage_control")[1.25], "overconfident") == 0
+
+
+def test_claim_4_at_the_true_noise_one_run_often_reads_consistent_and_sometimes_rejects() -> None:
+    gnss, outage = _by("gnss_only")[1.0], _by("outage_control")[1.0]
+    assert (_bulk_count(gnss, "consistent"), _bulk_count(gnss, "overconfident")) == (3, 2)
+    assert (_bulk_count(outage, "consistent"), _bulk_count(outage, "overconfident")) == (4, 1)
+
+
+def test_the_page_says_that_one_run_cannot_resolve_a_mild_mismatch_and_points_at_the_ensemble() -> None:
+    text = " ".join(PAGE.read_text(encoding="utf-8").split())
+    assert "One run cannot resolve a mild mismatch" in text
+    assert "(calibration.md#the-ensemble-over-seeds)" in text
