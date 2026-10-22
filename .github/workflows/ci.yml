@@ -432,8 +432,10 @@ jobs:
       - name: The committed ensemble matches a fresh run
         # Text and integers must match exactly. Floats are compared to 1e-6 relative, as in ADR-0009, because
         # the runner is not the machine that wrote the file and the last digits of a float can differ across platforms.
-        run: python scripts/seed_sweep.py --seeds 25 --out /tmp/ensemble_sweep.json --ensemble-compare docs/data/ensemble_nees.csv \
-          --ess-compare docs/data/effective_sample_size.csv
+        run: |
+          python scripts/seed_sweep.py --seeds 25 --out /tmp/ensemble_sweep.json \
+            --ensemble-compare docs/data/ensemble_nees.csv \
+            --ess-compare docs/data/effective_sample_size.csv
 
       - name: The committed development gate matches a fresh run
         # The B1 gate of ADR-0028 on the development seeds 0 to 24, once. Never the held-out seeds 100 to 124: they
