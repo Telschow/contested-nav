@@ -13,13 +13,12 @@ which is the setting ADR-0017 found by trial. ``vision_enabled`` stays False in 
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from pathlib import Path
 from typing import Any
 
 from . import slow_ramp as sr
-from .euroc_eval import dataset_loader
+from .euroc_eval import dataset_loader, list_sequence_dirs
 
 FRONT_ENDS: dict[str, dict[str, Any]] = {
     "independent": {"vision": "clone", "vision_corr_s": 0.0, "vision_noise_scale": 1.0},
@@ -32,7 +31,7 @@ CSV_COLUMNS = ("front_end", *sr.CSV_COLUMNS)
 def sweep_rows(dataset: str, root: str | Path, configs: tuple[str, ...], seeds: int) -> list[dict[str, Any]]:
     loader, _ = dataset_loader(dataset)
     rows: list[dict[str, Any]] = []
-    for name in sorted(d for d in os.listdir(root) if (Path(root) / d).is_dir()):
+    for name in list_sequence_dirs(root):
         seq = loader(root, name)
         for front, extra in FRONT_ENDS.items():
             for arm in sr.ARMS:

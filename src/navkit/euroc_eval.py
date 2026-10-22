@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import tempfile
 from collections.abc import Callable
@@ -773,6 +774,17 @@ def as_markdown(records: list[dict[str, Any]]) -> str:
 
 
 DATASETS = ("euroc", "tumvi")
+
+
+def list_sequence_dirs(root: str | os.PathLike[str]) -> list[str]:
+    """The sorted names of the sequence folders directly inside ``root``.
+
+    A folder whose name starts with a dot is not a sequence: the fetch commands create ``.downloads`` and ``.work``
+    inside the dataset root. A symlink to a directory counts as a directory, so a root made of symlinks lists them. A
+    missing ``root`` raises ``FileNotFoundError`` naming it, as ``os.listdir`` does.
+    """
+    base = Path(root)
+    return sorted(d for d in os.listdir(root) if not d.startswith(".") and (base / d).is_dir())
 
 
 def dataset_loader(dataset: str) -> tuple[Callable[[str | Path, str], EurocSequence], str]:

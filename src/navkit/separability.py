@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -22,7 +21,7 @@ from typing import Any
 import numpy as np
 
 from .euroc_compare import _ALL_CONFIGS, DEFAULT_OUTAGE_S, DEFAULT_STARTS, fitting_starts
-from .euroc_eval import RunOptions, dataset_loader, run_sequence
+from .euroc_eval import RunOptions, dataset_loader, list_sequence_dirs, run_sequence
 from .fdir.config import FdirConfig
 from .fdir.gating import chi2_threshold
 
@@ -65,7 +64,7 @@ def honest_rows(
 ) -> list[dict[str, Any]]:
     """The first GNSS innovation after each outage, one row per sequence, start, seed and configuration."""
     loader, _ = dataset_loader(dataset)
-    names = sorted(d for d in os.listdir(root) if (Path(root) / d).is_dir())
+    names = list_sequence_dirs(root)
     rows: list[dict[str, Any]] = []
     for name in names:
         seq = loader(root, name)
