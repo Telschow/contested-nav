@@ -68,7 +68,10 @@ def test_a_missing_root_raises_file_not_found_error_and_names_the_path(tmp_path)
     missing = tmp_path / "no" / "such" / "root"
     with pytest.raises(FileNotFoundError) as info:
         list_sequence_dirs(missing)
-    assert str(missing) in str(info.value)
+    # The error carries the path it was given. The text of the message quotes it with escaped backslashes on
+    # Windows, so the attribute is compared and not the text.
+    assert os.fspath(info.value.filename) == os.fspath(missing)
+    assert info.value.filename is not None
 
 
 def test_a_root_that_is_a_file_raises_what_the_callers_raised_before(tmp_path):
