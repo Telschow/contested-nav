@@ -58,3 +58,5 @@ Passing the gate does not by itself change `vision_enabled`; that stays a separa
 - The gate code is a separate package. It is reviewed before any run on seeds 100 to 124.
 - The held-out run happens once, in its own pull request, after the gate code is reviewed and this record is merged.
 - A failure is a result. It is recorded as one, and a changed candidate needs a new held-out set and a new record.
+
+Note (2026-10-22): for new candidates the gate statistic and scenarios are those of [ADR-0030](0030-the-gate-for-the-next-visual-update-candidate.md); the result recorded here stands.
