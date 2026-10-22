@@ -429,7 +429,7 @@ tier.
 was first written, under two independent sweeps: 10 noise realisations of the
 benchmark scene (`scripts/seed_sweep.py`) and 8 scenes with the trajectory
 geometry varied over a 4.65x path-length range (`scripts/scene_sweep.py`). All 7
-case verdicts are identical in all 8 scenes, and `outage_visual` is overconfident
+case verdicts are identical in all 8 scenes (under the rule before ADR-0029, on the old fixed start, not re-run), and `outage_visual` is overconfident
 at every noise seed. The *verdicts* are therefore robust; only the magnitudes are
 single draws. This strengthens the FAILs; it does not soften them.
 

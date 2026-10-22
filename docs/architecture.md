@@ -187,9 +187,9 @@ benchmark note below and blocker B4.
 - **2-sigma coverage**: the fraction of steps where the true error falls
   inside the claimed 2-sigma ellipsoid. The most direct read on whether a
   downstream consumer can trust the output.
-- **Calibration verdict**: over/underconfident classification with a Wilson
-  interval on the coverage fraction, so a verdict is not declared from a
-  handful of steps.
+- **Calibration verdict**: over/underconfident/consistent classification, formed with the effective
+  sample size of the run's scored NEES series and a Wilson interval on the coverage fraction, so a verdict is not
+  declared from a handful of steps ([ADR-0029](adr/0029-how-a-single-runs-verdict-is-formed.md)).
 - **Conformal radius**: empirical coverage-preserving radius at a chosen
   confidence, which is what you would actually hand to a downstream planner.
 

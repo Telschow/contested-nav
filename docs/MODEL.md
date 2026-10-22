@@ -306,7 +306,7 @@ Each case record:
 | `runtime_s` | Wall-clock time of the estimator. Excluded from every comparison. |
 | `stats`, `summary` | Counters: fixes used and rejected, FDIR state, final and maximum position sigma, latency. |
 | `ate` | Absolute trajectory error under four alignments (`none`, `rigid`, `rigid_start`, `similarity`). |
-| `headline` | The numbers the README quotes: ATE (`alignment: none`), rotation error, mean NEES, expected NEES, coverage at 1, 2 and 3 sigma, claimed sigma, verdicts. Covariance fields are absent for dead reckoning. |
+| `headline` | The numbers the README quotes: ATE (`alignment: none`), rotation error, mean NEES, expected NEES, coverage at 1, 2 and 3 sigma, claimed sigma, verdicts, `consistent`, and the effective sample size `n_eff` behind the verdicts with `n_eff_truncated` ([ADR-0029](adr/0029-how-a-single-runs-verdict-is-formed.md)). Covariance fields are absent for dead reckoning. |
 | `calibration` | Full calibration report: coverage points with intervals, conformal radius, inflation to reach 95%, verdicts. Absent for dead reckoning. |
 | `drift` | Drift as a percentage of path length and of time, with a fitted growth rate. |
 | `rpe_1s` | Relative pose error over 1 s windows, translation and rotation. |
