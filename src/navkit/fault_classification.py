@@ -20,7 +20,6 @@ from __future__ import annotations
 import argparse
 import csv
 import math
-import os
 import sys
 from pathlib import Path
 from statistics import NormalDist
@@ -29,7 +28,7 @@ from typing import Any
 import numpy as np
 
 from .euroc_compare import _ALL_CONFIGS
-from .euroc_eval import RunOptions, dataset_loader, run_sequence
+from .euroc_eval import RunOptions, dataset_loader, list_sequence_dirs, run_sequence
 
 ONSET_S = 35.0
 WINDOW_S = 20.0
@@ -147,7 +146,7 @@ def run_case(seq: Any, config: str, seed: int, case: tuple[str, str, float]) -> 
 def sweep_rows(dataset: str, root: str | Path, seeds: int) -> list[dict[str, Any]]:
     loader, _ = dataset_loader(dataset)
     rows: list[dict[str, Any]] = []
-    for name in sorted(d for d in os.listdir(root) if (Path(root) / d).is_dir()):
+    for name in list_sequence_dirs(root):
         seq = loader(root, name)
         for seed in range(seeds):
             for case in CASES:
@@ -162,7 +161,7 @@ def confirm_sweep(dataset: str, root: str | Path) -> list[dict[str, Any]]:
     """Runs of the confirmation design on one dataset."""
     loader, _ = dataset_loader(dataset)
     rows: list[dict[str, Any]] = []
-    for name in sorted(d for d in os.listdir(root) if (Path(root) / d).is_dir()):
+    for name in list_sequence_dirs(root):
         seq = loader(root, name)
         for case in CONFIRM_CASES:
             seeds = CONFIRM_CONTROL_SEEDS if case[0] == "control" else CONFIRM_FAULT_SEEDS

@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -23,7 +22,7 @@ from typing import Any
 import numpy as np
 
 from .euroc_compare import _ALL_CONFIGS
-from .euroc_eval import RunOptions, dataset_loader, run_sequence
+from .euroc_eval import RunOptions, dataset_loader, list_sequence_dirs, run_sequence
 from .fdir.status import STATUS_REACCEPTED_WITH_INFLATION, STATUS_SENSOR_FAULT
 from .separability import shipped_gate
 
@@ -100,7 +99,7 @@ def run_case(
 def sweep_rows(dataset: str, root: str | Path, configs: tuple[str, ...], seeds: int) -> list[dict[str, Any]]:
     loader, _ = dataset_loader(dataset)
     rows: list[dict[str, Any]] = []
-    for name in sorted(d for d in os.listdir(root) if (Path(root) / d).is_dir()):
+    for name in list_sequence_dirs(root):
         seq = loader(root, name)
         for arm in ARMS:
             for rate in RATES_M_S:
