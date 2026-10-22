@@ -52,7 +52,7 @@ from .benchmark import MEASUREMENT, _jsonable
 from .degrade.config import Outage
 from .degrade.inject import apply_gnss_outage
 from .estimators.eskf import VISION_NOISE_PRESETS, ErrorStateKalmanFilter, EskfConfig, InitialState
-from .eval.calibration import normalized_error_squared, summarise
+from .eval.calibration import normalized_error_squared, summarise, verdict_label
 from .eval.metrics import ate_bundle, outage_summary, relative_pose_error
 from .geometry.rigid import matrix_to_quat, quat_to_matrix, rot_exp
 from .io.euroc_fetch import IMU_CSV, IMU_SENSOR, SEQUENCES, TRUTH_CSV
@@ -648,7 +648,9 @@ def run_sequence(
         head["calibration_verdict"] = cal.verdict
         head["bulk_verdict"] = cal.bulk_verdict
         head["tail_verdict"] = cal.tail_verdict
-        head["calibrated"] = bool(cal.calibrated)
+        head["consistent"] = bool(cal.consistent)
+        head["n_eff"] = cal.n_eff
+        head["n_eff_truncated"] = cal.n_eff_truncated
         record["error_time_series"] = {
             "t": (est.t - float(seq.imu.t[0])).tolist(),
             "position_error_m": headline_ate.per_pose_position_m.tolist(),
@@ -761,10 +763,11 @@ def as_markdown(records: list[dict[str, Any]]) -> str:
         h = r["headline"]
         outage = ", ".join(f"{s:g}+{d:g}" for s, d in r["options"]["outages"]) or "none"
         cov = h.get("coverage", {}).get("2sigma")
+        shown = verdict_label(h.get("calibration_verdict", "n/a"), bool(h.get("n_eff_truncated")))
         lines.append(
             f"| {r['sequence']} | {outage} | {h['ate_rmse_m']:.3f} | "
             f"{h.get('nees_mean', float('nan')):.2f} ({h.get('nees_expected', float('nan')):g}) | "
-            f"{'n/a' if cov is None else f'{100 * cov:.1f}%'} | {h.get('calibration_verdict', 'n/a')} |"
+            f"{'n/a' if cov is None else f'{100 * cov:.1f}%'} | {shown} |"
         )
     return "\n".join(lines)
 

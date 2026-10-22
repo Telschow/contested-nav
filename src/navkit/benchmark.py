@@ -62,6 +62,7 @@ from .eval.calibration import (
     normalized_error_squared,
     score_mask,
     summarise,
+    verdict_label,
     window_mask,
 )
 from .eval.metrics import (
@@ -454,7 +455,10 @@ def run_case(
         # miscalibrated in the bulk but never produces a tail escape.
         record["headline"]["bulk_verdict"] = cal.bulk_verdict
         record["headline"]["tail_verdict"] = cal.tail_verdict
-        record["headline"]["calibrated"] = bool(cal.calibrated)
+        record["headline"]["consistent"] = bool(cal.consistent)
+        # The effective sample size behind the verdicts (ADR-0029); truncated means it is an upper bound.
+        record["headline"]["n_eff"] = cal.n_eff
+        record["headline"]["n_eff_truncated"] = cal.n_eff_truncated
 
         # Error over time is what a GNSS outage is judged on, so it is emitted
         # per case rather than reconstructed from the summary.
@@ -514,6 +518,7 @@ def as_markdown_table(results: list[dict[str, Any]]) -> str:
         nees = h.get("nees_mean")
         cov = (h.get("coverage") or {}).get("2sigma")
         verdict = h.get("calibration_verdict") or "no covariance reported"
+        verdict = verdict_label(verdict, bool(h.get("n_eff_truncated")))
         lines.append(
             "| {name} | {ate:.3f} | {claim} | {nees} | {cov} | {verdict} |".format(
                 name=r["name"],
@@ -593,11 +598,12 @@ def main(argv: list[str] | None = None) -> int:
         h = rec["headline"]
         cov = h.get("coverage", {}).get("2sigma")
         cov_s = f"{cov:.1%}" if isinstance(cov, (int, float)) else "n/a"
+        shown = verdict_label(h.get("calibration_verdict", "n/a"), bool(h.get("n_eff_truncated")))
         print(
             f"  ate(rmse)={h['ate_rmse_m']:.3f} m  "
             f"claimed 1s={h.get('claimed_sigma_p_m', float('nan')):.3f} m  "
             f"nees={h.get('nees_mean', float('nan')):.4g} (exp {h.get('nees_expected', 3)})  "
-            f"cov@2s={cov_s}  verdict={h.get('calibration_verdict', 'n/a')}",
+            f"cov@2s={cov_s}  verdict={shown}",
             file=sys.stderr,
             flush=True,
         )

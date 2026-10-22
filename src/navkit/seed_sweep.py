@@ -37,7 +37,18 @@ import numpy as np
 import yaml
 
 from .benchmark import MEASUREMENT, _config_label, _jsonable, default_config_path, run_case
-from .ensemble import Collector, compare_rows, csv_text, markdown_table, parse_csv, splice_table
+from .ensemble import (
+    ESS_FIELDS,
+    Collector,
+    compare_rows,
+    csv_text,
+    ess_markdown_table,
+    markdown_table,
+    parse_csv,
+    splice_ess_table,
+    splice_table,
+)
+from .eval.calibration import verdict_label
 
 # Fields worth spreading. ATE and NEES and coverage are the three the docs quote,
 # and they fail differently: ATE is a physical error, NEES is calibration, and
@@ -59,6 +70,7 @@ def _collect(record: dict[str, Any]) -> dict[str, Any]:
         "nees_mean": head.get("nees_mean"),
         "coverage_2sigma_pct": None if cov is None else cov * 100.0,
         "verdict": verdict or "n/a",
+        "n_eff_truncated": bool(head.get("n_eff_truncated")),
     }
 
 
@@ -102,6 +114,24 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="exit 1 if the ensemble differs from this committed CSV (text and integers exactly, floats to 1e-6)",
     )
+    ap.add_argument(
+        "--ess-csv",
+        type=Path,
+        default=None,
+        help="also write the effective sample size of each case's runs to this CSV (navkit.ensemble)",
+    )
+    ap.add_argument(
+        "--ess-page",
+        type=Path,
+        default=None,
+        help="with --ess-csv: write the table between the ess markers of this page",
+    )
+    ap.add_argument(
+        "--ess-compare",
+        type=Path,
+        default=None,
+        help="exit 1 if the effective sample sizes differ from this committed CSV (floats to 1e-6)",
+    )
     args = ap.parse_args(argv)
     config_given = args.config is not None
     if args.config is None:
@@ -139,7 +169,7 @@ def main(argv: list[str] | None = None) -> int:
             cov_s = "n/a" if cov_pct is None else f"{cov_pct:.1f}%"
             print(
                 f"  {name} seed={seed}  ate={row['ate_rmse_m']:.3f} m  "
-                f"nees={nees_s}  cov@2s={cov_s}  verdict={row['verdict']}",
+                f"nees={nees_s}  cov@2s={cov_s}  verdict={verdict_label(row['verdict'], row['n_eff_truncated'])}",
                 file=sys.stderr,
                 flush=True,
             )
@@ -219,6 +249,24 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  {line}", file=sys.stderr)
             return 1
         print(f"the ensemble matches {args.ensemble_compare}", file=sys.stderr)
+    if args.ess_csv is not None:
+        args.ess_csv.parent.mkdir(parents=True, exist_ok=True)
+        args.ess_csv.write_text(csv_text(collector.ess_rows(), ESS_FIELDS), encoding="utf-8")
+        print(f"wrote {args.ess_csv}", file=sys.stderr)
+        if args.ess_page is not None:
+            page = args.ess_page.read_text(encoding="utf-8")
+            args.ess_page.write_text(splice_ess_table(page, ess_markdown_table(collector.ess_rows())), encoding="utf-8")
+            print(f"wrote the effective sample size table into {args.ess_page}", file=sys.stderr)
+    if args.ess_compare is not None:
+        problems = compare_rows(
+            collector.ess_rows(), parse_csv(args.ess_compare.read_text(encoding="utf-8"), ESS_FIELDS), ESS_FIELDS
+        )
+        if problems:
+            print(f"the effective sample sizes differ from {args.ess_compare}:", file=sys.stderr)
+            for line in problems[:20]:
+                print(f"  {line}", file=sys.stderr)
+            return 1
+        print(f"the effective sample sizes match {args.ess_compare}", file=sys.stderr)
 
     if args.markdown:
         print()

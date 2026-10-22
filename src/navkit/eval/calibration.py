@@ -11,7 +11,7 @@ accuracy is not thereby calibrated, and the gap is measurable, correctable, and
 distribution-dependent.** Each function below exists so that the claim can fail
 loudly rather than quietly.
 
-What "calibrated" means here
+What calibration means here
 ----------------------------
 If the reported covariance is correct, the squared Mahalanobis distance of the
 error, ``e^T P^-1 e``, follows a chi-square distribution with as many degrees of
@@ -56,7 +56,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from .statistics import chi2_ppf, ellipsoid_coverage
+from .statistics import autocorrelation_estimate, chi2_ppf, ellipsoid_coverage
 
 __all__ = [
     "EnsembleNees",
@@ -72,6 +72,9 @@ __all__ = [
     "conformal_radius",
     "shift_sensitivity",
     "wilson_interval",
+    "effective_samples",
+    "verdict_label",
+    "DAGGER",
 ]
 
 #: Two-sided normal quantile for a 95% interval, via the chi-square reference
@@ -98,6 +101,32 @@ def wilson_interval(successes: float, trials: float, z: float = _Z95) -> tuple[f
     # closed form lands one ULP outside the estimate, and an interval that
     # excludes the value it is estimating is wrong regardless of the cause.
     return (max(0.0, min(centre - half, p)), min(1.0, max(centre + half, p)))
+
+
+#: Marks a verdict whose effective sample size is an upper bound (ADR-0029).
+DAGGER = "\u2020"
+
+
+def effective_samples(squared: np.ndarray) -> tuple[float, bool]:
+    """``(n_eff, truncated)`` for a run's scored NEES series, or ``(nan, False)`` when it cannot be estimated.
+
+    ``n_eff`` is the effective sample size of ``squared`` from :func:`navkit.eval.statistics.autocorrelation_estimate`,
+    between one and the number of epochs. ``truncated`` is True when the estimate reached its largest window, so
+    ``n_eff`` is then an upper bound. A series of fewer than ten epochs, a constant one, or one with a non-finite value
+    has no estimate; the verdicts of such a run are ``insufficient_data`` and nothing is raised.
+    """
+    try:
+        est = autocorrelation_estimate(np.asarray(squared, dtype=float))
+    except ValueError:
+        return float("nan"), False
+    return est.effective_sample_size, est.truncated
+
+
+def verdict_label(verdict: str, truncated: bool) -> str:
+    """A verdict as a table prints it: with a dagger when its effective sample size is an upper bound."""
+    if truncated and verdict not in ("n/a", "insufficient_data", ""):
+        return f"{verdict}{DAGGER}"
+    return verdict
 
 
 @dataclass(frozen=True)
@@ -172,6 +201,11 @@ def normalized_error_squared(
     return MahalanobisSeries(squared=out, radius=np.sqrt(np.maximum(out, 0.0)), dof=dof)
 
 
+def _json_n_eff(n_eff: float | None) -> float | None:
+    """An effective sample size as the record stores it: ``None`` when there is none."""
+    return None if n_eff is None or not math.isfinite(n_eff) else float(n_eff)
+
+
 @dataclass(frozen=True)
 class CoveragePoint:
     """Observed versus expected coverage at one per-axis sigma."""
@@ -179,6 +213,7 @@ class CoveragePoint:
     sigma_per_axis: float
     covered: int
     epochs: int
+    n_eff: float | None = None
 
     @property
     def observed(self) -> float:
@@ -195,7 +230,14 @@ class CoveragePoint:
 
     @property
     def interval(self) -> tuple[float, float]:
-        return wilson_interval(self.covered, self.epochs)
+        """Wilson interval on ``n_eff`` trials (ADR-0029), or on the epochs when no ``n_eff`` was given.
+
+        A caller that gives no ``n_eff`` asserts that its epochs are independent. Every report built from a series
+        gives one.
+        """
+        if self.n_eff is None or not self.epochs:
+            return wilson_interval(self.covered, self.epochs)
+        return wilson_interval(self.covered / self.epochs * self.n_eff, self.n_eff)
 
     @property
     def verdict(self) -> str:
@@ -207,12 +249,14 @@ class CoveragePoint:
         as miscalibrated, because an observed coverage essentially never equals
         its expectation exactly.
         """
+        if self.epochs == 0 or (self.n_eff is not None and not math.isfinite(self.n_eff)):
+            return "insufficient_data"
         lo, hi = self.interval
         if self.expected > hi:
             return "overconfident"
         if self.expected < lo:
             return "underconfident"
-        return "calibrated"
+        return "consistent"
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -224,6 +268,7 @@ class CoveragePoint:
             "gap": self.gap,
             "wilson_low": self.interval[0],
             "wilson_high": self.interval[1],
+            "n_eff": _json_n_eff(self.n_eff),
             "verdict": self.verdict,
         }
 
@@ -235,6 +280,8 @@ class CoverageReport:
     points: tuple[CoveragePoint, ...]
     mean_normalised_error: float
     dof: int = 3
+    n_eff: float | None = None
+    n_eff_truncated: bool = False
 
     @property
     def epochs(self) -> int:
@@ -256,6 +303,8 @@ class CoverageReport:
             "epochs": self.epochs,
             "mean_normalised_error": self.mean_normalised_error,
             "expected_mean_normalised_error": float(self.dof),
+            "n_eff": _json_n_eff(self.n_eff),
+            "n_eff_truncated": self.n_eff_truncated,
             "points": [p.as_dict() for p in self.points],
         }
 
@@ -269,15 +318,23 @@ def coverage_report(
     Note that ``series.squared`` is the squared Mahalanobis distance, so a
     ``k``-sigma-per-axis ellipsoid is the set ``squared <= k**2 * dof``.
     """
+    n_eff, truncated = effective_samples(series.squared)
     points = tuple(
         CoveragePoint(
             sigma_per_axis=float(k),
             covered=int(np.count_nonzero(series.squared <= k * k * series.dof)),
             epochs=series.epochs,
+            n_eff=n_eff,
         )
         for k in sigmas
     )
-    return CoverageReport(points=points, mean_normalised_error=series.mean_squared(), dof=series.dof)
+    return CoverageReport(
+        points=points,
+        mean_normalised_error=series.mean_squared(),
+        dof=series.dof,
+        n_eff=n_eff,
+        n_eff_truncated=truncated,
+    )
 
 
 @dataclass(frozen=True)
@@ -518,7 +575,8 @@ class CalibrationReport:
         evidence. Both are reported.
 
         The test is the standard chi-square one: ``NEES * n`` is distributed as
-        ``chi2(n * dof)`` when the filter is correctly calibrated. Polarity
+        ``chi2(n * dof)`` when the filter is consistent, with ``n`` the effective sample size of the run's scored
+        series and not its epoch count (ADR-0029). Polarity
         follows the mean: a NEES *above* ``dof`` means the real errors are
         larger than the covariance admits, so the filter is overconfident; below
         it, the filter is underconfident. That is the same sense as
@@ -526,9 +584,11 @@ class CalibrationReport:
         overconfidence.
         """
         series_nees = self.coverage.mean_normalised_error
-        n = self.coverage.epochs
-        if n == 0 or not np.isfinite(series_nees):
+        epochs = self.coverage.epochs
+        n = float(epochs) if self.coverage.n_eff is None else self.coverage.n_eff
+        if epochs == 0 or not np.isfinite(series_nees) or not np.isfinite(n):
             return "insufficient_data"
+        n = max(n, 1.0)
         dof = self.coverage.dof
         lo = chi2_ppf(0.025, n * dof) / n
         hi = chi2_ppf(0.975, n * dof) / n
@@ -536,7 +596,7 @@ class CalibrationReport:
             return "overconfident"
         if series_nees < lo:
             return "underconfident"
-        return "calibrated"
+        return "consistent"
 
     @property
     def tail_verdict(self) -> str:
@@ -560,20 +620,31 @@ class CalibrationReport:
         return f"mixed(bulk={bulk}, tail={tail})"
 
     @property
-    def calibrated(self) -> bool:
+    def n_eff(self) -> float | None:
+        """The effective sample size of the run's scored NEES series, or ``None`` when it has none."""
+        return _json_n_eff(self.coverage.n_eff)
+
+    @property
+    def n_eff_truncated(self) -> bool:
+        """True when ``n_eff`` is an upper bound because the autocorrelation window was truncated."""
+        return self.coverage.n_eff_truncated
+
+    @property
+    def consistent(self) -> bool:
         """True only when the bulk and the tail both agree with expectation.
 
-        This is stricter than either test alone, which is the intent: a filter
-        counts as calibrated only if it is neither systematically
-        overconfident in the bulk nor producing tail escapes.
+        This is stricter than either test alone, which is the intent. It means the run does not reject
+        calibration. A single run cannot establish calibration (ADR-0029).
         """
-        return self.verdict == "calibrated"
+        return self.verdict == "consistent"
 
     def as_dict(self) -> dict[str, object]:
         return {
             "estimator": self.estimator,
             "scenario": self.scenario,
-            "calibrated": self.calibrated,
+            "consistent": self.consistent,
+            "n_eff": self.n_eff,
+            "n_eff_truncated": self.n_eff_truncated,
             "verdict": self.verdict,
             "bulk_verdict": self.bulk_verdict,
             "tail_verdict": self.tail_verdict,

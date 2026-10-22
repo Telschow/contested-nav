@@ -271,3 +271,40 @@ def test_claim_5_outage_control_error_falls_as_the_assumed_noise_grows() -> None
 
 def test_the_default_grid_includes_every_factor_the_page_discusses() -> None:
     assert {0.7, 0.8, 1.0, 1.25, 2.0, 4.0} <= set(mismatch_sweep.DEFAULT_SCALES)
+
+
+# --- ADR-0029: truncation is counted per cell, and the verdict counts are not split ---------------
+
+
+def test_the_csv_has_a_truncated_runs_column_and_no_dagger_in_the_verdict_counts() -> None:
+    assert mismatch_sweep.CSV_FIELDS[-1] == "n_eff_truncated_runs"
+    text = CSV.read_text(encoding="utf-8")
+    assert "\u2020" not in text
+    for row in mismatch_sweep.read_csv(CSV):
+        assert 0 <= row["n_eff_truncated_runs"] <= row["n_seeds"]
+        assert sum(int(part.rsplit("=", 1)[1]) for part in row["verdicts"].split(";")) == row["n_seeds"]
+
+
+def test_the_page_states_the_truncation_of_every_cell() -> None:
+    page = PAGE.read_text(encoding="utf-8")
+    assert "Runs with truncated n_eff" in page
+    for row in mismatch_sweep.read_csv(CSV):
+        assert f"{row['n_eff_truncated_runs']} of {row['n_seeds']} |" in page
+
+
+def test_a_cell_counts_its_truncated_runs_without_splitting_the_verdicts() -> None:
+    from navkit.outage_sweep import summarise_cell
+
+    def row(truncated: bool) -> dict[str, Any]:
+        return {
+            "ate_rmse_m": 1.0,
+            "nees_mean": 3.0,
+            "coverage_2sigma_pct": 99.0,
+            "claimed_sigma_p_m": 0.5,
+            "verdict": "overconfident",
+            "n_eff_truncated": truncated,
+        }
+
+    cell = summarise_cell([row(True), row(False), row(True)])
+    assert cell["verdicts"] == {"overconfident": 3}
+    assert cell["n_eff_truncated_runs"] == 2

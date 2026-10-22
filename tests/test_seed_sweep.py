@@ -145,11 +145,11 @@ class _Summary:
 
 class TestSummaryStatistics:
     def test_verdict_flip_is_detected(self):
-        rows = ["calibrated"] * 9 + ["overconfident"]
+        rows = ["consistent"] * 9 + ["overconfident"]
         assert _Summary.build(rows)["verdict_stable"] is False
 
     def test_unanimous_verdict_is_stable(self):
-        assert _Summary.build(["calibrated"] * 10)["verdict_stable"] is True
+        assert _Summary.build(["consistent"] * 10)["verdict_stable"] is True
 
     def test_single_sample_omits_stdev(self):
         """A standard deviation from one draw is not a spread, and reporting it

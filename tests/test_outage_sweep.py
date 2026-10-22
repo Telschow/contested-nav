@@ -70,15 +70,15 @@ def _row(seed: int, ate: float, nees: float | None, cov: float | None, verdict: 
 
 def test_summarise_cell_gives_mean_interval_and_verdict_counts() -> None:
     rows = [
-        _row(0, 1.0, 3.0, 99.0, "calibrated"),
+        _row(0, 1.0, 3.0, 99.0, "consistent"),
         _row(1, 3.0, 5.0, 100.0, "overconfident"),
-        _row(2, 2.0, 4.0, 98.0, "calibrated"),
+        _row(2, 2.0, 4.0, 98.0, "consistent"),
     ]
     cell = summarise_cell(rows)
     assert cell["n_seeds"] == 3
     assert cell["ate_rmse_m"]["mean"] == pytest.approx(2.0)
     assert cell["ate_rmse_m"]["lo"] <= 2.0 <= cell["ate_rmse_m"]["hi"]
-    assert cell["verdicts"] == {"calibrated": 2, "overconfident": 1}
+    assert cell["verdicts"] == {"consistent": 2, "overconfident": 1}
 
 
 def test_summarise_cell_marks_unmeasured_metrics_as_none() -> None:
