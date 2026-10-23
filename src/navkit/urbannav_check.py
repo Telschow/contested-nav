@@ -165,12 +165,8 @@ BLOCKS = {"urbannav-data": table_markdown}
 
 
 def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
-        writer.writeheader()
-        writer.writerows(rows)
+    """Write ``rows`` to ``path``, replacing the rows of those sequences and keeping the rows of any other."""
+    ud.write_merged_csv(path, CSV_COLUMNS, rows)
 
 
 def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
@@ -195,26 +191,43 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--root", default=DEFAULT_ROOT, help="where `navkit urbannav fetch` wrote (default: %(default)s)")
     p.add_argument("--sequence", "-s", default="tunnel1")
-    p.add_argument("--csv", default=None, help="write the quantities to this CSV")
+    p.add_argument(
+        "--csv", default=None, help="write the quantities to this CSV; other sequences' rows in the file are kept"
+    )
     p.add_argument("--from-csv", default=None, help="rebuild the tables from a saved CSV; reads no dataset files")
-    p.add_argument("--page", default=None, help="fill the urbannav blocks of this Markdown page")
+    p.add_argument(
+        "--page",
+        default=None,
+        help="fill the urbannav blocks of this Markdown page from the CSV (needs --csv or --from-csv, so that every "
+        "sequence is filled from one file)",
+    )
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.page and not (args.csv or args.from_csv):
+        print(
+            "error: --page needs --csv or --from-csv, so that every block is filled from the same file", file=sys.stderr
+        )
+        return 2
     try:
         rows = rows_from_csv(args.from_csv) if args.from_csv else measure(args.root, args.sequence)
     except SequenceError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     if args.csv:
-        write_csv(args.csv, rows)
+        try:
+            write_csv(args.csv, rows)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
         print(f"wrote {args.csv}", file=sys.stderr)
     if args.page:
+        page_rows = rows_from_csv(args.csv or args.from_csv)
         try:
             for name, fn in BLOCKS.items():
-                write_block(args.page, name, fn(rows))
+                write_block(args.page, name, fn(page_rows))
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1

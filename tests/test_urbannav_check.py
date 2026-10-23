@@ -28,7 +28,8 @@ def rows():
 
 @pytest.fixture(scope="module")
 def q(rows):
-    return {r["quantity"]: float(r["value"]) for r in rows}
+    """The Tunnel-1 quantities. The file holds one block of rows per sequence, and these claims are about Tunnel-1."""
+    return {r["quantity"]: float(r["value"]) for r in rows if r["sequence"] == "tunnel1"}
 
 
 def test_the_page_block_is_the_table_the_csv_produces(rows):
@@ -39,6 +40,7 @@ def test_the_page_block_is_the_table_the_csv_produces(rows):
 
 def test_every_quantity_has_a_label(rows):
     assert all(r["quantity"] in uc.LABELS for r in rows)
+    assert {r["sequence"] for r in rows} <= {"tunnel1", "deepurban1"}
 
 
 def test_there_is_one_real_outage_and_it_is_inside_the_recording(q):
@@ -128,6 +130,42 @@ def test_main_reports_a_page_without_the_markers(tmp_path):
     assert uc.main(["--from-csv", str(CSV), "--page", str(page)]) == 1
 
 
+def _stub(sequence):
+    return [{"sequence": sequence, "quantity": "imu_samples", "value": 7, "unit": "count"}]
+
+
+def test_writing_another_sequence_keeps_the_committed_rows_byte_for_byte(tmp_path):
+    copy = tmp_path / "copy.csv"
+    copy.write_bytes(CSV.read_bytes())
+    uc.write_csv(copy, _stub("deepurban1"))
+    assert copy.read_bytes().startswith(CSV.read_bytes())
+    uc.write_csv(copy, _stub("deepurban1"))  # again: replaced, not added
+    assert [r["sequence"] for r in uc.rows_from_csv(copy)].count("deepurban1") == 1
+    assert copy.read_bytes().startswith(CSV.read_bytes())
+
+
+def test_a_csv_with_another_header_is_refused_and_left_alone(tmp_path):
+    path = tmp_path / "x.csv"
+    path.write_text("a,b\n1,2\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="header"):
+        uc.write_csv(path, _stub("deepurban1"))
+    assert path.read_text(encoding="utf-8") == "a,b\n1,2\n"
+    assert uc.main(["--from-csv", str(CSV), "--csv", str(path)]) == 1
+
+
+def test_a_page_is_filled_from_the_whole_csv_and_needs_one(tmp_path, capsys):
+    page, merged = tmp_path / "p.md", tmp_path / "m.csv"
+    page.write_text("<!-- urbannav-data:start -->\n<!-- urbannav-data:end -->\n", encoding="utf-8")
+    merged.write_bytes(CSV.read_bytes())
+    uc.write_csv(merged, _stub("deepurban1"))
+    assert uc.main(["--from-csv", str(merged), "--csv", str(merged), "--page", str(page)]) == 0
+    text = page.read_text(encoding="utf-8")
+    assert "| tunnel1 |" in text and "| deepurban1 |" in text
+    assert uc.main(["--from-csv", str(CSV), "--page", str(page)]) == 0  # --from-csv alone is a CSV to fill from
+    assert uc.main(["--root", str(tmp_path), "--page", str(page)]) == 2
+    assert "--page needs --csv or --from-csv" in capsys.readouterr().err
+
+
 def test_main_reports_missing_data(tmp_path):
     assert uc.main(["--root", str(tmp_path), "--sequence", "tunnel1"]) == 1
 
@@ -139,4 +177,5 @@ def test_the_fetched_files_reproduce_the_committed_csv(rows):
     if not (FETCHED / "tunnel1" / ud.NMEA_FILES["tunnel1"]).is_file():
         pytest.skip("tunnel1 is not fetched with its NMEA file (see docs/urbannav.md)")
     fresh = uc.measure(FETCHED, "tunnel1")
-    assert [(r["quantity"], str(r["value"])) for r in fresh] == [(r["quantity"], r["value"]) for r in rows]
+    committed = [r for r in rows if r["sequence"] == "tunnel1"]
+    assert [(r["quantity"], str(r["value"])) for r in fresh] == [(r["quantity"], r["value"]) for r in committed]

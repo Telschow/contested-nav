@@ -1,6 +1,7 @@
 """Run the filter on an UrbanNav sequence with the receiver's own GNSS fixes and its real outage.
 
     navkit urbannav run --sequence tunnel1 --csv docs/data/urbannav_run.csv --page docs/urbannav.md
+    navkit urbannav run --sequence deepurban1 --csv docs/data/urbannav_run.csv --page docs/urbannav.md
 
 This is the test that ADR-0013 and ADR-0016 left open: a recorded IMU and recorded GNSS, with the outage the tunnel
 causes and not one cut into simulated fixes. The decision behind it is ADR-0026.
@@ -15,6 +16,11 @@ the filter on this data, from sources that do not depend on how the filter does:
   sides of the outage (see the UrbanNav page). The height is therefore almost unused.
 * The start pose and velocity come from the reference, as in the other recorded-data runs, and the start biases are
   estimated from the quietest stretch of the first seconds.
+
+A sequence in which the receiver reports no outage by the rule of :func:`urbannav_data.outage_intervals` gets the
+**aided run**: the declared and per-fix variants over the whole sequence, with the same settings. The oracle variants
+act only inside an outage, so they are not applicable there, and the output says so. The outage rule is not changed to
+find one (issue #95). Imposed outages are a separate experiment.
 
 Not corrected: the antenna offset from the IMU (about 0.9 m, measured by hand to 0.1 m) and the 0.14 m offset between
 the IMU and the reference point. No clock offset is applied: the offset search found none within its step, which a
@@ -99,6 +105,11 @@ VARIANTS = ("declared", "per_fix")
 #: Diagnostics that separate where the outage error comes from. They use the reference, so they are not filters.
 ORACLE_VARIANTS = ("oracle_tilt", "oracle_yaw", "oracle_attitude")
 ALL_VARIANTS = VARIANTS + ORACLE_VARIANTS
+#: Said wherever the oracle variants would be, for a sequence in which the receiver reports no outage.
+ORACLE_NOT_APPLICABLE = (
+    "Not applicable: the receiver reports no outage on this sequence by the outage rule, and an oracle diagnostic "
+    "acts only inside an outage. The oracle variants are not run."
+)
 ORACLE_LABELS = {
     "declared": "declared filter",
     "oracle_tilt": "ORACLE DIAGNOSTIC: reference roll and pitch in the outage",
@@ -113,6 +124,11 @@ GNSS_VERTICAL_SIGMA_M = 100.0
 #: Valid fixes whose horizontal difference from the reference exceeds this are 'wrong though marked valid'.
 WRONG_FIX_M = 10.0
 GATE_ALPHA = 0.001  # the FDIR default, ADR-0005
+
+
+def variants_for(spans: list[tuple[float, float]]) -> tuple[str, ...]:
+    """The variants to run: all of them with an outage, the declared and per-fix variants without one."""
+    return ALL_VARIANTS if spans else VARIANTS
 
 
 def imu_noise() -> ImuNoiseModel:
@@ -250,6 +266,7 @@ def build(
     info = {
         "sigma_h": sigma_h,
         "fix_difference_m": horiz,
+        "fix_sigma_h_m": np.sqrt(0.5 * (own[:, 0] + own[:, 1])),
         "fix_t": gnss.t,
         "epochs_not_valid": epochs_not_valid(fixes),
         "fixes_variance_unusable": report["unusable"],
@@ -289,6 +306,48 @@ def accel_only_error_m(seq: EurocSequence, span: tuple[float, float]) -> float:
 
 #: The 95% chi-square level for 2 degrees of freedom, for the share of epochs inside the horizontal 95% ellipse.
 CHI2_95_DOF2 = 5.991464547107979
+#: The share of a Gaussian inside plus or minus two sigma: the value the per-axis coverage is read against.
+COVERAGE_2SIGMA_GAUSSIAN = math.erf(2.0 / math.sqrt(2.0))
+#: Percentiles of the fixes' horizontal difference from the reference that the aided run reports.
+FIX_PERCENTILES = (50, 95, 99)
+
+
+def aided_summary(
+    detail: dict[str, Any],
+    stats: dict[str, Any],
+    offered: int,
+    fix_difference_m: np.ndarray,
+    fix_sigma_h_m: np.ndarray,
+) -> dict[str, Any]:
+    """The quantities of the aided run, over the whole recording. Aggregates only.
+
+    * ``att_nees_mean``: the attitude error, ``log(R_est^T R_ref)``, against the filter's attitude covariance block
+      (3 degrees of freedom). The filter perturbs its attitude on the right, so this is the matching error.
+    * ``hor_coverage_2sigma``: the share of (epoch, axis) pairs, east and north pooled, whose error is within two of the
+      filter's own sigmas. The vertical axis is left out, because its sigma is declared very large on purpose.
+    * ``fix_*``: the receiver's fixes themselves against the reference, without the filter: percentiles of the
+      horizontal difference, and the mean of (horizontal difference / receiver sigma) squared, which is 2 when the
+      receiver's sigma is right and the errors are Gaussian.
+    """
+    est, ref, cov = detail["est"], detail["reference"], detail["position_cov"]
+    err = est.positions - ref.positions
+    sigma = np.sqrt(np.stack([cov[:, 0, 0], cov[:, 1, 1]], axis=1))
+    out: dict[str, Any] = {
+        "aided": 1,
+        "hor_coverage_2sigma": float(np.mean(np.abs(err[:, :2]) <= 2.0 * sigma)),
+        "fixes_used": int(stats.get("gnss_updates_used", 0)),
+        "fix_rejection_rate": float(stats.get("gnss_updates_rejected", 0)) / offered if offered else math.nan,
+        "fix_nees_mean": float(np.mean((fix_difference_m / fix_sigma_h_m) ** 2)),
+    }
+    rot_cov = detail.get("rotation_cov")
+    if rot_cov is not None:
+        dtheta = rot_log_batch(np.einsum("nji,njk->nik", est.rotations, ref.rotations))
+        out["att_nees_mean"] = float(
+            np.mean(np.einsum("ni,ni->n", dtheta, np.linalg.solve(rot_cov, dtheta[..., None])[..., 0]))
+        )
+    for q in FIX_PERCENTILES:
+        out[f"fix_err_p{q}_m"] = float(np.percentile(fix_difference_m, q))
+    return out
 
 
 def run_once(
@@ -384,6 +443,10 @@ def run_once(
         after = t >= b + 10.0
         if after.any():
             out["hor_err_median_after_m"] = float(np.median(eh[after]))
+    else:
+        out.update(
+            aided_summary(detail, record["stats"], int(nis.size), info["fix_difference_m"], info["fix_sigma_h_m"])
+        )
     return out
 
 
@@ -430,13 +493,51 @@ QUANTITIES = (
     ("wrong_fixes", "Valid fixes over 10 m from the reference", "count"),
     ("wrong_fixes_over_gate", "Of those, over the 0.1% chi-square level", "count"),
 )
+#: What the aided run (a sequence without an outage) reports, over the whole recording. Several keys are those of
+#: :data:`QUANTITIES`, with the same meaning.
+AIDED_QUANTITIES = (
+    ("fixes_total", "Valid fixes offered to the filter", "count"),
+    ("fixes_used", "Fixes the filter used", "count"),
+    ("gnss_updates_rejected", "Fixes the filter rejected", "count"),
+    ("fix_rejection_rate", "Share of the offered fixes the gate rejected", ""),
+    ("gnss_channel_faulted", "GNSS channel declared faulty by the end", "count"),
+    ("gnss_reaccepted", "Times a faulty channel was taken back", "count"),
+    ("hor_nees_mean", "Horizontal mean NEES over the whole run (2 degrees of freedom, expected 2)", ""),
+    ("att_nees_mean", "Attitude mean NEES over the whole run (3 degrees of freedom, expected 3)", ""),
+    (
+        "hor_coverage_2sigma",
+        f"Pooled 2-sigma per-axis coverage, east and north (a Gaussian gives {COVERAGE_2SIGMA_GAUSSIAN:.4f})",
+        "",
+    ),
+    ("hor_inside_95", "Share of epochs inside the horizontal 95% ellipse (expected 0.95)", ""),
+    ("hor_rmse_m", "Horizontal position RMSE over the recording", "m"),
+    ("ver_rmse_m", "Vertical RMSE (the height is almost unused by design)", "m"),
+    ("ate_rmse_m", "Absolute trajectory error, RMSE, no alignment", "m"),
+    ("fix_err_p50_m", "Fix horizontal difference from the reference, median", "m"),
+    ("fix_err_p95_m", "Fix horizontal difference, 95th percentile", "m"),
+    ("fix_err_p99_m", "Fix horizontal difference, 99th percentile", "m"),
+    (
+        "fix_nees_mean",
+        "Fixes alone: mean of (horizontal difference / receiver sigma) squared (expected 2)",
+        "",
+    ),
+    ("fixes_over_gate", "Fixes whose NIS is over the 0.1% chi-square level", "count"),
+    ("wrong_fixes", "Valid fixes over 10 m from the reference", "count"),
+    ("wrong_fixes_over_gate", "Of those, over the 0.1% chi-square level", "count"),
+    ("epochs_not_valid", "Receiver epochs the reader did not pass on (no fix or no position)", "count"),
+    ("fixes_variance_unusable", "Fixes dropped because a reported variance was negative, NaN or infinite", "count"),
+    ("fixes_variance_below_floor", "Fixes with a reported sigma below the filter's floor", "count"),
+    ("start_bias_at_rest", "The start-bias stretch was judged at rest (1 yes, 0 no)", "flag"),
+)
+#: Keys only the aided run has. A sequence with rows for any of them is an aided sequence.
+AIDED_ONLY_KEYS = frozenset(k for k, _, _ in AIDED_QUANTITIES) - frozenset(k for k, _, _ in QUANTITIES)
 CSV_COLUMNS = ("sequence", "variant", "seed", "quantity", "value", "unit")
 
 
 def rows_for(seq_name: str, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows = []
     for r in results:
-        for key, _label, unit in QUANTITIES:
+        for key, _label, unit in AIDED_QUANTITIES if r.get("aided") else QUANTITIES:
             if r.get(key) is not None:
                 v = r[key]
                 rows.append(
@@ -454,6 +555,9 @@ def rows_for(seq_name: str, results: list[dict[str, Any]]) -> list[dict[str, Any
 
 # ---------------------------------------------------------------------- output
 
+#: Sequence names are those of ``navkit urbannav fetch``. The first is the one the older blocks of the page show.
+SEQUENCE_TITLES = {"tunnel1": "Tunnel-1", "deepurban1": "Deep-Urban-1"}
+
 
 def declared_markdown(_rows: list[dict[str, Any]] | None = None) -> str:
     lines = ["| Setting | Value | Meaning |", "|---|---|---|"]
@@ -461,21 +565,41 @@ def declared_markdown(_rows: list[dict[str, Any]] | None = None) -> str:
     return "\n".join(lines)
 
 
-def run_markdown(rows: list[dict[str, Any]], variant: str = "declared") -> str:
-    rows = [r for r in rows if r["variant"] == variant]
+def rows_of(rows: list[dict[str, Any]], sequence: str) -> list[dict[str, Any]]:
+    """The rows of one sequence. A block never shows another sequence's rows."""
+    return [r for r in rows if r["sequence"] == sequence]
+
+
+def not_run_markdown(sequence: str) -> str:
+    return (
+        f"No rows for {SEQUENCE_TITLES.get(sequence, sequence)} are in the committed CSV, so it has not been run "
+        "for this page. The table appears here when the CSV has its rows."
+    )
+
+
+def is_aided(rows: list[dict[str, Any]]) -> bool:
+    """True when the rows hold quantities that only the aided run (a sequence without an outage) reports."""
+    return any(r["quantity"] in AIDED_ONLY_KEYS for r in rows)
+
+
+def run_markdown(rows: list[dict[str, Any]], variant: str = "declared", sequence: str = SEQUENCE) -> str:
+    rows = [r for r in rows_of(rows, sequence) if r["variant"] == variant]
+    if not rows:
+        return not_run_markdown(sequence)
+    quantities = AIDED_QUANTITIES if is_aided(rows) else QUANTITIES
     seeds = sorted({int(r["seed"]) for r in rows})
     by = {(int(r["seed"]), r["quantity"]): r["value"] for r in rows}
     head = "| Quantity | " + " | ".join(f"seed {s}" for s in seeds) + " | Unit |"
     lines = [head, "|---|" + "---:|" * len(seeds) + "---|"]
-    for key, label, unit in QUANTITIES:
+    for key, label, unit in quantities:
         if any((s, key) in by for s in seeds):
             lines.append(f"| {label} | " + " | ".join(str(by.get((s, key), "")) for s in seeds) + f" | {unit} |")
     return "\n".join(lines)
 
 
-def _block(variant: str) -> Callable[[list[dict[str, Any]]], str]:
+def _block(variant: str, sequence: str = SEQUENCE) -> Callable[[list[dict[str, Any]]], str]:
     def render(rows: list[dict[str, Any]]) -> str:
-        return run_markdown(rows, variant)
+        return run_markdown(rows, variant, sequence)
 
     return render
 
@@ -483,8 +607,17 @@ def _block(variant: str) -> Callable[[list[dict[str, Any]]], str]:
 ORACLE_QUANTITIES = ("hor_err_at_end_m", "gnss_updates_rejected")
 
 
-def oracle_markdown(rows: list[dict[str, Any]]) -> str:
-    """The declared filter next to the oracle diagnostics, per seed. Every oracle row is labelled as one."""
+def oracle_markdown(rows: list[dict[str, Any]], sequence: str = SEQUENCE) -> str:
+    """The declared filter next to the oracle diagnostics, per seed. Every oracle row is labelled as one.
+
+    A sequence that was run without an outage has no oracle rows, and the block says so. A sequence with no rows at all
+    has not been run.
+    """
+    rows = rows_of(rows, sequence)
+    if not rows:
+        return not_run_markdown(sequence)
+    if is_aided(rows) or not any(r["variant"] in ORACLE_VARIANTS for r in rows):
+        return ORACLE_NOT_APPLICABLE
     seeds = sorted({int(r["seed"]) for r in rows})
     by = {(r["variant"], int(r["seed"]), r["quantity"]): r["value"] for r in rows}
     meta = {k: (label, unit) for k, label, unit in QUANTITIES}
@@ -500,22 +633,29 @@ def oracle_markdown(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def _oracle_block(sequence: str) -> Callable[[list[dict[str, Any]]], str]:
+    def render(rows: list[dict[str, Any]]) -> str:
+        return oracle_markdown(rows, sequence)
+
+    return render
+
+
+DEEP_URBAN = "deepurban1"
 BLOCKS: dict[str, Callable[[list[dict[str, Any]]], str]] = {
     f"urbannav-run-{v.replace('_', '-')}": _block(v) for v in VARIANTS
 }
+#: The Deep-Urban-1 section of the page: the same variants, filtered to that sequence.
+BLOCKS.update({f"urbannav-deep-urban-run-{v.replace('_', '-')}": _block(v, DEEP_URBAN) for v in VARIANTS})
 CODE_BLOCKS: dict[str, Callable[[list[dict[str, Any]]], str]] = {
     "urbannav-declared": declared_markdown,
     "urbannav-run-oracle": oracle_markdown,
+    "urbannav-deep-urban-oracle": _oracle_block(DEEP_URBAN),
 }
 
 
 def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
-        writer.writeheader()
-        writer.writerows(rows)
+    """Write ``rows`` to ``path``, replacing the rows of those sequences and keeping the rows of any other."""
+    ud.write_merged_csv(path, CSV_COLUMNS, rows)
 
 
 def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
@@ -538,14 +678,26 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="navkit urbannav run", description="Run the filter on UrbanNav with real fixes.")
     p.add_argument("--root", default="data/raw/urbannav")
     p.add_argument("--sequence", "-s", default=SEQUENCE)
-    p.add_argument("--csv", default=None, help="write one row per seed and quantity")
+    p.add_argument(
+        "--csv", default=None, help="write one row per seed and quantity; other sequences' rows in the file are kept"
+    )
     p.add_argument("--from-csv", default=None, help="rebuild the tables from a saved CSV; runs nothing")
-    p.add_argument("--page", default=None, help="fill the urbannav-run and urbannav-declared blocks of this page")
+    p.add_argument(
+        "--page",
+        default=None,
+        help="fill the urbannav-run, urbannav-deep-urban and urbannav-declared blocks of this page from the CSV "
+        "(needs --csv or --from-csv, so that every sequence is filled from one file)",
+    )
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.page and not (args.csv or args.from_csv):
+        print(
+            "error: --page needs --csv or --from-csv, so that every block is filled from the same file", file=sys.stderr
+        )
+        return 2
     try:
         if args.from_csv:
             rows = rows_from_csv(args.from_csv)
@@ -558,8 +710,10 @@ def main(argv: list[str] | None = None) -> int:
                 f"declared horizontal sigma {info['sigma_h']:.3f} m",
                 file=sys.stderr,
             )
+            if not spans:
+                print(f"{args.sequence}: no outage, so this is the aided run. {ORACLE_NOT_APPLICABLE}", file=sys.stderr)
             results = []
-            for variant in ALL_VARIANTS:
+            for variant in variants_for(spans):
                 for seed in SEEDS:
                     results.append(run_once(seq, gnss, spans, info, seed, variant))
                     print(f"{variant} seed {seed} done", file=sys.stderr)
@@ -568,20 +722,25 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     if args.csv:
-        write_csv(args.csv, rows)
+        try:
+            write_csv(args.csv, rows)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
         print(f"wrote {args.csv}", file=sys.stderr)
     if args.page:
+        all_rows = rows_from_csv(args.csv or args.from_csv)
         try:
             for name, fn in {**BLOCKS, **CODE_BLOCKS}.items():
-                write_block(args.page, name, fn(rows))
+                write_block(args.page, name, fn(all_rows))
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
     if not (args.csv or args.page):
         print(
             declared_markdown()
-            + "".join(f"\n\n{v}\n\n{run_markdown(rows, v)}" for v in VARIANTS)
-            + f"\n\n{oracle_markdown(rows)}"
+            + "".join(f"\n\n{v}\n\n{run_markdown(rows, v, args.sequence)}" for v in VARIANTS)
+            + f"\n\n{oracle_markdown(rows, args.sequence)}"
         )
     return 0
 

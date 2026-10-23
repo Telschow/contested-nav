@@ -72,3 +72,55 @@ and is labelled as not blind. Both variants agree on the outage. One sequence, o
   a large vertical noise. That is a modelling choice and belongs in the decision.
 - The noise of a real fix is metres and heavy-tailed. The filter's default for the simulated GNSS is far smaller.
 - One sequence, one receiver, one day.
+
+## Added for issue 131: the INSPVAX question and a sequence without an outage
+
+This section is context and options. It does not change the Decision section above.
+
+### Context: what INSPVAX is here
+
+The publisher's README lists `/novatel_data/inspvax` among the ROS topics of both sequences and describes it as the
+SPAN-CPT solution after post-processing. That is the same description as the text reference file the Tunnel-1 run
+reads. The README gives no rate for the topic and no field list. Whether the topic and the text file hold the same
+values has not been checked here. From outside the repository: INSPVAX is the NovAtel extended INS message. It carries
+position, velocity and attitude, and also standard deviations and an INS status flag. The standard deviations are the
+one thing the text file does not offer, and they are what could replace the page's "its error there is unknown" for the
+reference.
+
+The Tunnel-1 run did not use INSPVAX. Its start pose, velocity and attitude, and its truth grid, come from the text
+reference (position, body-frame velocity, roll, pitch and heading), with the identity rotation of the dataset's
+`extrinsic.yaml` between the reference unit and the IMU. Reading a ROS bag needs a reader that constraint S1 does not
+allow, and `navkit urbannav fetch` does not download bags.
+
+### Options for the reference and the start state
+
+A. **The text reference only**, exactly as for Tunnel-1. No new reader. Deep-Urban-1 is a second sequence on equal
+   terms, and the caveat that the reference error is unknown stays. No Tunnel-1 number changes.
+B. **A, and INSPVAX read once outside the repository.** The topic is exported with standard ROS tools to a local CSV,
+   as the IMU was, and compared with the text file in a scratch script. Nothing from it can be a generated number on a
+   page. At most it is evidence in a pull request. No Tunnel-1 number changes.
+C. **A, and a reader for an exported INSPVAX CSV in `urbannav_data.py`**, as an extra check with the text file still
+   the reference. This is the only option that can turn "unknown" into generated rows about the reference's own
+   uncertainty and about the agreement of the two files, for both sequences. It does not break S1. CI covers it only
+   through synthetic tests. No Tunnel-1 number changes if it only adds rows.
+D. **INSPVAX as the reference and the start state.** The conventions differ from the text file (local-level velocity
+   and azimuth, as far as known here), so the attitude and velocity checks of the Tunnel-1 package would be redone.
+   Applied to Tunnel-1 it would change the start state, the truth grid and every Tunnel-1 number. Applied to
+   Deep-Urban-1 only, the two sequences would no longer be comparable. This option is not recommended.
+E. **Decide not to use INSPVAX**, and record why. The same as A for the runs.
+
+The maintainer chose A for the Deep-Urban-1 run. That choice is recorded here as context for the run, and the
+Decision section is not filled in by it.
+
+### Context: Deep-Urban-1 has no outage by the rule
+
+The maintainer read the Deep-Urban-1 receiver file with the repository's readers and found a valid quality flag on
+every fix, so the outage rule of `outage_intervals` finds no outage. The rule is not changed or tuned to find one, as
+issue 95 requires. The same reading found the fixes heavier-tailed than the receiver's own reported sigma. These are
+the maintainer's observations. The data page carries them as generated rows once the sequence is measured there.
+
+So this sequence is a case of GNSS that is always present and wrong in the way urban multipath makes it wrong, and
+not an outage sequence. The run for it is the aided run over the whole sequence: the declared and per-fix variants,
+no oracle diagnostics (they act only inside an outage and are reported as not applicable), and quantities that do not
+need an outage: the normalised errors, the pooled 2-sigma coverage per axis, the gate's rejection rate and the fixes'
+own errors against the reference. Outages imposed on this sequence would be a separate experiment, with its own record.
