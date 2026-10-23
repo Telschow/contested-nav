@@ -19,7 +19,8 @@ stored state is clipped. The gate keeps using the scaled covariance. The cost is
 scale, towards ``s_max`` at the rate ``tau`` allows, and widens the gate for the updates that follow.
 
 **What the scale is.** It is a catch-all for model error in the visual channel, which includes visual errors
-correlated over time and the conservatism of the clone. It is not an estimate of the sensor's noise. ``d`` uses
+correlated over time and any mismatch between the noise the filter assumes and the noise in the data. It is not an
+estimate of the sensor's noise. ``d`` uses
 ``S0 = H P H^T + R0``, which includes the state uncertainty, so ``E[d]`` is below the true ratio of variances when
 ``P`` is not small, and the scale does not converge to that ratio.
 

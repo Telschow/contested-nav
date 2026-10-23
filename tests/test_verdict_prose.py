@@ -57,26 +57,33 @@ def test_the_single_anchor_rows_are_overconfident_with_a_dagger(verdicts):
         assert verdicts[name] == "overconfident†", name
 
 
-def test_the_controls_and_independent_clone_rows_do_not_carry_a_dagger(verdicts):
-    for name in ("gnss_only", "outage_control", *CLONE_INDEPENDENT):
+def test_the_controls_do_not_carry_a_dagger_and_of_the_independent_clone_rows_only_the_vision_only_clone_does(verdicts):
+    for name in ("gnss_only", "outage_control"):
         assert "†" not in verdicts[name], name
-
-
-def test_outage_control_and_the_independent_clone_rows_read_consistent_except_the_vision_only_clone(verdicts):
-    assert verdicts["outage_control"] == "consistent"
     for name in CLONE_INDEPENDENT:
-        if name == "vision_only_clone":
-            assert verdicts[name] == "mixed: bulk underconfident, tail consistent"
-        else:
-            assert verdicts[name] == "consistent", name
+        assert ("†" in verdicts[name]) == (name == "vision_only_clone"), name
+
+
+def test_the_single_run_verdicts_of_outage_control_and_the_independent_clone_rows(verdicts):
+    assert verdicts["outage_control"] == "consistent"
+    expected = {
+        "outage_visual_clone": "consistent",
+        "outage_visual_degraded_camera_clone": "mixed: bulk underconfident, tail consistent",
+        "vision_only_clone": "consistent†",
+        "outage_visual_clone_outliers": "consistent",
+        "outage_visual_clone_scale_drift": "consistent",
+    }
+    assert set(expected) == set(CLONE_INDEPENDENT)
+    for name, verdict in expected.items():
+        assert verdicts[name] == verdict, name
 
 
 def test_gnss_only_reads_mixed_with_an_overconfident_bulk_on_the_seed_of_the_table(verdicts):
     assert verdicts["gnss_only"] == "mixed: bulk overconfident, tail consistent"
 
 
-def test_the_correlated_clone_stays_overconfident(verdicts):
-    assert verdicts["outage_visual_clone_correlated"] == "overconfident"
+def test_the_correlated_clone_stays_overconfident_and_now_carries_a_dagger(verdicts):
+    assert verdicts["outage_visual_clone_correlated"] == "overconfident†"
 
 
 def test_a_truncated_band_does_not_matter_for_the_anchor_rows():
@@ -92,12 +99,12 @@ def test_a_truncated_band_does_not_matter_for_the_anchor_rows():
         assert mean[name] > 100.0 * widest_high, name
 
 
-def test_the_independent_clone_rows_have_a_grand_mean_below_the_expected_value_in_the_ensemble():
+def test_the_independent_clone_rows_have_a_grand_mean_above_the_expected_value_in_the_ensemble():
     rows = ensemble.parse_csv((ROOT / "docs" / "data" / "ensemble_nees.csv").read_text())
     for name in CLONE_INDEPENDENT:
         for r in rows:
             if r["case"] == name:
-                assert r["grand_mean"] < r["dof"], (name, r["scope"])
+                assert r["grand_mean"] > r["dof"] and r["fraction_below"] == 0.0, (name, r["scope"])
 
 
 def test_the_ensemble_puts_gnss_only_inside_its_band_for_most_scored_epochs():
@@ -135,6 +142,13 @@ def test_no_page_calls_a_single_run_or_a_case_calibrated(name):
     pattern = re.compile(r"\b(?:is|are|was|were|stays|remains)[ -]calibrated\b|\bcalibrated where\b")
     found = pattern.findall(text)
     assert not found, (name, found)
+
+
+@pytest.mark.parametrize("name", PAGES)
+def test_no_page_calls_the_clone_rows_mildly_conservative(name):
+    """The clone rows were read as conservative before ADR-0033; the ensemble puts none of them below the band now."""
+    text = " ".join((ROOT / name).read_text(encoding="utf-8").split())
+    assert "mildly conservative" not in text, name
 
 
 def test_the_pages_say_what_consistent_means():

@@ -15,7 +15,10 @@ downstream estimator would receive. Two generators:
     Produces the relative-pose stream a visual front end would emit,
     ``T_cur_prev``, from consecutive reference poses, plus noise. The
     convention matches the output of a standard two-frame relative pose
-    estimator.
+    estimator. The rotation noise is drawn per axis with ``rot_sigma_deg``
+    and the translation noise per axis with ``trans_sigma_m``, both times
+    ``noise_multiplier``, which is the covariance the stream declares and
+    the filter assumes (ADR-0033).
 
 Both generators are seeded. Given the same seed and the same reference
 trajectory they produce bit-identical output, which is what makes a scenario
@@ -63,7 +66,10 @@ class VisionConfig:
 
     enabled: bool = True
     rate_hz: float = 20.0
+    # The per-axis 1-sigma of the relative rotation error, in degrees (each axis of the rotation vector).
     rot_sigma_deg: float = 0.35
+    # The per-axis 1-sigma of the relative translation error, in metres: each axis is an independent zero-mean
+    # normal with this standard deviation (ADR-0033). The stream declares and the filter assumes the same.
     trans_sigma_m: float = 0.05
     # Multiplies rot_sigma_deg / trans_sigma_m. Image degradation is applied by
     # inflating these; see docs/limitations.md for why this is a surrogate and
@@ -118,6 +124,13 @@ class VisionConfig:
 
 #: The keys of ``VisionConfig`` that ``as_dict`` leaves out unless one of them is used.
 VISION_STRESS_KEYS = ("noise_corr_s", "outlier_fraction", "outlier_scale", "scale_sigma", "scale_tau_s")
+
+#: The translation noise of ``visual_updates`` comes from its own random stream, seeded by
+#: ``np.random.SeedSequence([cfg.seed, TRANSLATION_NOISE_STREAM])``, so that it is separate from the stream of the
+#: rotation noise (ADR-0033). The re-reference generator uses a different label so that its fresh draws are not
+#: the draws of the stream it re-references. The values are arbitrary labels; only that they differ matters.
+TRANSLATION_NOISE_STREAM = 1013
+REREFERENCE_TRANSLATION_NOISE_STREAM = 1014
 
 
 def gauss_markov(n: int, dt: float, sigma: float, tau: float, rng: np.random.Generator) -> np.ndarray:
@@ -217,18 +230,18 @@ def visual_updates(reference: Trajectory, cfg: VisionConfig) -> VisionUpdate:
     rot_sigma = np.deg2rad(cfg.rot_sigma_deg) * cfg.noise_multiplier
     trans_sigma = cfg.trans_sigma_m * cfg.noise_multiplier
     poses = sampled.poses
-    # The draws are made first, in the order the original loop made them, so a scenario without stress
-    # reproduces its numbers exactly; the stress options then act on these arrays.
+    # The draws are made first, so the stress options act on these arrays. The rotation noise is drawn as it
+    # always was: seven normals a step from this stream, of which the first three are the rotation noise. The
+    # other four were the unit direction and the scalar of the translation draw before ADR-0033. They are drawn
+    # and dropped, so that the rotation samples stay what they were, bit for bit.
+    steps = max(n - 1, 0)
     rot_noise = np.zeros((n, 3))
     trans_noise = np.zeros((n, 3))
-    for i in range(1, n):
-        rot_noise[i] = rng.standard_normal(3) * rot_sigma
-        # Noise on the baseline is applied along a random direction, which is a
-        # crude but honest stand-in for depth ambiguity in monocular matching.
-        direction = rng.standard_normal(3)
-        nrm = float(np.linalg.norm(direction))
-        direction = direction / nrm if nrm > 1e-9 else np.array([1.0, 0.0, 0.0])
-        trans_noise[i] = direction * (rng.standard_normal() * trans_sigma)
+    rot_noise[1:] = rng.standard_normal((steps, 7))[:, :3] * rot_sigma
+    # Each axis of the translation noise is an independent normal with the declared standard deviation, from a
+    # stream of its own (ADR-0033).
+    trans_rng = np.random.default_rng(np.random.SeedSequence([cfg.seed, TRANSLATION_NOISE_STREAM]))
+    trans_noise[1:] = trans_rng.standard_normal((steps, 3)) * trans_sigma
     scale = np.zeros(n)
     if cfg.stress():
         rot_noise, trans_noise, scale = _stress(rot_noise, trans_noise, cfg)
@@ -327,6 +340,7 @@ def rereference_visual_updates(
     t_grid = vision.t - float(time_offset_s)
     poses = interpolate_trajectory(reference, t_grid).poses
     rng = np.random.default_rng(cfg.seed + 7919)  # a stream of its own: the original draws are not disturbed
+    trans_rng = np.random.default_rng(np.random.SeedSequence([cfg.seed, REREFERENCE_TRANSLATION_NOISE_STREAM]))
     rot_sigma = np.deg2rad(cfg.rot_sigma_deg) * cfg.noise_multiplier
     trans_sigma = cfg.trans_sigma_m * cfg.noise_multiplier
     R_rel, t_rel = vision.R_rel.copy(), vision.t_rel.copy()
@@ -338,10 +352,9 @@ def rereference_visual_updates(
             R_j, R_i = poses[previous][:3, :3], poses[i][:3, :3]
             p_j, p_i = poses[previous][:3, 3], poses[i][:3, 3]
             R_rel[i] = (R_j.T @ R_i) @ rot_exp(rng.standard_normal(3) * rot_sigma)
-            direction = rng.standard_normal(3)
-            norm = float(np.linalg.norm(direction))
-            direction = direction / norm if norm > 1e-9 else np.array([1.0, 0.0, 0.0])
-            t_rel[i] = R_j.T @ (p_i - p_j) + direction * (rng.standard_normal() * trans_sigma)
+            rng.standard_normal(4)  # the unit direction and scalar of the earlier translation draw: dropped, so the
+            # rotation samples of the following frames stay what they were (ADR-0033)
+            t_rel[i] = R_j.T @ (p_i - p_j) + trans_rng.standard_normal(3) * trans_sigma
         previous = i
     return VisionUpdate(
         t=vision.t.copy(),

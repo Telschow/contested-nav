@@ -18,6 +18,8 @@ visual source is a surrogate generated from the ground truth, never images, fuse
 Columns are those of the slow-ramp page. `vision_enabled` stays False in the shipped configuration, and this changes
 nothing there. Simulated GNSS, a surrogate camera, one direction and two datasets.
 
+Produced under the earlier draw of the synthetic visual translation noise (ADR-0033); not regenerated.
+
 ## GNSS healthy until the onset
 
 <!-- vision-ramp-clean:start -->

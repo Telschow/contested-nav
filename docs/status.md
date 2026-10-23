@@ -28,13 +28,13 @@
   rate unchanged (R2 in [CONSTRAINTS.md](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md)
   records the figures at the time). B1 is still open, see below.
 - **The filter is still overconfident under visual aiding.** Over the GNSS outage window, `outage_visual`
-  has a mean NEES of <!-- metric:outage_visual_window_nees -->2777.2<!-- /metric --> against a nominal 3 and a
-  2σ coverage of <!-- metric:outage_visual_window_coverage_percent -->4.3<!-- /metric -->% where the SRS requires
+  has a mean NEES of <!-- metric:outage_visual_window_nees -->2783.3<!-- /metric --> against a nominal 3 and a
+  2σ coverage of <!-- metric:outage_visual_window_coverage_percent -->5.0<!-- /metric -->% where the SRS requires
   95% (AC-04) and the roadmap gate for turning vision on is above 90%. The full-run values are in the table in
   the [README](https://github.com/Telschow/contested-nav/blob/main/README.md). It converges and
   is confidently wrong. This is blocker B1, and it is a pose-graph problem that
-  no threshold in the FDIR subsystem will move. In the seed and outage sweeps it held in every run (measured once on one machine, not checked by CI, at 7e33158). The
-  scene sweep was last measured on the old fixed start (see the provenance note below).
+  no threshold in the FDIR subsystem will move. In the seed, outage and scene sweeps it held in every run (measured once on one machine, not checked by CI, at
+  946d661).
 
 - **ADR-0008 frozen-anchor cross-check: implemented but unreachable under the
   current state-transition logic; the security gap remains documented as open.**
@@ -42,17 +42,17 @@
   ([ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)), which is the committed artefact, and a single run
   is descriptive. Over 10 seeds the `outage_control` verdict was consistent in 5, mixed (bulk overconfident, tail
   consistent) in 2 and mixed (bulk underconfident, tail consistent) in 3, and the mean NEES of
-  the anchor rows spanned one to two orders of magnitude (measured once on one machine, not checked by CI, at 7e33158). Treat the magnitudes of the anchor rows as
+  the anchor rows spanned one to two orders of magnitude (measured once on one machine, not checked by CI, at 946d661). Treat the magnitudes of the anchor rows as
   order-of-magnitude, and their verdict, not a control's, as the claim.
-- **Provenance of the sweep results.** The seed and outage sweeps were re-run on the start drawn from the declared
-  prior at 7e33158, once on one machine (not checked by CI). The scene sweep was last measured at 2026-10-09, before
-  the attitude reset fix (R6 in
-  [CONSTRAINTS.md](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md)) and on the old fixed start,
-  and was not re-run. None of their outputs is committed, so this page quotes counts, not figures, except where it
+- **Provenance of the sweep results.** The seed, outage and scene sweeps were re-run at 946d661, on the start drawn
+  from the declared prior and with the corrected synthetic visual translation noise
+  ([ADR-0033](adr/0033-one-convention-for-the-synthetic-visual-translation-noise.md)), once on one machine (not
+  checked by CI). None of their outputs is committed, so this page quotes counts, not figures, except where it
   labels a one-off figure. `navkit sweep seeds`, `navkit sweep scenes` and `navkit sweep outages` regenerate them.
 - **Scene generalisation is demonstrated, external validity is not.** The
-  8-scene sweep (measured on the old fixed start, not re-run) varied trajectory geometry over a wide path-length
-  range and all seven verdicts held (under the rule before ADR-0029), so the failure above is not a property of one path. What is
+  8-scene sweep (measured once on one machine, not checked by CI, at 946d661) varied trajectory geometry over a wide
+  path-length range and each of the five single-anchor rows read overconfident in every scene, so the failure above
+  is not a property of one path. What is
   *not* shown: any real capture, any measured sensor characteristic, or any scene
   outside an analytic trajectory generator. Eight synthetic scenes bound the
   claim "the anchor model is structurally wrong under visual aiding"; they do not
@@ -60,7 +60,7 @@
 - **The anchor model's overconfidence does not depend on the outage window, and neither does its lack of an
   accuracy gain.** The outage sweep (`navkit sweep outages`, 8 windows, 5 seeds each, one synthetic path, each seed
   with its own start draw) gave `outage_visual` a 2-sigma coverage far below its expected value and a mean NEES far
-  above it in **all 40 runs**, including 5 s outages (measured once on one machine, not checked by CI, at 7e33158). In all 8 windows, with the seeds averaged, its ATE
+  above it in **all 40 runs**, including 5 s outages (measured once on one machine, not checked by CI, at 946d661). In all 8 windows, with the seeds averaged, its ATE
   was larger than the control's. An earlier version of this page said vision beat the control when the outage started
   early; that was measured on the old fixed start and no longer holds. So "vision improves ATE" is not a result of
   this fixture with a start error drawn from the prior.

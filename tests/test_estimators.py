@@ -411,13 +411,25 @@ def test_fdir_isolates_a_channel_whose_covariance_has_collapsed() -> None:
     untouched. What FDIR adds is that the collapse is now *reported* rather than
     only inferable from a rejection count.
     """
-    result, final_error, claimed = _vision_benchmark_fixture(use_gnss=True, interval=1, anchor_modelled=False)
-    assert float(result.stats["fdir_gnss_faulted"]) == 1.0
-    assert float(result.stats["fdir_gnss_rejected"]) > float(result.stats["gnss_fixes_seen"]) / 2
-    statuses = {e["status"] for e in result.trajectory.metadata["fdir_events"]}
-    assert "SENSOR_FAULT" in statuses
-    # Isolation limits the damage; it does not restore honesty about variance.
-    assert claimed < 0.01 * final_error
+    ratios = []
+    for seed in range(8):
+        result, final_error, claimed = _vision_benchmark_fixture(
+            use_gnss=True, interval=1, anchor_modelled=False, seed=seed
+        )
+        assert float(result.stats["fdir_gnss_faulted"]) == 1.0, seed
+        assert float(result.stats["fdir_gnss_rejected"]) > float(result.stats["gnss_fixes_seen"]) / 2, seed
+        statuses = {e["status"] for e in result.trajectory.metadata["fdir_events"]}
+        assert "SENSOR_FAULT" in statuses, seed
+        ratios.append(claimed / final_error)
+    # Isolation limits the damage; it does not restore honesty about variance. The claimed sigma is the same on every
+    # seed (the covariance has collapsed), and the final error is one sample, so the ratio varies by a factor of five
+    # across seeds. This used to assert the ratio on seed 0 alone, below 0.01. On the earlier translation draw the
+    # final error of seed 0 was 4.55 m (ratio 0.0085); on the per-axis draw of ADR-0033 it is 2.86 m (ratio 0.0135).
+    # The property is the order of magnitude, so it is asserted over eight seeds. MEASUREMENT, seeds 0 to 7: the
+    # median ratio is 0.0069 on the earlier draw and 0.0066 on the per-axis draw, the largest 0.0213 and 0.0135.
+    # The bounds leave a margin of about a half on the median and of about two fifths on the largest.
+    assert float(np.median(ratios)) < 0.01, ratios
+    assert max(ratios) < 0.03, ratios
 
 
 def test_modelled_anchor_restores_calibration_and_gnss_availability() -> None:

@@ -4,7 +4,7 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: <!-- metric:tests_collected -->2181<!-- /metric --> tests collected, all of which pass except the deliberate
+Last measured: <!-- metric:tests_collected -->2220<!-- /metric --> tests collected, all of which pass except the deliberate
 xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->94.3<!-- /metric -->%
 line coverage (<!-- metric:coverage_lines_hit -->10033<!-- /metric -->/<!-- metric:coverage_lines_total -->10638<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
@@ -91,7 +91,7 @@ the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | <!-- metric:tests_collected -->2181<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | <!-- metric:tests_collected -->2220<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
 | Line coverage | 75% | <!-- metric:coverage_percent -->94.3<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
@@ -126,6 +126,8 @@ Status: open. The gate of ADR-0028 failed on the held-out seeds 100 to 124 for t
 
 <!-- b1-heldout-status:end -->
 
+  Note (2026-10-23): The held-out run of seeds 100 to 124 was made on the fixture before ADR-0033.
+
   The table of the decision run is in [the calibration guide](docs/calibration.md) and its data in
   [`docs/data/b1_gate_heldout.csv`](docs/data/b1_gate_heldout.csv). The status block above is generated from that file
   by `scripts/render_b1_heldout.py` and checked by a test.
@@ -142,8 +144,8 @@ Status: open. The gate of ADR-0028 failed on the held-out seeds 100 to 124 for t
   [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md)). The current gate is one-sided: it does not reject an
   uninformative filter, and an IMU-only filter also meets it ([real front end](docs/real_front_end.md)).
 
-  `outage_visual`, over the 15 s outage window (5 s to 20 s, half-open): mean NEES <!-- metric:outage_visual_window_nees -->2777.2<!-- /metric -->, with
-  <!-- metric:outage_visual_window_coverage_percent -->4.3<!-- /metric -->% of epochs inside 2 sigma against 99.3% expected. The
+  `outage_visual`, over the 15 s outage window (5 s to 20 s, half-open): mean NEES <!-- metric:outage_visual_window_nees -->2783.3<!-- /metric -->, with
+  <!-- metric:outage_visual_window_coverage_percent -->5.0<!-- /metric -->% of epochs inside 2 sigma against 99.3% expected. The
   README table gives the full-run values of the same case, which include the epochs with GNSS; it is generated
   (`python scripts/check_doc_tables.py --print-configuration-table`) and checked by CI. Both are one run with one
   start draw ([ADR-0027](docs/adr/0027-how-the-synthetic-runs-are-initialised.md)), and far higher than they were on

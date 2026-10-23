@@ -17,7 +17,7 @@ The last command prints the three rows that carry the headline result:
 | --- | ---: | ---: | ---: | ---: | --- |
 | gnss_only | 0.512 | 0.254 | 4.2 | 100.0% | mixed(bulk=overconfident, tail=consistent) |
 | outage_control | 6.530 | 0.567 | 3.2 | 100.0% | consistent |
-| outage_visual | 17.425 | 0.156 | 13783.2 | 18.8% | overconfident† |
+| outage_visual | 17.568 | 0.156 | 14018.6 | 19.2% | overconfident† |
 ```
 
 This table is checked by CI: `scripts/check_doc_tables.py` compares each row, including the verdict, with the

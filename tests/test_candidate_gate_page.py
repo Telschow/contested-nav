@@ -110,6 +110,50 @@ def test_the_anchor_diagnostic_fails_s1(rows):
     assert anchor and not anchor[0]["scenario_passed"]
 
 
+def _failed(rows, role, subject, scenario):
+    return {
+        r["condition"]
+        for r in rows
+        if (r["role"], r["subject"], r["scenario"]) == (role, subject, scenario) and not r["passed"]
+    }
+
+
+FOUR = {"upper", "coverage", "better", "worst_ratio"}
+CANDIDATE = "outage_visual+clone+measured-front-end"
+
+
+def test_the_plain_clone_passes_s1_and_fails_s2_on_four_conditions(rows):
+    assert _failed(rows, "DIAGNOSTIC", "outage_visual_clone", "S1") == set()
+    assert _failed(rows, "DIAGNOSTIC", "outage_visual_clone", "S2") == FOUR
+
+
+def test_the_candidate_fails_s1_on_the_lower_bound_only_and_s2_on_the_same_four_conditions(rows):
+    assert _failed(rows, "candidate", CANDIDATE, "S1") == {"lower"}
+    assert _failed(rows, "candidate", CANDIDATE, "S2") == FOUR
+
+
+def test_the_single_anchor_fails_both_scenarios(rows):
+    for scenario in ("S1", "S2"):
+        mine = [
+            r for r in rows if (r["role"], r["subject"], r["scenario"]) == ("DIAGNOSTIC", "outage_visual", scenario)
+        ]
+        assert mine and not mine[0]["scenario_passed"], scenario
+
+
+def test_the_prose_states_what_the_table_shows_and_what_the_cause_was(section):
+    text = " ".join(section.split())
+    for phrase in (
+        "The plain clone `outage_visual_clone` passes all six conditions in S1.",
+        "In S2 it fails the upper edge, the coverage, the paired count and the largest ratio.",
+        "fails one condition in S1, the lower bound on the median NEES, and fails the same four conditions in S2",
+        "The single anchor `outage_visual` fails both scenarios.",
+        "no longer meets S2 on the synthetic fixture",
+        "was produced on a different fixture and is not affected",
+        "the generator and the filter using different noise conventions",
+    ):
+        assert phrase in text, phrase
+
+
 def test_the_prose_explains_the_conditions_and_the_scenarios_and_says_it_is_the_development_run(section):
     for phrase in (
         "development run",
