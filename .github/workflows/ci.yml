@@ -190,7 +190,7 @@ jobs:
           tests/test_slow_ramp_page.py tests/test_timing_page.py tests/test_tumvi_page.py
           tests/test_urbannav_check.py tests/test_vision_ramp_page.py tests/test_vo_page.py
           tests/test_quoted_numbers.py tests/test_urbannav_run.py tests/test_ensemble_page.py
-          tests/test_b1_gate_page.py tests/test_b1_gate_heldout_page.py tests/test_ess_page.py tests/test_verdict_prose.py tests/test_fdir_false_alarm_page.py
+          tests/test_b1_gate_page.py tests/test_b1_gate_heldout_page.py tests/test_ess_page.py tests/test_verdict_prose.py tests/test_candidate_gate_page.py tests/test_fdir_false_alarm_page.py
 
   build:
     name: build
@@ -459,3 +459,12 @@ jobs:
           print("\n".join(problems) or "the development gate matches docs/data/b1_gate_dev.csv")
           raise SystemExit(1 if problems else 0)
           PY
+
+      - name: The committed candidate gate (development seeds) and its n_eff pool match a fresh run
+        # The gate of ADR-0030 on the development seeds 25 to 49 in two scenarios, and the pool of effective sample
+        # sizes (seeds 25 to 99) that its simulated properties draw from. Held-out blocks (from seed 125) are
+        # never run here: the command refuses them without --held-out, and CI does not pass it. Text, integers and
+        # flags must match exactly; floats to 1e-6 relative.
+        run: |
+          navkit gate n-eff-pool --csv /tmp/gate_n_eff_pool.csv --compare docs/data/gate_n_eff_pool.csv
+          navkit gate candidate --seeds 25-49 --csv /tmp/candidate_gate_dev.csv --compare docs/data/candidate_gate_dev.csv

@@ -231,6 +231,7 @@ def test_the_old_verdict_word_and_field_are_gone_from_the_code():
         "tests/test_effective_sample_verdicts.py",
         "tests/test_fdir_false_alarm_page.py",  # words that a page must not use
         "tests/test_b1_gate_page.py",
+        "tests/test_candidate_gate_page.py",
         "tests/test_ensemble_page.py",
     }
     pattern = re.compile(r"\.calibrated\b|[\"']calibrated[\"']")
