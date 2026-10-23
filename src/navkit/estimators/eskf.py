@@ -174,6 +174,7 @@ from ..geometry.rigid import skew as _skew
 from ..io.imu import ImuNoiseModel
 from ..types import GRAVITY, GnssFix, ImuSample, Trajectory, VisionUpdate
 from .dead_reckoning import EstimatorResult
+from .visual_scale import VisualScale
 
 _IDX_THETA = slice(0, 3)
 _IDX_P = slice(3, 6)
@@ -413,6 +414,19 @@ class EskfConfig:
     #: pose, propagate with it, and enter the relative-pose measurement through their own Jacobians. It is
     #: behind a flag so the anchor model stays as the control.
     vision_model: str = "anchor"
+    #: An adaptive scale on the clone's visual measurement covariance (ADR-0031), one scalar for the rotation block and
+    #: one for the translation block. Off by default; with it off every output is byte-identical to the previous
+    #: behaviour. It applies only to ``vision_model="clone"`` and is not used together with a noise preset. The scale
+    #: is a catch-all for model error in the visual channel, not an estimate of the sensor's noise.
+    vision_adaptive_scale: bool = False
+    #: The forgetting time of the scale, in seconds. PLACEHOLDER: the default is one point of the grid that ADR-0031
+    #: fixes, and the tuning package decides it.
+    vision_scale_tau_s: float = 5.0
+    #: The lower bound of the scale. PLACEHOLDER, as above. It must be at most 1 so the scale can reach the
+    #: conservative regime.
+    vision_scale_min: float = 0.5
+    #: The upper bound of the scale. PLACEHOLDER, as above. It must be at least 1.
+    vision_scale_max: float = 8.0
     #: Deprecated names of the two drift strengths above. The constructor accepts them and does not store them, so
     #: reading them gives ``None``: use the new names.
     anchor_pos_drift_sigma_m_s: InitVar[float | None] = None
@@ -424,6 +438,21 @@ class EskfConfig:
         if not (math.isfinite(self.gnss_per_fix_min_sigma_m) and self.gnss_per_fix_min_sigma_m > 0.0):
             raise ValueError(
                 f"gnss_per_fix_min_sigma_m must be finite and positive, got {self.gnss_per_fix_min_sigma_m!r}"
+            )
+        if not (math.isfinite(self.vision_scale_tau_s) and self.vision_scale_tau_s > 0.0):
+            raise ValueError(f"vision_scale_tau_s must be finite and positive, got {self.vision_scale_tau_s!r}")
+        if not (
+            math.isfinite(self.vision_scale_min)
+            and math.isfinite(self.vision_scale_max)
+            and 0.0 < self.vision_scale_min <= 1.0 <= self.vision_scale_max
+        ):
+            raise ValueError(
+                "vision_scale_min and vision_scale_max must be finite and satisfy 0 < vision_scale_min <= 1 <= "
+                f"vision_scale_max, got {self.vision_scale_min!r} and {self.vision_scale_max!r}"
+            )
+        if self.vision_adaptive_scale and self.vision_model != "clone":
+            raise ValueError(
+                f"vision_adaptive_scale applies only to vision_model 'clone', got vision_model {self.vision_model!r}"
             )
         for old, new, value in (
             ("anchor_pos_drift_sigma_m_s", "anchor_pos_drift_sigma_m_sqrt_s", anchor_pos_drift_sigma_m_s),
@@ -475,6 +504,10 @@ class EskfConfig:
             "initial_accel_bias_sigma": self.initial_accel_bias_sigma,
             "process_noise_form": self.process_noise_form,
             "vision_model": self.vision_model,
+            "vision_adaptive_scale": self.vision_adaptive_scale,
+            "vision_scale_tau_s": self.vision_scale_tau_s,
+            "vision_scale_min": self.vision_scale_min,
+            "vision_scale_max": self.vision_scale_max,
         }
 
 
@@ -507,6 +540,9 @@ class ErrorStateKalmanFilter:
         self.g = GRAVITY.copy() if config.gravity is None else np.asarray(config.gravity, float)
         self.fdir = FdirManager(config.fdir_config)
         self.fdir_inflations = 0
+        #: The two adaptive scales of ADR-0031 (rotation, translation), made fresh at the start of each run when
+        #: ``vision_adaptive_scale`` is on, and ``None`` otherwise.
+        self._vision_scales: tuple[VisualScale, VisualScale] | None = None
         #: (t, residual, S) for every GNSS fix, before any gating (separability study).
         self.gnss_innovations: list[tuple[float, np.ndarray, np.ndarray]] = []
         #: (t, gyro bias, accel bias) estimate at every GNSS fix, before the update (fault classification study).
@@ -1137,7 +1173,13 @@ class ErrorStateKalmanFilter:
         H_rot[:, _IDX_THETA] = R_rel_pred
         H_rot[:, _IDX_CT] = -np.eye(3)
         Rcov_rot = np.eye(3) * np.deg2rad(rot_sigma_deg) ** 2
-        ok_rot, innov_rot = self._update(x, z_rot, H_rot, Rcov_rot, sensor="vision_rot", t_s=t_s)
+        scales = self._vision_scales
+        if scales is None:
+            ok_rot, innov_rot = self._update(x, z_rot, H_rot, Rcov_rot, sensor="vision_rot", t_s=t_s)
+        else:
+            d_rot = self._scale_statistic(x, z_rot, H_rot, Rcov_rot)
+            ok_rot, innov_rot = self._update(x, z_rot, H_rot, scales[0].value * Rcov_rot, sensor="vision_rot", t_s=t_s)
+            self._scale_after(scales[0], d_rot, t_s, ok_rot)
 
         # The rotation update may have corrected the live pose and the clone; the translation half is built from
         # the state as it now stands.
@@ -1149,7 +1191,15 @@ class ErrorStateKalmanFilter:
         H_trans[:, _IDX_CP] = -R_prev.T
         H_trans[:, _IDX_CT] = _skew(t_pred)
         Rcov_trans = np.eye(3) * trans_sigma_m**2
-        ok_trans, innov_trans = self._update(x, z_trans, H_trans, Rcov_trans, sensor="vision_trans", t_s=t_s)
+        if scales is None:
+            ok_trans, innov_trans = self._update(x, z_trans, H_trans, Rcov_trans, sensor="vision_trans", t_s=t_s)
+        else:
+            # After the rotation update, from the state as it now stands, like the translation half itself.
+            d_trans = self._scale_statistic(x, z_trans, H_trans, Rcov_trans)
+            ok_trans, innov_trans = self._update(
+                x, z_trans, H_trans, scales[1].value * Rcov_trans, sensor="vision_trans", t_s=t_s
+            )
+            self._scale_after(scales[1], d_trans, t_s, ok_trans)
 
         x["vision_updates"] = int(x["vision_updates"]) + 1
         interval = self.cfg.vision_keyframe_interval
@@ -1160,6 +1210,26 @@ class ErrorStateKalmanFilter:
             x["c_t"] = np.zeros(3)
             self._commit_anchor_covariance(x["P"])
         return (ok_rot and ok_trans), innov_rot + innov_trans, ok_rot
+
+    @staticmethod
+    def _scale_statistic(x: FilterState, y: np.ndarray, H: np.ndarray, R0: np.ndarray) -> float:
+        """``d = y^T S0^-1 y / 3`` with ``S0 = H P H^T + R0`` and ``R0`` the base (unscaled) covariance (ADR-0031)."""
+        S0 = H @ x["P"] @ H.T + R0
+        return float(y @ np.linalg.solve(S0, y)) / 3.0
+
+    @staticmethod
+    def _scale_after(scale: VisualScale, d: float, t_s: float, accepted: bool) -> None:
+        """Give one block's ``d`` to its scale after the update, with ``accepted`` as ``_update`` returned it.
+
+        ``accepted`` means the update passed the chi-square gate. ADR-0031 asks for updates that were also not
+        inflated by an FDIR grant. Inflation is only ever granted for GNSS (``_FDIR_INFLATION_BLOCK`` has no visual
+        entry), so for the visual channel an accepted update is never an inflated one and the two are the same.
+        """
+        if not math.isfinite(d):
+            if accepted:  # pragma: no cover - an accepted update has a finite innovation covariance
+                raise ValueError(f"an accepted visual update has a non-finite scale statistic: {d!r}")
+            return
+        scale.update(d, t_s, accepted)
 
     # -- main loop -----------------------------------------------------------
 
@@ -1180,6 +1250,15 @@ class ErrorStateKalmanFilter:
             raise ValueError("ESKF needs at least 2 IMU samples")
 
         x = self._initial_state()
+        cfg0 = self.cfg
+        self._vision_scales = (
+            (
+                VisualScale(cfg0.vision_scale_tau_s, cfg0.vision_scale_min, cfg0.vision_scale_max),
+                VisualScale(cfg0.vision_scale_tau_s, cfg0.vision_scale_min, cfg0.vision_scale_max),
+            )
+            if cfg0.vision_adaptive_scale
+            else None
+        )
         if initial is not None:
             x["R"], x["p"], x["v"] = initial.R.copy(), initial.p.copy(), initial.v.copy()
             x["b_a"], x["b_g"] = initial.b_a.copy(), initial.b_g.copy()
@@ -1300,6 +1379,15 @@ class ErrorStateKalmanFilter:
         # because a fault timeline is data, not a log line.
         stats.update(self.fdir.stats())
         stats["fdir_inflations"] = float(self.fdir_inflations)
+        if self._vision_scales is not None:
+            # Only with the scale on, so that every existing output is unchanged (ADR-0031).
+            for label, sc in zip(("rot", "trans"), self._vision_scales, strict=True):
+                stats[f"vision_scale_{label}_mean"] = float(sc.mean)
+                stats[f"vision_scale_{label}_min"] = float(sc.min_seen)
+                stats[f"vision_scale_{label}_max"] = float(sc.max_seen)
+                stats[f"vision_scale_{label}_final"] = float(sc.value)
+            stats["vision_scale_updates_used"] = float(self._vision_scales[0].n_used)
+            stats["vision_scale_trans_updates_used"] = float(self._vision_scales[1].n_used)
         traj.metadata["sigma_p"] = sigma_p
         traj.metadata["gnss_innovations"] = self.gnss_innovations
         traj.metadata["bias_log"] = self.bias_log

@@ -136,7 +136,7 @@
     }
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "9204cb8c4b4290b5",
+   "config_hash": "28d4e06bccf9c129",
    "data_class": "synthetic",
    "description": "Inertial integration with no aiding at all, started from the true initial state, so its error is drift and not a start offset. Reported as the control for \"how much of the result is the filter and how much is the motion model\".",
    "drift": {
@@ -200,11 +200,15 @@
     "initial_start": "truth",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": false,
     "vision_keyframe_interval": 1,
     "vision_model": "anchor",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -563,7 +567,7 @@
     "verdict": "mixed(bulk=overconfident, tail=consistent)"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "1b26059f485014c8",
+   "config_hash": "18219ebef2808894",
    "data_class": "synthetic",
    "description": "GNSS at 5 Hz, no outage, no vision. The reference every other case is read against. The verdict of one run is descriptive and changes with the seed (ADR-0029); the ensemble over seeds is the test of consistency.",
    "drift": {
@@ -728,11 +732,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": false,
     "vision_keyframe_interval": 1,
     "vision_model": "anchor",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -1141,7 +1149,7 @@
     "verdict": "consistent"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "9057b4ec22b059e7",
+   "config_hash": "8c2827af1cd7f6af",
    "data_class": "synthetic",
    "description": "15 s GNSS outage, 5 s to 20 s, with vision off. The baseline for a contested receiver: the error grows and so does the claimed uncertainty, and coverage stays at or above nominal. The verdict of one run is descriptive and changes with the seed (ADR-0029); the ensemble over seeds is the test of consistency.",
    "drift": {
@@ -1306,11 +1314,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": false,
     "vision_keyframe_interval": 1,
     "vision_model": "anchor",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -1761,7 +1773,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "d59127ea66b0af6d",
+   "config_hash": "3f6583edb4549b67",
    "data_class": "synthetic",
    "description": "The same 15 s outage with vision on. The claimed uncertainty stays small and coverage collapses: confidently wrong. In a single run with one start draw the position error is larger than the control's, and over 10 seeds it was larger in 9 (measured once on one machine, not checked by CI, at e94c107), so the accuracy gain that the earlier fixed start showed does not hold. That is why vision_enabled defaults to false. The overconfidence does not depend on the start draw or on when the outage starts (see the outage sweep).",
    "drift": {
@@ -1926,11 +1938,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
     "vision_model": "anchor",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -2409,7 +2425,7 @@
     "verdict": "consistent"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "b7283d6076ad4de5",
+   "config_hash": "9d3d3d5ec2698dec",
    "data_class": "synthetic",
    "description": "The outage_visual scenario with the previous visual pose carried as a stochastic clone instead of a stored anchor. Same data, same seeds, same gate.",
    "drift": {
@@ -2574,11 +2590,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
     "vision_model": "clone",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -3057,7 +3077,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "5afccaf9b55ddb07",
+   "config_hash": "1e4a0eb9b65cfbce",
    "data_class": "synthetic",
    "description": "The clone with visual errors correlated over 2 s, as they are when consecutive frames share features. The clone assumes independent errors, so it is overconfident again. This is the case the clone does not survive.",
    "drift": {
@@ -3222,11 +3242,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
     "vision_model": "clone",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -3710,7 +3734,7 @@
     "verdict": "consistent"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "f7a5a740a018251d",
+   "config_hash": "3ce457e712e70c7d",
    "data_class": "synthetic",
    "description": "The same correlated errors with the filter told the visual noise is four times larger than the generator drew. Calibration is restored, at a cost in accuracy that still leaves the position error well inside the no-vision control's.",
    "drift": {
@@ -3875,11 +3899,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
     "vision_model": "clone",
     "vision_rot_sigma_deg": 1.4,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.2
    },
    "headline": {
@@ -4363,7 +4391,7 @@
     "verdict": "consistent"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "2661297aa9046e16",
+   "config_hash": "59b6151460f4f707",
    "data_class": "synthetic",
    "description": "The clone with 5% of visual frames carrying an error twenty times the nominal one, as with a wrong feature match. The chi-square gate rejects them and the single-run verdict stays consistent.",
    "drift": {
@@ -4528,11 +4556,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
     "vision_model": "clone",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -5016,7 +5048,7 @@
     "verdict": "consistent"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "d82f18db1f1b0a6b",
+   "config_hash": "69ca2fc6d0b0fd8a",
    "data_class": "synthetic",
    "description": "The clone with a slowly drifting error of up to 10% on the translation scale, as monocular scale drifts. The inertial unit holds the metric scale, so the single-run verdict stays consistent.",
    "drift": {
@@ -5181,11 +5213,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
     "vision_model": "clone",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -5669,7 +5705,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "e5672e27f8151537",
+   "config_hash": "3b906c1d621dd3ae",
    "data_class": "synthetic",
    "description": "Visual aiding through the outage with 30% of camera frames dropped in 1 s bursts. Checks whether an intermittent visual stream changes the result. It does not: the filter is still overconfident.",
    "drift": {
@@ -5834,11 +5870,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
     "vision_model": "anchor",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -6321,7 +6361,7 @@
     "verdict": "consistent"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "7c73e0906f3b4443",
+   "config_hash": "768eb158b1da811f",
    "data_class": "synthetic",
    "description": "The degraded-camera scenario with re-referenced measurements and the stochastic clone.",
    "drift": {
@@ -6486,11 +6526,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
     "vision_model": "clone",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -6973,7 +7017,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "8676f5852137b474",
+   "config_hash": "7e848814a3f6e502",
    "data_class": "synthetic",
    "description": "The degraded-camera scenario with every delivered measurement taken against the last delivered frame, and the single-anchor model. Separates the effect of the generator from the effect of the clone: the anchor is no better calibrated.",
    "drift": {
@@ -7138,11 +7182,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
     "vision_model": "anchor",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -7625,7 +7673,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "f42b3f199f219afe",
+   "config_hash": "7aa0150d43fb5886",
    "data_class": "synthetic",
    "description": "The pre-refactor arrangement, where the visual anchor error is folded into the measurement covariance. Retained as a regression control, not as a supported configuration.",
    "drift": {
@@ -7790,11 +7838,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": false,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
     "vision_model": "anchor",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -8231,7 +8283,7 @@
     "verdict": "overconfident"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "a8effc1f39f0bb1a",
+   "config_hash": "f427709aed945197",
    "data_class": "synthetic",
    "description": "Visual odometry at 20 Hz with no GNSS. In this fixture it is less accurate than dead reckoning and severely overconfident: nothing constrains the absolute pose, and the claimed uncertainty is far smaller than the error.",
    "drift": {
@@ -8396,11 +8448,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
     "vision_model": "anchor",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {
@@ -8828,7 +8884,7 @@
     "verdict": "mixed(bulk=underconfident, tail=consistent)"
    },
    "claim_type": "MEASUREMENT",
-   "config_hash": "9320846a8ab1067b",
+   "config_hash": "d0f7464d0c6897c8",
    "data_class": "synthetic",
    "description": "Visual odometry at 20 Hz with no GNSS, with the stochastic clone. Nothing constrains the absolute pose, so the claimed uncertainty has to grow with the error and not stay small.",
    "drift": {
@@ -8993,11 +9049,15 @@
     "initial_start": "prior_draw",
     "initial_vel_sigma_m_s": 0.5,
     "process_noise_form": "textbook",
+    "vision_adaptive_scale": false,
     "vision_anchor_modelled": true,
     "vision_enabled": true,
     "vision_keyframe_interval": 1,
     "vision_model": "clone",
     "vision_rot_sigma_deg": 0.35,
+    "vision_scale_max": 8.0,
+    "vision_scale_min": 0.5,
+    "vision_scale_tau_s": 5.0,
     "vision_trans_sigma_m": 0.05
    },
    "headline": {

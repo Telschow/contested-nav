@@ -121,6 +121,20 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 | `initial_accel_bias_sigma` | m/s^2 | `None` | Initial 1-sigma of the accelerometer bias alone. `None` uses `initial_bias_sigma`. |
 | `process_noise_form` | none | `'textbook'` | How IMU white noise enters the process covariance. `legacy` puts `sigma_a^2 dt^3/3` on position and `sigma_g^2 dt^3/3` on attitude and has no velocity term. `textbook` uses `sigma_g^2 dt` on attitude and `sigma_a^2 dt` on velocity with the matching position terms. `textbook` is the default since [ADR-0014](adr/0014-textbook-imu-process-noise-by-default.md); `legacy` reproduces the earlier numbers. |
 | `vision_model` | none | `'anchor'` | How the previous visual pose is carried. `anchor` stores a raw copy with a declared uncertainty and no correlation with the live state ([ADR-0001](adr/0001-anchor-as-filter-state.md)). `clone` carries it as a stochastic clone: six error states that start perfectly correlated with the live pose and enter the relative-pose measurement through their own Jacobians ([ADR-0017](adr/0017-stochastic-clone-for-the-visual-update.md)). Opt-in; the default is unchanged. |
+| `vision_adaptive_scale` | none | `False` | An adaptive scale on the clone's visual measurement covariance, one scalar for the rotation block and one for the translation block ([ADR-0031](adr/0031-an-adaptive-visual-noise-scale.md)). Applies only to `vision_model='clone'`, and the benchmark refuses it together with a noise preset. Off, every output is unchanged. |
+| `vision_scale_tau_s` | s | `5.0` | Forgetting time of the scale. A placeholder inside the grid of ADR-0031, to be fixed by the tuning package. Must be finite and positive. |
+| `vision_scale_min` | none | `0.5` | Lower bound of the scale. A placeholder, as above. Must satisfy 0 < min <= 1. |
+| `vision_scale_max` | none | `8.0` | Upper bound of the scale. A placeholder, as above. Must be at least 1. |
+
+**The adaptive visual noise scale.** With `vision_adaptive_scale` on, the stochastic clone multiplies the covariance of
+its visual measurement by one scalar for the rotation block and one for the translation block
+([ADR-0031](adr/0031-an-adaptive-visual-noise-scale.md)). Each scalar is a moving average of how large the block's
+innovations are against the declared noise. It is bounded, and it is updated only from visual updates that the gate
+accepted. It is a catch-all for model error in the visual channel, which includes visual errors correlated over time and
+the conservatism of the clone. It is not an estimate of the sensor's noise. It is off by default, applies only to the
+clone, and the run statistics report its mean, minimum, maximum and final values. A larger scale also lets larger
+innovations through the gate, which can hide a visual fault, so its effect on fault detection is measured before any
+candidate is evaluated.
 
 ### Fault detection: `FdirConfig`
 
@@ -267,6 +281,7 @@ default in the benchmark:
 | `initial_start` | where an ESKF case starts: `origin` (the identity pose at the origin), `truth`, or `prior_draw` (the true initial state plus a draw from the filter's declared position, velocity and attitude priors, from a stream seeded by the case seed; biases start at zero). The benchmark file sets `prior_draw`. The dead-reckoning control always starts at the truth ([ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)) |
 | `gnss_sigma_scale`, `vision_sigma_scale` | multiply the GNSS or vision noise the *filter* assumes (default 1); the generator keeps the true noise |
 | `vision_noise_preset` | a named value for `vision_sigma_scale`, only with `vision_model: clone` and not together with it. `measured-front-end` is four times the measured visual noise ([ADR-0024](adr/0024-assumed-noise-for-the-opt-in-clone.md), [real front end](real_front_end.md)) |
+| `vision_adaptive_scale`, `vision_scale_tau_s`, `vision_scale_min`, `vision_scale_max` | as in `EskfConfig`; the scale is refused together with `vision_noise_preset` and with `vision_model: anchor` |
 
 By default the filter's GNSS and vision noise are taken from the scenario's sensor model, so
 the filter is told the true noise level. One benchmark case inflates the visual noise (the correlated-error case of the
