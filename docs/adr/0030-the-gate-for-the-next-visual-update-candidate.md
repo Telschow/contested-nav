@@ -45,3 +45,5 @@ Seeds and candidates. Seeds 0 to 99 may be used freely for development. Each can
 - The recorded result of ADR-0028 and its old gate stay as dated history. They are not deleted or reworded.
 - The first candidate, the adaptive visual noise scale, is a separate design and implementation package. It is not started by this record.
 - `CONSTRAINTS.md` B1 stays as it is until a candidate has been evaluated.
+
+Note (2026-10-23): the first candidate, an adaptive visual noise scale, is specified in [ADR-0031](0031-an-adaptive-visual-noise-scale.md).
