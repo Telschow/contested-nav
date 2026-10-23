@@ -217,6 +217,18 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
     noise = scenario.imu_noise.scaled(scenario.imu_noise_scale)
     gnss_scale = _sigma_scale(keys, "gnss_sigma_scale")
     vision_scale = _vision_scale(keys)
+    if keys.get("vision_adaptive_scale") and keys.get("vision_noise_preset") is not None:
+        raise ValueError(
+            "vision_adaptive_scale and vision_noise_preset cannot be used together: the adaptive scale starts from "
+            "the declared noise (ADR-0031)"
+        )
+    # The adaptive scale of the clone (ADR-0031). Settings that are not given keep the defaults of EskfConfig.
+    adaptive: dict[str, Any] = {}
+    if "vision_adaptive_scale" in keys:
+        adaptive["vision_adaptive_scale"] = bool(keys["vision_adaptive_scale"])
+    for k in ("vision_scale_tau_s", "vision_scale_min", "vision_scale_max"):
+        if k in keys:
+            adaptive[k] = float(keys[k])
     # The declared uncertainty of the starting state, when a case sets it (an ablation can set it to zero).
     initial: dict[str, Any] = {
         k: float(keys[k])
@@ -244,6 +256,7 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
         ),
         process_noise_form=str(keys.get("process_noise_form", "textbook")),
         **initial,
+        **adaptive,
         vision_model=str(keys.get("vision_model", "anchor")),
     )
 
