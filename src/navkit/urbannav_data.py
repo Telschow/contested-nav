@@ -1,6 +1,7 @@
 """Read a fetched UrbanNav sequence: the post-processed reference solution and the Xsens IMU.
 
     navkit urbannav fetch --sequence tunnel1
+    navkit urbannav fetch --sequence deepurban1
 
 What this module does with the two files, and what it leaves alone:
 
@@ -49,7 +50,10 @@ REFERENCE_TOKENS = 20
 _UTC, _WEEK, _TOW, _LAT, _LON, _HEIGHT, _VEL, _ACC, _RPY, _QUALITY = 0, 1, 2, 3, 6, 9, 10, 13, 16, 19
 
 #: The NMEA file of each sequence, in ``<root>/<seq>/``. It is inside the publisher's folder download.
-NMEA_FILES = {"tunnel1": "20210518.tunnel.cht.ublox.f9p.nmea"}
+NMEA_FILES = {
+    "tunnel1": "20210518.tunnel.cht.ublox.f9p.nmea",
+    "deepurban1": "UrbanNav-HK-Deep-Urban-1.ublox.f9p.nmea",
+}
 
 IMU_STAMP = "field.header.stamp"
 IMU_GYRO = tuple(f"field.angular_velocity.{a}" for a in "xyz")
