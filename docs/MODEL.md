@@ -125,6 +125,21 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 | `vision_scale_tau_s` | s | `5.0` | Forgetting time of the scale. A placeholder inside the grid of ADR-0031, to be fixed by the tuning package. Must be finite and positive. |
 | `vision_scale_min` | none | `0.5` | Lower bound of the scale. A placeholder, as above. Must satisfy 0 < min <= 1. |
 | `vision_scale_max` | none | `8.0` | Upper bound of the scale. A placeholder, as above. Must be at least 1. |
+| `vision_gm_error` | none | `False` | A Gauss-Markov model of the temporally correlated part of the visual measurement error, as two more vector states in the stochastic clone ([ADR-0034](adr/0034-a-gauss-markov-model-of-the-correlated-visual-error.md)). Applies only to `vision_model='clone'`. It is refused together with `vision_adaptive_scale`, and the benchmark refuses it together with a noise preset. Off, every output is unchanged. |
+| `vision_gm_tau_s` | s | `1.0` | Correlation time of the two Gauss-Markov states. A placeholder inside the grid of ADR-0034, to be fixed by the tuning package. Must be finite and positive. |
+| `vision_gm_rho` | none | `0.5` | Share of the declared visual error variance that is correlated. A placeholder, as above. Must be strictly between 0 and 1. |
+
+**The Gauss-Markov model of the correlated visual error.** With `vision_gm_error` on, the stochastic clone carries two
+more states, one for the error of the rotation measurement and one for the error of the translation measurement
+([ADR-0034](adr/0034-a-gauss-markov-model-of-the-correlated-visual-error.md)). Each is a first-order Gauss-Markov process:
+it decays towards zero with the correlation time `vision_gm_tau_s`, and noise is added so that its spread stays at a
+fixed stationary value, the square root of `vision_gm_rho` times the declared sigma of that block. The measurement
+equations gain the matching term, and the white part of each block keeps the rest of the declared variance, so the total
+declared variance of the block does not change. The states are not reset when the clone is re-committed. This is a model
+of a correlation that is declared in advance: it is not an estimate of the correlation from the data, and the filter is
+not told which scenario it faces. It is opt-in and off by default, and with it off every output is byte-identical to the
+output without it. It applies only to the clone, and the run statistics then also report the root mean square of each
+estimated state over the run and the final standard deviation of each covariance block.
 
 **The adaptive visual noise scale.** With `vision_adaptive_scale` on, the stochastic clone multiplies the covariance of
 its visual measurement by one scalar for the rotation block and one for the translation block
@@ -284,6 +299,7 @@ default in the benchmark:
 | `gnss_sigma_scale`, `vision_sigma_scale` | multiply the GNSS or vision noise the *filter* assumes (default 1); the generator keeps the true noise |
 | `vision_noise_preset` | a named value for `vision_sigma_scale`, only with `vision_model: clone` and not together with it. `measured-front-end` is four times the measured visual noise ([ADR-0024](adr/0024-assumed-noise-for-the-opt-in-clone.md), [real front end](real_front_end.md)) |
 | `vision_adaptive_scale`, `vision_scale_tau_s`, `vision_scale_min`, `vision_scale_max` | as in `EskfConfig`; the scale is refused together with `vision_noise_preset` and with `vision_model: anchor` |
+| `vision_gm_error`, `vision_gm_tau_s`, `vision_gm_rho` | as in `EskfConfig`; the model is refused together with `vision_noise_preset`, with `vision_adaptive_scale` and with `vision_model: anchor` |
 
 By default the filter's GNSS and vision noise are taken from the scenario's sensor model, so
 the filter is told the true noise level. One benchmark case inflates the visual noise (the correlated-error case of the

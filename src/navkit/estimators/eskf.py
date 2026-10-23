@@ -160,7 +160,7 @@ import math
 import time
 import warnings
 from dataclasses import InitVar, dataclass, field
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 import numpy as np
 
@@ -195,6 +195,13 @@ _IDX_CT = slice(18, 21)
 #: silently disagree with the matrices built from it.
 _N_NOMINAL = 15
 _N_STATES = 21
+#: The Gauss-Markov model of the correlated visual error (ADR-0034) appends six states after the clone blocks: the error
+#: of the rotation measurement and the error of the translation measurement, each a vector in the frame of the
+#: measurement. They exist only with ``EskfConfig.vision_gm_error`` on, and then the filter has ``_N_STATES + _N_GM``
+#: of them. ``_N_STATES`` stays 21, the size without the model.
+_IDX_ER = slice(_N_STATES, _N_STATES + 3)
+_IDX_ET = slice(_N_STATES + 3, _N_STATES + 6)
+_N_GM = 6
 
 
 class _AnchorSnapshot(TypedDict):
@@ -249,6 +256,10 @@ class FilterState(TypedDict):
     gnss_grants_since_verified: int
     vision_keyframe_set: bool
     anchor_snapshot: _AnchorSnapshot | None
+    # The estimates of the two Gauss-Markov states (ADR-0034). Present only with ``vision_gm_error`` on, so the
+    # state of a filter without the model has exactly the entries it always had.
+    e_rot: NotRequired[np.ndarray]
+    e_trans: NotRequired[np.ndarray]
 
 
 #: Which state block each measurement channel may have inflated, used to place
@@ -428,6 +439,23 @@ class EskfConfig:
     vision_scale_min: float = 0.5
     #: The upper bound of the scale. PLACEHOLDER, as above. It must be at least 1.
     vision_scale_max: float = 8.0
+    #: A Gauss-Markov model of the temporally correlated part of the visual measurement error (ADR-0034): six more error
+    #: states, ``e_rot`` and ``e_trans``, one per axis of the rotation and translation measurement. Each is a
+    #: first-order Gauss-Markov process with correlation time ``vision_gm_tau_s`` and stationary standard deviation
+    #: ``sqrt(vision_gm_rho)`` times the declared base sigma of the block. The measurement models gain the matching
+    #: ``e`` term, and the white part of each block has variance ``(1 - vision_gm_rho)`` times the declared sigma
+    #: squared, so the total declared variance stays what it was. Off by default, and with it off every output is
+    #: byte-identical to the previous behaviour. It applies only to ``vision_model="clone"`` and is refused together
+    #: with ``vision_adaptive_scale``, and by the benchmark together with a noise preset. The model is a correlation
+    #: that is declared in advance. It is not an estimate of the correlation from the data.
+    vision_gm_error: bool = False
+    #: The correlation time of the two Gauss-Markov states, in seconds. PLACEHOLDER: the default is one point of the
+    #: grid that ADR-0034 fixes, and the tuning package decides it. Must be finite and positive.
+    vision_gm_tau_s: float = 1.0
+    #: The share of the declared visual error variance that is correlated, strictly between 0 and 1. PLACEHOLDER, as
+    #: above. At 1 the white part of the measurement covariance would be singular, and the grid of ADR-0034 stops at
+    #: 0.9.
+    vision_gm_rho: float = 0.5
     #: Deprecated names of the two drift strengths above. The constructor accepts them and does not store them, so
     #: reading them gives ``None``: use the new names.
     anchor_pos_drift_sigma_m_s: InitVar[float | None] = None
@@ -454,6 +482,19 @@ class EskfConfig:
         if self.vision_adaptive_scale and self.vision_model != "clone":
             raise ValueError(
                 f"vision_adaptive_scale applies only to vision_model 'clone', got vision_model {self.vision_model!r}"
+            )
+        if not (math.isfinite(self.vision_gm_tau_s) and self.vision_gm_tau_s > 0.0):
+            raise ValueError(f"vision_gm_tau_s must be finite and positive, got {self.vision_gm_tau_s!r}")
+        if not (math.isfinite(self.vision_gm_rho) and 0.0 < self.vision_gm_rho < 1.0):
+            raise ValueError(f"vision_gm_rho must be strictly between 0 and 1, got {self.vision_gm_rho!r}")
+        if self.vision_gm_error and self.vision_model != "clone":
+            raise ValueError(
+                f"vision_gm_error applies only to vision_model 'clone', got vision_model {self.vision_model!r}"
+            )
+        if self.vision_gm_error and self.vision_adaptive_scale:
+            raise ValueError(
+                "vision_gm_error and vision_adaptive_scale cannot be used together: the adaptive scale would also "
+                "scale the correlated part of the error that the Gauss-Markov states model (ADR-0034)"
             )
         for old, new, value in (
             ("anchor_pos_drift_sigma_m_s", "anchor_pos_drift_sigma_m_sqrt_s", anchor_pos_drift_sigma_m_s),
@@ -509,10 +550,13 @@ class EskfConfig:
             "vision_scale_tau_s": self.vision_scale_tau_s,
             "vision_scale_min": self.vision_scale_min,
             "vision_scale_max": self.vision_scale_max,
+            "vision_gm_error": self.vision_gm_error,
+            "vision_gm_tau_s": self.vision_gm_tau_s,
+            "vision_gm_rho": self.vision_gm_rho,
         }
 
 
-def _reset_jacobian(dx: np.ndarray, clone: bool = False) -> np.ndarray:
+def _reset_jacobian(dx: np.ndarray, clone: bool = False, n: int = _N_STATES) -> np.ndarray:
     """First-order reset Jacobian ``G`` for an injected correction ``dx``.
 
     With the convention ``R_true = R Exp(dtheta)``, injecting ``a`` sets ``R+ = R Exp(a)``, so
@@ -522,9 +566,10 @@ def _reset_jacobian(dx: np.ndarray, clone: bool = False) -> np.ndarray:
     same form. The anchor model does not inject ``dx[c_t]`` (CN-003), so its block stays the
     identity. Pinned against finite differences by
     ``test_attitude_reset_jacobian_is_the_exact_derivative`` and
-    ``test_clone_reset_jacobian_is_the_exact_derivative``.
+    ``test_clone_reset_jacobian_is_the_exact_derivative``. ``n`` is the size of the state: the Gauss-Markov states of
+    the visual error (ADR-0034) are additive, so their rows and columns of ``G`` are the identity.
     """
-    G = np.eye(_N_STATES)
+    G = np.eye(n)
     G[_IDX_THETA, _IDX_THETA] = np.eye(3) - 0.5 * _skew(dx[_IDX_THETA])
     if clone:
         G[_IDX_CT, _IDX_CT] = np.eye(3) - 0.5 * _skew(dx[_IDX_CT])
@@ -538,6 +583,10 @@ class ErrorStateKalmanFilter:
 
     def __init__(self, config: EskfConfig) -> None:
         self.cfg = config
+        #: Whether the Gauss-Markov states of the visual error are in the filter (ADR-0034), and so how many error
+        #: states there are: 21 without them, 27 with them. Fixed here, from the config, for the life of the filter.
+        self._gm = bool(config.vision_gm_error)
+        self._n = _N_STATES + _N_GM if self._gm else _N_STATES
         self.g = GRAVITY.copy() if config.gravity is None else np.asarray(config.gravity, float)
         self.fdir = FdirManager(config.fdir_config)
         self.fdir_inflations = 0
@@ -553,7 +602,7 @@ class ErrorStateKalmanFilter:
 
     def _initial_state(self) -> FilterState:
         """The state a run starts from: identity pose at rest, zero biases, declared prior."""
-        return {
+        state: FilterState = {
             "R": np.eye(3),
             "p": np.zeros(3),
             "v": np.zeros(3),
@@ -571,10 +620,24 @@ class ErrorStateKalmanFilter:
             "vision_keyframe_set": False,
             "anchor_snapshot": None,
         }
+        if self._gm:
+            # The estimates of the correlated visual error start at zero (ADR-0034).
+            state["e_rot"] = np.zeros(3)
+            state["e_trans"] = np.zeros(3)
+        return state
+
+    def _gm_sigmas(self) -> tuple[float, float]:
+        """The stationary standard deviations of ``e_rot`` (rad) and ``e_trans`` (m): ``sqrt(rho)`` times the base.
+
+        The base sigma is the declared one of the block, ``vision_rot_sigma_deg`` and ``vision_trans_sigma_m``
+        (ADR-0034).
+        """
+        root = math.sqrt(self.cfg.vision_gm_rho)
+        return root * math.radians(self.cfg.vision_rot_sigma_deg), root * self.cfg.vision_trans_sigma_m
 
     def _initial_covariance(self) -> np.ndarray:
         cfg = self.cfg
-        P = np.zeros((_N_STATES, _N_STATES))
+        P = np.zeros((self._n, self._n))
         r = np.deg2rad(cfg.initial_rot_sigma_deg) ** 2
         P[_IDX_THETA, _IDX_THETA] = np.eye(3) * r
         P[_IDX_P, _IDX_P] = np.eye(3) * cfg.initial_pos_sigma_m**2
@@ -587,6 +650,11 @@ class ErrorStateKalmanFilter:
         # uncertainty then comes from the commit itself (see
         # _commit_anchor_covariance) plus the drift random walk. Seeding it here
         # with a prior would be a claim the filter has not earned.
+        if self._gm:
+            # The Gauss-Markov states of the visual error start at zero, with their stationary variance (ADR-0034).
+            sigma_rot, sigma_trans = self._gm_sigmas()
+            P[_IDX_ER, _IDX_ER] = np.eye(3) * sigma_rot**2
+            P[_IDX_ET, _IDX_ET] = np.eye(3) * sigma_trans**2
         return P
 
     def _commit_anchor_covariance(self, P: np.ndarray) -> None:
@@ -620,8 +688,11 @@ class ErrorStateKalmanFilter:
         if self.cfg.vision_model == "clone":
             # A clone is a copy of the live pose, so its error is the live pose's error: the clone blocks take the
             # rows and columns of the position and attitude blocks, cross terms with every other state included.
-            # P' = T P T^T with T copying rows 3:6 to 15:18 and rows 0:3 to 18:21.
-            T = np.eye(_N_STATES)
+            # P' = T P T^T with T copying rows 3:6 to 15:18 and rows 0:3 to 18:21. The rows of any other state are the
+            # identity, so the Gauss-Markov states of the visual error (ADR-0034) are not touched: neither their
+            # estimates nor their covariance blocks nor their correlation with the live state. Their correlation with
+            # the clone is rebuilt from the live pose's, like every other state's.
+            T = np.eye(self._n)
             T[_IDX_CP, :] = 0.0
             T[_IDX_CT, :] = 0.0
             T[_IDX_CP, _IDX_P] = np.eye(3)
@@ -650,7 +721,7 @@ class ErrorStateKalmanFilter:
         """
         n = self.cfg.imu_noise
         d = float(dt)
-        Q = np.zeros((_N_STATES, _N_STATES))
+        Q = np.zeros((self._n, self._n))
         rg = n.gyro_noise_density**2
         ra = n.accel_noise_density**2
         if self.cfg.vision_model not in ("anchor", "clone"):
@@ -689,12 +760,19 @@ class ErrorStateKalmanFilter:
                 Q[_IDX_CP, _IDX_CP] += np.eye(3) * (sp**2 * d)
             if st > 0.0:
                 Q[_IDX_CT, _IDX_CT] += np.eye(3) * (st**2 * d)
+        if self._gm:
+            # Gauss-Markov process noise (ADR-0034): sigma_e^2 (1 - a^2) with a = exp(-dt / tau), from the exact
+            # exponential and not from 1 - dt / tau. -expm1(-2 dt / tau) is 1 - a^2 without the cancellation.
+            sigma_rot, sigma_trans = self._gm_sigmas()
+            keep = -math.expm1(-2.0 * d / self.cfg.vision_gm_tau_s)
+            Q[_IDX_ER, _IDX_ER] = np.eye(3) * (sigma_rot**2 * keep)
+            Q[_IDX_ET, _IDX_ET] = np.eye(3) * (sigma_trans**2 * keep)
         return Q
 
     @staticmethod
-    def _transition(R: np.ndarray, omega: np.ndarray, accel: np.ndarray, dt: float) -> np.ndarray:
+    def _transition(R: np.ndarray, omega: np.ndarray, accel: np.ndarray, dt: float, n: int = _N_STATES) -> np.ndarray:
         a = np.asarray(accel, float)
-        F = np.eye(_N_STATES)
+        F = np.eye(n)
         F[_IDX_P, _IDX_V] += np.eye(3) * dt
         F[_IDX_V, _IDX_THETA] += -R @ _skew(a) * dt
         F[_IDX_V, _IDX_BA] += -R * dt
@@ -710,7 +788,15 @@ class ErrorStateKalmanFilter:
         p_new = p + v * dt + 0.5 * a_world * dt * dt
         v_new = v + a_world * dt
         R_new = R @ rot_exp(w_meas * dt)
-        F = self._transition(R, w_meas, a_meas, dt)
+        F = self._transition(R, w_meas, a_meas, dt, self._n)
+        if self._gm:
+            # Each Gauss-Markov state decays by a = exp(-dt / tau) per step (ADR-0034). The estimate and its covariance
+            # row and column go with the same factor, and the process noise above adds back what the decay removes.
+            coeff = math.exp(-dt / self.cfg.vision_gm_tau_s)
+            F[_IDX_ER, _IDX_ER] = np.eye(3) * coeff
+            F[_IDX_ET, _IDX_ET] = np.eye(3) * coeff
+            x["e_rot"] = coeff * x["e_rot"]
+            x["e_trans"] = coeff * x["e_trans"]
         x["R"], x["p"], x["v"] = R_new, p_new, v_new
         x["P"] = F @ x["P"] @ F.T + self._process_noise(dt)
 
@@ -915,7 +1001,7 @@ class ErrorStateKalmanFilter:
         P = x["P"]
         dx = K @ residual
         dtheta = dx[_IDX_THETA]
-        G = _reset_jacobian(dx, clone=self.cfg.vision_model == "clone")
+        G = _reset_jacobian(dx, clone=self.cfg.vision_model == "clone", n=self._n)
         # Joseph form, then the reset, in that order. The reset is the reason
         # this must happen after the covariance update and not before: the
         # injected rotation changes the linearisation point, and G acting on the
@@ -932,7 +1018,7 @@ class ErrorStateKalmanFilter:
         # within two visual updates -- by enough to make the covariance
         # physically meaningless and to break the eigendecomposition that the
         # calibration code relies on.
-        I_KH = np.eye(_N_STATES) - K @ H
+        I_KH = np.eye(self._n) - K @ H
         x["P"] = G @ (I_KH @ P @ I_KH.T + K @ Rcov @ K.T) @ G.T
         x["R"] = x["R"] @ rot_exp(dtheta)
         x["p"] = x["p"] + dx[_IDX_P]
@@ -943,6 +1029,11 @@ class ErrorStateKalmanFilter:
             # The clone is a stored pose with a real error state: correct it like the live pose.
             x["R_vk"] = x["R_vk"] @ rot_exp(dx[_IDX_CT])
             x["p_vk"] = x["p_vk"] + dx[_IDX_CP]
+        if self._gm:
+            # The Gauss-Markov states of the visual error are additive, so the correction goes straight into their
+            # estimates, and the reset G above leaves their rows and columns alone (ADR-0034).
+            x["e_rot"] = x["e_rot"] + dx[_IDX_ER]
+            x["e_trans"] = x["e_trans"] + dx[_IDX_ET]
         # The anchor nuisance corrections dx[_IDX_CP] and dx[_IDX_CT] are
         # computed above and deliberately NOT applied. This is not an oversight;
         # it is a recorded limitation, tracked as CN-003 and described in ADR-0001.
@@ -994,7 +1085,7 @@ class ErrorStateKalmanFilter:
                 )
             floor = self.cfg.gnss_per_fix_min_sigma_m**2
             Rcov = np.diag(np.maximum(per_fix, floor))
-        H = np.zeros((3, _N_STATES))
+        H = np.zeros((3, self._n))
         H[0, 3] = H[1, 4] = H[2, 5] = 1.0
         return self._update(x, p_meas - x["p"], H, Rcov, sensor="gnss", t_s=t_s)
 
@@ -1166,14 +1257,47 @@ class ErrorStateKalmanFilter:
         ordinary propagation (the clone rows of the transition are the identity), which is what the anchor model
         discards at every commit. After an update the corrections to the clone are injected into ``R_vk`` and
         ``p_vk``. Whether this closes B1 is the question; it is not assumed.
+
+        With ``vision_gm_error`` on (ADR-0034) the measurement also carries the two Gauss-Markov states ``e_rot`` and
+        ``e_trans``. The columns are derived from how the generator applies the noise
+        (``sensors/models.py``, ``visual_updates``): it draws one noise vector per block, ``n = e + w`` with ``e`` the
+        correlated part and ``w`` the white part, and sets
+
+            R_meas = R_rel_true Exp(n_rot),        t_meas = t_rel_true + n_trans,
+
+        the rotation noise on the right of the true relative rotation and the translation noise added in the previous
+        frame, where ``t_rel_true`` is expressed. With the true previous pose ``R_vk Exp(c_t)`` and the true live pose
+        ``R Exp(theta)``, ``R_rel_true = Exp(-c_t) R_rel Exp(theta)``. The filter predicts the measurement from its
+        estimates ``e_hat`` as ``R_rel Exp(e_hat_rot)`` and ``t_pred + e_hat_trans``, so the residuals are
+
+            rotation:     z = Log(R_meas (R_rel Exp(e_hat))^T)
+                            = Log(Exp(-c_t) R_rel Exp(theta) Exp(e_hat + de + w) Exp(-e_hat) R_rel^T)
+                            ~ R_rel theta - c_t + R_rel J_l(e_hat) (de + w)
+            translation:  z = t_meas - t_pred - e_hat_trans
+                            ~ R_vk^T (dp - c_p) + [t_pred]x c_t + de + w
+
+        using ``Exp(e + d) Exp(-e) = Exp(J_l(e) d)`` with ``J_l(e) = J_r(-e)``. So the new columns are
+        ``R_rel J_l(e_hat_rot)`` on ``e_rot`` and the identity on ``e_trans``. The first is ``R_rel`` and not the
+        identity because the noise sits on the right of ``R_rel_true`` and the residual is read in the previous frame.
+        The second is the identity and not ``R_vk^T`` because the translation noise is already in that frame. The
+        factor ``J_l(e_hat)`` is the exact derivative at the linearisation point (it is the identity only at
+        ``e_hat = 0``), the same care the anchor model takes with ``J_r(c_t)``. Both columns are pinned against finite
+        differences of this method's own residual in ``tests/test_gm_visual_error.py``. The white part keeps the
+        isotropic covariance ``(1 - rho)`` times the declared sigma squared, as the declared noise did, without the
+        second-order ``R_rel J_l J_l^T R_rel^T`` factor, which differs from the identity by the square of ``|e_hat|``.
         """
+        gm = self._gm
         R_prev, R_cur = x["R_vk"], x["R"]
         R_rel_pred = R_prev.T @ R_cur
-        z_rot = rot_log(R_rel_meas @ R_rel_pred.T)
-        H_rot = np.zeros((3, _N_STATES))
+        R_rel_hat = R_rel_pred @ rot_exp(x["e_rot"]) if gm else R_rel_pred  # the predicted measurement
+        z_rot = rot_log(R_rel_meas @ R_rel_hat.T)
+        H_rot = np.zeros((3, self._n))
         H_rot[:, _IDX_THETA] = R_rel_pred
         H_rot[:, _IDX_CT] = -np.eye(3)
         Rcov_rot = np.eye(3) * np.deg2rad(rot_sigma_deg) ** 2
+        if gm:
+            H_rot[:, _IDX_ER] = R_rel_pred @ rot_right_jacobian(-x["e_rot"])
+            Rcov_rot = Rcov_rot * (1.0 - self.cfg.vision_gm_rho)
         scales = self._vision_scales
         if scales is None:
             ok_rot, innov_rot = self._update(x, z_rot, H_rot, Rcov_rot, sensor="vision_rot", t_s=t_s)
@@ -1187,11 +1311,15 @@ class ErrorStateKalmanFilter:
         R_prev, p_prev = x["R_vk"], x["p_vk"]
         t_pred = R_prev.T @ (x["p"] - p_prev)
         z_trans = t_rel_meas - t_pred
-        H_trans = np.zeros((3, _N_STATES))
+        H_trans = np.zeros((3, self._n))
         H_trans[:, _IDX_P] = R_prev.T
         H_trans[:, _IDX_CP] = -R_prev.T
         H_trans[:, _IDX_CT] = _skew(t_pred)
         Rcov_trans = np.eye(3) * trans_sigma_m**2
+        if gm:
+            z_trans = z_trans - x["e_trans"]
+            H_trans[:, _IDX_ET] = np.eye(3)
+            Rcov_trans = Rcov_trans * (1.0 - self.cfg.vision_gm_rho)
         if scales is None:
             ok_trans, innov_trans = self._update(x, z_trans, H_trans, Rcov_trans, sensor="vision_trans", t_s=t_s)
         else:
@@ -1296,6 +1424,10 @@ class ErrorStateKalmanFilter:
         gnss_seen = 0
         max_measurement_latency = 0.0
         anchor_snapshotted = False
+        # Sums of the squared norm of the two Gauss-Markov estimates over the epochs of the run (ADR-0034). Only the
+        # model reads them.
+        gm_rot_sq = gm_trans_sq = 0.0
+        gm_epochs = 0
 
         for k in range(n):
             t_k = float(imu.t[k])
@@ -1366,6 +1498,10 @@ class ErrorStateKalmanFilter:
             poses[k, 3, 3] = 1.0
             pos_cov[k] = x["P"][_IDX_P, _IDX_P]
             sigma_p[k] = float(np.sqrt(max(np.trace(x["P"][_IDX_P, _IDX_P]), 0.0) / 3.0))
+            if self._gm:
+                gm_rot_sq += float(x["e_rot"] @ x["e_rot"])
+                gm_trans_sq += float(x["e_trans"] @ x["e_trans"])
+                gm_epochs += 1
 
         traj = Trajectory(t=imu.t.copy(), poses=poses, name=self.name)
         elapsed = time.perf_counter() - wall_start
@@ -1404,6 +1540,14 @@ class ErrorStateKalmanFilter:
             stats["vision_scale_skipped_nonfinite"] = float(
                 self._vision_scales[0].n_skipped_nonfinite + self._vision_scales[1].n_skipped_nonfinite
             )
+        if self._gm:
+            # Only with the model on, so that every existing output is unchanged (ADR-0034). The state RMS is over the
+            # epochs of the run, of the norm of the estimated error (rad for the rotation, m for the translation). The
+            # final standard deviation is the square root of the mean diagonal of the final covariance block.
+            stats["vision_gm_rot_state_rms"] = math.sqrt(gm_rot_sq / gm_epochs) if gm_epochs else 0.0
+            stats["vision_gm_trans_state_rms"] = math.sqrt(gm_trans_sq / gm_epochs) if gm_epochs else 0.0
+            stats["vision_gm_rot_std_final"] = float(np.sqrt(np.mean(np.diag(x["P"][_IDX_ER, _IDX_ER]))))
+            stats["vision_gm_trans_std_final"] = float(np.sqrt(np.mean(np.diag(x["P"][_IDX_ET, _IDX_ET]))))
         traj.metadata["sigma_p"] = sigma_p
         traj.metadata["gnss_innovations"] = self.gnss_innovations
         traj.metadata["bias_log"] = self.bias_log
