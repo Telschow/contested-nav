@@ -18,7 +18,7 @@ filter reports is honest.
 | Configuration | ATE RMSE, full run | Claimed 1σ, full run | Mean NEES, full run (expected 3) | 2σ-per-axis coverage, full run (expected 99.3%) | Mean NEES, outage window (expected 3) | 2σ-per-axis coverage, outage window (expected 99.3%) |
 |---|---:|---:|---:|---:|---:|---:|
 | GNSS denied, vision off | 6.530 m | 0.567 m | 3.2 | 100.0% | 4.3 | 100.0% |
-| GNSS denied, vision on | **17.425 m** | **0.156 m** | **13783.2** | **18.8%** | **2777.2** | **4.3%** |
+| GNSS denied, vision on | **17.568 m** | **0.156 m** | **14018.6** | **19.2%** | **2783.3** | **5.0%** |
 
 **Calibration failed, and accuracy did not improve.** The filter is confidently wrong, so visual
 fusion ships off by default. The table is one run with one start draw. In that run the aided case is also less

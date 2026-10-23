@@ -45,7 +45,7 @@ start draw (seed 0). It is descriptive:
 | Configuration | ATE RMSE, full run | Claimed 1σ, full run | Mean NEES, full run (expected 3) | 2σ-per-axis coverage, full run (expected 99.3%) | Mean NEES, outage window (expected 3) | 2σ-per-axis coverage, outage window (expected 99.3%) |
 |---|---:|---:|---:|---:|---:|---:|
 | GNSS denied, vision off | 6.530 m | 0.567 m | 3.2 | 100.0% | 4.3 | 100.0% |
-| GNSS denied, vision on | **17.425 m** | **0.156 m** | **13783.2** | **18.8%** | **2777.2** | **4.3%** |
+| GNSS denied, vision on | **17.568 m** | **0.156 m** | **14018.6** | **19.2%** | **2783.3** | **5.0%** |
 
 **Calibration failed, and accuracy did not improve.** The filter is confidently wrong, so
 visual fusion ships **off by default**. In this single run the aided case is also less accurate than the
@@ -117,19 +117,19 @@ what the table scores.
 | --- | ---: | ---: | ---: | ---: | --- |
 | GNSS only (control) | 0.512 | 0.254 | 4.2 | 100.0% | mixed: bulk overconfident, tail consistent |
 | Dead reckoning (no aiding) | 1.248 | n/a | n/a | n/a | no covariance reported |
-| Anchor as measurement noise (defect) | 11.405 | 0.100 | 13322.0 | 9.0% | overconfident† |
-| Vision only | 26.605 | 0.158 | 31789.6 | 1.5% | overconfident† |
+| Anchor as measurement noise (defect) | 11.497 | 0.100 | 13554.9 | 8.7% | overconfident† |
+| Vision only | 26.727 | 0.158 | 32045.8 | 1.5% | overconfident† |
 | GNSS denied 5–20 s, vision off (control) | 6.530 | 0.567 | 3.2 | 100.0% | consistent |
-| GNSS denied 5–20 s, vision on | 17.425 | 0.156 | 13783.2 | 18.8% | overconfident† |
-| GNSS denied, 30% camera frames dropped | 7.556 | 0.192 | 1673.1 | 21.8% | overconfident† |
-| GNSS denied 5–20 s, vision on, stochastic clone | 0.669 | 0.375 | 2.2 | 100.0% | consistent |
-| GNSS denied, 30% frames dropped, re-referenced, single anchor | 7.591 | 0.192 | 1688.2 | 22.3% | overconfident† |
-| GNSS denied, 30% frames dropped, re-referenced, stochastic clone | 0.504 | 0.307 | 2.2 | 100.0% | consistent |
-| Vision only, stochastic clone | 1.374 | 1.326 | 1.1 | 100.0% | mixed: bulk underconfident, tail consistent |
-| Stochastic clone, 5% gross visual outliers | 0.669 | 0.382 | 2.2 | 100.0% | consistent |
-| Stochastic clone, drifting translation scale | 0.744 | 0.375 | 2.7 | 100.0% | consistent |
-| Stochastic clone, visual errors correlated over 2 s | 1.900 | 0.374 | 12.8 | 57.8% | overconfident |
-| Stochastic clone, correlated errors, visual noise assumed 4x | 1.853 | 0.531 | 3.6 | 100.0% | consistent |
+| GNSS denied 5–20 s, vision on | 17.568 | 0.156 | 14018.6 | 19.2% | overconfident† |
+| GNSS denied, 30% camera frames dropped | 7.434 | 0.192 | 1621.3 | 22.2% | overconfident† |
+| GNSS denied 5–20 s, vision on, stochastic clone | 0.730 | 0.375 | 2.2 | 100.0% | consistent |
+| GNSS denied, 30% frames dropped, re-referenced, single anchor | 7.609 | 0.192 | 1698.4 | 22.7% | overconfident† |
+| GNSS denied, 30% frames dropped, re-referenced, stochastic clone | 0.403 | 0.306 | 1.8 | 100.0% | mixed: bulk underconfident, tail consistent |
+| Vision only, stochastic clone | 1.785 | 1.325 | 1.6 | 100.0% | consistent† |
+| Stochastic clone, 5% gross visual outliers | 0.816 | 0.382 | 2.6 | 100.0% | consistent |
+| Stochastic clone, drifting translation scale | 0.905 | 0.383 | 3.2 | 100.0% | consistent |
+| Stochastic clone, visual errors correlated over 2 s | 3.061 | 0.395 | 30.7 | 34.1% | overconfident† |
+| Stochastic clone, correlated errors, visual noise assumed 4x | 2.710 | 0.532 | 3.4 | 100.0% | consistent |
 
 This table and the two-row table above it are generated (`navkit run --markdown` and
 `python scripts/check_doc_tables.py --print-configuration-table`), and CI fails if any cell disagrees with

@@ -128,29 +128,29 @@ Band for the ensemble mean over N = 25 runs with 3 degrees of freedom: 2.118 to 
 | Case | Scope | Scored epochs | Grand mean NEES | Inside the band | Below | Above |
 |---|---|---:|---:|---:|---:|---:|
 | gnss_only | full | 6001 | 3.353 | 92.3% | 0.0% | 7.7% |
-| vision_anchor_in_measurement_noise | full | 6001 | 4.087e+05 | 0.0% | 0.0% | 100.0% |
-| vision_only | full | 6001 | 1.931e+05 | 0.3% | 0.0% | 99.7% |
+| vision_anchor_in_measurement_noise | full | 6001 | 4.092e+05 | 0.0% | 0.0% | 100.0% |
+| vision_only | full | 6001 | 1.925e+05 | 0.3% | 0.0% | 99.7% |
 | outage_control | full | 6001 | 3.303 | 96.0% | 0.0% | 4.0% |
 | outage_control | outage | 3000 | 3.474 | 100.0% | 0.0% | 0.0% |
-| outage_visual | full | 6001 | 8.221e+04 | 0.0% | 0.0% | 100.0% |
-| outage_visual | outage | 3000 | 1.822e+04 | 0.0% | 0.0% | 100.0% |
-| outage_visual_degraded_camera | full | 6001 | 3.669e+04 | 0.0% | 0.0% | 100.0% |
-| outage_visual_degraded_camera | outage | 3000 | 7962 | 0.0% | 0.0% | 100.0% |
-| outage_visual_clone | full | 6001 | 2.346 | 58.8% | 40.6% | 0.7% |
-| outage_visual_clone | outage | 3000 | 1.874 | 26.7% | 73.3% | 0.0% |
-| outage_visual_degraded_camera_rereferenced | full | 6001 | 3.67e+04 | 0.0% | 0.0% | 100.0% |
-| outage_visual_degraded_camera_rereferenced | outage | 3000 | 7978 | 0.0% | 0.0% | 100.0% |
-| outage_visual_degraded_camera_clone | full | 6001 | 2.35 | 72.3% | 27.0% | 0.7% |
-| outage_visual_degraded_camera_clone | outage | 3000 | 2.076 | 47.4% | 52.6% | 0.0% |
-| vision_only_clone | full | 6001 | 2.65 | 89.0% | 11.0% | 0.0% |
-| outage_visual_clone_outliers | full | 6001 | 2.344 | 57.1% | 42.2% | 0.7% |
-| outage_visual_clone_outliers | outage | 3000 | 1.908 | 23.7% | 76.3% | 0.0% |
-| outage_visual_clone_scale_drift | full | 6001 | 2.886 | 72.6% | 17.0% | 10.4% |
-| outage_visual_clone_scale_drift | outage | 3000 | 2.653 | 55.6% | 33.0% | 11.4% |
-| outage_visual_clone_correlated | full | 6001 | 30.43 | 4.0% | 0.0% | 96.0% |
-| outage_visual_clone_correlated | outage | 3000 | 43.17 | 0.0% | 0.0% | 100.0% |
-| outage_visual_clone_correlated_inflated | full | 6001 | 3.397 | 93.8% | 0.0% | 6.2% |
-| outage_visual_clone_correlated_inflated | outage | 3000 | 3.613 | 94.3% | 0.0% | 5.7% |
+| outage_visual | full | 6001 | 8.132e+04 | 0.0% | 0.0% | 100.0% |
+| outage_visual | outage | 3000 | 1.803e+04 | 0.0% | 0.0% | 100.0% |
+| outage_visual_degraded_camera | full | 6001 | 3.736e+04 | 0.0% | 0.0% | 100.0% |
+| outage_visual_degraded_camera | outage | 3000 | 8011 | 0.0% | 0.0% | 100.0% |
+| outage_visual_clone | full | 6001 | 3.424 | 85.4% | 0.0% | 14.6% |
+| outage_visual_clone | outage | 3000 | 3.592 | 79.4% | 0.0% | 20.6% |
+| outage_visual_degraded_camera_rereferenced | full | 6001 | 3.726e+04 | 0.0% | 0.0% | 100.0% |
+| outage_visual_degraded_camera_rereferenced | outage | 3000 | 8028 | 0.0% | 0.0% | 100.0% |
+| outage_visual_degraded_camera_clone | full | 6001 | 3.131 | 99.3% | 0.0% | 0.7% |
+| outage_visual_degraded_camera_clone | outage | 3000 | 3.12 | 100.0% | 0.0% | 0.0% |
+| vision_only_clone | full | 6001 | 3.174 | 100.0% | 0.0% | 0.0% |
+| outage_visual_clone_outliers | full | 6001 | 3.376 | 92.9% | 0.0% | 7.1% |
+| outage_visual_clone_outliers | outage | 3000 | 3.53 | 92.6% | 0.0% | 7.4% |
+| outage_visual_clone_scale_drift | full | 6001 | 3.976 | 57.4% | 0.0% | 42.6% |
+| outage_visual_clone_scale_drift | outage | 3000 | 4.416 | 34.3% | 0.0% | 65.7% |
+| outage_visual_clone_correlated | full | 6001 | 112 | 3.1% | 0.0% | 96.9% |
+| outage_visual_clone_correlated | outage | 3000 | 151.3 | 0.0% | 0.0% | 100.0% |
+| outage_visual_clone_correlated_inflated | full | 6001 | 6.087 | 24.6% | 0.0% | 75.4% |
+| outage_visual_clone_correlated_inflated | outage | 3000 | 8.14 | 0.0% | 0.0% | 100.0% |
 
 <!-- ensemble:end -->
 
@@ -195,29 +195,29 @@ navkit sweep seeds --seeds 25 --ensemble-csv docs/data/ensemble_nees.csv --ensem
 | Case | Scope | Runs | Scored epochs | n_eff, smallest | n_eff, median | n_eff, largest | Truncated runs |
 |---|---|---:|---:|---:|---:|---:|---:|
 | gnss_only | full | 25 | 6001 | 10.4 | 19.8 | 48.1 | 0 |
-| vision_anchor_in_measurement_noise | full | 25 | 6001 | 3.2 | 4.3 | 5.1 | 25 |
-| vision_only | full | 25 | 6001 | 3.6 | 4.3 | 4.6 | 25 |
+| vision_anchor_in_measurement_noise | full | 25 | 6001 | 3.8 | 4.3 | 5.1 | 25 |
+| vision_only | full | 25 | 6001 | 3.5 | 4.3 | 4.6 | 25 |
 | outage_control | full | 25 | 6001 | 5.8 | 15.9 | 55.8 | 2 |
 | outage_control | outage | 25 | 3000 | 3.3 | 4.0 | 14.4 | 23 |
-| outage_visual | full | 25 | 6001 | 4.2 | 4.5 | 14.1 | 22 |
+| outage_visual | full | 25 | 6001 | 4.2 | 4.6 | 14.1 | 22 |
 | outage_visual | outage | 25 | 3000 | 3.6 | 4.0 | 4.4 | 25 |
-| outage_visual_degraded_camera | full | 25 | 6001 | 4.0 | 4.7 | 15.1 | 22 |
-| outage_visual_degraded_camera | outage | 25 | 3000 | 3.5 | 4.1 | 4.6 | 25 |
-| outage_visual_clone | full | 25 | 6001 | 5.5 | 13.7 | 30.9 | 4 |
-| outage_visual_clone | outage | 25 | 3000 | 3.7 | 6.2 | 31.8 | 15 |
-| outage_visual_degraded_camera_rereferenced | full | 25 | 6001 | 4.2 | 4.8 | 14.4 | 21 |
-| outage_visual_degraded_camera_rereferenced | outage | 25 | 3000 | 3.5 | 4.1 | 4.4 | 25 |
-| outage_visual_degraded_camera_clone | full | 25 | 6001 | 5.5 | 13.9 | 40.8 | 4 |
-| outage_visual_degraded_camera_clone | outage | 25 | 3000 | 3.3 | 6.2 | 22.5 | 17 |
-| vision_only_clone | full | 25 | 6001 | 3.4 | 4.8 | 22.0 | 18 |
-| outage_visual_clone_outliers | full | 25 | 6001 | 5.2 | 13.9 | 29.3 | 3 |
-| outage_visual_clone_outliers | outage | 25 | 3000 | 3.6 | 7.4 | 18.6 | 13 |
-| outage_visual_clone_scale_drift | full | 25 | 6001 | 6.6 | 15.1 | 43.2 | 5 |
-| outage_visual_clone_scale_drift | outage | 25 | 3000 | 3.6 | 10.2 | 29.8 | 12 |
-| outage_visual_clone_correlated | full | 25 | 6001 | 5.4 | 13.5 | 26.4 | 3 |
-| outage_visual_clone_correlated | outage | 25 | 3000 | 3.3 | 10.3 | 17.8 | 11 |
-| outage_visual_clone_correlated_inflated | full | 25 | 6001 | 7.3 | 16.0 | 29.2 | 2 |
-| outage_visual_clone_correlated_inflated | outage | 25 | 3000 | 3.4 | 5.3 | 17.3 | 16 |
+| outage_visual_degraded_camera | full | 25 | 6001 | 4.0 | 4.7 | 14.2 | 23 |
+| outage_visual_degraded_camera | outage | 25 | 3000 | 3.5 | 4.1 | 4.5 | 25 |
+| outage_visual_clone | full | 25 | 6001 | 7.2 | 14.8 | 34.0 | 2 |
+| outage_visual_clone | outage | 25 | 3000 | 3.6 | 11.9 | 30.1 | 7 |
+| outage_visual_degraded_camera_rereferenced | full | 25 | 6001 | 4.3 | 4.7 | 14.4 | 21 |
+| outage_visual_degraded_camera_rereferenced | outage | 25 | 3000 | 3.4 | 4.1 | 4.4 | 25 |
+| outage_visual_degraded_camera_clone | full | 25 | 6001 | 4.5 | 15.8 | 35.5 | 4 |
+| outage_visual_degraded_camera_clone | outage | 25 | 3000 | 5.0 | 11.9 | 16.6 | 7 |
+| vision_only_clone | full | 25 | 6001 | 3.5 | 7.0 | 24.6 | 14 |
+| outage_visual_clone_outliers | full | 25 | 6001 | 6.6 | 14.9 | 38.6 | 2 |
+| outage_visual_clone_outliers | outage | 25 | 3000 | 3.8 | 11.2 | 27.7 | 6 |
+| outage_visual_clone_scale_drift | full | 25 | 6001 | 7.2 | 14.5 | 38.6 | 3 |
+| outage_visual_clone_scale_drift | outage | 25 | 3000 | 3.8 | 11.0 | 28.7 | 8 |
+| outage_visual_clone_correlated | full | 25 | 6001 | 3.3 | 12.9 | 29.1 | 4 |
+| outage_visual_clone_correlated | outage | 25 | 3000 | 3.4 | 11.8 | 23.7 | 11 |
+| outage_visual_clone_correlated_inflated | full | 25 | 6001 | 7.0 | 14.5 | 49.1 | 3 |
+| outage_visual_clone_correlated_inflated | outage | 25 | 3000 | 3.4 | 6.6 | 23.1 | 14 |
 
 <!-- ess:end -->
 
@@ -264,30 +264,30 @@ what the preset changes.
 
 | Role | Subject | Seeds | Runs | Window epochs | Sum of n_eff | Band degrees of freedom | Truncated runs | All conditions hold |
 |---|---|---|---:|---:|---:|---:|---:|---|
-| candidate | outage_visual+clone+measured-front-end | 0-24 | 25 | 3000 | 144.0 | 432 | 22 | yes |
-| DIAGNOSTIC | outage_visual | 0-24 | 25 | 3000 | 100.8 | 302 | 25 | no |
-| DIAGNOSTIC | outage_visual_clone | 0-24 | 25 | 3000 | 265.1 | 795 | 15 | yes |
+| candidate | outage_visual+clone+measured-front-end | 0-24 | 25 | 3000 | 147.2 | 441 | 21 | yes |
+| DIAGNOSTIC | outage_visual | 0-24 | 25 | 3000 | 100.9 | 302 | 25 | no |
+| DIAGNOSTIC | outage_visual_clone | 0-24 | 25 | 3000 | 299.4 | 898 | 7 | no |
 
 | Role | Subject | Condition | Value | Threshold | Holds |
 |---|---|---|---:|---:|---|
-| candidate | outage_visual+clone+measured-front-end | Grand mean NEES, at most the upper edge of the band | 1.891 | <= 3.413 | yes |
-| candidate | outage_visual+clone+measured-front-end | Grand mean NEES, at least the lower bound | 1.891 | >= 1.32 | yes |
-| candidate | outage_visual+clone+measured-front-end | Pooled 2-sigma per-axis coverage | 96.14% | >= 95.00% | yes |
+| candidate | outage_visual+clone+measured-front-end | Grand mean NEES, at most the upper edge of the band | 1.976 | <= 3.409 | yes |
+| candidate | outage_visual+clone+measured-front-end | Grand mean NEES, at least the lower bound | 1.976 | >= 1.32 | yes |
+| candidate | outage_visual+clone+measured-front-end | Pooled 2-sigma per-axis coverage | 96.41% | >= 95.00% | yes |
 | candidate | outage_visual+clone+measured-front-end | Runs where the candidate has the lower ATE | 25 | >= 20 | yes |
-| candidate | outage_visual+clone+measured-front-end | Median ATE ratio, candidate over control | 0.1185 | <= 0.8 | yes |
-| candidate | outage_visual+clone+measured-front-end | Largest ATE ratio | 0.5476 | <= 1.5 | yes |
-| DIAGNOSTIC | outage_visual | Grand mean NEES, at most the upper edge of the band | 1.822e+04 | <= 3.497 | no |
-| DIAGNOSTIC | outage_visual | Grand mean NEES, at least the lower bound | 1.822e+04 | >= 1.32 | yes |
-| DIAGNOSTIC | outage_visual | Pooled 2-sigma per-axis coverage | 12.63% | >= 95.00% | no |
-| DIAGNOSTIC | outage_visual | Runs where the candidate has the lower ATE | 9 | >= 20 | no |
-| DIAGNOSTIC | outage_visual | Median ATE ratio, candidate over control | 1.12 | <= 0.8 | no |
-| DIAGNOSTIC | outage_visual | Largest ATE ratio | 11.27 | <= 1.5 | no |
-| DIAGNOSTIC | outage_visual_clone | Grand mean NEES, at most the upper edge of the band | 1.874 | <= 3.302 | yes |
-| DIAGNOSTIC | outage_visual_clone | Grand mean NEES, at least the lower bound | 1.874 | >= 1.32 | yes |
-| DIAGNOSTIC | outage_visual_clone | Pooled 2-sigma per-axis coverage | 98.49% | >= 95.00% | yes |
+| candidate | outage_visual+clone+measured-front-end | Median ATE ratio, candidate over control | 0.1366 | <= 0.8 | yes |
+| candidate | outage_visual+clone+measured-front-end | Largest ATE ratio | 0.4699 | <= 1.5 | yes |
+| DIAGNOSTIC | outage_visual | Grand mean NEES, at most the upper edge of the band | 1.803e+04 | <= 3.497 | no |
+| DIAGNOSTIC | outage_visual | Grand mean NEES, at least the lower bound | 1.803e+04 | >= 1.32 | yes |
+| DIAGNOSTIC | outage_visual | Pooled 2-sigma per-axis coverage | 12.99% | >= 95.00% | no |
+| DIAGNOSTIC | outage_visual | Runs where the candidate has the lower ATE | 8 | >= 20 | no |
+| DIAGNOSTIC | outage_visual | Median ATE ratio, candidate over control | 1.14 | <= 0.8 | no |
+| DIAGNOSTIC | outage_visual | Largest ATE ratio | 11.2 | <= 1.5 | no |
+| DIAGNOSTIC | outage_visual_clone | Grand mean NEES, at most the upper edge of the band | 3.592 | <= 3.284 | no |
+| DIAGNOSTIC | outage_visual_clone | Grand mean NEES, at least the lower bound | 3.592 | >= 1.32 | yes |
+| DIAGNOSTIC | outage_visual_clone | Pooled 2-sigma per-axis coverage | 93.23% | >= 95.00% | no |
 | DIAGNOSTIC | outage_visual_clone | Runs where the candidate has the lower ATE | 25 | >= 20 | yes |
-| DIAGNOSTIC | outage_visual_clone | Median ATE ratio, candidate over control | 0.07325 | <= 0.8 | yes |
-| DIAGNOSTIC | outage_visual_clone | Largest ATE ratio | 0.3923 | <= 1.5 | yes |
+| DIAGNOSTIC | outage_visual_clone | Median ATE ratio, candidate over control | 0.09655 | <= 0.8 | yes |
+| DIAGNOSTIC | outage_visual_clone | Largest ATE ratio | 0.5428 | <= 1.5 | yes |
 
 <!-- b1-gate-dev:end -->
 
@@ -359,51 +359,51 @@ navkit gate candidate --seeds 25-49 --csv docs/data/candidate_gate_dev.csv --pag
 
 | Role | Subject | Scenario | Seeds | Runs | Median n_eff (m) | Level of (U) | Holds in this scenario | Holds in both |
 |---|---|---|---|---:|---:|---:|---|---|
-| candidate | outage_visual+clone+measured-front-end | S1 | 25-49 | 25 | 4.3 | 0.975 | no | no |
-| candidate | outage_visual+clone+measured-front-end | S2 | 25-49 | 25 | 5.9 | 0.975 | yes | no |
-| DIAGNOSTIC | outage_visual_clone | S1 | 25-49 | 25 | 6.6 | 0.975 | no | no |
-| DIAGNOSTIC | outage_visual_clone | S2 | 25-49 | 25 | 6.8 | 0.975 | no | no |
+| candidate | outage_visual+clone+measured-front-end | S1 | 25-49 | 25 | 5.8 | 0.975 | no | no |
+| candidate | outage_visual+clone+measured-front-end | S2 | 25-49 | 25 | 10.9 | 0.975 | no | no |
+| DIAGNOSTIC | outage_visual_clone | S1 | 25-49 | 25 | 10.5 | 0.975 | yes | no |
+| DIAGNOSTIC | outage_visual_clone | S2 | 25-49 | 25 | 9.3 | 0.975 | no | no |
 | DIAGNOSTIC | outage_visual | S1 | 25-49 | 25 | 4.0 | 0.975 | no | no |
 | DIAGNOSTIC | outage_visual | S2 | 25-49 | 25 | 4.1 | 0.975 | no | no |
 
 | Role | Subject | Scenario | Condition | Value | Threshold | Holds |
 |---|---|---|---|---:|---:|---|
-| candidate | outage_visual+clone+measured-front-end | S1 | 90th percentile of the per-run mean NEES, at most the upper edge | 1.219 | <= 5.716 | yes |
-| candidate | outage_visual+clone+measured-front-end | S1 | Median of the per-run mean NEES, at least the lower bound | 0.7117 | >= 1.32 | no |
+| candidate | outage_visual+clone+measured-front-end | S1 | 90th percentile of the per-run mean NEES, at most the upper edge | 1.299 | <= 5.295 | yes |
+| candidate | outage_visual+clone+measured-front-end | S1 | Median of the per-run mean NEES, at least the lower bound | 0.5895 | >= 1.32 | no |
 | candidate | outage_visual+clone+measured-front-end | S1 | Pooled 2-sigma per-axis coverage | 100.00% | >= 95.00% | yes |
 | candidate | outage_visual+clone+measured-front-end | S1 | Runs where the candidate has the lower ATE | 25 | >= 20 | yes |
-| candidate | outage_visual+clone+measured-front-end | S1 | Median ATE ratio, candidate over control | 0.116 | <= 0.8 | yes |
-| candidate | outage_visual+clone+measured-front-end | S1 | Largest ATE ratio | 0.3733 | <= 1.5 | yes |
-| candidate | outage_visual+clone+measured-front-end | S2 | 90th percentile of the per-run mean NEES, at most the upper edge | 4.448 | <= 5.283 | yes |
-| candidate | outage_visual+clone+measured-front-end | S2 | Median of the per-run mean NEES, at least the lower bound | 2.918 | >= 1.32 | yes |
-| candidate | outage_visual+clone+measured-front-end | S2 | Pooled 2-sigma per-axis coverage | 97.17% | >= 95.00% | yes |
-| candidate | outage_visual+clone+measured-front-end | S2 | Runs where the candidate has the lower ATE | 20 | >= 20 | yes |
-| candidate | outage_visual+clone+measured-front-end | S2 | Median ATE ratio, candidate over control | 0.4389 | <= 0.8 | yes |
-| candidate | outage_visual+clone+measured-front-end | S2 | Largest ATE ratio | 1.192 | <= 1.5 | yes |
-| DIAGNOSTIC | outage_visual_clone | S1 | 90th percentile of the per-run mean NEES, at most the upper edge | 1.848 | <= 5.145 | yes |
-| DIAGNOSTIC | outage_visual_clone | S1 | Median of the per-run mean NEES, at least the lower bound | 0.9381 | >= 1.32 | no |
-| DIAGNOSTIC | outage_visual_clone | S1 | Pooled 2-sigma per-axis coverage | 100.00% | >= 95.00% | yes |
+| candidate | outage_visual+clone+measured-front-end | S1 | Median ATE ratio, candidate over control | 0.1364 | <= 0.8 | yes |
+| candidate | outage_visual+clone+measured-front-end | S1 | Largest ATE ratio | 0.6278 | <= 1.5 | yes |
+| candidate | outage_visual+clone+measured-front-end | S2 | 90th percentile of the per-run mean NEES, at most the upper edge | 12.22 | <= 4.619 | no |
+| candidate | outage_visual+clone+measured-front-end | S2 | Median of the per-run mean NEES, at least the lower bound | 6.632 | >= 1.32 | yes |
+| candidate | outage_visual+clone+measured-front-end | S2 | Pooled 2-sigma per-axis coverage | 84.38% | >= 95.00% | no |
+| candidate | outage_visual+clone+measured-front-end | S2 | Runs where the candidate has the lower ATE | 19 | >= 20 | no |
+| candidate | outage_visual+clone+measured-front-end | S2 | Median ATE ratio, candidate over control | 0.5786 | <= 0.8 | yes |
+| candidate | outage_visual+clone+measured-front-end | S2 | Largest ATE ratio | 3.582 | <= 1.5 | no |
+| DIAGNOSTIC | outage_visual_clone | S1 | 90th percentile of the per-run mean NEES, at most the upper edge | 4.241 | <= 4.65 | yes |
+| DIAGNOSTIC | outage_visual_clone | S1 | Median of the per-run mean NEES, at least the lower bound | 2.37 | >= 1.32 | yes |
+| DIAGNOSTIC | outage_visual_clone | S1 | Pooled 2-sigma per-axis coverage | 96.60% | >= 95.00% | yes |
 | DIAGNOSTIC | outage_visual_clone | S1 | Runs where the candidate has the lower ATE | 25 | >= 20 | yes |
-| DIAGNOSTIC | outage_visual_clone | S1 | Median ATE ratio, candidate over control | 0.07701 | <= 0.8 | yes |
-| DIAGNOSTIC | outage_visual_clone | S1 | Largest ATE ratio | 0.2554 | <= 1.5 | yes |
-| DIAGNOSTIC | outage_visual_clone | S2 | 90th percentile of the per-run mean NEES, at most the upper edge | 71.57 | <= 5.102 | no |
-| DIAGNOSTIC | outage_visual_clone | S2 | Median of the per-run mean NEES, at least the lower bound | 33.93 | >= 1.32 | yes |
-| DIAGNOSTIC | outage_visual_clone | S2 | Pooled 2-sigma per-axis coverage | 41.98% | >= 95.00% | no |
-| DIAGNOSTIC | outage_visual_clone | S2 | Runs where the candidate has the lower ATE | 19 | >= 20 | no |
-| DIAGNOSTIC | outage_visual_clone | S2 | Median ATE ratio, candidate over control | 0.5126 | <= 0.8 | yes |
-| DIAGNOSTIC | outage_visual_clone | S2 | Largest ATE ratio | 1.747 | <= 1.5 | no |
-| DIAGNOSTIC | outage_visual | S1 | 90th percentile of the per-run mean NEES, at most the upper edge | 1.886e+04 | <= 5.82 | no |
-| DIAGNOSTIC | outage_visual | S1 | Median of the per-run mean NEES, at least the lower bound | 8117 | >= 1.32 | yes |
-| DIAGNOSTIC | outage_visual | S1 | Pooled 2-sigma per-axis coverage | 14.10% | >= 95.00% | no |
+| DIAGNOSTIC | outage_visual_clone | S1 | Median ATE ratio, candidate over control | 0.1115 | <= 0.8 | yes |
+| DIAGNOSTIC | outage_visual_clone | S1 | Largest ATE ratio | 0.5568 | <= 1.5 | yes |
+| DIAGNOSTIC | outage_visual_clone | S2 | 90th percentile of the per-run mean NEES, at most the upper edge | 196.6 | <= 4.771 | no |
+| DIAGNOSTIC | outage_visual_clone | S2 | Median of the per-run mean NEES, at least the lower bound | 110.6 | >= 1.32 | yes |
+| DIAGNOSTIC | outage_visual_clone | S2 | Pooled 2-sigma per-axis coverage | 25.19% | >= 95.00% | no |
+| DIAGNOSTIC | outage_visual_clone | S2 | Runs where the candidate has the lower ATE | 15 | >= 20 | no |
+| DIAGNOSTIC | outage_visual_clone | S2 | Median ATE ratio, candidate over control | 0.7089 | <= 0.8 | yes |
+| DIAGNOSTIC | outage_visual_clone | S2 | Largest ATE ratio | 5.895 | <= 1.5 | no |
+| DIAGNOSTIC | outage_visual | S1 | 90th percentile of the per-run mean NEES, at most the upper edge | 1.879e+04 | <= 5.816 | no |
+| DIAGNOSTIC | outage_visual | S1 | Median of the per-run mean NEES, at least the lower bound | 8172 | >= 1.32 | yes |
+| DIAGNOSTIC | outage_visual | S1 | Pooled 2-sigma per-axis coverage | 13.76% | >= 95.00% | no |
 | DIAGNOSTIC | outage_visual | S1 | Runs where the candidate has the lower ATE | 4 | >= 20 | no |
-| DIAGNOSTIC | outage_visual | S1 | Median ATE ratio, candidate over control | 1.489 | <= 0.8 | no |
-| DIAGNOSTIC | outage_visual | S1 | Largest ATE ratio | 7.122 | <= 1.5 | no |
-| DIAGNOSTIC | outage_visual | S2 | 90th percentile of the per-run mean NEES, at most the upper edge | 2.399e+04 | <= 5.808 | no |
-| DIAGNOSTIC | outage_visual | S2 | Median of the per-run mean NEES, at least the lower bound | 1.226e+04 | >= 1.32 | yes |
-| DIAGNOSTIC | outage_visual | S2 | Pooled 2-sigma per-axis coverage | 12.52% | >= 95.00% | no |
+| DIAGNOSTIC | outage_visual | S1 | Median ATE ratio, candidate over control | 1.492 | <= 0.8 | no |
+| DIAGNOSTIC | outage_visual | S1 | Largest ATE ratio | 7.249 | <= 1.5 | no |
+| DIAGNOSTIC | outage_visual | S2 | 90th percentile of the per-run mean NEES, at most the upper edge | 2.104e+04 | <= 5.813 | no |
+| DIAGNOSTIC | outage_visual | S2 | Median of the per-run mean NEES, at least the lower bound | 1.043e+04 | >= 1.32 | yes |
+| DIAGNOSTIC | outage_visual | S2 | Pooled 2-sigma per-axis coverage | 18.13% | >= 95.00% | no |
 | DIAGNOSTIC | outage_visual | S2 | Runs where the candidate has the lower ATE | 4 | >= 20 | no |
-| DIAGNOSTIC | outage_visual | S2 | Median ATE ratio, candidate over control | 1.634 | <= 0.8 | no |
-| DIAGNOSTIC | outage_visual | S2 | Largest ATE ratio | 6.379 | <= 1.5 | no |
+| DIAGNOSTIC | outage_visual | S2 | Median ATE ratio, candidate over control | 1.585 | <= 0.8 | no |
+| DIAGNOSTIC | outage_visual | S2 | Largest ATE ratio | 6.528 | <= 1.5 | no |
 
 <!-- candidate-gate-dev:end -->
 

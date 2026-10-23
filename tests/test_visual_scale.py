@@ -376,11 +376,13 @@ def test_with_the_flag_on_the_run_statistics_report_both_blocks():
 
 
 # ``noise`` multiplies the generator's visual sigma, so the injected covariance is ``noise ** 2`` times the assumed one.
-# MEASUREMENT on seeds 0 to 4 of ``outage_visual_clone`` under the rule of ADR-0032 (every update counts), final
-# rotation / translation scale: factor 2.0: 3.5 to 3.75 / 1.28 to 1.52; 2.5: 4.7 to 5.0 / 1.83 to 2.17;
-# 3.0: 5.65 to 5.9 / 2.37 to 2.74; 4.0: 6.7 to 6.9 / 3.29 to 3.64. Under the rule of ADR-0031 (accepted updates
-# only) the rotation scale was stuck near 1 for factor 4 on every seed, for factor 3 on two seeds and for
-# factor 2.5 on one.
+# MEASUREMENT on seeds 0 to 4 of ``outage_visual_clone`` under the rule of ADR-0032 (every update counts) and the
+# per-axis translation noise of ADR-0033, final rotation / translation scale: factor 2.0: 3.47 to 3.75 / 3.48 to 3.66;
+# 2.5: 4.72 to 4.96 / 4.72 to 4.86; 3.0: 5.65 to 5.86 / 5.60 to 5.79; 4.0: 6.72 to 6.90 / 6.65 to 6.91. Before
+# ADR-0033 the generator drew a third of the declared translation variance, and the translation values were
+# 1.28 to 1.52, 1.83 to 2.17, 2.37 to 2.74 and 3.29 to 3.64; the rotation values were the same as now. Under the rule of
+# ADR-0031 (accepted updates only) the rotation scale was stuck near 1 for factor 4 on every seed, for factor 3 on two
+# seeds and for factor 2.5 on one.
 FACTORS = (2.0, 2.5, 3.0, 4.0)
 
 
@@ -389,7 +391,7 @@ def test_noise_larger_than_assumed_pushes_the_scale_above_one_in_order_of_the_fa
     finals = {k: _run(noise=k, seed=seed) for k in FACTORS}
     for block in ("rot", "trans"):
         values = [finals[k][f"vision_scale_{block}_final"] for k in FACTORS]
-        assert all(v > 1.0 for v in values), (block, values)  # the smallest measured is 1.28, a margin of about a fifth
+        assert all(v > 1.0 for v in values), (block, values)  # the smallest measured is 3.47
         assert values == sorted(values) and len(set(values)) == len(FACTORS), (block, values)  # monotone in the factor
         assert all(v <= 8.0 for v in values)  # s_max of the placeholder default
         for k in FACTORS:
@@ -406,14 +408,15 @@ def test_a_block_whose_updates_the_gate_used_to_reject_now_follows_the_noise(see
     With the visual sigma 2.5, 3 and 4 times the assumed one, the old rule left the rotation scale near 1 on the
     seeds where the gate rejected nearly every rotation update (at factor 4 it was at most 1.21 on all five seeds).
     Now the rejected updates enter the mean. The bounds below leave a margin of about a quarter under the smallest
-    measured values (4.7 at 2.5, 5.65 at 3, 6.7 at 4 for rotation; 1.83, 2.37 and 3.29 for translation). They do not
+    measured values (4.7 at 2.5, 5.65 at 3, 6.7 at 4 for rotation; 4.7, 5.6 and 6.65 for translation, under the
+    per-axis translation noise of ADR-0033; the translation bounds were 1.4, 1.8 and 2.5 under the earlier draw). They do not
     assert convergence to the injected variance (6.25, 9 and 16 times): ``d`` uses ``S0 = H P H^T + R0``, which includes
     the state uncertainty, so ``E[d]`` is below the true ratio when ``P`` is not small, and the scale is capped at
     ``s_max`` besides.
     """
     runs = {k: _run(noise=k, seed=seed) for k in (2.5, 3.0, 4.0)}
     lower_rot = {2.5: 3.5, 3.0: 4.2, 4.0: 5.0}
-    lower_trans = {2.5: 1.4, 3.0: 1.8, 4.0: 2.5}
+    lower_trans = {2.5: 3.5, 3.0: 4.2, 4.0: 5.0}
     for k, stats in runs.items():
         assert stats["vision_scale_rot_final"] > lower_rot[k], (k, stats["vision_scale_rot_final"])
         assert stats["vision_scale_trans_final"] > lower_trans[k], (k, stats["vision_scale_trans_final"])
@@ -446,13 +449,21 @@ def test_with_matched_noise_the_rotation_scale_stays_near_one(seed):
 
 
 @pytest.mark.parametrize("seed", range(5))
-def test_with_matched_noise_the_translation_scale_goes_to_its_lower_bound(seed):
-    """MEASUREMENT on seeds 0 to 4: the translation scale ends at the lower bound (0.5) on every seed, so the
-    translation updates of the clone are smaller than the declared noise says even when the generator injects exactly
-    that noise. This is the conservatism that issue #44 reports for the plain clone, seen in the innovations. A test
-    that fails here means the behaviour changed, not that a number is wrong."""
+def test_with_matched_noise_the_translation_scale_stays_near_one(seed):
+    """MEASUREMENT on seeds 0 to 4, with the per-axis translation noise of ADR-0033: the translation scale ends between
+    0.94 and 1.02, and over a whole run stays between 0.85 and 1.10, as the rotation scale does.
+
+    What this test pinned before: the translation scale ended at the lower bound (0.5) on every seed. That was not a
+    property of the filter. The generator drew the translation noise with a third of the variance that the stream
+    declares and the filter assumes (a random unit direction times one scalar), so the innovations were three times
+    smaller than the declared noise and the scale went to its lower bound. Issue #44 reported this as conservatism of
+    the plain clone. ADR-0033 draws each axis with the declared standard deviation, and the scale now stays near one.
+
+    The tolerance is the one of the rotation test: a margin of about a quarter either side of one. The measured spread
+    is about plus or minus 0.1, so the margin is more than twice the spread."""
     stats = _run(seed=seed)
-    assert 0.5 <= stats["vision_scale_trans_final"] <= 0.6
+    assert 0.8 <= stats["vision_scale_trans_final"] <= 1.25
+    assert stats["vision_scale_trans_min"] >= 0.75 and stats["vision_scale_trans_max"] <= 1.4
 
 
 def test_a_gate_rejected_update_does_enter_the_mean_and_is_counted():
