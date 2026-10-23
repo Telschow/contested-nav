@@ -129,8 +129,10 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 **The adaptive visual noise scale.** With `vision_adaptive_scale` on, the stochastic clone multiplies the covariance of
 its visual measurement by one scalar for the rotation block and one for the translation block
 ([ADR-0031](adr/0031-an-adaptive-visual-noise-scale.md)). Each scalar is a moving average of how large the block's
-innovations are against the declared noise. It is bounded, and it is updated only from visual updates that the gate
-accepted. It is a catch-all for model error in the visual channel, which includes visual errors correlated over time and
+innovations are against the declared noise. It is bounded, and every visual update contributes to it, whether the gate
+accepted the update or not, with each contribution capped at the upper bound
+([ADR-0032](adr/0032-the-adaptive-visual-scale-takes-every-visual-update.md)); the run statistics count the rejected
+updates that entered. It is a catch-all for model error in the visual channel, which includes visual errors correlated over time and
 the conservatism of the clone. It is not an estimate of the sensor's noise. It is off by default, applies only to the
 clone, and the run statistics report its mean, minimum, maximum and final values. A larger scale also lets larger
 innovations through the gate, which can hide a visual fault, so its effect on fault detection is measured before any

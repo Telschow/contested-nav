@@ -417,7 +417,8 @@ class EskfConfig:
     #: An adaptive scale on the clone's visual measurement covariance (ADR-0031), one scalar for the rotation block and
     #: one for the translation block. Off by default; with it off every output is byte-identical to the previous
     #: behaviour. It applies only to ``vision_model="clone"`` and is not used together with a noise preset. The scale
-    #: is a catch-all for model error in the visual channel, not an estimate of the sensor's noise.
+    #: is a catch-all for model error in the visual channel, not an estimate of the sensor's noise. Every visual update
+    #: contributes to it, whether the gate accepted the update or not (ADR-0032).
     vision_adaptive_scale: bool = False
     #: The forgetting time of the scale, in seconds. PLACEHOLDER: the default is one point of the grid that ADR-0031
     #: fixes, and the tuning package decides it.
@@ -1213,23 +1214,33 @@ class ErrorStateKalmanFilter:
 
     @staticmethod
     def _scale_statistic(x: FilterState, y: np.ndarray, H: np.ndarray, R0: np.ndarray) -> float:
-        """``d = y^T S0^-1 y / 3`` with ``S0 = H P H^T + R0`` and ``R0`` the base (unscaled) covariance (ADR-0031)."""
+        """``d = y^T S0^-1 y / 3`` with ``S0 = H P H^T + R0`` and ``R0`` the base (unscaled) covariance (ADR-0031).
+
+        ``NaN`` when ``S0`` cannot be inverted: the update is then skipped by :meth:`_scale_after` and a run never
+        raises for it (ADR-0032).
+        """
         S0 = H @ x["P"] @ H.T + R0
-        return float(y @ np.linalg.solve(S0, y)) / 3.0
+        try:
+            return float(y @ np.linalg.solve(S0, y)) / 3.0
+        except np.linalg.LinAlgError:
+            return float("nan")
 
     @staticmethod
     def _scale_after(scale: VisualScale, d: float, t_s: float, accepted: bool) -> None:
-        """Give one block's ``d`` to its scale after the update, with ``accepted`` as ``_update`` returned it.
+        """Give one block's ``d`` to its scale after the update. Every visual update counts (ADR-0032).
 
-        ``accepted`` means the update passed the chi-square gate. ADR-0031 asks for updates that were also not
-        inflated by an FDIR grant. Inflation is only ever granted for GNSS (``_FDIR_INFLATION_BLOCK`` has no visual
-        entry), so for the visual channel an accepted update is never an inflated one and the two are the same.
+        ``accepted`` is the gate's decision, as ``_update`` returned it. It is not a condition: a rejected update
+        enters the mean like any other and is only counted (``n_rejected_used``), so the run statistics show how much
+        of the adaptation came from updates the gate rejected. A ``d`` that is not finite, because the innovation
+        covariance was not usable, is skipped and counted (``n_skipped_nonfinite``): the scale holds, its time is not
+        recorded, and nothing is raised inside a run.
         """
         if not math.isfinite(d):
-            if accepted:  # pragma: no cover - an accepted update has a finite innovation covariance
-                raise ValueError(f"an accepted visual update has a non-finite scale statistic: {d!r}")
+            scale.skip_nonfinite()
             return
-        scale.update(d, t_s, accepted)
+        scale.update(d, t_s)
+        if not accepted:
+            scale.mark_rejected_used()
 
     # -- main loop -----------------------------------------------------------
 
@@ -1388,6 +1399,11 @@ class ErrorStateKalmanFilter:
                 stats[f"vision_scale_{label}_final"] = float(sc.value)
             stats["vision_scale_updates_used"] = float(self._vision_scales[0].n_used)
             stats["vision_scale_trans_updates_used"] = float(self._vision_scales[1].n_used)
+            stats["vision_scale_rot_rejected_used"] = float(self._vision_scales[0].n_rejected_used)
+            stats["vision_scale_trans_rejected_used"] = float(self._vision_scales[1].n_rejected_used)
+            stats["vision_scale_skipped_nonfinite"] = float(
+                self._vision_scales[0].n_skipped_nonfinite + self._vision_scales[1].n_skipped_nonfinite
+            )
         traj.metadata["sigma_p"] = sigma_p
         traj.metadata["gnss_innovations"] = self.gnss_innovations
         traj.metadata["bias_log"] = self.bias_log

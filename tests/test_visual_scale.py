@@ -10,6 +10,7 @@ Only development seeds are used (0 to 4).
 from __future__ import annotations
 
 import copy
+import inspect
 import math
 
 import numpy as np
@@ -18,7 +19,7 @@ import yaml
 
 from navkit import benchmark as bm
 from navkit.degrade import scenario_from_dict
-from navkit.estimators.eskf import EskfConfig
+from navkit.estimators.eskf import ErrorStateKalmanFilter, EskfConfig
 from navkit.estimators.visual_scale import VisualScale
 from navkit.io.imu import ImuNoiseModel
 
@@ -31,59 +32,82 @@ def _scale(tau: float = 2.0, lo: float = 0.1, hi: float = 10.0) -> VisualScale:
 
 def test_it_starts_at_one_with_nothing_seen():
     s = _scale()
-    assert s.value == 1.0 and s.n_used == 0
+    assert s.value == 1.0 and s.n_used == 0 and s.n_rejected_used == 0 and s.n_skipped_nonfinite == 0
     assert s.mean == 1.0 and s.min_seen == 1.0 and s.max_seen == 1.0
+
+
+def test_update_takes_a_statistic_and_a_time_and_no_gate_decision():
+    """ADR-0032: every visual update contributes, so the gate's decision is not an argument."""
+    assert list(inspect.signature(VisualScale.update).parameters) == ["self", "d", "t_s"]
 
 
 def test_a_constant_d_at_a_fixed_dt_follows_the_formula_exactly():
     k, dt, tau = 3.0, 0.1, 2.0
     s = _scale(tau)
-    s.update(k, 0.0, True)  # the first accepted update only records the time
+    s.update(k, 0.0)  # the first update only records the time
     assert s.value == 1.0
     w = 1.0 - math.exp(-dt / tau)
     for n in range(1, 40):
-        s.update(k, n * dt, True)
+        s.update(k, n * dt)
         assert s.value == pytest.approx(k + (1.0 - k) * (1.0 - w) ** n, rel=1e-12, abs=1e-12)
 
 
-def test_the_first_accepted_update_does_not_move_the_scale_but_is_counted():
+def test_the_first_update_does_not_move_the_scale_but_is_counted():
     s = _scale()
-    s.update(50.0, 7.0, True)
+    s.update(5.0, 7.0)
     assert s.value == 1.0 and s.n_used == 1
 
 
-def test_the_weight_depends_on_the_time_since_the_previous_accepted_update():
+def test_the_weight_depends_on_the_time_since_the_previous_update():
     a, b = _scale(tau=5.0), _scale(tau=5.0)
-    a.update(1.0, 0.0, True)
-    a.update(4.0, 1.0, True)
-    b.update(1.0, 0.0, True)
-    b.update(4.0, 10.0, True)
+    a.update(1.0, 0.0)
+    a.update(4.0, 1.0)
+    b.update(1.0, 0.0)
+    b.update(4.0, 10.0)
     assert a.value == pytest.approx(1.0 + (1.0 - math.exp(-1.0 / 5.0)) * 3.0)
     assert b.value == pytest.approx(1.0 + (1.0 - math.exp(-10.0 / 5.0)) * 3.0)
     assert b.value > a.value
 
 
-def test_a_rejected_update_changes_nothing_not_even_the_time():
-    s, ref = _scale(), _scale()
-    for x in (s, ref):
-        x.update(2.0, 0.0, True)
-    s.update(1000.0, 1.0, False)
-    assert (s.value, s.n_used, s.mean, s.min_seen, s.max_seen) == (
-        ref.value,
-        ref.n_used,
-        ref.mean,
-        ref.min_seen,
-        ref.max_seen,
-    )
-    s.update(3.0, 2.0, True)
-    ref.update(3.0, 2.0, True)  # dt is from the previous ACCEPTED update at 0.0, in both
-    assert s.value == ref.value
+def test_a_d_above_s_max_enters_as_s_max():
+    big, capped = _scale(tau=1.0, lo=0.5, hi=8.0), _scale(tau=1.0, lo=0.5, hi=8.0)
+    for x in (big, capped):
+        x.update(1.0, 0.0)
+    for i in range(1, 6):
+        big.update(100.0, float(i))
+        capped.update(8.0, float(i))
+    assert big.value == capped.value and big.mean == capped.mean and big.max_seen == capped.max_seen
+
+
+def test_the_cap_applies_before_the_average_and_not_only_to_the_state():
+    """With s_max = 8 a single d of 1000 must move the scale by w * (8 - s), not by w * (1000 - s)."""
+    s = _scale(tau=1.0, lo=0.5, hi=8.0)
+    s.update(1.0, 0.0)
+    s.update(1000.0, 1.0)
+    w = 1.0 - math.exp(-1.0)
+    assert s.value == pytest.approx(1.0 + w * (8.0 - 1.0))
+    assert s.value < 8.0  # the state was not simply clipped from a huge step
+
+
+def test_a_d_below_s_min_enters_uncapped_and_only_the_state_is_clipped():
+    low, at_min = _scale(tau=2.0, lo=0.5, hi=8.0), _scale(tau=2.0, lo=0.5, hi=8.0)
+    for x in (low, at_min):
+        x.update(1.0, 0.0)
+    low.update(0.0, 1.0)  # d is not floored at s_min ...
+    at_min.update(0.5, 1.0)
+    w = 1.0 - math.exp(-0.5)
+    assert low.value == pytest.approx(1.0 + w * (0.0 - 1.0))
+    assert at_min.value == pytest.approx(1.0 + w * (0.5 - 1.0))
+    assert low.value < at_min.value
+    for i in range(2, 80):  # ... but the stored state never leaves the interval
+        low.update(0.0, float(i))
+    assert low.value == 0.5 and low.min_seen == 0.5
 
 
 def test_with_no_update_the_scale_is_held():
     s = _scale()
-    s.update(1.0, 0.0, True)
-    s.update(4.0, 1.0, True)
+    s.update(1.0, 0.0)
+    s.update(4.0, 1.0)
     before = (s.value, s.n_used, s.mean, s.min_seen, s.max_seen)
     for _ in range(5):  # reading it any number of times changes nothing: there is no clock inside the estimator
         assert (s.value, s.n_used, s.mean, s.min_seen, s.max_seen) == before
@@ -91,52 +115,100 @@ def test_with_no_update_the_scale_is_held():
 
 def test_the_scale_is_clipped_to_the_interval():
     s = _scale(tau=1.0, lo=0.5, hi=4.0)
-    s.update(100.0, 0.0, True)
+    s.update(100.0, 0.0)
     for i in range(1, 60):
-        s.update(100.0, float(i), True)
+        s.update(100.0, float(i))
     assert s.value == 4.0 and s.max_seen == 4.0
     low = _scale(tau=1.0, lo=0.5, hi=4.0)
-    low.update(0.0, 0.0, True)
+    low.update(0.0, 0.0)
     for i in range(1, 60):
-        low.update(0.0, float(i), True)
+        low.update(0.0, float(i))
     assert low.value == 0.5 and low.min_seen == 0.5
 
 
 def test_there_is_no_wind_up_after_a_long_stay_at_a_bound():
     s = _scale(tau=1.0, lo=0.5, hi=4.0)
-    s.update(1000.0, 0.0, True)
+    s.update(1000.0, 0.0)
     for i in range(1, 300):
-        s.update(1000.0, float(i), True)
+        s.update(1000.0, float(i))
     assert s.value == 4.0
-    s.update(1.0, 300.0, True)  # one tau later: it must move at once, not stay pinned by hidden state
+    s.update(1.0, 300.0)  # one tau later: it must move at once, not stay pinned by hidden state
     assert s.value == pytest.approx(4.0 + (1.0 - math.exp(-1.0)) * (1.0 - 4.0))
     assert s.value < 4.0
 
 
-def test_the_running_statistics_are_over_the_accepted_updates():
+def test_the_running_statistics_are_over_every_update():
     s = _scale(tau=1.0, lo=0.1, hi=100.0)
     seen = []
     for i, d in enumerate((1.0, 4.0, 4.0, 0.5)):
-        s.update(d, float(i), True)
+        s.update(d, float(i))
         seen.append(s.value)
-    s.update(99.0, 10.0, False)
     assert s.n_used == 4
     assert s.mean == pytest.approx(float(np.mean(seen)))
     assert s.min_seen == min(seen) and s.max_seen == max(seen)
 
 
+def test_the_two_side_counters_start_at_zero_and_count_when_told():
+    s = _scale()
+    s.mark_rejected_used()
+    s.mark_rejected_used()
+    s.skip_nonfinite()
+    assert (s.n_rejected_used, s.n_skipped_nonfinite) == (2, 1)
+    assert s.n_used == 0 and s.value == 1.0  # counting does not touch the scale
+
+
 @pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
-def test_a_non_finite_d_raises(bad):
-    for accepted in (True, False):
-        with pytest.raises(ValueError, match="finite"):
-            _scale().update(bad, 0.0, accepted)
+def test_a_non_finite_d_passed_to_the_class_raises(bad):
+    with pytest.raises(ValueError, match="finite"):
+        _scale().update(bad, 0.0)
 
 
 def test_time_must_not_go_backwards():
     s = _scale()
-    s.update(1.0, 5.0, True)
+    s.update(1.0, 5.0)
     with pytest.raises(ValueError, match="time"):
-        s.update(1.0, 4.0, True)
+        s.update(1.0, 4.0)
+
+
+# --------------------------------------------------------------------------- the helpers in the filter
+
+
+def test_a_gate_rejected_update_enters_the_mean_and_is_counted_as_such():
+    scale = VisualScale(2.0, 0.1, 10.0)
+    ErrorStateKalmanFilter._scale_after(scale, 1.0, 0.0, True)
+    ErrorStateKalmanFilter._scale_after(scale, 6.0, 1.0, False)  # the gate rejected this one
+    ErrorStateKalmanFilter._scale_after(scale, 6.0, 2.0, True)
+    assert scale.n_used == 3 and scale.n_rejected_used == 1
+    assert scale.value > 1.0  # the rejected update moved it
+    ref = VisualScale(2.0, 0.1, 10.0)
+    for t, d in ((0.0, 1.0), (1.0, 6.0), (2.0, 6.0)):
+        ref.update(d, t)
+    assert scale.value == ref.value  # exactly as if the gate decision did not exist
+
+
+def test_an_unusable_innovation_covariance_is_skipped_counted_and_never_raises():
+    scale = VisualScale(2.0, 0.1, 10.0)
+    ErrorStateKalmanFilter._scale_after(scale, 3.0, 0.0, True)
+    ErrorStateKalmanFilter._scale_after(scale, 4.0, 1.0, True)
+    held = (scale.value, scale.n_used)
+    for accepted in (True, False):
+        ErrorStateKalmanFilter._scale_after(scale, float("nan"), 2.0, accepted)
+        ErrorStateKalmanFilter._scale_after(scale, float("inf"), 2.5, accepted)
+    assert (scale.value, scale.n_used) == held
+    assert scale.n_skipped_nonfinite == 4 and scale.n_rejected_used == 0
+    # the time of a skipped update is not recorded: the next update is weighted from t = 1, not from t = 2.5
+    ref = VisualScale(2.0, 0.1, 10.0)
+    ref.update(3.0, 0.0)
+    ref.update(4.0, 1.0)
+    ErrorStateKalmanFilter._scale_after(scale, 5.0, 3.0, True)
+    ref.update(5.0, 3.0)
+    assert scale.value == ref.value
+
+
+def test_a_singular_innovation_covariance_gives_a_non_finite_statistic_and_not_an_exception():
+    x = {"P": np.zeros((21, 21))}
+    d = ErrorStateKalmanFilter._scale_statistic(x, np.ones(3), np.zeros((3, 21)), np.zeros((3, 3)))  # type: ignore[arg-type]
+    assert not math.isfinite(d)
 
 
 _NAN, _INF = float("nan"), float("inf")
@@ -303,45 +375,55 @@ def test_with_the_flag_on_the_run_statistics_report_both_blocks():
         )
 
 
-# The factors below are inside the range in which the scale can follow the noise. ``noise`` multiplies the generator's
-# visual sigma, so the injected covariance is ``noise ** 2`` times the assumed one. MEASUREMENT on seeds 0 to 4 of
-# ``outage_visual_clone``: at a factor of 2.0 the rotation scale ends between 3.7 and 4.0, at 2.25 between 4.6 and 5.1;
-# at 2.5 four seeds end between 5.0 and 6.3 and one is stuck near 1. See the limit test below.
-IN_RANGE = (2.0, 2.25, 2.5)
+# ``noise`` multiplies the generator's visual sigma, so the injected covariance is ``noise ** 2`` times the assumed one.
+# MEASUREMENT on seeds 0 to 4 of ``outage_visual_clone`` under the rule of ADR-0032 (every update counts), final
+# rotation / translation scale: factor 2.0: 3.5 to 3.75 / 1.28 to 1.52; 2.5: 4.7 to 5.0 / 1.83 to 2.17;
+# 3.0: 5.65 to 5.9 / 2.37 to 2.74; 4.0: 6.7 to 6.9 / 3.29 to 3.64. Under the rule of ADR-0031 (accepted updates
+# only) the rotation scale was stuck near 1 for factor 4 on every seed, for factor 3 on two seeds and for
+# factor 2.5 on one.
+FACTORS = (2.0, 2.5, 3.0, 4.0)
 
 
 @pytest.mark.parametrize("seed", [0, 1])
 def test_noise_larger_than_assumed_pushes_the_scale_above_one_in_order_of_the_factor_and_within_the_bound(seed):
-    finals = {k: _run(noise=k, seed=seed) for k in IN_RANGE}
+    finals = {k: _run(noise=k, seed=seed) for k in FACTORS}
     for block in ("rot", "trans"):
-        values = [finals[k][f"vision_scale_{block}_final"] for k in IN_RANGE]
-        # The translation block starts from a conservative baseline (its scale sits near the lower bound at matched
-        # noise, see below), so it needs the larger factors to pass one. The rotation block passes one at every factor.
-        above_one = values if block == "rot" else values[1:]
-        assert all(v > 1.0 for v in above_one), (block, values)
-        assert all(v > 0.5 for v in values), (block, values)
-        assert values == sorted(values) and len(set(values)) == len(IN_RANGE), (block, values)  # monotone in the factor
+        values = [finals[k][f"vision_scale_{block}_final"] for k in FACTORS]
+        assert all(v > 1.0 for v in values), (block, values)  # the smallest measured is 1.28, a margin of about a fifth
+        assert values == sorted(values) and len(set(values)) == len(FACTORS), (block, values)  # monotone in the factor
         assert all(v <= 8.0 for v in values)  # s_max of the placeholder default
-        for k in IN_RANGE:
+        for k in FACTORS:
             assert finals[k][f"vision_scale_{block}_max"] <= 8.0
     # The base covariance is used for d (not the scaled one): with the scaled one the fixed point of the scale would be
-    # about the factor, not its square, and a factor of 2 would end near 2 instead of near 4.
+    # about the factor, not its square, and a factor of 2 would end near 2 instead of near 3.5.
     assert finals[2.0]["vision_scale_rot_final"] > 3.0
 
 
-def test_a_block_whose_updates_the_gate_rejects_cannot_raise_its_own_scale():
-    """The limit of the rule 'only accepted innovations enter the mean' (ADR-0031), as measured.
+@pytest.mark.parametrize("seed", range(5))
+def test_a_block_whose_updates_the_gate_used_to_reject_now_follows_the_noise(seed):
+    """The opposite of the censoring that ADR-0031 had and ADR-0032 removes.
 
-    With the visual sigma three or four times the assumed one, the chi-square gate rejects nearly every rotation
-    update (FDIR declares the channel faulted), so the rotation scale sees a handful of updates and stays near 1. The
-    translation block, whose updates are not rejected, does adapt. The scale follows the noise inside the gate's capture
-    range and not outside it.
+    With the visual sigma 2.5, 3 and 4 times the assumed one, the old rule left the rotation scale near 1 on the
+    seeds where the gate rejected nearly every rotation update (at factor 4 it was at most 1.21 on all five seeds).
+    Now the rejected updates enter the mean. The bounds below leave a margin of about a quarter under the smallest
+    measured values (4.7 at 2.5, 5.65 at 3, 6.7 at 4 for rotation; 1.83, 2.37 and 3.29 for translation). They do not
+    assert convergence to the injected variance (6.25, 9 and 16 times): ``d`` uses ``S0 = H P H^T + R0``, which includes
+    the state uncertainty, so ``E[d]`` is below the true ratio when ``P`` is not small, and the scale is capped at
+    ``s_max`` besides.
     """
-    for k in (3.0, 4.0):
-        stats = _run(noise=k, seed=0)
-        assert stats["vision_scale_updates_used"] < 10, k  # the rotation block saw almost nothing
-        assert stats["vision_scale_rot_final"] < 1.5, k
-        assert stats["vision_scale_trans_final"] > 2.0, k
+    runs = {k: _run(noise=k, seed=seed) for k in (2.5, 3.0, 4.0)}
+    lower_rot = {2.5: 3.5, 3.0: 4.2, 4.0: 5.0}
+    lower_trans = {2.5: 1.4, 3.0: 1.8, 4.0: 2.5}
+    for k, stats in runs.items():
+        assert stats["vision_scale_rot_final"] > lower_rot[k], (k, stats["vision_scale_rot_final"])
+        assert stats["vision_scale_trans_final"] > lower_trans[k], (k, stats["vision_scale_trans_final"])
+    for block in ("rot", "trans"):
+        values = [runs[k][f"vision_scale_{block}_final"] for k in (2.5, 3.0, 4.0)]
+        assert values == sorted(values) and len(set(values)) == 3, (block, values)
+    # the adaptation came, in part, from updates the gate had rejected, and the statistics say so
+    assert runs[4.0]["vision_scale_rot_rejected_used"] > 20
+    assert runs[4.0]["vision_scale_rot_rejected_used"] < runs[4.0]["vision_scale_updates_used"]
+    assert runs[4.0]["vision_scale_skipped_nonfinite"] == 0
 
 
 def test_noise_smaller_than_assumed_pushes_the_scale_below_one_and_not_below_the_minimum():
@@ -354,8 +436,10 @@ def test_noise_smaller_than_assumed_pushes_the_scale_below_one_and_not_below_the
 
 @pytest.mark.parametrize("seed", range(5))
 def test_with_matched_noise_the_rotation_scale_stays_near_one(seed):
-    """MEASUREMENT on seeds 0 to 4: the rotation scale ends between 0.92 and 1.01, and over a whole run it stays
-    between 0.86 and 1.15. The band below keeps a margin of about a quarter on either side of one."""
+    """MEASUREMENT on seeds 0 to 4. Rule of ADR-0031: the rotation scale ended between 0.92 and 1.01, and over a whole
+    run it stayed between 0.86 and 1.15. Rule of ADR-0032: it ends between 0.95 and 1.04 and over a whole run stays
+    between 0.86 and 1.15. The measured band did not leave the tolerance, so the tolerance is unchanged: a margin of
+    about a quarter on either side of one."""
     stats = _run(seed=seed)
     assert 0.8 <= stats["vision_scale_rot_final"] <= 1.25
     assert stats["vision_scale_rot_min"] >= 0.75 and stats["vision_scale_rot_max"] <= 1.4
@@ -371,13 +455,22 @@ def test_with_matched_noise_the_translation_scale_goes_to_its_lower_bound(seed):
     assert 0.5 <= stats["vision_scale_trans_final"] <= 0.6
 
 
-def test_a_rejected_update_does_not_enter_the_mean():
+def test_a_gate_rejected_update_does_enter_the_mean_and_is_counted():
     stats = _run(case="outage_visual_clone_outliers")
     updates = stats["vision_updates_used"] + stats["vision_updates_rejected"]
     assert stats["vision_updates_rejected"] > 0, (
         "the case must produce rejected visual updates for this test to mean anything"
     )
-    assert stats["vision_scale_updates_used"] < updates
+    assert stats["vision_scale_updates_used"] == updates  # every visual update reached the rotation scale
+    assert stats["vision_scale_rot_rejected_used"] > 0
+    assert stats["vision_scale_trans_rejected_used"] > 0
+    assert stats["vision_scale_skipped_nonfinite"] == 0
+
+
+def test_with_the_flag_off_the_new_statistics_are_absent_too():
+    stats = _run(adaptive=False)
+    for key in ("vision_scale_rot_rejected_used", "vision_scale_trans_rejected_used", "vision_scale_skipped_nonfinite"):
+        assert key not in stats
 
 
 def test_the_run_is_deterministic():
