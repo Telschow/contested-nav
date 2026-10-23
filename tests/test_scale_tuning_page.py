@@ -190,12 +190,10 @@ def test_the_section_says_what_the_outcome_does_not_show(section):
         assert phrase in section, phrase
 
 
-def test_the_section_makes_no_claim_about_b1_and_has_no_dash_or_hiring_language(section):
+def test_the_section_makes_no_claim_about_b1_and_has_no_dash(section):
+    # The framing guard (test_framing.py) already covers the wording of every tracked file, this section included.
     assert "B1" not in section
     assert chr(0x2014) not in section and chr(0x2013) not in section
-    lowered = section.lower()
-    for word in ("hiring", "interview", "portfolio", "showcase", "job"):
-        assert word not in lowered
 
 
 def test_the_section_links_the_csv_and_the_two_adrs(section):
