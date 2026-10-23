@@ -412,6 +412,25 @@ def test_the_rule_reads_only_the_fix_flag():
     assert ud.outage_intervals(a) == ud.outage_intervals(b)
 
 
+def test_the_outage_rule_is_pinned_so_that_a_change_to_find_an_outage_in_a_sequence_fails_here():
+    """Issue 95: the rule is not tuned to a sequence. These are its constants and its edges, as written down first."""
+    assert ud.GAP_FACTOR == 1.5
+    # a gap of 1.4 spacings is not an outage, a gap of 1.6 spacings is (many epochs, so the median spacing is 1)
+    base = [float(x) for x in range(10)]
+    assert ud.outage_intervals(_fixes([2] * 11, times=[*base, 9.0 + 1.4])) == []
+    assert ud.outage_intervals(_fixes([2] * 11, times=[*base, 9.0 + 1.6])) == [(10.0, 10.6)]
+
+
+def test_a_stream_of_valid_but_degraded_fixes_has_no_outage_whatever_the_receiver_says_about_them():
+    """The Deep-Urban-1 shape: every fix flagged valid, some with few satellites and a poor HDOP. No outage."""
+    fx = _fixes([2] * 60)
+    fx.num_sats[::5] = 4
+    fx.hdop[::5] = 9.0
+    assert ud.outage_intervals(fx) == []
+    fx.quality[::7] = 1  # another valid code
+    assert ud.outage_intervals(fx) == []
+
+
 def test_a_missing_nmea_file_says_where_it_goes(tmp_path):
     with pytest.raises(SequenceError, match="copy it here"):
         ud.load_gga(tmp_path, SEQ)

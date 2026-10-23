@@ -488,7 +488,8 @@ def run_sequence(
     treats it), for replaying errors measured on a real front end. ``gnss_override`` replaces the simulated GNSS
     with a receiver's own fixes on the filter's clock: only the fixes inside the window are used, a missing epoch is
     an outage, and ``RunOptions.outages`` is then used only to summarise the error around them. ``detail_out``, when
-    given, receives ``est``, ``reference`` (on the estimate's times) and ``position_cov``, for scoring axes separately.
+    given, receives ``est``, ``reference`` (on the estimate's times), ``position_cov`` and ``rotation_cov`` (the
+    attitude block, for a right perturbation), for scoring axes and the attitude separately.
     """
     opts = opts or RunOptions()
     mode = opts.init_bias or ("truth" if seq.bias_known else "static")
@@ -588,7 +589,12 @@ def run_sequence(
     headline_ate = ate["none"]
     ref_on_est = interpolate_trajectory(reference, est.t)
     if detail_out is not None:
-        detail_out.update(est=est, reference=ref_on_est, position_cov=result.position_cov)
+        detail_out.update(
+            est=est,
+            reference=ref_on_est,
+            position_cov=result.position_cov,
+            rotation_cov=est.metadata.get("rotation_cov"),
+        )
 
     record: dict[str, Any] = {
         "name": f"{seq.slug}_{seq.name}",
