@@ -30,10 +30,14 @@
 - **The filter is still overconfident under visual aiding.** Over the GNSS outage window, `outage_visual`
   has a mean NEES of <!-- metric:outage_visual_window_nees -->2783.3<!-- /metric --> against a nominal 3 and a
   2σ coverage of <!-- metric:outage_visual_window_coverage_percent -->5.0<!-- /metric -->% where the SRS requires
-  95% (AC-04) and the roadmap gate for turning vision on is above 90%. The full-run values are in the table in
+  95% (AC-04). The old single-run bar for turning vision on is superseded: [ADR-0028](adr/0028-the-b1-gate.md) and
+  [ADR-0030](adr/0030-the-gate-for-the-next-visual-update-candidate.md) govern the gate, and the B1 status is in
+  CONSTRAINTS.md. The full-run values are in the table in
   the [README](https://github.com/Telschow/contested-nav/blob/main/README.md). It converges and
-  is confidently wrong. This is blocker B1, and it is a pose-graph problem that
-  no threshold in the FDIR subsystem will move. In the seed, outage and scene sweeps it held in every run (measured once on one machine, not checked by CI, at
+  is confidently wrong. This is blocker B1. The single anchor is structurally wrong. The stochastic clone is
+  consistent for independent visual errors in the synthetic scenario on the development seeds. Visual errors that are
+  correlated over time are the open part of B1 (scenario S2 of ADR-0030). No threshold in the FDIR subsystem will move
+  it. In the seed, outage and scene sweeps it held in every run (measured once on one machine, not checked by CI, at
   946d661).
 
 - **ADR-0008 frozen-anchor cross-check: implemented but unreachable under the

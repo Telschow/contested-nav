@@ -137,7 +137,8 @@ verified here. They are cited only as reported in a peer-reviewed review.
 <a id="s9"></a>
 ## S9: BlackNaute resilient PNT
 
-*Safran. Press release, June 2025. See also the company's resilient-PNT explainer.*
+*Safran. Press release on the BlackNaute resilient-PNT product, 16 June 2025 (date as given in the URL).
+Company explainer page on resilient PNT, undated.*
 Type: `VENDOR`
 
 Used to support: that resilient PNT is a marketed commercial product category.

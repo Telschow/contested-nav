@@ -4,7 +4,7 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: <!-- metric:tests_collected -->2220<!-- /metric --> tests collected, all of which pass except the deliberate
+Last measured: <!-- metric:tests_collected -->2228<!-- /metric --> tests collected, all of which pass except the deliberate
 xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->94.3<!-- /metric -->%
 line coverage (<!-- metric:coverage_lines_hit -->10033<!-- /metric -->/<!-- metric:coverage_lines_total -->10638<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
@@ -91,7 +91,7 @@ the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
 
 | Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | <!-- metric:tests_collected -->2220<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | <!-- metric:tests_collected -->2228<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
 | Line coverage | 75% | <!-- metric:coverage_percent -->94.3<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
@@ -132,17 +132,23 @@ Status: open. The gate of ADR-0028 failed on the held-out seeds 100 to 124 for t
   [`docs/data/b1_gate_heldout.csv`](docs/data/b1_gate_heldout.csv). The status block above is generated from that file
   by `scripts/render_b1_heldout.py` and checked by a test.
 
-  History, dated 2026-10. The gate described below (mean NEES under 10 and 2-sigma coverage over 90% across the full
-  run, in one run) is superseded by [ADR-0028](docs/adr/0028-the-b1-gate.md). It is kept as the record of how B1 was
+  Current status. B1 is open for the shipped configuration: the single-anchor visual update is overconfident under GNSS
+  denial, and `vision_enabled` stays `False`. The opt-in stochastic clone passes the S1 gate of
+  [ADR-0030](docs/adr/0030-the-gate-for-the-next-visual-update-candidate.md) on the development seeds (25 to 49) and
+  has not been evaluated on held-out seeds. It fails the S2 gate, where the visual errors are correlated over time.
+  [ADR-0028](docs/adr/0028-the-b1-gate.md) and ADR-0030 govern any candidate.
+
+  History (superseded gate), 2026-10. Everything from here to the end of B1 describes the gate of mean NEES under 10 and
+  2-sigma coverage over 90% across the full run, in one run, which [ADR-0028](docs/adr/0028-the-b1-gate.md) supersedes,
+  and the spike results of ADR-0017 and ADR-0023 that were judged against it. It is kept as the record of how B1 was
   judged until then.
 
-  B1 is open for the shipped configuration: the single-anchor visual update is overconfident under GNSS denial, and
-  `vision_enabled` stays `False`. The opt-in stochastic clone meets the current gate on the synthetic fixture when its
-  visual errors are independent, and not when they are correlated. On windows of recorded EuRoC sequences it meets the
-  gate in every window only with the assumed visual noise inflated
+  Under the superseded gate, B1 was open for the shipped configuration in the same way. The opt-in stochastic clone met
+  that gate on the synthetic fixture when its visual errors were independent, and not when they were correlated. On
+  windows of recorded EuRoC sequences it met the gate in every window only with the assumed visual noise inflated
   ([ADR-0023](docs/adr/0023-clone-against-a-measured-front-end.md),
-  [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md)). The current gate is one-sided: it does not reject an
-  uninformative filter, and an IMU-only filter also meets it ([real front end](docs/real_front_end.md)).
+  [ADR-0024](docs/adr/0024-assumed-noise-for-the-opt-in-clone.md)). The superseded gate is one-sided: it does not reject
+  an uninformative filter, and an IMU-only filter also meets it ([real front end](docs/real_front_end.md)).
 
   `outage_visual`, over the 15 s outage window (5 s to 20 s, half-open): mean NEES <!-- metric:outage_visual_window_nees -->2783.3<!-- /metric -->, with
   <!-- metric:outage_visual_window_coverage_percent -->5.0<!-- /metric -->% of epochs inside 2 sigma against 99.3% expected. The
@@ -150,7 +156,7 @@ Status: open. The gate of ADR-0028 failed on the held-out seeds 100 to 124 for t
   (`python scripts/check_doc_tables.py --print-configuration-table`) and checked by CI. Both are one run with one
   start draw ([ADR-0027](docs/adr/0027-how-the-synthetic-runs-are-initialised.md)), and far higher than they were on
   the old fixed start, because the single anchor does not recover from a start attitude error inside its own
-  declared prior (MEASUREMENT, measured once on one machine, not checked by CI, at e94c107; the mechanism is a HYPOTHESIS and was not tested). The clone is unaffected. A single anchor cannot represent correlated visual
+  declared prior (MEASUREMENT, measured once on one machine, not checked by CI, at e94c107, being re-measured as a generated table: issue #168; the mechanism is a HYPOTHESIS and was not tested). The clone is unaffected. A single anchor cannot represent correlated visual
   drift. Pinned by
   `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`. B2 did not
   change the full-run number, and neither did ADR-0006: correcting a frame is not the
@@ -161,7 +167,7 @@ Status: open. The gate of ADR-0028 failed on the held-out seeds 100 to 124 for t
   modelled correctly.
 
   Spike result ([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md), accepted): carrying the
-  previous pose as a stochastic clone (`vision_model: clone`) meets the gate on the synthetic fixture. The
+  previous pose as a stochastic clone (`vision_model: clone`) met the superseded gate on the synthetic fixture. The
   `outage_visual_clone` row is calibrated where `outage_visual` is not, across the seed, trajectory and outage
   sweeps. The default stays `anchor`, `vision_enabled` stays `False`, and this blocker stays open for the
   shipped configuration. The decision (ADR-0017): the clone stays opt-in, because it is calibrated for a front end

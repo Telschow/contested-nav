@@ -5,7 +5,7 @@ Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked. Checked items record what was measured when the item closed. They are not kept current: the
 current values are in the README tables, `docs/results.md` and `CONSTRAINTS.md` (B1).
 
-Measured baseline: <!-- metric:tests_collected -->2220<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
+Measured baseline: <!-- metric:tests_collected -->2228<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
