@@ -6,7 +6,9 @@ draw, a random unit direction times one scalar, had a per-axis variance of one t
 
 The rotation noise must not move. ``tests/data/visual_rotation_reference.npz`` holds the rotation block of the stream
 as origin/main produced it before this change, recorded by a script run on a clean origin/main, and the tests compare
-against it bit for bit.
+against it. The draws are the same on every platform, so on the machine that recorded the file the match is bit for bit;
+elsewhere the trigonometric functions inside the rotation exponential can differ in the last digit (ADR-0009), so the
+comparison is exact to 1e-12, nine orders of magnitude below the rotation noise, which any other draw would change.
 
 Tolerances. With ``n`` independent zero-mean normal draws, the sample second moment has a relative standard error of
 ``sqrt(2 / n)`` and a sample correlation coefficient has a standard error of ``1 / sqrt(n)``. The tests allow four
@@ -28,6 +30,7 @@ DATA = Path(__file__).resolve().parent / "data" / "visual_rotation_reference.npz
 SIGMA = 0.05
 SEED = 3
 FOUR_SE = 4.0
+RECORDED_ATOL = 1e-12  # absolute, on rotation matrices; the rotation noise itself is about 6e-3 rad
 
 #: A long trajectory for the statistics: 30 000 frames at the default 20 Hz.
 LONG = synthetic_trajectory(SyntheticConfig(duration_s=1500.0, rate_hz=100.0))
@@ -178,6 +181,12 @@ def test_the_same_holds_for_the_rereference_generator():
 # ----------------------------------------------------------------------------- the rotation is unchanged
 
 
+def _matches_recorded(got: np.ndarray, want: np.ndarray) -> None:
+    assert got.shape == want.shape
+    worst = float(np.max(np.abs(got - want)))
+    assert worst <= RECORDED_ATOL, worst
+
+
 @pytest.fixture(scope="module")
 def reference():
     return np.load(DATA)
@@ -190,17 +199,17 @@ def test_the_reference_file_is_small_and_has_the_four_arrays(reference):
 
 def test_the_rotation_noise_is_bit_for_bit_what_origin_main_produced(reference):
     got = visual_updates(SHORT, VisionConfig(seed=7))
-    assert np.array_equal(got.R_rel, reference["plain"])
+    _matches_recorded(got.R_rel, reference["plain"])
 
 
 def test_the_rotation_noise_is_unchanged_with_the_stress_options_on(reference):
     cfg = VisionConfig(seed=11, noise_corr_s=0.5, outlier_fraction=0.1, outlier_scale=20.0, scale_sigma=0.02)
-    assert np.array_equal(visual_updates(SHORT, cfg).R_rel, reference["stress"])
+    _matches_recorded(visual_updates(SHORT, cfg).R_rel, reference["stress"])
 
 
 def test_the_rotation_noise_is_unchanged_with_a_noise_multiplier(reference):
     got = visual_updates(SHORT, VisionConfig(seed=3, noise_multiplier=3.0))
-    assert np.array_equal(got.R_rel, reference["multiplier"])
+    _matches_recorded(got.R_rel, reference["multiplier"])
 
 
 def test_the_rereference_rotation_noise_is_unchanged(reference):
@@ -210,6 +219,6 @@ def test_the_rereference_rotation_noise_is_unchanged(reference):
     dropped[[7, 19, 20, 21, 40, 80, len(base) - 1]] = True
     base.dropped = dropped
     got = rereference_visual_updates(base, SHORT, VisionConfig(seed=5))
-    assert np.array_equal(got.R_rel, reference["rereference"])
+    _matches_recorded(got.R_rel, reference["rereference"])
     # the reference does cover re-referenced frames
     assert int(np.sum(np.any(got.R_rel != base.R_rel, axis=(1, 2)))) == 4
