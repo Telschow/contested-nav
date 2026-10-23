@@ -36,3 +36,4 @@ what it cost, and what was rejected.
 | [ADR-0029](0029-how-a-single-runs-verdict-is-formed.md) | How a single run's verdict is formed | accepted |
 | [ADR-0030](0030-the-gate-for-the-next-visual-update-candidate.md) | The gate for the next visual-update candidate | accepted |
 | [ADR-0031](0031-an-adaptive-visual-noise-scale.md) | An adaptive visual noise scale for the stochastic clone | accepted |
+| [ADR-0032](0032-the-adaptive-visual-scale-takes-every-visual-update.md) | The adaptive visual scale takes every visual update | accepted |
