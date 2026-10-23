@@ -22,7 +22,7 @@ filter reports is honest.
 
 **Calibration failed, and accuracy did not improve.** The filter is confidently wrong, so visual
 fusion ships off by default. The table is one run with one start draw. In that run the aided case is also less
-accurate than the case without vision, and over 10 seeds it was less accurate in 9 (measured once on one machine, not checked by CI, at e94c107). The
+accurate than the case without vision, and over 10 seeds it was less accurate in 9 (measured once on one machine, not checked by CI, at 946d661). The
 overconfidence held in every run of every sweep (see [Results](results.md)).
 
 !!! warning "Mostly synthetic evidence"

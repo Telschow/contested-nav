@@ -409,10 +409,10 @@ def test_a_block_whose_updates_the_gate_used_to_reject_now_follows_the_noise(see
     seeds where the gate rejected nearly every rotation update (at factor 4 it was at most 1.21 on all five seeds).
     Now the rejected updates enter the mean. The bounds below leave a margin of about a quarter under the smallest
     measured values (4.7 at 2.5, 5.65 at 3, 6.7 at 4 for rotation; 4.7, 5.6 and 6.65 for translation, under the
-    per-axis translation noise of ADR-0033; the translation bounds were 1.4, 1.8 and 2.5 under the earlier draw). They do not
-    assert convergence to the injected variance (6.25, 9 and 16 times): ``d`` uses ``S0 = H P H^T + R0``, which includes
-    the state uncertainty, so ``E[d]`` is below the true ratio when ``P`` is not small, and the scale is capped at
-    ``s_max`` besides.
+    per-axis translation noise of ADR-0033; the translation bounds were 1.4, 1.8 and 2.5 under the earlier draw).
+    They do not assert convergence to the injected variance (6.25, 9 and 16 times): ``d`` uses ``S0 = H P H^T + R0``,
+    which includes the state uncertainty, so ``E[d]`` is below the true ratio when ``P`` is not small, and the scale
+    is capped at ``s_max`` besides.
     """
     runs = {k: _run(noise=k, seed=seed) for k in (2.5, 3.0, 4.0)}
     lower_rot = {2.5: 3.5, 3.0: 4.2, 4.0: 5.0}

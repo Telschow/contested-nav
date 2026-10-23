@@ -45,3 +45,5 @@ Consequences for the gate and the candidates. The seeds 100 to 124 were evaluate
 - No candidate runs on a held-out block before that, and the block 125 to 149 stays unused.
 - `CONSTRAINTS.md` B1 stays as it is until a candidate has been evaluated.
 - The failed tuning run on the earlier fixture, and the held-out result of ADR-0028, stay on record as they are. They are history under the earlier draw.
+
+Note (2026-10-23): correction to the Context, which says that `docs/real_front_end.md` does not settle the convention. The page does not state the number, but `src/navkit/vo_error.py` computes `lat_rms_m` as a per-lateral-axis RMS and passes it as `trans_sigma_m` to the Gaussian surrogate of the clone check. Under the earlier draw the surrogate's per-axis variance was a third of the measured one. Under the draw of this ADR it matches the measured one per axis, but it also adds noise along the baseline, where the real front end has none. The surrogate stays as it is, because it is a comparison arm and not a result about the filter. The Decision is unchanged.

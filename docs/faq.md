@@ -23,7 +23,7 @@ not receive it ([ADR-0003](adr/0003-ship-visual-disabled.md)).
 
 With the single anchor, mostly not. It depends on the start draw. In the benchmark's single run the aided
 case has the larger error. Over 10 seeds it had the larger ATE in 9, and in an outage sweep it was less accurate
-than the no-vision control in all 8 windows with the seeds averaged (measured once on one machine, not checked by CI, at e94c107). The overconfidence did not depend
+than the no-vision control in all 8 windows with the seeds averaged (measured once on one machine, not checked by CI, at 946d661). The overconfidence did not depend
 on the window or the draw at all. Switching the start attitude draw off removes most of the extra error
 (MEASUREMENT); why is a HYPOTHESIS, not tested. See [Results](results.md).
 

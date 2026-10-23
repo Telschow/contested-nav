@@ -9,9 +9,9 @@ crash, no NaN, no divergence. So the response was measurement and a shipping
 decision, not a tuning pass:
 
 - **It is a design property, not a bad seed.** Over 10 seeds, each with its own start
-  draw, `outage_visual` and `vision_only` are overconfident at every seed (measured once on one machine, not checked by CI, at 7e33158). The scene
-  sweep varied trajectory geometry over 8 scenes and left all seven case verdicts unchanged (under the rule before ADR-0029); it was measured on the
-  old fixed start and was not re-run since the start was drawn from the declared prior
+  draw, `outage_visual` and `vision_only` are overconfident at every seed (measured once on one machine, not checked by CI, at 946d661). The scene
+  sweep varied trajectory geometry over 8 scenes and each of the five single-anchor rows read overconfident in every
+  scene (measured once on one machine, not checked by CI, at 946d661), with the start drawn from the declared prior
   ([ADR-0027](adr/0027-how-the-synthetic-runs-are-initialised.md)).
 - **Sweeps cannot disagree with themselves.** Intervals are deterministic
   percentile bootstrap, 10 000 resamples, fixed RNG seed. CI runs the benchmark

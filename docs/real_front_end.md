@@ -51,6 +51,9 @@ standard deviations.
 
 ## The clone against them
 
+The Gaussian surrogate rows of the table below, and finding 5 under "What it shows", use the synthetic visual
+translation noise. Produced under the earlier draw of the synthetic visual translation noise (ADR-0033); not regenerated. The replay rows use the measured errors and are not affected.
+
 <!-- vo-clone:start -->
 
 | Variant | Runs | Median mean NEES | Median 2-sigma coverage | Median final error m | Median claimed sigma m | Meets the gate (NEES < 10, coverage > 90%) |

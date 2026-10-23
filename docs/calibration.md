@@ -50,7 +50,7 @@ rank by error.
 
 A 10-seed sweep changes the reading of the digits, not the verdict. Over 10 seeds, each with its own start draw,
 `outage_visual` and `vision_only` were overconfident at every one, and their mean NEES spanned about two orders of
-magnitude and about one (measured once on one machine, not checked by CI, at 7e33158). So the order of magnitude is the right thing to write down, not a single digit.
+magnitude and about one (measured once on one machine, not checked by CI, at 946d661). So the order of magnitude is the right thing to write down, not a single digit.
 A control's verdict string is also one draw: `outage_control` read consistent in 5 of the 10 seeds and mixed in the
 others.
 
@@ -110,7 +110,7 @@ observed, is close to one sample. The test that fits is an ensemble. Run a case 
 average the NEES over the runs. If the filter is consistent, that average times the number of runs is chi-square with
 the number of runs times the degrees of freedom, so the average has a two-sided band: the 2.5% and 97.5% quantiles of
 that chi-square, divided by the number of runs. The band narrows as the number of runs grows. The table uses 25
-runs, because with 10 the band is too wide to separate a mildly conservative filter from a consistent one.
+runs, because with 10 the band is too wide to separate a slightly conservative filter from a consistent one.
 
 The table is generated from [`data/ensemble_nees.csv`](data/ensemble_nees.csv) and checked against it by a test. It
 gives, for each case, the share of scored epochs at which the ensemble mean is inside, below or above the band. The
@@ -170,9 +170,19 @@ What the table shows. Each sentence is checked against the CSV by `tests/test_en
 - The single-anchor rows (`vision_anchor_in_measurement_noise`, `vision_only`, `outage_visual`,
   `outage_visual_degraded_camera` and `outage_visual_degraded_camera_rereferenced`) are above the band for nearly
   all scored epochs.
-- The clone rows with independent visual errors are inside or below the band for most scored epochs.
-- The clone with visual errors correlated over time is above the band for nearly all scored epochs, and the same case
-  with the assumed visual noise inflated is inside the band for most of them.
+- The clone rows with independent visual errors are never below the band. Except for the row with a drifting
+  translation scale, each is inside the band for more than three quarters of its scored epochs.
+- The clone row with a drifting translation scale has a large share of its scored epochs above the band: more than
+  a third in the full scope and more than half in the outage scope.
+- The clone with visual errors correlated over time is above the band for nearly all scored epochs. The same case
+  with the assumed visual noise inflated is no longer mostly inside the band: most of its scored epochs are above it
+  in the full scope, and nearly all of them in the outage scope.
+
+The table was regenerated on the fixture of [ADR-0033](adr/0033-one-convention-for-the-synthetic-visual-translation-noise.md), where each axis of the synthetic visual
+translation noise is drawn with the standard deviation that the stream declares. Before that change the clone rows
+with independent visual errors had a share below the band, and the case with the inflated assumed
+noise was mostly inside it. That conservatism of the clone was largely the generator and the filter using different
+noise conventions.
 
 This table does not replace the single-run verdicts, which stay descriptive. How a gate would use the ensemble is
 decided separately, with an ADR.
@@ -230,6 +240,8 @@ effective sample size behind that verdict is truncated ([ADR-0029](adr/0029-how-
 
 [ADR-0028](adr/0028-the-b1-gate.md) sets the gate for blocker B1. This section is the development set, seeds 0 to 24.
 The decision run is separate. It uses seeds 100 to 124, it is evaluated once, and its result is in the next section.
+The table below was regenerated on the fixture of [ADR-0033](adr/0033-one-convention-for-the-synthetic-visual-translation-noise.md). The decision run was made on the
+fixture before that change.
 
 The candidate is the `outage_visual` scenario with the stochastic clone and the `measured-front-end` noise preset. Its
 control is `outage_control` on the same seed, with vision off. Everything is scored over the GNSS-outage window only,
@@ -299,6 +311,8 @@ This is the decision run of [ADR-0028](adr/0028-the-b1-gate.md): seeds 100 to 12
 GNSS-outage window. It was run once, with the code at commit 4c88341 on 2026-10-20. The held-out set is single use, so
 it is not run again. A second run to a scratch path reproduced the committed file to the tolerance used for the
 ensemble; it was a check and not a second decision.
+
+Produced under the earlier draw of the synthetic visual translation noise (ADR-0033); not regenerated.
 
 The table is generated from [`data/b1_gate_heldout.csv`](data/b1_gate_heldout.csv) and checked against it by a test.
 The conditions are the same as in the section above. The DIAGNOSTIC rows are not computed on the held-out seeds, and
@@ -412,6 +426,21 @@ DIAGNOSTIC rows apply the same function to the same seeds: the plain clone and t
 candidates. They are there to show that the gate can say no. Passing the gate does not change `vision_enabled`; that is
 a separate maintainer decision.
 
+What the table shows, on the development seeds 25 to 49 and on the fixture of [ADR-0033](adr/0033-one-convention-for-the-synthetic-visual-translation-noise.md). Each
+sentence is checked against the CSV by `tests/test_candidate_gate_page.py`.
+
+- The plain clone `outage_visual_clone` passes all six conditions in S1. In S2 it fails the upper edge, the coverage,
+  the paired count and the largest ratio.
+- The candidate of ADR-0028, the clone with the `measured-front-end` preset, fails one condition in S1, the lower
+  bound on the median NEES, and fails the same four conditions in S2 as the plain clone.
+- The single anchor `outage_visual` fails both scenarios.
+
+So the measured-front-end preset, which assumes four times the visual noise, no longer meets S2 on the synthetic
+fixture. The evidence for it on recorded-data windows ([ADR-0024](adr/0024-assumed-noise-for-the-opt-in-clone.md))
+was produced on a different fixture and is not affected. Before ADR-0033 the plain clone failed S1 on the lower
+bound, and the candidate passed S2; the earlier table is in the history of this file. That conservatism was largely
+the generator and the filter using different noise conventions. Nothing here changes `vision_enabled`.
+
 ## The tuning run of the adaptive visual scale (ADR-0031)
 
 [ADR-0031](adr/0031-an-adaptive-visual-noise-scale.md), amended by
@@ -426,6 +455,8 @@ with the largest score is chosen. Ties go to the smaller tau, then the larger s_
 point must then pass the gate in both scenarios on further blocks of development seeds. If no point qualifies, or the
 chosen point fails a block, the candidate is recorded as failed on development seeds. It is not repaired, no grid point
 is added, and it is not taken to a held-out block.
+
+Produced under the earlier draw of the synthetic visual translation noise (ADR-0033); not regenerated.
 
 The rows are in [`data/adaptive_scale_tuning.csv`](data/adaptive_scale_tuning.csv). The tables below are generated from
 them and checked against them by a test, which also recomputes the margins, the scores and the choice. Regenerate them
