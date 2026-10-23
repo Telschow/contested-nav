@@ -154,6 +154,7 @@ nav:
       - "0028 The B1 gate": adr/0028-the-b1-gate.md
       - "0029 How a single run's verdict is formed": adr/0029-how-a-single-runs-verdict-is-formed.md
       - "0030 The gate for the next visual-update candidate": adr/0030-the-gate-for-the-next-visual-update-candidate.md
+      - "0031 An adaptive visual noise scale": adr/0031-an-adaptive-visual-noise-scale.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md
