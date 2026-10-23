@@ -47,3 +47,5 @@ Seeds and candidates. Seeds 0 to 99 may be used freely for development. Each can
 - `CONSTRAINTS.md` B1 stays as it is until a candidate has been evaluated.
 
 Note (2026-10-23): the first candidate, an adaptive visual noise scale, is specified in [ADR-0031](0031-an-adaptive-visual-noise-scale.md).
+
+Note (2026-10-23): the second candidate is specified in [ADR-0034](0034-a-gauss-markov-model-of-the-correlated-visual-error.md).
