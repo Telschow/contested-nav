@@ -52,3 +52,5 @@ What stays open. Whether the held-out evaluation passes, and whether vision_enab
 - The held-out run is a separate, single-use package, on the next unused block.
 - `CONSTRAINTS.md` B1 stays as it is until a candidate has been evaluated.
 - The fixed preset of ADR-0024 remains as it is. This candidate does not use it.
+
+Note (2026-10-23): the rule that only accepted updates enter the mean is replaced by [ADR-0032](0032-the-adaptive-visual-scale-takes-every-visual-update.md).

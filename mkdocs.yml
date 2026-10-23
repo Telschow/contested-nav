@@ -155,6 +155,7 @@ nav:
       - "0029 How a single run's verdict is formed": adr/0029-how-a-single-runs-verdict-is-formed.md
       - "0030 The gate for the next visual-update candidate": adr/0030-the-gate-for-the-next-visual-update-candidate.md
       - "0031 An adaptive visual noise scale": adr/0031-an-adaptive-visual-noise-scale.md
+      - "0032 The adaptive visual scale takes every visual update": adr/0032-the-adaptive-visual-scale-takes-every-visual-update.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md
