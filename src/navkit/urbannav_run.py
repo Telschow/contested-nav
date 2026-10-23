@@ -653,38 +653,9 @@ CODE_BLOCKS: dict[str, Callable[[list[dict[str, Any]]], str]] = {
 }
 
 
-def merge_rows(existing: list[dict[str, Any]], rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """``existing`` with the rows of every sequence in ``rows`` replaced by ``rows``, and the others untouched.
-
-    A replaced sequence keeps its place in the file. A new sequence goes at the end. So rewriting one sequence never
-    moves or changes another's rows.
-    """
-    groups: dict[str, list[dict[str, Any]]] = {}
-    for r in existing:
-        groups.setdefault(r["sequence"], []).append(r)
-    fresh: dict[str, list[dict[str, Any]]] = {}
-    for r in rows:
-        fresh.setdefault(r["sequence"], []).append(r)
-    groups.update(fresh)
-    return [r for group in groups.values() for r in group]
-
-
 def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
     """Write ``rows`` to ``path``, replacing the rows of those sequences and keeping the rows of any other."""
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    existing: list[dict[str, Any]] = []
-    if target.exists():
-        with target.open(newline="", encoding="utf-8") as fh:
-            header = next(csv.reader(fh), [])
-        if target.stat().st_size > 0:
-            if tuple(header) != CSV_COLUMNS:
-                raise ValueError(f"{target}: the header is {header}, expected {list(CSV_COLUMNS)}")
-            existing = rows_from_csv(target)
-    with target.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
-        writer.writeheader()
-        writer.writerows(merge_rows(existing, rows))
+    ud.write_merged_csv(path, CSV_COLUMNS, rows)
 
 
 def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
