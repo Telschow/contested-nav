@@ -44,6 +44,7 @@ from . import (
     mismatch_sweep,
     multipath_study,
     outage_sweep,
+    scale_tuning,
     scene_sweep,
     seed_sweep,
     separability,
@@ -107,15 +108,21 @@ def _tumvi(argv: list[str] | None) -> int:
 
 
 def _gate(argv: list[str] | None) -> int:
-    """Route ``navkit gate b1|candidate|n-eff-pool``: the gates of ADR-0028 and ADR-0030."""
+    """Route ``navkit gate b1|candidate|n-eff-pool|tune-scale``: the gates of ADR-0028 and ADR-0030, the tuning run."""
     args = list(argv or [])
-    routes = {"b1": b1_gate.main, "candidate": candidate_gate.main, "n-eff-pool": candidate_gate.main_pool}
+    routes = {
+        "b1": b1_gate.main,
+        "candidate": candidate_gate.main,
+        "n-eff-pool": candidate_gate.main_pool,
+        "tune-scale": scale_tuning.main,
+    }
     if not args or args[0] in ("-h", "--help") or args[0] not in routes:
-        usage = "usage: navkit gate {b1,candidate,n-eff-pool} [options]"
+        usage = "usage: navkit gate {b1,candidate,n-eff-pool,tune-scale} [options]"
         notes = (
             "  b1          the B1 gate of ADR-0028 on the candidate over 25 seeds (seeds 100 to 124 need --held-out)",
             "  candidate   the gate of ADR-0030 in two scenarios (seeds from 125 are held-out blocks, one at a time)",
             "  n-eff-pool  the effective sample sizes that the simulated properties of ADR-0030 draw from",
+            "  tune-scale  the pre-registered tuning run of the adaptive visual scale (ADR-0031), seeds 0 to 99 only",
         )
         print("\n".join((usage, *notes)), file=sys.stderr)
         return 0 if args and args[0] in ("-h", "--help") else 2
