@@ -1,10 +1,13 @@
-"""The Tunnel-1 run on a sequence written here, so that CI exercises the code that the real data would.
+"""The Tunnel-1 run, and the aided run of a sequence without an outage, on sequences written here, so that CI
+exercises the code that the real data would.
 
 The fixture is generated from code with made-up numbers (S2): a vehicle driving east at constant speed on a made-up
 spot of the globe, a reference table at 1 Hz, a 20 Hz IMU, and an NMEA file with one fix per second and a gap in the
-middle that is the outage. A gyroscope bias that starts after the filter's start-bias window drifts the roll, which is
-the known answer the oracle tests are checked against. Nothing here is a row of the real dataset, and no data file is
-committed. These tests do not skip when the real dataset is absent.
+middle that is the outage. The second fixture, ``canyon=True``, is the same drive for another sequence name with no
+outage, where some fixes carry a valid flag and are tens of metres wrong. A gyroscope bias that starts after the
+filter's start-bias window drifts the roll, which is the known answer the oracle tests are checked against. Nothing
+here is a row of the real dataset, and no data file is committed. These tests do not skip when the real dataset is
+absent.
 """
 
 from __future__ import annotations
@@ -24,8 +27,12 @@ from navkit.io import urbannav_fetch as uf
 from navkit.types import GRAVITY
 
 SEQ = "tunnel1"
+DEEP = "deepurban1"
 REF_NAME, IMU_NAME = tuple(uf.SOURCES[SEQ])
 NMEA_NAME = ud.NMEA_FILES[SEQ]
+CANYON_EVERY, CANYON_PHASE = 7, 3  # every 7th fix, from the 3rd, is a multipath fix
+CANYON_ERROR_M = 25.0
+CANYON_SIGMA = "4.00"  # what the receiver reports for those fixes; the others report 1.50
 
 DURATION_S = 90
 IMU_RATE_HZ = 20
@@ -66,16 +73,25 @@ def _ddmm(value: float, digits: int) -> str:
     return f"{deg:0{digits}d}{(abs(value) - deg) * 60.0:08.5f}"
 
 
-def write_tunnel(
+def write_sequence(
     root: Path,
+    seq: str = SEQ,
     *,
     gst_sigma: dict[int, str] | None = None,
     tilt_bias: float = TILT_BIAS_RAD_S,
     nmea: bool = True,
     outage: bool = True,
+    canyon: bool = False,
 ) -> Path:
-    """Write ``<root>/tunnel1/`` in the publisher's layout. ``gst_sigma`` maps an epoch to the text of its sigma."""
-    folder = root / SEQ
+    """Write ``<root>/<seq>/`` in the publisher's layout. ``gst_sigma`` maps an epoch to the text of its sigma.
+
+    ``canyon`` makes every ``CANYON_EVERY``-th fix a multipath fix: valid flag, ``CANYON_ERROR_M`` metres off to the
+    east, fewer satellites, a worse HDOP and a larger reported sigma. It does not change the fixes of the other
+    epochs, so the stream of a sequence without ``canyon`` is the one the Tunnel-1 tests have always used.
+    """
+    ref_name, imu_name = tuple(uf.SOURCES[seq])
+    nmea_name = ud.NMEA_FILES[seq]
+    folder = root / seq
     folder.mkdir(parents=True, exist_ok=True)
     t_unix0 = MIDNIGHT + TOD0
 
@@ -91,7 +107,7 @@ def write_tunnel(
             f"{t_unix0 + k:.2f} 2000.00000 {TOD0 + k:.2f} {_dms(lat)} {_dms(lon)} 5.000 "
             f"0.000 {SPEED_M_S:.3f} 0.000 0.000 0.000 0.000 0.0 0.0 90.0 2"
         )
-    (folder / REF_NAME).write_bytes(("\r\n".join([*ref_header, *rows]) + "\r\n").encode("ascii"))
+    (folder / ref_name).write_bytes(("\r\n".join([*ref_header, *rows]) + "\r\n").encode("ascii"))
 
     n = DURATION_S * IMU_RATE_HZ + 1
     stamps = (int(t_unix0 * 1e9) + (np.arange(n) * (1e9 / IMU_RATE_HZ)).astype(np.int64)).astype(np.int64)
@@ -100,7 +116,7 @@ def write_tunnel(
     for i, ns in enumerate(stamps):
         gy = tilt_bias if i / IMU_RATE_HZ >= TILT_ONSET_S else 0.0
         lines.append(f"{int(ns) + 300_000},{int(ns)},0.0,{gy!r},0.0,0.0,0.0,{g!r}")
-    (folder / IMU_NAME).write_text("\n".join(lines) + "\n", encoding="ascii")
+    (folder / imu_name).write_text("\n".join(lines) + "\n", encoding="ascii")
 
     if nmea:
         rng = np.random.default_rng(1)
@@ -114,14 +130,21 @@ def write_tunnel(
                 out.append(_nmea(f"GNGGA,{stamp},,,,,0,00,99.99,,,,,,"))
                 continue
             e, nn = rng.normal(0.0, 1.0, 2)
-            lat, lon = _lat_lon(SPEED_M_S * k + e, nn)
+            multipath = canyon and k % CANYON_EVERY == CANYON_PHASE
+            lat, lon = _lat_lon(SPEED_M_S * k + e + (CANYON_ERROR_M if multipath else 0.0), nn)
+            sats, hdop = ("07", "2.50") if multipath else ("12", "0.60")
             if k == 0:
                 out.append(_nmea(f"GNRMC,{stamp},A,{_ddmm(lat, 2)},N,{_ddmm(lon, 3)},E,0.0,0.0,{date},,,A"))
-            out.append(_nmea(f"GNGGA,{stamp},{_ddmm(lat, 2)},N,{_ddmm(lon, 3)},E,1,12,0.60,5.0,M,-1.0,M,,0000"))
-            sigma = gst.get(k, "1.50")
+            out.append(_nmea(f"GNGGA,{stamp},{_ddmm(lat, 2)},N,{_ddmm(lon, 3)},E,1,{sats},{hdop},5.0,M,-1.0,M,,0000"))
+            sigma = gst.get(k, CANYON_SIGMA if multipath else "1.50")
             out.append(_nmea(f"GNGST,{stamp},1.0,2.0,1.0,0.0,{sigma},{sigma},3.00"))
-        (folder / NMEA_NAME).write_text("\n".join(out) + "\n", encoding="ascii")
+        (folder / nmea_name).write_text("\n".join(out) + "\n", encoding="ascii")
     return root
+
+
+def write_tunnel(root: Path, **kwargs: Any) -> Path:
+    """The Tunnel-1 fixture: ``write_sequence`` for ``tunnel1``."""
+    return write_sequence(root, SEQ, **kwargs)
 
 
 @pytest.fixture(scope="module")
@@ -337,3 +360,329 @@ def test_an_oracle_needs_an_outage_and_the_declared_filter_runs_without_one(tmp_
     r = ur.run_once(seq, gnss, spans, info, seed=0, variant="declared")
     assert r["fixes_total"] == DURATION_S
     assert "hor_err_at_end_m" not in r  # the outage quantities exist only when there is an outage
+
+
+# ================================================== a sequence without an outage: the aided run
+
+
+@pytest.fixture(scope="module")
+def canyon(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Every fix valid, some of them tens of metres wrong, no outage: the shape of an urban-canyon sequence."""
+    return write_sequence(tmp_path_factory.mktemp("canyon"), DEEP, canyon=True, outage=False, tilt_bias=0.0)
+
+
+@pytest.fixture(scope="module")
+def canyon_built(canyon: Path) -> Any:
+    return ur.build(canyon, DEEP)
+
+
+@pytest.fixture(scope="module")
+def aided(canyon_built: Any) -> dict[str, dict[str, Any]]:
+    seq, gnss, spans, info = canyon_built
+    return {v: ur.run_once(seq, gnss, spans, info, seed=0, variant=v) for v in ur.variants_for(spans)}
+
+
+def _csv_lines(path: Path, sequence: str) -> list[bytes]:
+    return [x for x in path.read_bytes().splitlines(keepends=True) if x.startswith(f"{sequence},".encode())]
+
+
+def test_the_deep_urban_receiver_file_has_a_name_and_the_loader_uses_it(canyon):
+    assert ud.NMEA_FILES[DEEP] == "UrbanNav-HK-Deep-Urban-1.ublox.f9p.nmea"
+    assert (canyon / DEEP / ud.NMEA_FILES[DEEP]).is_file()
+    fixes = ud.load_gga(canyon, DEEP)
+    assert len(fixes) == DURATION_S and fixes.skipped == 0
+    seq = ud.load_sequence(canyon, DEEP)
+    assert seq.name == DEEP
+    # the notes are about the units, not about one sequence
+    assert all("tunnel" not in n.lower() and "deep" not in n.lower() for n in seq.notes)
+
+
+def test_a_canyon_has_valid_degraded_fixes_and_no_outage(canyon, canyon_built):
+    _, gnss, spans, info = canyon_built
+    fixes = ud.load_gga(canyon, DEEP)
+    assert ud.outage_intervals(fixes) == [] and spans == []
+    assert np.all(fixes.quality == 1) and np.any(fixes.num_sats < 12) and np.any(fixes.hdop > 2.0)
+    assert len(gnss) == DURATION_S and info["epochs_not_valid"] == 0
+    assert ur.variants_for(spans) == ur.VARIANTS
+    assert ur.variants_for([(1.0, 2.0)]) == ur.ALL_VARIANTS
+    wrong = info["fix_difference_m"] > ur.WRONG_FIX_M
+    assert 0 < int(wrong.sum()) < len(gnss)
+
+
+def test_the_aided_run_gives_the_documented_quantities_and_only_those(aided):
+    assert set(aided) == set(ur.VARIANTS)
+    rows = ur.rows_for(DEEP, list(aided.values()))
+    assert {r["quantity"] for r in rows} == {k for k, _, _ in ur.AIDED_QUANTITIES}
+    assert len(rows) == len(ur.VARIANTS) * len(ur.AIDED_QUANTITIES)
+    assert {r["sequence"] for r in rows} == {DEEP} and {r["variant"] for r in rows} == set(ur.VARIANTS)
+    assert all(set(r) == set(ur.CSV_COLUMNS) for r in rows)
+    for r in aided.values():
+        for outage_only in ("hor_err_at_end_m", "nis_first_return", "accel_only_hor_err_at_end_m"):
+            assert outage_only not in r
+
+
+def test_the_aided_quantities_are_consistent_with_each_other(aided, canyon_built):
+    _, gnss, _, info = canyon_built
+    for v, r in aided.items():
+        assert r["fixes_total"] == len(gnss), v
+        assert r["fixes_used"] + r["gnss_updates_rejected"] == r["fixes_total"], v
+        assert r["fix_rejection_rate"] == pytest.approx(r["gnss_updates_rejected"] / r["fixes_total"]), v
+        assert 0.0 <= r["hor_coverage_2sigma"] <= 1.0 and 0.0 <= r["hor_inside_95"] <= 1.0
+        assert math.isfinite(r["hor_nees_mean"]) and r["hor_nees_mean"] > 0.0
+        assert math.isfinite(r["att_nees_mean"]) and r["att_nees_mean"] > 0.0
+        assert r["fix_err_p50_m"] <= r["fix_err_p95_m"] <= r["fix_err_p99_m"], v
+        assert r["fix_err_p99_m"] <= float(info["fix_difference_m"].max()) + 1e-9
+        assert r["wrong_fixes_over_gate"] <= r["wrong_fixes"] <= r["fixes_total"]
+        assert r["gnss_channel_faulted"] in (0, 1) and r["gnss_reaccepted"] >= 0
+
+
+def test_the_fix_statistics_are_those_of_the_fixes_and_not_of_the_filter(aided, canyon_built):
+    _, _, _, info = canyon_built
+    d, s = info["fix_difference_m"], info["fix_sigma_h_m"]
+    for r in aided.values():
+        assert r["fix_nees_mean"] == pytest.approx(float(np.mean((d / s) ** 2)))
+        assert r["fix_err_p95_m"] == pytest.approx(float(np.percentile(d, 95)))
+    # the same fixes under both variants, so the same fix statistics
+    a, b = aided["declared"], aided["per_fix"]
+    assert a["fix_nees_mean"] == b["fix_nees_mean"] and a["fix_err_p50_m"] == b["fix_err_p50_m"]
+    # the multipath fixes are far from the reference against what the receiver reports for them
+    assert float(np.max(d / s)) > 3.0
+
+
+def _trajectory(positions: np.ndarray, rotations: np.ndarray) -> Any:
+    from navkit.types import Trajectory
+
+    poses = np.tile(np.eye(4), (len(positions), 1, 1))
+    poses[:, :3, :3], poses[:, :3, 3] = rotations, positions
+    return Trajectory(t=np.arange(len(positions), dtype=float), poses=poses)
+
+
+def _rot_z(angle: float) -> np.ndarray:
+    c, s = math.cos(angle), math.sin(angle)
+    return np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
+
+
+@pytest.mark.parametrize(
+    ("error_sigmas", "att_error_rad", "coverage", "att_nees"),
+    [(0.0, 0.0, 1.0, 0.0), (1.9, 0.1, 1.0, 4.0), (2.1, 0.2, 0.0, 16.0)],
+)
+def test_the_aided_summary_against_known_answers(error_sigmas, att_error_rad, coverage, att_nees):
+    n, sigma = 50, 2.0
+    ref = _trajectory(np.zeros((n, 3)), np.tile(np.eye(3), (n, 1, 1)))
+    est = _trajectory(
+        np.tile([error_sigmas * sigma, -error_sigmas * sigma, 0.0], (n, 1)), np.tile(_rot_z(att_error_rad), (n, 1, 1))
+    )
+    detail = {
+        "est": est,
+        "reference": ref,
+        "position_cov": np.tile(np.diag([sigma**2] * 3), (n, 1, 1)),
+        "rotation_cov": np.tile(np.eye(3) * 0.05**2, (n, 1, 1)),
+    }
+    d = np.array([1.0, 2.0, 3.0, 4.0])
+    out = ur.aided_summary(detail, {"gnss_updates_used": 3, "gnss_updates_rejected": 1}, 4, d, np.full(4, 2.0))
+    assert out["hor_coverage_2sigma"] == coverage
+    assert out["att_nees_mean"] == pytest.approx(att_nees, rel=1e-9)
+    assert (out["fixes_used"], out["fix_rejection_rate"]) == (3, 0.25)
+    assert out["fix_nees_mean"] == pytest.approx(np.mean((d / 2.0) ** 2))
+    assert out["fix_err_p50_m"] == pytest.approx(2.5) and out["aided"] == 1
+
+
+def test_the_coverage_expectation_is_the_gaussian_two_sigma_share():
+    assert abs(ur.COVERAGE_2SIGMA_GAUSSIAN - 0.9545) < 5e-5
+
+
+def test_the_filter_exposes_its_attitude_covariance_next_to_the_position_one(canyon_built):
+    seq, gnss, _, info = canyon_built
+    detail: dict[str, Any] = {}
+    opts = ur.RunOptions(
+        gnss_sigma_m=info["sigma_h"], gnss_vertical_sigma_m=ur.GNSS_VERTICAL_SIGMA_M, seed=0, init_bias="static"
+    )
+    ur.run_sequence(seq, opts, gnss_override=gnss, detail_out=detail)
+    rot = detail["rotation_cov"]
+    assert rot.shape == detail["position_cov"].shape == (len(detail["est"]), 3, 3)
+    assert np.all(np.linalg.eigvalsh(0.5 * (rot + rot.transpose(0, 2, 1))) > 0.0)
+
+
+# ----------------------------------------------------------- the oracle variants are not applicable
+
+
+def test_the_oracle_variants_are_not_applicable_without_an_outage_and_the_output_says_so(aided):
+    rows = ur.rows_for(DEEP, list(aided.values()))
+    block = ur.oracle_markdown(rows, DEEP)
+    assert block == ur.ORACLE_NOT_APPLICABLE and "Not applicable" in block
+    assert "ORACLE DIAGNOSTIC" not in block
+    assert not {r["variant"] for r in rows} & set(ur.ORACLE_VARIANTS)
+    assert ur.CODE_BLOCKS["urbannav-deep-urban-oracle"](rows) == ur.ORACLE_NOT_APPLICABLE
+
+
+def test_asking_for_an_oracle_directly_without_an_outage_is_still_refused(canyon_built):
+    seq, gnss, spans, info = canyon_built
+    with pytest.raises(ur.SequenceError, match="needs an outage"):
+        ur.run_once(seq, gnss, spans, info, seed=0, variant="oracle_tilt")
+
+
+def test_main_runs_the_aided_variants_only_and_says_the_oracles_are_not_applicable(
+    canyon, tmp_path, monkeypatch, capsys
+):
+    monkeypatch.setattr(ur, "SEEDS", (0,))
+    out_csv = tmp_path / "run.csv"
+    assert ur.main(["--root", str(canyon), "--sequence", DEEP, "--csv", str(out_csv)]) == 0
+    err = capsys.readouterr().err
+    assert "0 outage(s)" in err and "aided run" in err and "Not applicable" in err
+    assert "oracle_tilt" not in err and "declared seed 0 done" in err and "per_fix seed 0 done" in err
+    rows = ur.rows_from_csv(out_csv)
+    assert {r["variant"] for r in rows} == set(ur.VARIANTS)
+    assert len(rows) == len(ur.VARIANTS) * len(ur.AIDED_QUANTITIES)
+    assert ur.main(["--root", str(canyon), "--sequence", DEEP]) == 0
+    out = capsys.readouterr().out
+    assert "declared" in out and "Not applicable" in out
+    assert "Pooled 2-sigma per-axis coverage" in out
+
+
+def test_main_is_deterministic_for_the_aided_run(canyon, tmp_path, monkeypatch):
+    monkeypatch.setattr(ur, "SEEDS", (0,))
+    first, second = tmp_path / "a.csv", tmp_path / "b.csv"
+    assert ur.main(["--root", str(canyon), "--sequence", DEEP, "--csv", str(first)]) == 0
+    assert ur.main(["--root", str(canyon), "--sequence", DEEP, "--csv", str(second)]) == 0
+    assert _sha(first) == _sha(second)
+
+
+# ----------------------------------------------------------------- writing one sequence at a time
+
+
+def _stub_rows(sequence: str, n: int = 3) -> list[dict[str, Any]]:
+    return [
+        {
+            "sequence": sequence,
+            "variant": "declared",
+            "seed": s,
+            "quantity": "hor_rmse_m",
+            "value": f"{s}.5",
+            "unit": "m",
+        }
+        for s in range(n)
+    ]
+
+
+def test_writing_another_sequence_leaves_the_tunnel_rows_byte_identical(tunnel, tmp_path, monkeypatch):
+    monkeypatch.setattr(ur, "SEEDS", (0,))
+    path = tmp_path / "run.csv"
+    assert ur.main(["--root", str(tunnel), "--csv", str(path)]) == 0
+    before, tunnel_lines = path.read_bytes(), _csv_lines(path, SEQ)
+    assert tunnel_lines
+    ur.write_csv(path, _stub_rows(DEEP))
+    assert path.read_bytes().startswith(before)  # nothing before the new rows moved or changed
+    assert _csv_lines(path, SEQ) == tunnel_lines
+    assert hashlib.sha256(b"".join(_csv_lines(path, SEQ))).digest() == hashlib.sha256(b"".join(tunnel_lines)).digest()
+    assert len(_csv_lines(path, DEEP)) == 3
+
+
+def test_writing_a_sequence_again_replaces_its_rows_and_keeps_its_place(tmp_path):
+    path = tmp_path / "run.csv"
+    ur.write_csv(path, _stub_rows(SEQ, 2))
+    ur.write_csv(path, _stub_rows(DEEP, 2))
+    ur.write_csv(path, _stub_rows(SEQ, 4))  # the first sequence again, with more rows
+    assert [r["sequence"] for r in ur.rows_from_csv(path)] == [SEQ] * 4 + [DEEP] * 2
+    ur.write_csv(path, _stub_rows(DEEP, 1))
+    assert [r["sequence"] for r in ur.rows_from_csv(path)] == [SEQ] * 4 + [DEEP]
+
+
+def test_the_committed_csv_is_a_prefix_of_what_a_second_sequence_adds_to_it(tmp_path):
+    committed = Path(__file__).resolve().parent.parent / "docs" / "data" / "urbannav_run.csv"
+    copy = tmp_path / "copy.csv"
+    copy.write_bytes(committed.read_bytes())
+    ur.write_csv(copy, _stub_rows(DEEP))
+    assert copy.read_bytes().startswith(committed.read_bytes())
+    # writing back the rows the file already holds gives the same bytes: the writer is the one that wrote them
+    ur.write_csv(copy, ur.rows_from_csv(committed))
+    assert copy.read_bytes().startswith(committed.read_bytes())
+
+
+def test_a_csv_with_another_header_is_refused_and_not_overwritten(tmp_path):
+    path = tmp_path / "run.csv"
+    path.write_text("a,b,c\n1,2,3\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="header"):
+        ur.write_csv(path, _stub_rows(DEEP))
+    assert path.read_text(encoding="utf-8") == "a,b,c\n1,2,3\n"
+
+
+def test_main_reports_a_csv_with_another_header_and_does_not_traceback(canyon, tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(ur, "SEEDS", (0,))
+    path = tmp_path / "run.csv"
+    path.write_text("a,b,c\n", encoding="utf-8")
+    assert ur.main(["--root", str(canyon), "--sequence", DEEP, "--csv", str(path)]) == 1
+    err = capsys.readouterr().err
+    assert "error:" in err and "Traceback" not in err
+
+
+# --------------------------------------------------------------- the blocks never mix sequences
+
+
+def _both(results, aided) -> list[dict[str, Any]]:
+    return ur.rows_for(SEQ, list(results.values())) + ur.rows_for(DEEP, list(aided.values()))
+
+
+def test_a_block_shows_the_rows_of_its_own_sequence_only(results, aided):
+    tunnel_only = ur.rows_for(SEQ, list(results.values()))
+    deep_only = ur.rows_for(DEEP, list(aided.values()))
+    both = _both(results, aided)
+    for v in ur.VARIANTS:
+        assert ur.run_markdown(both, v, SEQ) == ur.run_markdown(tunnel_only, v, SEQ)
+        assert ur.run_markdown(both, v, DEEP) == ur.run_markdown(deep_only, v, DEEP)
+        assert ur.run_markdown(both, v, SEQ) != ur.run_markdown(both, v, DEEP)
+    assert ur.oracle_markdown(both, SEQ) == ur.oracle_markdown(tunnel_only, SEQ)
+    assert "ORACLE DIAGNOSTIC" in ur.oracle_markdown(both, SEQ)
+    assert ur.oracle_markdown(both, DEEP) == ur.ORACLE_NOT_APPLICABLE
+
+
+def test_the_tunnel_blocks_are_unchanged_by_rows_of_another_sequence(results, aided):
+    tunnel_only = ur.rows_for(SEQ, list(results.values()))
+    both = _both(results, aided)
+    for name, fn in {**ur.BLOCKS, **ur.CODE_BLOCKS}.items():
+        if "deep-urban" not in name:
+            assert fn(both) == fn(tunnel_only), name
+
+
+def test_a_table_uses_the_quantities_of_its_kind(results, aided):
+    both = _both(results, aided)
+    tunnel_table, deep_table = ur.run_markdown(both, "declared", SEQ), ur.run_markdown(both, "declared", DEEP)
+    assert "Peak horizontal error in the outage" in tunnel_table and "Peak horizontal error" not in deep_table
+    assert "Attitude mean NEES" in deep_table and "Attitude mean NEES" not in tunnel_table
+    assert "Pooled 2-sigma per-axis coverage" in deep_table
+
+
+def test_a_sequence_with_no_rows_says_it_has_not_been_run(results):
+    rows = ur.rows_for(SEQ, list(results.values()))
+    for block in (ur.run_markdown(rows, "declared", DEEP), ur.oracle_markdown(rows, DEEP)):
+        assert "has not been run" in block and "Deep-Urban-1" in block
+    assert ur.run_markdown([], "declared", SEQ).startswith("No rows for Tunnel-1")
+
+
+def test_the_page_is_filled_from_the_merged_csv_and_a_run_of_one_sequence_keeps_the_other_blocks(
+    tunnel, canyon, tmp_path, monkeypatch
+):
+    monkeypatch.setattr(ur, "SEEDS", (0,))
+    csv_path, page = tmp_path / "run.csv", tmp_path / "page.md"
+    page.write_text(
+        "\n".join(f"<!-- {name}:start -->\n<!-- {name}:end -->" for name in {**ur.BLOCKS, **ur.CODE_BLOCKS}) + "\n",
+        encoding="utf-8",
+    )
+    assert ur.main(["--root", str(tunnel), "--csv", str(csv_path), "--page", str(page)]) == 0
+    after_tunnel = page.read_text(encoding="utf-8")
+    assert "No rows for Deep-Urban-1" in after_tunnel and "ORACLE DIAGNOSTIC" in after_tunnel
+    assert ur.main(["--root", str(canyon), "--sequence", DEEP, "--csv", str(csv_path), "--page", str(page)]) == 0
+    text = page.read_text(encoding="utf-8")
+    rows = ur.rows_from_csv(csv_path)
+    assert {r["sequence"] for r in rows} == {SEQ, DEEP}
+    for fn in {**ur.BLOCKS, **ur.CODE_BLOCKS}.values():
+        assert fn(rows) in text
+    assert "ORACLE DIAGNOSTIC" in text  # the Tunnel-1 oracle block is still there
+    assert "Not applicable" in text and "Attitude mean NEES" in text
+    assert "No rows for Deep-Urban-1" not in text
+
+
+def test_a_page_needs_a_csv_to_be_filled_from(canyon, tmp_path, capsys):
+    page = tmp_path / "page.md"
+    page.write_text("x\n", encoding="utf-8")
+    assert ur.main(["--root", str(canyon), "--sequence", DEEP, "--page", str(page)]) == 2
+    assert "--page needs --csv or --from-csv" in capsys.readouterr().err

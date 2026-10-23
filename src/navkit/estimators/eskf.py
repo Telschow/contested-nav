@@ -1288,6 +1288,7 @@ class ErrorStateKalmanFilter:
         poses = np.zeros((n, 4, 4))
         sigma_p = np.zeros(n)
         pos_cov = np.zeros((n, 3, 3))
+        rot_cov = np.zeros((n, 3, 3))
         n_gnss_used = 0
         n_gnss_rejected = 0
         n_vision_used = 0
@@ -1365,6 +1366,7 @@ class ErrorStateKalmanFilter:
             poses[k, 3, :3] = 0.0
             poses[k, 3, 3] = 1.0
             pos_cov[k] = x["P"][_IDX_P, _IDX_P]
+            rot_cov[k] = x["P"][_IDX_THETA, _IDX_THETA]
             sigma_p[k] = float(np.sqrt(max(np.trace(x["P"][_IDX_P, _IDX_P]), 0.0) / 3.0))
 
         traj = Trajectory(t=imu.t.copy(), poses=poses, name=self.name)
@@ -1405,6 +1407,9 @@ class ErrorStateKalmanFilter:
                 self._vision_scales[0].n_skipped_nonfinite + self._vision_scales[1].n_skipped_nonfinite
             )
         traj.metadata["sigma_p"] = sigma_p
+        # The attitude block of the covariance, for scoring the attitude. In the metadata and not in the result type, so
+        # that no existing output or signature changes.
+        traj.metadata["rotation_cov"] = rot_cov
         traj.metadata["gnss_innovations"] = self.gnss_innovations
         traj.metadata["bias_log"] = self.bias_log
         traj.metadata["fdir_events"] = [e.as_dict() for e in self.fdir.events]
