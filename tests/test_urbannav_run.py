@@ -7,6 +7,7 @@ sequences built here. The fetched files, when present, must reproduce the commit
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import numpy as np
@@ -31,8 +32,17 @@ def rows():
     return ur.rows_from_csv(CSV)
 
 
-def _q(rows, variant, key):
-    return np.array([float(r["value"]) for r in rows if r["variant"] == variant and r["quantity"] == key])
+TUNNEL, DEEP = "tunnel1", "deepurban1"
+
+
+def _q(rows, variant, key, sequence=TUNNEL):
+    return np.array(
+        [
+            float(r["value"])
+            for r in rows
+            if r["sequence"] == sequence and r["variant"] == variant and r["quantity"] == key
+        ]
+    )
 
 
 # ---------------------------------------------------------------------- the page
@@ -48,16 +58,26 @@ def test_the_csv_has_every_variant_and_every_seed_and_quantity(rows):
     for v in ur.ALL_VARIANTS:
         for key, _, _ in ur.QUANTITIES:
             assert len(_q(rows, v, key)) == len(ur.SEEDS), (v, key)
-    assert {int(r["seed"]) for r in rows} == set(ur.SEEDS)
-    assert {r["variant"] for r in rows} == set(ur.ALL_VARIANTS)
+    tunnel = ur.rows_of(rows, TUNNEL)
+    assert {int(r["seed"]) for r in tunnel} == set(ur.SEEDS)
+    assert {r["variant"] for r in tunnel} == set(ur.ALL_VARIANTS)
 
 
 def test_the_csv_holds_aggregates_only():
-    """S2: no raw rows. One row is a variant, a seed and a named quantity; the quantities are the declared ones."""
+    """S2: no raw rows. One row is a sequence, a variant, a seed and a named quantity; the quantities are declared."""
     text = CSV.read_text(encoding="utf-8")
     assert text.splitlines()[0] == ",".join(ur.CSV_COLUMNS)
-    assert {r["quantity"] for r in ur.rows_from_csv(CSV)} == {k for k, _, _ in ur.QUANTITIES}
-    assert len(text.splitlines()) - 1 == len(ur.ALL_VARIANTS) * len(ur.SEEDS) * len(ur.QUANTITIES)
+    all_rows = ur.rows_from_csv(CSV)
+    assert {r["sequence"] for r in all_rows} <= {TUNNEL, DEEP}
+    tunnel = ur.rows_of(all_rows, TUNNEL)
+    assert {r["quantity"] for r in tunnel} == {k for k, _, _ in ur.QUANTITIES}
+    assert len(tunnel) == len(ur.ALL_VARIANTS) * len(ur.SEEDS) * len(ur.QUANTITIES)
+    deep = ur.rows_of(all_rows, DEEP)
+    if deep:  # an aided sequence: the declared and per-fix variants only, and its own quantities
+        assert {r["quantity"] for r in deep} == {k for k, _, _ in ur.AIDED_QUANTITIES}
+        assert {r["variant"] for r in deep} == set(ur.VARIANTS)
+        assert len(deep) == len(ur.VARIANTS) * len(ur.SEEDS) * len(ur.AIDED_QUANTITIES)
+    assert len(all_rows) == len(tunnel) + len(deep)
 
 
 def test_the_oracle_variants_are_declared_and_labelled_as_diagnostics_that_use_the_reference():
@@ -194,6 +214,75 @@ def test_the_page_labels_the_oracles_the_hypothesis_and_the_missing_link():
     assert "A link between" in text and "is not shown" in text
     assert "one sequence, one receiver" in text.lower()
     assert "measured as zero" not in text
+
+
+# ------------------------------------------------------------------ the Deep-Urban-1 section
+
+
+def _deep_section() -> str:
+    text = PAGE.read_text(encoding="utf-8")
+    start = text.index("## Deep-Urban-1: real urban GNSS, no outage")
+    return text[start : text.index("## What follows")]
+
+
+def _outside_blocks(section: str) -> str:
+    return re.sub(r"<!-- ([a-z-]+):start -->.*?<!-- \1:end -->", "", section, flags=re.S)
+
+
+def test_the_deep_urban_section_says_what_it_is_and_what_it_is_not():
+    section = _deep_section()
+    for phrase in (
+        "One sequence, one receiver, one recording",
+        "The receiver reports no outage here",
+        "aided run",
+        "not applicable",
+        "right about how wrong it is",
+        "multipath fixes",
+        "It is not field performance",
+        "Imposed outages are a separate experiment",
+    ):
+        assert phrase in section, phrase
+    assert "issue #95" in section  # the outage rule was not changed to find one
+
+
+def test_the_deep_urban_section_has_its_generated_blocks_and_nothing_typed_in_them():
+    section = _deep_section()
+    for name in ("urbannav-deep-urban-run-declared", "urbannav-deep-urban-run-per-fix", "urbannav-deep-urban-oracle"):
+        assert f"<!-- {name}:start -->" in section and f"<!-- {name}:end -->" in section
+        assert name in {**ur.BLOCKS, **ur.CODE_BLOCKS}
+    assert "oracle" not in {n for n in ur.BLOCKS if "deep-urban" in n}  # no oracle table is generated for it
+
+
+def test_the_deep_urban_prose_has_no_typed_numbers():
+    prose = _outside_blocks(_deep_section())
+    for allowed in ("Deep-Urban-1", "Tunnel-1", "issue #95", "2-sigma"):
+        prose = prose.replace(allowed, "")
+    prose = re.sub(r"^\s*\d+\. ", "", prose, flags=re.M)  # the numbering of a list
+    assert not re.search(r"\d", prose), re.findall(r".{20}\d.{20}", prose)
+
+
+def test_until_it_is_run_the_page_says_deep_urban_1_has_not_been_run(rows):
+    if ur.rows_of(rows, DEEP):
+        pytest.skip("Deep-Urban-1 has rows in the CSV; the statements below are for the state without them")
+    section = _deep_section()
+    assert "Status: not run for this page" in section
+    assert section.count("has not been run for this page") == 3  # the three generated blocks
+    assert "Deep-Urban-1, the planned unseen check, has not been fetched or run" in PAGE.read_text(encoding="utf-8")
+
+
+def test_when_deep_urban_1_has_rows_they_are_the_aided_run(rows):
+    """Switched on by the commit that adds the rows. Until then it skips, and the test above holds."""
+    deep = ur.rows_of(rows, DEEP)
+    if not deep:
+        pytest.skip("no Deep-Urban-1 rows in the committed CSV yet")
+    assert {r["variant"] for r in deep} == set(ur.VARIANTS)  # no oracle rows
+    assert ur.oracle_markdown(rows, DEEP) == ur.ORACLE_NOT_APPLICABLE
+    for v in ur.VARIANTS:
+        used, rejected = _q(rows, v, "fixes_used", DEEP), _q(rows, v, "gnss_updates_rejected", DEEP)
+        assert np.all(used + rejected == _q(rows, v, "fixes_total", DEEP))
+        assert np.all(_q(rows, v, "epochs_not_valid", DEEP) == 0)
+        for key, _, _ in ur.AIDED_QUANTITIES:
+            assert len(_q(rows, v, key, DEEP)) == len(ur.SEEDS), (v, key)
 
 
 # ----------------------------------------------------- the reader's report and the oracles
@@ -361,7 +450,11 @@ def test_the_fetched_files_reproduce_the_committed_numbers(rows):
     got = ur.run_once(seq, gnss, spans, info, seed=0, variant="declared")
     for key in ("hor_err_at_end_m", "hor_claimed_at_end_m", "hor_err_median_before_m", "accel_only_hor_err_at_end_m"):
         want = float(
-            next(r["value"] for r in rows if r["variant"] == "declared" and r["seed"] == "0" and r["quantity"] == key)
+            next(
+                r["value"]
+                for r in rows
+                if r["sequence"] == TUNNEL and r["variant"] == "declared" and r["seed"] == "0" and r["quantity"] == key
+            )
         )
         assert got[key] == pytest.approx(want, rel=1e-3), key
 

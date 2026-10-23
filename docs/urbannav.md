@@ -276,6 +276,63 @@ Every statement is about one sequence and one receiver, and points at rows of th
 3. **The edges of the outage are the hard part.** The fixes just before the receiver gives up are the worst of the
    valid ones, and the first fixes after it recovers are wrong too.
 
+## Deep-Urban-1: real urban GNSS, no outage
+
+**Status: not run for this page.** The tables in this section are generated from the committed CSV. It has no rows for
+this sequence yet, and they say so. Until it has rows, nothing on this page is a result about Deep-Urban-1.
+
+- **One sequence, one receiver, one recording.** The seeds perturb only the start state, as for Tunnel-1.
+- **The receiver reports no outage here.** The outage rule is the one used for Tunnel-1, and it was not changed or
+  tuned to find one (issue #95). So this is not an outage test. It is the **aided run**: the filter is offered the
+  receiver's own fixes over the whole recording, and the question is how it handles them.
+- **The settings are the ones declared above, unchanged.** Both variants are fixed before this sequence is run. Neither
+  is tuned on it. The per-fix variant was added after the first Tunnel-1 result, so on Tunnel-1 it is not blind. Here it
+  is declared in advance.
+- **The oracle diagnostics are not applicable.** They replace part of the attitude inside an outage, and there is none.
+  The block below says so.
+- **The reference is the same kind of file as for Tunnel-1:** the post-processed NovAtel SPAN-CPT solution, read from
+  the text file and not from the bag. Between tall buildings its own error is unknown, and every score here is a score
+  against an estimate.
+
+What the section tests:
+
+1. **Whether the filter is right about how wrong it is on real urban GNSS errors.** The rows are the horizontal and
+   attitude normalised errors over the whole run, the pooled 2-sigma coverage per axis, and the fixes' own normalised
+   error against the receiver's reported sigma.
+2. **How the gate behaves on real multipath fixes.** The rows are the share of fixes it rejects, whether the channel
+   is declared faulty, and whether it is taken back.
+
+**As declared**, one scalar GNSS sigma for every fix:
+
+<!-- urbannav-deep-urban-run-declared:start -->
+
+No rows for Deep-Urban-1 are in the committed CSV, so it has not been run for this page. The table appears here when the CSV has its rows.
+
+<!-- urbannav-deep-urban-run-declared:end -->
+
+**Per-fix sigma**, each fix weighted with the error estimate the receiver reported for it:
+
+<!-- urbannav-deep-urban-run-per-fix:start -->
+
+No rows for Deep-Urban-1 are in the committed CSV, so it has not been run for this page. The table appears here when the CSV has its rows.
+
+<!-- urbannav-deep-urban-run-per-fix:end -->
+
+**Oracle diagnostics:**
+
+<!-- urbannav-deep-urban-oracle:start -->
+
+No rows for Deep-Urban-1 are in the committed CSV, so it has not been run for this page. The table appears here when the CSV has its rows.
+
+<!-- urbannav-deep-urban-oracle:end -->
+
+What this section will not show, whatever the rows say:
+
+- It does not say how the filter does through an outage. Imposed outages are a separate experiment.
+- It does not carry over to another receiver, another city or another day.
+- The antenna offset from the IMU is not corrected, and the height is almost unused by design.
+- It is not field performance.
+
 ## What follows
 
 The attitude is the next thing to understand: a run that starts from a better alignment, or that holds the gyroscope
