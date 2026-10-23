@@ -35,6 +35,7 @@ from . import (
     attribution,
     b1_gate,
     benchmark,
+    candidate_gate,
     euroc_cli,
     fault_classification,
     fault_matrix,
@@ -106,14 +107,19 @@ def _tumvi(argv: list[str] | None) -> int:
 
 
 def _gate(argv: list[str] | None) -> int:
-    """Route ``navkit gate b1``: the B1 gate of ADR-0028."""
+    """Route ``navkit gate b1|candidate|n-eff-pool``: the gates of ADR-0028 and ADR-0030."""
     args = list(argv or [])
-    if not args or args[0] in ("-h", "--help") or args[0] != "b1":
-        usage = "usage: navkit gate b1 --seeds A-B --csv PATH [--page PATH] [--held-out]"
-        note = "  b1  apply the B1 gate of ADR-0028 to the candidate over 25 seeds (seeds 100 to 124 need --held-out)"
-        print("\n".join((usage, note)), file=sys.stderr)
+    routes = {"b1": b1_gate.main, "candidate": candidate_gate.main, "n-eff-pool": candidate_gate.main_pool}
+    if not args or args[0] in ("-h", "--help") or args[0] not in routes:
+        usage = "usage: navkit gate {b1,candidate,n-eff-pool} [options]"
+        notes = (
+            "  b1          the B1 gate of ADR-0028 on the candidate over 25 seeds (seeds 100 to 124 need --held-out)",
+            "  candidate   the gate of ADR-0030 in two scenarios (seeds from 125 are held-out blocks, one at a time)",
+            "  n-eff-pool  the effective sample sizes that the simulated properties of ADR-0030 draw from",
+        )
+        print("\n".join((usage, *notes)), file=sys.stderr)
         return 0 if args and args[0] in ("-h", "--help") else 2
-    return b1_gate.main(args[1:])
+    return routes[args[0]](args[1:])
 
 
 def _urbannav(argv: list[str] | None) -> int:

@@ -321,6 +321,97 @@ the command does not do so. The status of B1 is in `CONSTRAINTS.md`. It does not
 
 <!-- b1-gate-heldout:end -->
 
+## The candidate gate of ADR-0030 on the development seeds
+
+[ADR-0030](adr/0030-the-gate-for-the-next-visual-update-candidate.md) sets the gate for the next visual-update
+candidate. This section is the development run: seeds 25 to 49, which are development seeds. It shows that the
+machinery works and that the gate can say no in each direction. No new candidate is evaluated here. The held-out blocks
+start at seed 125 and are used one at a time; [the ledger](data/heldout_ledger.csv) lists the blocks used so far.
+
+A candidate is a set of estimator settings, and the same settings run in two scenarios. S1 is the scenario of
+`outage_visual`, with independent visual errors. S2 is the scenario of `outage_visual_clone_correlated`, which differs
+only in that the visual errors are correlated over time. The configuration is not told which scenario it faces. In each
+scenario the candidate and the no-vision control `outage_control` run on the same seeds, over the GNSS-outage window.
+Each run gives the time mean of its NEES and the effective sample size of that series.
+
+What each condition means. The value and the threshold of every one are in the second table.
+
+- **(U) upper.** The 90th percentile of the per-run mean NEES must not exceed the upper edge of a chi-square band built
+  on the median effective sample size. This is the test for overconfidence. It is a percentile and not a mean, so a few
+  heavy-tailed runs cannot decide it.
+- **(L) lower.** The median of the per-run mean NEES must not fall below a floor. This is the engineering tolerance for
+  conservatism of the first gate, and not a statistical test.
+- **(C) coverage.** The pooled share of (run, epoch, axis) triples whose error is within 2 sigma on that axis.
+- **(P) paired against the control.** The number of seeds on which the candidate has the lower ATE, the median ratio of
+  the candidate's ATE to the control's, and the largest ratio.
+
+A scenario passes when all six hold, and a candidate passes only when it passes in both scenarios. The confidence level
+of (U) is not chosen. It is the first level of a fixed list at which simulated runs behave as intended for (U) and (L),
+and a test fails if the value differs from what that rule returns for
+[the pool of effective sample sizes](data/gate_n_eff_pool.csv). The table is generated from
+[`data/candidate_gate_dev.csv`](data/candidate_gate_dev.csv) and checked against it by a test. Regenerate it with:
+
+```bash
+navkit gate candidate --seeds 25-49 --csv docs/data/candidate_gate_dev.csv --page docs/calibration.md
+```
+
+<!-- candidate-gate-dev:start -->
+
+| Role | Subject | Scenario | Seeds | Runs | Median n_eff (m) | Level of (U) | Holds in this scenario | Holds in both |
+|---|---|---|---|---:|---:|---:|---|---|
+| candidate | outage_visual+clone+measured-front-end | S1 | 25-49 | 25 | 4.3 | 0.975 | no | no |
+| candidate | outage_visual+clone+measured-front-end | S2 | 25-49 | 25 | 5.9 | 0.975 | yes | no |
+| DIAGNOSTIC | outage_visual_clone | S1 | 25-49 | 25 | 6.6 | 0.975 | no | no |
+| DIAGNOSTIC | outage_visual_clone | S2 | 25-49 | 25 | 6.8 | 0.975 | no | no |
+| DIAGNOSTIC | outage_visual | S1 | 25-49 | 25 | 4.0 | 0.975 | no | no |
+| DIAGNOSTIC | outage_visual | S2 | 25-49 | 25 | 4.1 | 0.975 | no | no |
+
+| Role | Subject | Scenario | Condition | Value | Threshold | Holds |
+|---|---|---|---|---:|---:|---|
+| candidate | outage_visual+clone+measured-front-end | S1 | 90th percentile of the per-run mean NEES, at most the upper edge | 1.219 | <= 5.716 | yes |
+| candidate | outage_visual+clone+measured-front-end | S1 | Median of the per-run mean NEES, at least the lower bound | 0.7117 | >= 1.32 | no |
+| candidate | outage_visual+clone+measured-front-end | S1 | Pooled 2-sigma per-axis coverage | 100.00% | >= 95.00% | yes |
+| candidate | outage_visual+clone+measured-front-end | S1 | Runs where the candidate has the lower ATE | 25 | >= 20 | yes |
+| candidate | outage_visual+clone+measured-front-end | S1 | Median ATE ratio, candidate over control | 0.116 | <= 0.8 | yes |
+| candidate | outage_visual+clone+measured-front-end | S1 | Largest ATE ratio | 0.3733 | <= 1.5 | yes |
+| candidate | outage_visual+clone+measured-front-end | S2 | 90th percentile of the per-run mean NEES, at most the upper edge | 4.448 | <= 5.283 | yes |
+| candidate | outage_visual+clone+measured-front-end | S2 | Median of the per-run mean NEES, at least the lower bound | 2.918 | >= 1.32 | yes |
+| candidate | outage_visual+clone+measured-front-end | S2 | Pooled 2-sigma per-axis coverage | 97.17% | >= 95.00% | yes |
+| candidate | outage_visual+clone+measured-front-end | S2 | Runs where the candidate has the lower ATE | 20 | >= 20 | yes |
+| candidate | outage_visual+clone+measured-front-end | S2 | Median ATE ratio, candidate over control | 0.4389 | <= 0.8 | yes |
+| candidate | outage_visual+clone+measured-front-end | S2 | Largest ATE ratio | 1.192 | <= 1.5 | yes |
+| DIAGNOSTIC | outage_visual_clone | S1 | 90th percentile of the per-run mean NEES, at most the upper edge | 1.848 | <= 5.145 | yes |
+| DIAGNOSTIC | outage_visual_clone | S1 | Median of the per-run mean NEES, at least the lower bound | 0.9381 | >= 1.32 | no |
+| DIAGNOSTIC | outage_visual_clone | S1 | Pooled 2-sigma per-axis coverage | 100.00% | >= 95.00% | yes |
+| DIAGNOSTIC | outage_visual_clone | S1 | Runs where the candidate has the lower ATE | 25 | >= 20 | yes |
+| DIAGNOSTIC | outage_visual_clone | S1 | Median ATE ratio, candidate over control | 0.07701 | <= 0.8 | yes |
+| DIAGNOSTIC | outage_visual_clone | S1 | Largest ATE ratio | 0.2554 | <= 1.5 | yes |
+| DIAGNOSTIC | outage_visual_clone | S2 | 90th percentile of the per-run mean NEES, at most the upper edge | 71.57 | <= 5.102 | no |
+| DIAGNOSTIC | outage_visual_clone | S2 | Median of the per-run mean NEES, at least the lower bound | 33.93 | >= 1.32 | yes |
+| DIAGNOSTIC | outage_visual_clone | S2 | Pooled 2-sigma per-axis coverage | 41.98% | >= 95.00% | no |
+| DIAGNOSTIC | outage_visual_clone | S2 | Runs where the candidate has the lower ATE | 19 | >= 20 | no |
+| DIAGNOSTIC | outage_visual_clone | S2 | Median ATE ratio, candidate over control | 0.5126 | <= 0.8 | yes |
+| DIAGNOSTIC | outage_visual_clone | S2 | Largest ATE ratio | 1.747 | <= 1.5 | no |
+| DIAGNOSTIC | outage_visual | S1 | 90th percentile of the per-run mean NEES, at most the upper edge | 1.886e+04 | <= 5.82 | no |
+| DIAGNOSTIC | outage_visual | S1 | Median of the per-run mean NEES, at least the lower bound | 8117 | >= 1.32 | yes |
+| DIAGNOSTIC | outage_visual | S1 | Pooled 2-sigma per-axis coverage | 14.10% | >= 95.00% | no |
+| DIAGNOSTIC | outage_visual | S1 | Runs where the candidate has the lower ATE | 4 | >= 20 | no |
+| DIAGNOSTIC | outage_visual | S1 | Median ATE ratio, candidate over control | 1.489 | <= 0.8 | no |
+| DIAGNOSTIC | outage_visual | S1 | Largest ATE ratio | 7.122 | <= 1.5 | no |
+| DIAGNOSTIC | outage_visual | S2 | 90th percentile of the per-run mean NEES, at most the upper edge | 2.399e+04 | <= 5.808 | no |
+| DIAGNOSTIC | outage_visual | S2 | Median of the per-run mean NEES, at least the lower bound | 1.226e+04 | >= 1.32 | yes |
+| DIAGNOSTIC | outage_visual | S2 | Pooled 2-sigma per-axis coverage | 12.52% | >= 95.00% | no |
+| DIAGNOSTIC | outage_visual | S2 | Runs where the candidate has the lower ATE | 4 | >= 20 | no |
+| DIAGNOSTIC | outage_visual | S2 | Median ATE ratio, candidate over control | 1.634 | <= 0.8 | no |
+| DIAGNOSTIC | outage_visual | S2 | Largest ATE ratio | 6.379 | <= 1.5 | no |
+
+<!-- candidate-gate-dev:end -->
+
+The candidate row is the candidate of ADR-0028, so that the machinery can be exercised. It is not a new candidate. The
+DIAGNOSTIC rows apply the same function to the same seeds: the plain clone and the single anchor. They are not
+candidates. They are there to show that the gate can say no. Passing the gate does not change `vision_enabled`; that is
+a separate maintainer decision.
+
 ## Worked example: reading the defect
 
 From the generated benchmark (`python scripts/run_benchmark.py`, GNSS available

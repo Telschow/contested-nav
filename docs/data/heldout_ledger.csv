@@ -1,0 +1,2 @@
+block,seeds,candidate,commit,date,outcome
+1,100-124,clone + measured-front-end (ADR-0028),4c88341,2026-10-20,failed condition 2
