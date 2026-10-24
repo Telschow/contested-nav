@@ -11,6 +11,12 @@ this project uses [semantic versioning](https://semver.org/).
 
 ### Added
 
+- `navkit sweep mismatch --ensemble-csv PATH [--ensemble-page PATH] [--ensemble-compare PATH]`: every cell of the mismatch
+  sweep as an ensemble over seeds 25 to 49, scored with the chi-square band for the number of runs and 3 degrees of
+  freedom. Output: `docs/data/mismatch_ensemble.csv` and a generated section in `docs/mismatch.md` with the table and
+  sentences by direction and by size of the factor, and a comparison with the single-run table. The existing sweep
+  output is unchanged. The page no longer says the ensemble is the tool that can resolve a mild mismatch: it resolves
+  some and not others, and the page lists which.
 - `navkit sweep fdir rate` and `navkit sweep fdir sensitivity` (T2-7). The first counts how often the FDIR chi-square gate
   rejects a healthy GNSS update on `gnss_only` and `outage_control`, outside the outage and a settling period after
   it, and sets the observed rate against the stated alpha with a raw and an effective-count Wilson interval and a
