@@ -26,7 +26,7 @@ metrics = _load()
 
 GOOD = {
     "adr_count": 2,
-    "tests_collected": 10,
+    "tests_collected_floor": 100,
     "coverage_percent": 91.26,
     "coverage_lines_hit": 100,
     "coverage_lines_total": 110,
@@ -59,12 +59,12 @@ def make_tree(tmp_path: Path, readme: str = "", adrs: tuple[str, ...] = ("0001-a
 class TestRender:
     def test_percent_has_one_decimal_and_counts_are_plain(self):
         assert metrics.render("coverage_percent", GOOD) == "91.3"
-        assert metrics.render("tests_collected", GOOD) == "10"
+        assert metrics.render("tests_collected_floor", GOOD) == "100"
 
     def test_rewrite_replaces_a_stale_value_and_leaves_other_text(self):
-        old = f"We have {marker('tests_collected', '7')} tests in all."
+        old = f"We have {marker('tests_collected_floor', '70')} tests in all."
         new = metrics.rewrite(old, GOOD)
-        assert new == f"We have {marker('tests_collected', '10')} tests in all."
+        assert new == f"We have {marker('tests_collected_floor', '100')} tests in all."
 
     def test_rewrite_is_idempotent(self):
         text = f"{marker('adr_count', '2')} and {marker('coverage_percent', '1.0')}%"
@@ -74,50 +74,110 @@ class TestRender:
 
 class TestCheck:
     def test_a_matching_tree_passes(self, tmp_path):
-        root = make_tree(tmp_path, f"{marker('tests_collected', '10')} tests collected")
-        assert metrics.check(root, collected=10) == []
+        root = make_tree(tmp_path, f"{marker('tests_collected_floor', '100')} tests collected")
+        assert metrics.check(root, collected=150) == []
 
     def test_a_stale_marker_is_reported(self, tmp_path):
-        root = make_tree(tmp_path, f"{marker('tests_collected', '9')} tests collected")
-        problems = metrics.check(root, collected=10)
-        assert any("tests_collected reads 9" in p for p in problems)
+        root = make_tree(tmp_path, f"{marker('tests_collected_floor', '90')} tests collected")
+        problems = metrics.check(root, collected=150)
+        assert any("tests_collected_floor reads 90" in p for p in problems)
 
     def test_a_hand_typed_count_is_reported(self, tmp_path):
         root = make_tree(tmp_path, "There are 12 ADRs and 884 passed here.")
-        problems = metrics.check(root, collected=10)
+        problems = metrics.check(root, collected=150)
         assert any("12 ADRs" in p for p in problems)
         assert any("884 passed" in p for p in problems)
 
     def test_a_hand_typed_line_coverage_is_reported(self, tmp_path):
         root = make_tree(tmp_path, "Reached 92.86% line coverage.")
-        assert any("line coverage" in p for p in metrics.check(root, collected=10))
+        assert any("line coverage" in p for p in metrics.check(root, collected=150))
 
     def test_other_percentages_are_not_counts(self, tmp_path):
         root = make_tree(tmp_path, "2-sigma coverage is 20.0% and the floor is 75%.")
-        assert metrics.check(root, collected=10) == []
+        assert metrics.check(root, collected=150) == []
 
     def test_an_unknown_key_is_reported(self, tmp_path):
         root = make_tree(tmp_path, marker("nonsense", "1"))
-        assert any("unknown metric" in p for p in metrics.check(root, collected=10))
+        assert any("unknown metric" in p for p in metrics.check(root, collected=150))
 
-    def test_the_collected_count_must_match_pytest(self, tmp_path):
+    def test_the_collected_floor_must_match_pytest(self, tmp_path):
         root = make_tree(tmp_path)
-        assert any("pytest collects 11" in p for p in metrics.check(root, collected=11))
+        problems = metrics.check(root, collected=250)
+        assert any("pytest collects 250" in p and "floor 200" in p for p in problems)
+        assert any("python scripts/metrics.py --write" in p for p in problems)
+
+    def test_a_json_holding_a_different_floor_is_reported(self, tmp_path):
+        root = make_tree(tmp_path, f"more than {marker('tests_collected_floor', '100')} tests")
+        (root / "docs" / "data" / "metrics.json").write_text(
+            json.dumps({**GOOD, "tests_collected_floor": 200}), encoding="utf-8"
+        )
+        problems = metrics.check(root, collected=150)
+        assert any("tests_collected_floor is 200" in p for p in problems)
+
+    def test_the_exact_count_is_not_stored(self):
+        assert "tests_collected" not in metrics.KEYS
+        assert "tests_collected" not in metrics.read_metrics()
 
     def test_the_adr_count_must_match_the_files(self, tmp_path):
         root = make_tree(tmp_path, adrs=("0001-a.md", "0002-b.md", "0003-c.md"))
-        assert any("adr_count is 2, docs/adr has 3" in p for p in metrics.check(root, collected=10))
+        assert any("adr_count is 2, docs/adr has 3" in p for p in metrics.check(root, collected=150))
 
     def test_an_adr_missing_from_the_index_is_reported(self, tmp_path):
         root = make_tree(tmp_path)
         (root / "docs" / "adr" / "index.md").write_text("0001-a.md", encoding="utf-8")
-        assert any("0002-b.md" in p for p in metrics.check(root, collected=10))
+        assert any("0002-b.md" in p for p in metrics.check(root, collected=150))
 
     def test_history_documents_may_keep_their_old_counts(self, tmp_path):
         root = make_tree(tmp_path)
         (root / "docs" / "releases").mkdir()
         (root / "docs" / "releases" / "0.1.0.md").write_text("567 tests", encoding="utf-8")
-        assert metrics.check(root, collected=10) == []
+        assert metrics.check(root, collected=150) == []
+
+
+class TestFloor:
+    @pytest.mark.parametrize("count, floor", [(2199, 2100), (2200, 2200), (2299, 2200), (99, 0), (100, 100)])
+    def test_the_floor_rounds_down_to_a_hundred(self, count, floor):
+        assert metrics.tests_floor(count) == floor
+
+
+class TestWrite:
+    def _tree(self, tmp_path):
+        text = f"more than {marker('tests_collected_floor', '0')} tests\n"
+        root = make_tree(tmp_path, text)
+        (root / "docs" / "data" / "metrics.json").write_text(json.dumps(GOOD), encoding="utf-8")
+        return root
+
+    def _snapshot(self, root):
+        return {p: p.read_bytes() for p in (root / "README.md", root / "docs" / "data" / "metrics.json")}
+
+    def test_write_regenerates_the_markers_and_the_json_with_the_floor(self, tmp_path):
+        root = self._tree(tmp_path)
+        metrics.write(root, collected=2263)
+        assert metrics.read_metrics(root / "docs" / "data" / "metrics.json")["tests_collected_floor"] == 2200
+        assert marker("tests_collected_floor", "2200") in (root / "README.md").read_text(encoding="utf-8")
+        assert metrics.check(root, collected=2263) == []
+
+    def test_a_second_write_changes_nothing(self, tmp_path):
+        root = self._tree(tmp_path)
+        metrics.write(root, collected=2263)
+        first = self._snapshot(root)
+        metrics.write(root, collected=2263)
+        assert self._snapshot(root) == first
+
+    def test_more_tests_inside_the_same_hundred_change_no_tracked_file(self, tmp_path):
+        root = self._tree(tmp_path)
+        metrics.write(root, collected=2263)
+        first = self._snapshot(root)
+        metrics.write(root, collected=2268)
+        assert self._snapshot(root) == first
+        assert metrics.check(root, collected=2268) == []
+
+    def test_crossing_a_hundred_fails_the_check_until_write_runs(self, tmp_path):
+        root = self._tree(tmp_path)
+        metrics.write(root, collected=2299)
+        assert metrics.check(root, collected=2301)
+        metrics.write(root, collected=2301)
+        assert metrics.check(root, collected=2301) == []
 
 
 class TestHeadline:
@@ -133,18 +193,18 @@ class TestHeadline:
 
     def test_a_marker_holding_the_current_value_passes(self, tmp_path):
         text = f"NEES {marker('outage_visual_window_nees', '478.6')} over the window"
-        assert metrics.check(make_tree(tmp_path, text), collected=10) == []
+        assert metrics.check(make_tree(tmp_path, text), collected=150) == []
 
     def test_a_stale_marker_is_reported(self, tmp_path):
         text = f"NEES {marker('outage_visual_window_nees', '286.1')} over the window"
-        problems = metrics.check(make_tree(tmp_path, text), collected=10)
+        problems = metrics.check(make_tree(tmp_path, text), collected=150)
         assert any("outage_visual_window_nees reads 286.1" in p for p in problems)
 
     def test_a_recorded_value_that_differs_from_the_golden_snapshot_is_reported(self, tmp_path):
         root = make_tree(tmp_path)
         moved = {"cases": {"outage_visual": {"outage_calibration": {"nees_mean": 500.0, "coverage_2sigma": 0.0}}}}
         (root / "tests" / "golden" / "benchmark.json").write_text(json.dumps(moved), encoding="utf-8")
-        problems = metrics.check(root, collected=10)
+        problems = metrics.check(root, collected=150)
         assert any("outage_visual_window_nees" in p and "golden" in p for p in problems)
 
 

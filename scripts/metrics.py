@@ -1,17 +1,19 @@
 #!/usr/bin/env python
-"""One source for the numbers the documents quote: tests collected, ADRs, line coverage, and two headline values.
+"""One source for the numbers the documents quote: a rounded test count, ADRs, line coverage, and two headline values.
 
 ``docs/data/metrics.json`` holds them. A document quotes one as
 
-    <!-- metric:tests_collected -->888<!-- /metric -->
+    more than <!-- metric:tests_collected_floor -->800<!-- /metric --> tests
 
 and this script rewrites that value from the JSON (``--write``) or fails when it differs
 (``--check``). The comment markers are invisible when the page is rendered.
 
 * ``adr_count`` is the number of ``docs/adr/NNNN-*.md`` files, and every one must be listed in
   ``docs/adr/index.md``.
-* ``tests_collected`` is what ``pytest --collect-only`` reports. It changes whenever a test is
-  added, so ``--write`` (a second) refreshes it.
+* ``tests_collected_floor`` is the count that ``pytest --collect-only`` reports, rounded down to a hundred. The exact
+  count is not stored, because it changes in every pull request that adds a test and so made every open pull request
+  conflict. ``--check`` counts the tests afresh and fails when the recorded floor or a marker differs, so a pull
+  request that crosses a hundred runs ``--write`` and one that does not needs nothing.
 * ``outage_visual_window_nees`` and ``outage_visual_window_coverage_percent`` are the mean NEES and the 2-sigma
   coverage of ``outage_visual`` over the GNSS outage window. They are read from the committed golden snapshot,
   ``tests/golden/benchmark.json``, by ``--write``, and ``--check`` fails when the JSON differs from the snapshot.
@@ -51,7 +53,7 @@ COVERAGE_TOLERANCE = 0.5
 
 KEYS = (
     "adr_count",
-    "tests_collected",
+    "tests_collected_floor",
     "coverage_percent",
     "coverage_lines_hit",
     "coverage_lines_total",
@@ -59,6 +61,9 @@ KEYS = (
     "outage_visual_window_nees",
     "outage_visual_window_coverage_percent",
 )
+
+#: The test count is quoted rounded down to a multiple of this.
+TESTS_ROUNDING = 100
 
 #: Keys shown with one decimal.
 ONE_DECIMAL = ("coverage_percent", "outage_visual_window_nees", "outage_visual_window_coverage_percent")
@@ -103,6 +108,11 @@ def adr_problems(root: Path = ROOT) -> list[str]:
     """Every ADR file is linked from the index."""
     index = (root / "docs" / "adr" / "index.md").read_text(encoding="utf-8")
     return [f"docs/adr/index.md does not list {p.name}" for p in adr_files(root) if p.name not in index]
+
+
+def tests_floor(count: int) -> int:
+    """``count`` rounded down to a multiple of :data:`TESTS_ROUNDING`."""
+    return count // TESTS_ROUNDING * TESTS_ROUNDING
 
 
 def count_collected(root: Path = ROOT) -> int:
@@ -191,8 +201,11 @@ def check(root: Path = ROOT, collected: int | None = None) -> list[str]:
         problems.append(f"adr_count is {metrics['adr_count']}, docs/adr has {len(adr_files(root))} records")
     problems.extend(adr_problems(root))
     seen = count_collected(root) if collected is None else collected
-    if metrics["tests_collected"] != seen:
-        problems.append(f"tests_collected is {metrics['tests_collected']}, pytest collects {seen}")
+    if metrics["tests_collected_floor"] != tests_floor(seen):
+        problems.append(
+            f"tests_collected_floor is {metrics['tests_collected_floor']}, pytest collects {seen} "
+            f"(floor {tests_floor(seen)}): run python scripts/metrics.py --write"
+        )
     for key, value in headline_from_golden(root).items():
         if metrics[key] != value:
             problems.append(f"{key} is {metrics[key]}, the golden snapshot has {value}: run scripts/metrics.py --write")
@@ -217,11 +230,13 @@ def coverage_problems(metrics: dict[str, Any], measured: dict[str, Any]) -> tupl
     return [], f"coverage {measured['coverage_percent']}% within {COVERAGE_TOLERANCE} points of the recorded value"
 
 
-def write(root: Path = ROOT, with_coverage: bool = False) -> dict[str, Any]:
+def write(root: Path = ROOT, with_coverage: bool = False, collected: int | None = None) -> dict[str, Any]:
+    """Regenerate the JSON and the markers. ``collected`` is injected by tests."""
     path = root / "docs" / "data" / "metrics.json"
     metrics: dict[str, Any] = read_metrics(path) if path.is_file() else {}
     metrics["adr_count"] = len(adr_files(root))
-    metrics["tests_collected"] = count_collected(root)
+    metrics.pop("tests_collected", None)
+    metrics["tests_collected_floor"] = tests_floor(count_collected(root) if collected is None else collected)
     metrics.update(headline_from_golden(root))
     if with_coverage:
         metrics.update(coverage_from(root / "coverage.json"))
@@ -249,8 +264,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.write:
         m = write(with_coverage=args.coverage)
         print(
-            f"wrote docs/data/metrics.json: {m['tests_collected']} tests collected, {m['adr_count']} ADRs, "
-            f"{m['coverage_percent']}% line coverage (Python {m['coverage_python']})"
+            f"wrote docs/data/metrics.json: more than {m['tests_collected_floor']} tests collected, "
+            f"{m['adr_count']} ADRs, {m['coverage_percent']}% line coverage (Python {m['coverage_python']})"
         )
         return 0
     if args.check_coverage:
