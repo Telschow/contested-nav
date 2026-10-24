@@ -98,7 +98,7 @@ flowchart TB
 
 Every run is scored twice: how far the estimate is from the truth, and whether the truth falls
 inside the area the filter claims. A feature that improves the first and breaks the second stays
-off. A short captioned explainer is on the [project page](https://telschow.github.io/contested-nav/);
+off. The [project page](https://telschow.github.io/contested-nav/) has an animated figure of the same outage;
 the module-level design is in [docs/architecture.md](docs/architecture.md).
 <!-- how-it-works-end -->
 
