@@ -39,3 +39,4 @@ what it cost, and what was rejected.
 | [ADR-0032](0032-the-adaptive-visual-scale-takes-every-visual-update.md) | The adaptive visual scale takes every visual update | accepted |
 | [ADR-0033](0033-one-convention-for-the-synthetic-visual-translation-noise.md) | One convention for the synthetic visual translation noise | accepted |
 | [ADR-0034](0034-a-gauss-markov-model-of-the-correlated-visual-error.md) | A Gauss-Markov model of the correlated visual error | accepted |
+| [ADR-0035](0035-the-integrity-status-record.md) | The integrity status record | accepted |
