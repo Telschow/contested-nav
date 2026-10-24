@@ -60,7 +60,9 @@ A stochastic clone of the previous pose (opt-in, `vision_model: clone`,
 [ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)) is the candidate fix. The pre-registered
 held-out gate ([ADR-0028](docs/adr/0028-the-b1-gate.md)) was run once and failed, and the result was accepted rather
 than tuned away. A single run cannot establish calibration, so the table lists what was measured and its status. It is
-all synthetic, the default is unchanged, and visual fusion still ships off.
+all synthetic, the default is unchanged, and visual fusion still ships off. B1 is closed as characterised, not solved
+([ADR-0036](docs/adr/0036-b1-is-closed-as-characterised-not-solved.md)): work towards a default-on configuration has
+stopped, and the tools stay in the repository.
 
 **What the evidence shows**
 
@@ -69,8 +71,9 @@ all synthetic, the default is unchanged, and visual fusion still ships off.
 | Single anchor | overconfident in every run of every sweep; does not recover from a start attitude error inside its own declared prior ([the ensemble over seeds](docs/calibration.md#the-ensemble-over-seeds), [what the sweeps show](#what-the-sweeps-show)) | fails; kept as the control |
 | Stochastic clone, independent visual errors | passes the S1 gate of [ADR-0030](docs/adr/0030-the-gate-for-the-next-visual-update-candidate.md) on the development seeds (25 to 49) ([the candidate gate](docs/calibration.md#the-candidate-gate-of-adr-0030-on-the-development-seeds)) | not evaluated on held-out seeds |
 | Clone with the measured-front-end noise preset | conservative; failed the held-out gate of [ADR-0028](docs/adr/0028-the-b1-gate.md) on condition 2, on the fixture before ADR-0033 ([the decision run](docs/calibration.md#the-b1-gate-the-decision-run-on-the-held-out-seeds)) | recorded, accepted as final ([B1 in CONSTRAINTS.md](CONSTRAINTS.md)) |
-| Stochastic clone, visual errors correlated over time | fails the S2 gate of [ADR-0030](docs/adr/0030-the-gate-for-the-next-visual-update-candidate.md) on the development seeds ([the candidate gate](docs/calibration.md#the-candidate-gate-of-adr-0030-on-the-development-seeds)) | open |
+| Stochastic clone, visual errors correlated over time | fails the S2 gate of [ADR-0030](docs/adr/0030-the-gate-for-the-next-visual-update-candidate.md) on the development seeds ([the candidate gate](docs/calibration.md#the-candidate-gate-of-adr-0030-on-the-development-seeds)) | not solved; work stopped ([ADR-0036](docs/adr/0036-b1-is-closed-as-characterised-not-solved.md)) |
 | Adaptive visual noise scale ([ADR-0031](docs/adr/0031-an-adaptive-visual-noise-scale.md), [ADR-0032](docs/adr/0032-the-adaptive-visual-scale-takes-every-visual-update.md)) | failed on development seeds, on the fixture before ADR-0033 | recorded |
+| Gauss-Markov model of the correlated visual error ([ADR-0034](docs/adr/0034-a-gauss-markov-model-of-the-correlated-visual-error.md)) | restores consistency with the NEES conditions in scenario S2 when its correlation time matches the data, and is conservative when it does not ([the tuning run and the robustness diagnostic](docs/calibration.md#the-tuning-run-of-the-gauss-markov-visual-error-model-adr-0034)); the usefulness conditions of the gate are not met in S2 even with a near-exact model ([the diagnostic](docs/calibration.md#usefulness-in-scenario-s2-with-a-near-exact-model-diagnostic)) | failed on development seeds, recorded |
 
 > **Mostly synthetic evidence.** The tables on this page come from a deterministic known-answer
 > fixture: an analytic trajectory with generated sensor streams. The recorded-data pages use a real

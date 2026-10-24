@@ -50,3 +50,5 @@ What stays open. Whether the held-out evaluation passes, what the model costs in
 - The held-out run is a separate, single-use package on seeds 125 to 149.
 - `CONSTRAINTS.md` B1 stays as it is until a candidate has been evaluated.
 - The fixed preset of ADR-0024 remains as it is. This candidate does not use it.
+
+Note (2026-10-24): the work under this ADR is closed by [ADR-0036](0036-b1-is-closed-as-characterised-not-solved.md).

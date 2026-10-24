@@ -112,7 +112,7 @@ the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
 | `outage_sweep.py` coverage | 80% | 98.4% | as above |
 | `fdir/nis_monitor.py` coverage | 80% | 98.8% | as above |
 | `degrade/` coverage | 50% | 78.0% (`config.py`) / 84.2% (`inject.py`) | as above |
-| Docs | README + architecture + calibration + every ADR | <!-- metric:adr_count -->35<!-- /metric --> ADRs, all in the index | `scripts/metrics.py --check` |
+| Docs | README + architecture + calibration + every ADR | <!-- metric:adr_count -->36<!-- /metric --> ADRs, all in the index | `scripts/metrics.py --check` |
 | Documented tables match the generated benchmark | exact | yes | `scripts/check_doc_tables.py` |
 | Open blockers documented | all | see ROADMAP | manual |
 
@@ -132,11 +132,26 @@ Status: open. The gate of ADR-0028 failed on the held-out seeds 100 to 124 for t
   [`docs/data/b1_gate_heldout.csv`](docs/data/b1_gate_heldout.csv). The status block above is generated from that file
   by `scripts/render_b1_heldout.py` and checked by a test.
 
-  Current status. B1 is open for the shipped configuration: the single-anchor visual update is overconfident under GNSS
-  denial, and `vision_enabled` stays `False`. The opt-in stochastic clone passes the S1 gate of
-  [ADR-0030](docs/adr/0030-the-gate-for-the-next-visual-update-candidate.md) on the development seeds (25 to 49) and
-  has not been evaluated on held-out seeds. It fails the S2 gate, where the visual errors are correlated over time.
-  [ADR-0028](docs/adr/0028-the-b1-gate.md) and ADR-0030 govern any candidate.
+  Current status. Open, work stopped
+  ([ADR-0036](docs/adr/0036-b1-is-closed-as-characterised-not-solved.md)). The shipped configuration is unchanged:
+  `vision_enabled` stays `False`, the single anchor stays the default and the control row, and the stochastic clone,
+  the adaptive visual noise scale and the Gauss-Markov model stay opt-in. What is known:
+
+  - The single anchor is overconfident under GNSS denial, and it does not recover from a start attitude error inside its
+    own declared prior.
+  - The stochastic clone passes the S1 gate of
+    [ADR-0030](docs/adr/0030-the-gate-for-the-next-visual-update-candidate.md) on the development seeds (25 to 49) and
+    has not been evaluated on held-out seeds. It fails the S2 gate, where the visual errors are correlated over time.
+  - Correlated measurement errors are absorbed into the state, so the innovations do not reveal them. The adaptive
+    visual noise scale (ADR-0031 and ADR-0032) failed on development seeds.
+  - A Gauss-Markov model of the correlated error (ADR-0034) restores consistency in S2 when its correlation time matches
+    the data and is conservative when it does not. It failed on development seeds, and on them the usefulness
+    conditions of the gate are not met in S2 even by a near-exact model.
+  - The held-out block of seeds 100 to 124 was used once, under [ADR-0028](docs/adr/0028-the-b1-gate.md). The blocks
+    from seed 125 are unused and stay unused.
+
+  The evidence is in [the calibration guide](docs/calibration.md), generated from the committed CSVs and checked by
+  tests. ADR-0028 and ADR-0030 stay the record of the gates.
 
   History (superseded gate), 2026-10. Everything from here to the end of B1 describes the gate of mean NEES under 10 and
   2-sigma coverage over 90% across the full run, in one run, which [ADR-0028](docs/adr/0028-the-b1-gate.md) supersedes,
