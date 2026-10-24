@@ -84,8 +84,92 @@ Each statement below is checked against the CSV by `tests/test_mismatch_sweep.py
    of five seeds at factors 2 and 4. A filter told 20% too little noise (factor 0.8) is still flagged overconfident in
    at least four of five seeds, so the loss of resolution is on the pessimistic side. A single run is worth far fewer
    independent samples than it has epochs ([the effective sample size per case](calibration.md#how-many-independent-samples-a-run-is-worth)),
-   so its verdict is descriptive. The ensemble over seeds is the tool that can resolve a mild mismatch
-   ([the ensemble over seeds](calibration.md#the-ensemble-over-seeds)).
+   so its verdict is descriptive. The ensemble over seeds
+   ([how it is defined](calibration.md#the-ensemble-over-seeds)) is tried on the same cells in the next section. It
+   resolves some mild mismatches that one run does not, and it does not resolve all of them.
+
+## The ensemble over seeds
+
+One run cannot resolve a mild mismatch (statement 6). This section runs every cell as an ensemble instead, the way
+[the calibration page](calibration.md#the-ensemble-over-seeds) does for the benchmark cases. Each cell is run for 25
+seeds, the NEES is averaged over the runs at each epoch, and that mean is compared with the chi-square band for 25 runs
+and 3 degrees of freedom. The seeds are 25 to 49, the development seeds of
+[ADR-0030](adr/0030-the-gate-for-the-next-visual-update-candidate.md). The single-run table above uses seeds 0 to 4, so
+the two tables share no draw. `outage_control` also has an `outage` scope, which scores only the epochs inside the GNSS
+outage.
+
+```bash
+navkit sweep mismatch --ensemble-csv docs/data/mismatch_ensemble.csv --ensemble-page docs/mismatch.md
+```
+
+The table and the sentences below are generated from [`data/mismatch_ensemble.csv`](data/mismatch_ensemble.csv) and the
+single-run CSV. A test rebuilds them from those files and fails if the page differs.
+
+<!-- mismatch-ensemble:start -->
+
+Band for the ensemble mean over N = 25 runs with 3 degrees of freedom: 2.118 to 4.034. Shares are of the scored epochs.
+
+| Case | Assumed noise x | Scope | Scored epochs | Grand mean NEES | Inside the band | Below | Above |
+|---|---:|---|---:|---:|---:|---:|---:|
+| gnss_only | 0.25 | full | 6001 | 44.56 | 0.0% | 0.0% | 100.0% |
+| gnss_only | 0.5 | full | 6001 | 20.57 | 0.0% | 0.0% | 100.0% |
+| gnss_only | 0.7 | full | 6001 | 6.11 | 4.4% | 0.0% | 95.6% |
+| gnss_only | 0.8 | full | 6001 | 4.592 | 21.7% | 0.0% | 78.3% |
+| gnss_only | 0.9 | full | 6001 | 3.523 | 87.0% | 0.1% | 12.8% |
+| gnss_only | 1 | full | 6001 | 2.888 | 94.9% | 4.7% | 0.4% |
+| gnss_only | 1.25 | full | 6001 | 1.961 | 26.5% | 73.5% | 0.0% |
+| gnss_only | 2 | full | 6001 | 0.995 | 2.6% | 97.4% | 0.0% |
+| gnss_only | 4 | full | 6001 | 0.6246 | 4.0% | 96.0% | 0.0% |
+| outage_control | 0.25 | full | 6001 | 36.79 | 0.0% | 0.0% | 100.0% |
+| outage_control | 0.25 | outage | 3000 | 30.62 | 0.0% | 0.0% | 100.0% |
+| outage_control | 0.5 | full | 6001 | 13.1 | 0.0% | 0.0% | 100.0% |
+| outage_control | 0.5 | outage | 3000 | 10.48 | 0.0% | 0.0% | 100.0% |
+| outage_control | 0.7 | full | 6001 | 4.514 | 51.5% | 0.0% | 48.5% |
+| outage_control | 0.7 | outage | 3000 | 3.596 | 99.1% | 0.0% | 0.9% |
+| outage_control | 0.8 | full | 6001 | 3.218 | 71.8% | 0.0% | 28.2% |
+| outage_control | 0.8 | outage | 3000 | 2.396 | 100.0% | 0.0% | 0.0% |
+| outage_control | 0.9 | full | 6001 | 2.557 | 50.3% | 48.3% | 1.4% |
+| outage_control | 0.9 | outage | 3000 | 1.933 | 3.7% | 96.3% | 0.0% |
+| outage_control | 1 | full | 6001 | 2.147 | 45.0% | 54.7% | 0.4% |
+| outage_control | 1 | outage | 3000 | 1.649 | 0.0% | 100.0% | 0.0% |
+| outage_control | 1.25 | full | 6001 | 1.573 | 5.3% | 94.7% | 0.0% |
+| outage_control | 1.25 | outage | 3000 | 1.322 | 0.0% | 100.0% | 0.0% |
+| outage_control | 2 | full | 6001 | 1.114 | 2.5% | 97.5% | 0.0% |
+| outage_control | 2 | outage | 3000 | 1.234 | 0.0% | 100.0% | 0.0% |
+| outage_control | 4 | full | 6001 | 1.103 | 4.0% | 96.0% | 0.0% |
+| outage_control | 4 | outage | 3000 | 1.469 | 0.0% | 100.0% | 0.0% |
+
+My rule for resolved, which is a choice and not a test: the mild factors are 0.8, 0.9 and 1.25. The ensemble resolves one when its mean is outside the band, on the side the mismatch predicts, for more than 50.0% of the scored epochs and for a larger share than at the true noise. One run resolves it when its bulk test reads the predicted way in at least 4 of 5 seeds.
+
+- gnss_only: with the assumed noise below the true noise, the ensemble mean is above the band for 100.0%, 100.0%, 95.6%, 78.3% and 12.8% of the scored epochs at factors 0.25, 0.5, 0.7, 0.8 and 0.9, a share that rises or stays level as the mismatch grows.
+- gnss_only: with the assumed noise above the true noise, the ensemble mean is below the band for 73.5%, 97.4% and 96.0% of the scored epochs at factors 1.25, 2 and 4, a share that does not keep rising as the mismatch grows.
+- gnss_only: at the true noise (factor 1) the ensemble mean is inside the band for 94.9% of the scored epochs, below it for 4.7% and above it for 0.4%.
+- gnss_only: of the mild factors 0.8, 0.9 and 1.25, the ensemble resolves 0.8 and 1.25 and not 0.9.
+- outage_control: with the assumed noise below the true noise, the ensemble mean is above the band for 100.0%, 100.0%, 48.5%, 28.2% and 1.4% of the scored epochs at factors 0.25, 0.5, 0.7, 0.8 and 0.9, a share that rises or stays level as the mismatch grows.
+- outage_control: with the assumed noise above the true noise, the ensemble mean is below the band for 94.7%, 97.5% and 96.0% of the scored epochs at factors 1.25, 2 and 4, a share that does not keep rising as the mismatch grows.
+- outage_control: at the true noise (factor 1) the ensemble mean is inside the band for 45.0% of the scored epochs, below it for 54.7% and above it for 0.4%. That is not inside the band for most epochs, so for this case read the factors against each other, not against the band.
+- outage_control: of the mild factors 0.8, 0.9 and 1.25, the ensemble resolves 1.25 and not 0.8 and 0.9.
+- outage_control (outage scope): with the assumed noise below the true noise, the ensemble mean is above the band for 100.0%, 100.0%, 0.9%, 0.0% and 0.0% of the scored epochs at factors 0.25, 0.5, 0.7, 0.8 and 0.9, a share that rises or stays level as the mismatch grows.
+- outage_control (outage scope): with the assumed noise above the true noise, the ensemble mean is below the band for 100.0%, 100.0% and 100.0% of the scored epochs at factors 1.25, 2 and 4, a share that is level.
+- outage_control (outage scope): at the true noise (factor 1) the ensemble mean is inside the band for 0.0% of the scored epochs, below it for 100.0% and above it for 0.0%. That is not inside the band for most epochs, so for this case read the factors against each other, not against the band.
+- outage_control (outage scope): of the mild factors 0.8, 0.9 and 1.25, the ensemble resolves none of them.
+- Against the single-run table, gnss_only, mild factors: both resolve 0.8; only the ensemble resolves 1.25; neither resolves 0.9.
+- Against the single-run table, outage_control, mild factors: only the ensemble resolves 1.25; only one run resolves 0.8; neither resolves 0.9.
+- The ensemble resolves some mild mismatch that one run does not: gnss_only at 1.25; outage_control at 1.25.
+- One run resolves some mild mismatch that the ensemble does not: outage_control at 0.8.
+- The ensemble does not resolve every mild mismatch: gnss_only at 0.9; outage_control at 0.8 and 0.9; outage_control (outage scope) at 0.8, 0.9 and 1.25.
+
+<!-- mismatch-ensemble:end -->
+
+How to read it:
+
+- The shares are descriptive, not a p-value. Epochs within a run are strongly autocorrelated, so the scored epochs are
+  far from independent ([the effective sample size](calibration.md#how-many-independent-samples-a-run-is-worth)).
+- The true noise is not a fixed point of this table. In `outage_control` the outage scope at factor 1 is below the band
+  on these seeds, and on seeds 0 to 24 the benchmark ensemble has the same scope inside the band
+  ([the benchmark ensemble](calibration.md#the-ensemble-over-seeds)). The result depends on the seeds, and I have not
+  explained why. Read the factors against the factor 1 row, not against the band alone.
+- A row inside the band describes one ensemble of 25 runs. It is not a verdict on the filter.
 
 ## What this does not show
 
