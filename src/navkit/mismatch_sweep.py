@@ -37,6 +37,7 @@ from typing import Any
 import numpy as np
 import yaml
 
+from . import mismatch_ensemble
 from .benchmark import MEASUREMENT, _config_label, _jsonable, default_config_path, run_case
 from .outage_sweep import METRICS, _collect, _interval, summarise_cell
 
@@ -252,6 +253,30 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--seeds", type=int, default=5, help="noise seeds per cell, starting at 0")
     ap.add_argument(
+        "--ensemble-csv",
+        type=Path,
+        default=None,
+        help="also run the ensemble over seeds for every cell and write its CSV here (navkit.mismatch_ensemble)",
+    )
+    ap.add_argument(
+        "--ensemble-page",
+        type=Path,
+        default=None,
+        help="with --ensemble-csv: write the table between the mismatch-ensemble markers of this page",
+    )
+    ap.add_argument(
+        "--ensemble-compare",
+        type=Path,
+        default=None,
+        help="with --ensemble-csv: exit 1 unless the ensemble matches this committed CSV (floats to 1e-6)",
+    )
+    ap.add_argument(
+        "--ensemble-seeds",
+        type=int,
+        default=mismatch_ensemble.N_RUNS,
+        help=f"runs per cell of the ensemble, from seed {mismatch_ensemble.FIRST_SEED} (the development seeds)",
+    )
+    ap.add_argument(
         "--min-coverage",
         type=float,
         default=DEFAULT_MIN_COVERAGE_PCT,
@@ -271,6 +296,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.seeds < 2:
         raise SystemExit("a spread needs at least 2 seeds")
+    if args.ensemble_seeds < 2:
+        raise SystemExit("an ensemble needs at least 2 runs")
+    if (args.ensemble_page or args.ensemble_compare) and args.ensemble_csv is None:
+        raise SystemExit("--ensemble-page and --ensemble-compare need --ensemble-csv")
     if any(not s > 0 for s in args.scales):
         raise SystemExit("scales must be positive")
 
@@ -350,6 +379,25 @@ def main(argv: list[str] | None = None) -> int:
     if args.markdown:
         print()
         print(markdown_table(flat))
+    status = 0
+    if args.ensemble_csv is not None:
+        ensemble_cells = [
+            (name, scale, with_scale(cases[name], scale, args.channel)) for name in args.cases for scale in args.scales
+        ]
+        rows = mismatch_ensemble.run_ensemble(ensemble_cells, defaults, args.ensemble_seeds)
+        mismatch_ensemble.write_outputs(rows, flat, args.ensemble_csv, args.ensemble_page)
+        if args.ensemble_compare is not None:
+            problems = mismatch_ensemble.compare_rows(
+                mismatch_ensemble.parse_csv(mismatch_ensemble.csv_text(rows)),
+                mismatch_ensemble.parse_csv(args.ensemble_compare.read_text(encoding="utf-8")),
+            )
+            if problems:
+                print(f"the ensemble differs from {args.ensemble_compare}:", file=sys.stderr)
+                for p in problems[:10]:
+                    print(f"  {p}", file=sys.stderr)
+                status = 1
+            else:
+                print(f"the ensemble matches {args.ensemble_compare}", file=sys.stderr)
     if args.compare is not None:
         # Compare what a reader of the CSV would see, so a number that survives the round
         # trip through text is the one that is checked.
@@ -365,7 +413,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  {p}", file=sys.stderr)
             return 1
         print(f"result matches {args.compare}", file=sys.stderr)
-    return 0
+    return status
 
 
 if __name__ == "__main__":
