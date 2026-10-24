@@ -229,6 +229,20 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
     for k in ("vision_scale_tau_s", "vision_scale_min", "vision_scale_max"):
         if k in keys:
             adaptive[k] = float(keys[k])
+    # The Gauss-Markov model of the correlated visual error (ADR-0034). Settings that are not given keep the defaults of
+    # EskfConfig. A noise preset multiplies the declared sigma, which this model reads as its base, so they are refused
+    # together (EskfConfig refuses the model together with the adaptive scale and without the clone).
+    if keys.get("vision_gm_error") and keys.get("vision_noise_preset") is not None:
+        raise ValueError(
+            "vision_gm_error and vision_noise_preset cannot be used together: the Gauss-Markov model takes its "
+            "stationary standard deviation from the declared noise (ADR-0034)"
+        )
+    gauss_markov: dict[str, Any] = {}
+    if "vision_gm_error" in keys:
+        gauss_markov["vision_gm_error"] = bool(keys["vision_gm_error"])
+    for k in ("vision_gm_tau_s", "vision_gm_rho"):
+        if k in keys:
+            gauss_markov[k] = float(keys[k])
     # The declared uncertainty of the starting state, when a case sets it (an ablation can set it to zero).
     initial: dict[str, Any] = {
         k: float(keys[k])
@@ -257,6 +271,7 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
         process_noise_form=str(keys.get("process_noise_form", "textbook")),
         **initial,
         **adaptive,
+        **gauss_markov,
         vision_model=str(keys.get("vision_model", "anchor")),
     )
 
