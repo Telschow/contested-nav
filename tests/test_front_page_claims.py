@@ -1,6 +1,7 @@
 """The "What the evidence shows" table on the README is tied to the committed CSVs, so the claims cannot drift.
 
 Each row of the table makes one claim. The test reads the committed data and fails if the claim stops being true.
+Row 6 and the close-out follow ADR-0036.
 It reads only committed files and runs no filter. It also fails if the old B1 gate comes back as the current gate on
 the first-read pages.
 """
@@ -86,10 +87,44 @@ def test_the_old_gate_is_not_stated_as_current_on_the_front_pages() -> None:
         assert "mean NEES below 10" not in _flat(path), path.name
 
 
-def test_the_readme_table_has_five_data_rows() -> None:
+def test_row_6_the_gauss_markov_model_failed_on_development_seeds_and_is_not_robust_to_the_correlation_time() -> None:
+    tuning = _rows("gm_tuning.csv")
+    assert tuning
+    assert all(r["qualifies"] == "false" for r in tuning)
+    assert all(r["chosen"] == "false" for r in tuning)
+    robustness = [r for r in _rows("gm_tuning_robustness.csv") if r["condition"] == "lower"]
+    holds = {float(r["corr_time_s"]): r["holds"] == "true" for r in robustness}
+    assert set(holds) == {0.0, 0.25, 0.5, 1.0, 2.0}
+    assert not any(holds[t] for t in (0.0, 0.25, 0.5))  # conservative when the correlation time is short
+    assert all(holds[t] for t in (1.0, 2.0))  # the NEES conditions hold only near the time it was built for
+
+
+def test_row_6_the_usefulness_conditions_are_not_met_even_with_a_near_exact_model() -> None:
+    rows = [r for r in _rows("gm_s2_usefulness.csv") if r["subject"].startswith("Gauss-Markov")]
+    assert {r["subject"] for r in rows} == {
+        "Gauss-Markov model, tau 2 s, rho 0.9",
+        "Gauss-Markov model, tau 2 s, rho 0.99",
+    }
+    for subject in {r["subject"] for r in rows}:
+        mine = {r["condition"]: r["holds"] == "true" for r in rows if r["subject"] == subject}
+        assert all(mine[c] for c in ("upper", "lower", "coverage"))
+        assert not all(mine[c] for c in ("better", "median_ratio", "worst_ratio"))
+
+
+def test_the_readme_table_has_six_data_rows() -> None:
     rows = _evidence_table_rows()
-    assert len(rows) == 5
+    assert len(rows) == 6
     assert all(row.count("|") == 4 for row in rows)
+    assert "Gauss-Markov" in rows[-1]
+
+
+def test_the_close_out_is_recorded_and_the_pages_point_at_it() -> None:
+    adr = ROOT / "docs" / "adr" / "0036-b1-is-closed-as-characterised-not-solved.md"
+    text = adr.read_text(encoding="utf-8")
+    assert "B1 is closed as characterised, not solved." in text
+    for path in (README, STATUS, CONSTRAINTS):
+        assert "ADR-0036" in path.read_text(encoding="utf-8"), path.name
+    assert "work stopped" in _flat(CONSTRAINTS)
 
 
 def test_the_b1_status_block_markers_are_still_in_constraints() -> None:
