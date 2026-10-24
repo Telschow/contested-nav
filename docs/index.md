@@ -2,12 +2,9 @@
 
 **Is the filter right about how wrong it is?**
 
-<video controls preload="metadata" poster="assets/video/explainer-poster.jpg" style="width:100%">
-  <source src="assets/video/contested-nav-explainer.mp4" type="video/mp4">
-</video>
+![Animation of the same GNSS outage in two panels, without and with vision: the claimed bound and the actual position error are drawn as the run unfolds](figures/hero.gif)
 
-*A captioned explainer built from one benchmark run: the same GNSS outage with the camera off and
-on, the measured accuracy and calibration, and the decision that follows.*
+*The same GNSS outage drawn in time order, without and with the camera, showing the error the filter makes against the error it claims.*
 
 ![Position error against the uncertainty the filter claims, through a GNSS outage, without and with vision](figures/hero.png)
 

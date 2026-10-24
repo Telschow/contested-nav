@@ -4,9 +4,9 @@
     navkit run --out results/benchmark.json
     python scripts/make_social_preview.py            # writes docs/assets/social-preview.png
 
-GitHub shows this image when the repository is linked. It is rendered from the same result
-file as every other figure, so the numbers on it cannot disagree with the README: the headline
-values are read from ``results/benchmark.json``, never typed here.
+GitHub shows this image when the repository is linked. It carries no result values. The only
+data on it is the curve of actual error against the claimed bound, read from the result file,
+so the card cannot go stale when a headline number changes.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.figure import Figure
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -32,29 +33,18 @@ C_ERR, C_CLAIM, C_OUT = "#6fb3e0", "#e88b7d", "#f0b35a"
 WIDTH_PX, HEIGHT_PX, DPI = 1280, 640, 100
 
 
-def render(results: dict, out: Path) -> Path:
+def build_figure(results: dict) -> Figure:
+    """Build the card. No text on it contains a result value."""
     cases = {c["name"]: c for c in results["cases"]}
     vis = cases["outage_visual"]
-    head = vis["headline"]
     ts = vis["error_time_series"]
     t = np.asarray(ts["t"], float)
     err = np.asarray(ts["position_error_m"], float)
     bound = BOUND_PER_SIGMA * np.asarray(ts["claimed_sigma_p_m"], float)
 
     fig = plt.figure(figsize=(WIDTH_PX / DPI, HEIGHT_PX / DPI), dpi=DPI, facecolor=BG)
-    fig.text(0.05, 0.84, "contested-nav", color=INK, fontsize=46, fontweight="bold", va="center")
-    fig.text(0.05, 0.71, "Is the filter right about how wrong it is?", color=MUTED, fontsize=21, va="center")
-
-    cov = 100.0 * head["coverage"]["2sigma"]
-    lines = [
-        ("position error (ATE RMSE)", f"{head['ate_rmse_m']:.3f} m", C_ERR),
-        ("claimed 1-sigma", f"{head['claimed_sigma_p_m']:.3f} m", C_CLAIM),
-        ("2-sigma coverage", f"{cov:.1f}% (99.3% expected)", C_CLAIM),
-    ]
-    for i, (label, value, colour) in enumerate(lines):
-        y = 0.52 - 0.115 * i
-        fig.text(0.05, y, label, color=MUTED, fontsize=15, va="center")
-        fig.text(0.28, y, value, color=colour, fontsize=17, fontweight="bold", va="center")
+    fig.text(0.05, 0.62, "contested-nav", color=INK, fontsize=46, fontweight="bold", va="center")
+    fig.text(0.05, 0.47, "Is the filter right about how wrong it is?", color=MUTED, fontsize=21, va="center")
 
     ax = fig.add_axes([0.60, 0.17, 0.35, 0.60])
     ax.set_facecolor(BG)
@@ -72,9 +62,14 @@ def render(results: dict, out: Path) -> Path:
     for side in ("left", "bottom"):
         ax.spines[side].set_color("#2b3a47")
     ax.text(0.02, 0.95, "actual error", color=C_ERR, transform=ax.transAxes, ha="left", fontsize=11)
-    ax.text(0.02, 0.87, "claimed 2-sigma bound", color=C_CLAIM, transform=ax.transAxes, ha="left", fontsize=11)
+    ax.text(0.02, 0.87, "claimed bound", color=C_CLAIM, transform=ax.transAxes, ha="left", fontsize=11)
 
     fig.text(0.05, 0.06, "Synthetic fixture. Not field validated. MIT.", color=MUTED, fontsize=12, va="center")
+    return fig
+
+
+def render(results: dict, out: Path) -> Path:
+    fig = build_figure(results)
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=DPI, facecolor=BG)
     plt.close(fig)
