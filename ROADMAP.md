@@ -234,7 +234,7 @@ Note (2026-10-24): work towards a default-on configuration for visual fusion has
 characterised, not solved ([ADR-0036](docs/adr/0036-b1-is-closed-as-characterised-not-solved.md)). The text below is
 the record of what was planned and tried.
 
-This is the structural fix for B1, the only genuine unknown in the project.
+This is the structural fix for B1. B1 is closed as characterised, not solved (ADR-0036), so this stays an option and not a plan.
 Everything in Milestone 1 makes the limitation reproducible and documented;
 this removes it.
 

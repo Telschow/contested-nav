@@ -33,7 +33,7 @@ two-view front end it needs the assumed noise inflated ([ADR-0023](docs/adr/0023
 That evidence is on recorded-data windows, a different fixture from the synthetic one, and ADR-0033 does not change it.
 The gate for turning vision on is no longer the old single-run bar. [ADR-0028](docs/adr/0028-the-b1-gate.md) and
 ADR-0030 govern it, and the B1 status is in [CONSTRAINTS.md](CONSTRAINTS.md). The [roadmap](ROADMAP.md) calls the
-open problem B1.
+problem B1, closed as characterised, not solved ([ADR-0036](docs/adr/0036-b1-is-closed-as-characterised-not-solved.md)).
 
 ![Position error against the uncertainty the filter claims, through a GNSS outage, without and with vision](docs/figures/hero.png)
 
