@@ -285,6 +285,7 @@ def run_case(
     trajectories: bool = False,
     gnss_hook: Callable[[GnssFix], GnssFix] | None = None,
     imu_hook: Callable[[ImuSample], ImuSample] | None = None,
+    start_hook: Callable[[StartError], StartError] | None = None,
     fdir_events: bool = False,
     nees_out: dict[str, Any] | None = None,
     fdir_overrides: dict[str, Any] | None = None,
@@ -314,6 +315,12 @@ def run_case(
     ``imu_hook`` is the same for the inertial stream: it receives the IMU after the scenario's noise and bias are
     applied and returns what the filter sees. It is for a fault the scenario schema does not describe, such as a
     bias that appears part-way through. Like ``gnss_hook`` it is not in ``config_hash``.
+
+    ``start_hook`` receives the :class:`StartError` that :func:`draw_start_error` drew and returns the one to use. It
+    is for a study that removes part of the start error, such as the attitude. The draw happens first, on its own
+    stream, so every variant of a seed sees the same draw and the hook only changes what is used. It applies when the
+    case starts from ``prior_draw`` and to an ESKF case only. Like ``gnss_hook`` it is not in ``config_hash``: a caller
+    that uses it must record the variant itself.
 
     ``nees_out``, when given, receives ``squared`` (the per-epoch NEES the calibration report scores), ``dof``,
     ``t`` (the epoch times), ``windows`` (the half-open GNSS-outage windows, or ``None``), ``error`` (estimate minus
@@ -390,6 +397,8 @@ def run_case(
         if mode != "origin":
             zero = StartError(dp=np.zeros(3), dv=np.zeros(3), dtheta=np.zeros(3))
             err = draw_start_error(cfg, scenario.gnss.seed) if mode == "prior_draw" else zero
+            if start_hook is not None and mode == "prior_draw":
+                err = start_hook(err)
             initial = start_state(reference.poses[0, :3, :3], reference.poses[0, :3, 3], np.zeros(3), err)
         if initial is None:
             result = ErrorStateKalmanFilter(cfg).run(imu, gnss=gnss, vision=vision)

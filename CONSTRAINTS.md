@@ -171,7 +171,7 @@ Status: open. The gate of ADR-0028 failed on the held-out seeds 100 to 124 for t
   (`python scripts/check_doc_tables.py --print-configuration-table`) and checked by CI. Both are one run with one
   start draw ([ADR-0027](docs/adr/0027-how-the-synthetic-runs-are-initialised.md)), and far higher than they were on
   the old fixed start, because the single anchor does not recover from a start attitude error inside its own
-  declared prior (MEASUREMENT, measured once on one machine, not checked by CI, at e94c107, being re-measured as a generated table: issue #168; the mechanism is a HYPOTHESIS and was not tested). The clone is unaffected. A single anchor cannot represent correlated visual
+  declared prior (MEASUREMENT, the generated table on the [Results page](docs/results.md); the mechanism is a HYPOTHESIS and was not tested). The clone does not follow the attitude draw. A single anchor cannot represent correlated visual
   drift. Pinned by
   `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`. B2 did not
   change the full-run number, and neither did ADR-0006: correcting a frame is not the

@@ -45,11 +45,26 @@ FDIR gate had first made the aided case worse on ATE, then the fix for that (R2 
 the time) put it ahead, and the ATE column stopped flagging it. With the start drawn from the prior, the ATE and
 calibration columns point the same way for the anchor model. Ranking by error is still not a calibration check.
 
-**The anchor model does not recover from a start attitude error inside its own prior (MEASUREMENT).** Over 10 seeds
-the median ATE of `outage_visual` was several times larger with the full start draw than with the attitude draw
-switched off, and the same held for `vision_only`. With only the attitude drawn the medians were close to those of the
-full draw. The clone's results did not change in any variant (measured once on one machine, not checked by CI, at e94c107). Produced under the earlier draw of the synthetic visual translation noise (ADR-0033); not regenerated (being re-measured as a generated table: issue #168). The mechanism is a HYPOTHESIS and was not tested:
-gravity leakage from the start tilt error plus absolute information that the anchor model invents.
+<!-- start-draw:start -->
+
+**The anchor model does not recover from a start attitude error inside its own prior (MEASUREMENT).** Each case below was run over 10 seeds in three variants of the same start draw: the full draw, the draw with the attitude part set to zero, and the draw with only the attitude part kept. The table gives the median ATE (alignment none, full run) over the seeds and, in the last column, in how many seeds the ATE with the full draw is larger than without the attitude draw.
+
+| Case | Full draw | Attitude zeroed | Attitude only | Seeds with a larger ATE when the attitude is drawn |
+|---|---:|---:|---:|---:|
+| `outage_visual` | 25.44 m | 4.21 m | 28.12 m | 9 of 10 |
+| `vision_only` | 54.23 m | 7.55 m | 52.18 m | 10 of 10 |
+| `outage_visual_clone` | 0.86 m | 0.85 m | 0.85 m | 9 of 10 |
+| `outage_control` | 9.74 m | 9.43 m | 7.66 m | 6 of 10 |
+
+For both single-anchor cases (`outage_visual` and `vision_only`) the median ATE is several times larger with the attitude drawn than without it, and with only the attitude drawn it is close to the full-draw median. The attitude prior is 2 degrees per axis, so the anchor model does not recover from a start attitude error inside its own declared prior.
+
+Without vision (`outage_control`) the attitude draw moves the median ATE by less than a factor of two. The clone (`outage_visual_clone`) does not follow the attitude draw: its ATE and its mean NEES stay within a quarter of their mean across the three variants in every seed. The count in the last column says little for the clone, whose differences are small.
+
+Why the anchor model fails is a HYPOTHESIS and was not tested here: gravity leakage from the start tilt error plus absolute information that the anchor model invents.
+
+The rows are in `docs/data/start_draw_study.csv`, written by `navkit sweep start-draw`, and the sentences above are checked against them by `tests/test_start_draw_page.py`.
+
+<!-- start-draw:end -->
 
 **One run is one draw.** Over 10 seeds the verdict of the `outage_control` row was consistent in 5, mixed
 (bulk overconfident, tail consistent) in 2 and mixed (bulk underconfident, tail consistent) in 3. The mean NEES of

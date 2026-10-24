@@ -74,6 +74,9 @@ NUMBER = re.compile(
 )
 HEADING = re.compile(r"^\s*#{1,6}\s")
 CHECKED_TABLE_HEADERS = ("scenario", "configuration")
+#: A table between these lines is generated from a committed CSV, and ``tests/test_start_draw_page.py`` checks every
+#: cell against it. Only its table rows are exempt; the sentences around it are scanned like any other.
+GENERATED_BLOCK = ("<!-- start-draw:start -->", "<!-- start-draw:end -->")
 
 
 def _blank_checked_blocks(text: str) -> list[str]:
@@ -81,10 +84,17 @@ def _blank_checked_blocks(text: str) -> list[str]:
     lines = text.splitlines()
     out = list(lines)
     fenced = False
+    generated = False
     i = 0
     while i < len(lines):
         line = lines[i]
-        if FENCE.match(line):
+        if line.strip() == GENERATED_BLOCK[0]:
+            generated = True
+        elif line.strip() == GENERATED_BLOCK[1]:
+            generated = False
+        if generated and line.lstrip().startswith("|"):
+            out[i] = ""
+        elif FENCE.match(line):
             fenced = not fenced
             out[i] = ""
         elif fenced:
@@ -292,3 +302,21 @@ def test_one_off_label_is_uniform(name: str) -> None:
     assert blocks, f"{name}: expected at least one timing statement"
     unlabelled = [f"{name}:{n}: {block[:100]}" for n, block in blocks if LABEL not in block]
     assert unlabelled == [], f"timings must say '{LABEL}' (the exact phrase):\n" + "\n".join(unlabelled)
+
+
+def test_the_generated_block_exempts_its_table_rows_and_nothing_else():
+    text = "\n".join(
+        [
+            "<!-- start-draw:start -->",
+            "| Case | Full |",
+            "| `x` | 25.44 m |",
+            "The median was 25.44 m here.",
+            "<!-- start-draw:end -->",
+            "| Case | Full |",
+            "| `x` | 25.44 m |",
+        ]
+    )
+    lines = _blank_checked_blocks(text)
+    assert lines[1] == lines[2] == ""
+    assert lines[3] != ""
+    assert lines[5] != "" and lines[6] != ""
