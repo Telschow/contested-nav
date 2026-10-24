@@ -5,8 +5,8 @@ or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
 Last measured: more than <!-- metric:tests_collected_floor -->2500<!-- /metric --> tests collected, all of which pass except the deliberate
-xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->93.8<!-- /metric -->%
-line coverage (<!-- metric:coverage_lines_hit -->14787<!-- /metric -->/<!-- metric:coverage_lines_total -->15761<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
+xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->94.5<!-- /metric -->%
+line coverage (<!-- metric:coverage_lines_hit -->14889<!-- /metric -->/<!-- metric:coverage_lines_total -->15761<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.13<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
 it is the project's dependency-free tracer (S1 forbids adding `pytest-cov`), and
 a number taken from a different tool is not comparable with the module figures
@@ -93,7 +93,7 @@ the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
 |---|---:|---:|---|
 | Tests collected | 405 | more than <!-- metric:tests_collected_floor -->2500<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
-| Line coverage | 75% | <!-- metric:coverage_percent -->93.8<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
+| Line coverage | 75% | <!-- metric:coverage_percent -->94.5<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |
 | `analysis/findings.py` coverage | 80% | 99.7% | as above |
 | `config.py` coverage | 80% | 98.4% | as above |
