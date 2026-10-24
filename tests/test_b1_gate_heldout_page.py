@@ -78,7 +78,10 @@ def test_the_status_is_exactly_one_of_the_two_texts_and_the_right_one(rows):
     block = constraints.split(render.STATUS_MARKERS[0], 1)[1].split(render.STATUS_MARKERS[1], 1)[0].strip()
     failed = [r["condition"] for r in rows if not r["passed"]]
     if failed:
-        assert block.startswith("Status: open. The gate of ADR-0028 failed on the held-out seeds 100 to 124")
+        assert block.startswith(
+            "Status: closed as characterised, not solved (ADR-0036). "
+            "The gate of ADR-0028 failed on the held-out seeds 100 to 124"
+        )
         assert "Any change to the candidate is tested on a new held-out set, starting at seed 125 (ADR-0028)." in block
         assert block.endswith("vision_enabled stays False.")
         for name in CONDITIONS:
