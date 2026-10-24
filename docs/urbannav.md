@@ -3,7 +3,8 @@
 The first dataset here with a real GNSS receiver and a real GNSS outage. The reader is `navkit.urbannav_data`, the
 measurements below come from `navkit urbannav check`, and the decision behind the dataset is
 [ADR-0026](adr/0026-urbannav-as-a-real-gnss-dataset.md). This page says what the files contain, then what the filter
-did on the Tunnel-1 recording with the receiver's own fixes and its real outage.
+did on the Tunnel-1 recording with the receiver's own fixes and its real outage, then what it did on Deep-Urban-1,
+where the receiver reports no outage.
 
 ## Read this before quoting anything
 
@@ -65,6 +66,21 @@ did on the Tunnel-1 recording with the receiver's own fixes and its real outage.
 | tunnel1 | Largest difference in the first valid fixes after the outage | 52.76 | m |
 | tunnel1 | Mean fix height minus reference height, before the outage | -7.63 | m |
 | tunnel1 | Mean fix height minus reference height, after the outage | 1.164 | m |
+| deepurban1 | IMU samples | 614782 | count |
+| deepurban1 | IMU time span | 1537 | s |
+| deepurban1 | IMU rate, median | 400.5 | Hz |
+| deepurban1 | IMU longest gap | 9.376 | ms |
+| deepurban1 | Reference epochs | 1539 | count |
+| deepurban1 | Reference spacing, median | 1 | s |
+| deepurban1 | Distinct reference quality codes | 5 | count |
+| deepurban1 | Reference-to-IMU clock offset | 0.01 | s |
+| deepurban1 | Offset search step | 0.01 | s |
+| deepurban1 | F9P fixes (GGA sentences) | 1539 | count |
+| deepurban1 | Epochs with no fix | 0 | count |
+| deepurban1 | Outages by the rule | 0 | count |
+| deepurban1 | Fix horizontal difference from the reference, median | 2.361 | m |
+| deepurban1 | Fix horizontal difference, 95th percentile | 7.497 | m |
+| deepurban1 | Fix horizontal difference, largest | 13.8 | m |
 
 <!-- urbannav-data:end -->
 
@@ -265,7 +281,8 @@ Every statement is about one sequence and one receiver, and points at rows of th
   bias inferred from the data over the stretch before the outage, but starting the filter from the inferred biases in
   a scratch run (no code in the repository reproduces it) still ended with a kilometre-scale error, so the growth is
   not explained.
-- Deep-Urban-1, the planned unseen check, has not been fetched or run.
+- It does not say how the filter does on a sequence where the receiver reports no outage. The Deep-Urban-1 section
+  below is that aided run, and it is not an outage test.
 
 ## What it shows about the data
 
@@ -278,35 +295,88 @@ Every statement is about one sequence and one receiver, and points at rows of th
 
 ## Deep-Urban-1: real urban GNSS, no outage
 
-**Status: not run for this page.** The tables in this section are generated from the committed CSV. It has no rows for
-this sequence yet, and they say so. Until it has rows, nothing on this page is a result about Deep-Urban-1.
+**Status: run for this page.** The tables in this section are generated from the committed CSVs. They are one
+sequence, one receiver and one recording. They are not field performance.
 
 - **One sequence, one receiver, one recording.** The seeds perturb only the start state, as for Tunnel-1.
 - **The receiver reports no outage here.** The outage rule is the one used for Tunnel-1, and it was not changed or
   tuned to find one (issue #95). So this is not an outage test. It is the **aided run**: the filter is offered the
-  receiver's own fixes over the whole recording, and the question is how it handles them.
-- **The settings are the ones declared above, unchanged.** Both variants are fixed before this sequence is run. Neither
-  is tuned on it. The per-fix variant was added after the first Tunnel-1 result, so on Tunnel-1 it is not blind. Here it
-  is declared in advance.
+  receiver's own fixes over the whole recording, and the question is how it handles them. The filter is offered the
+  fixes that fall inside the IMU recording, which is two fewer than the receiver wrote.
+- **The settings are the ones declared above, unchanged.** Both variants were fixed before this sequence was run.
+  Neither was tuned on it. The per-fix variant was added after the first Tunnel-1 result, so on Tunnel-1 it is not
+  blind. Here it was declared in advance.
 - **The oracle diagnostics are not applicable.** They replace part of the attitude inside an outage, and there is none.
   The block below says so.
 - **The reference is the same kind of file as for Tunnel-1:** the post-processed NovAtel SPAN-CPT solution, read from
-  the text file and not from the bag. Between tall buildings its own error is unknown, and every score here is a score
+  the text file and not from the bag (the ADR records this choice). Between tall buildings its own error is not
+  known. Its quality column has several codes, and what each means has not been confirmed. Every score here is a score
   against an estimate.
+- **The height is not relied on.** The vertical noise is declared very large, so the vertical error is large and the
+  page makes no claim about it. The absolute trajectory error is in the CSV and not in the tables, because it is a
+  three-dimensional number that the vertical error dominates. The tables quote the horizontal error.
 
 What the section tests:
 
 1. **Whether the filter is right about how wrong it is on real urban GNSS errors.** The rows are the horizontal and
-   attitude normalised errors over the whole run, the pooled 2-sigma coverage per axis, and the fixes' own normalised
-   error against the receiver's reported sigma.
-2. **How the gate behaves on real multipath fixes.** The rows are the share of fixes it rejects, whether the channel
-   is declared faulty, and whether it is taken back.
+   attitude normalised errors over the whole run and by third of the run, the pooled 2-sigma coverage per axis, the
+   sigma the filter claims against the receiver's own, and the fixes' own normalised error against the receiver's
+   reported sigma.
+2. **How the gate behaves on real multipath fixes.** The rows are the fixes it rejects, whether the channel is
+   declared faulty, and the NIS against the gate's level.
 
 **As declared**, one scalar GNSS sigma for every fix:
 
 <!-- urbannav-deep-urban-run-declared:start -->
 
-No rows for Deep-Urban-1 are in the committed CSV, so it has not been run for this page. The table appears here when the CSV has its rows.
+| Quantity | seed 0 | seed 1 | seed 2 | seed 3 | seed 4 | Unit |
+|---|---:|---:|---:|---:|---:|---|
+| Valid fixes offered to the filter | 1537 | 1537 | 1537 | 1537 | 1537 | count |
+| Fixes the filter used | 1537 | 1537 | 1537 | 1537 | 1537 | count |
+| Fixes the filter rejected | 0 | 0 | 0 | 0 | 0 | count |
+| Share of the offered fixes the gate rejected | 0 | 0 | 0 | 0 | 0 |  |
+| The gate's alpha (the FDIR default) | 0.001 | 0.001 | 0.001 | 0.001 | 0.001 |  |
+| The gate's level on the NIS (3 degrees of freedom) | 16.27 | 16.27 | 16.27 | 16.27 | 16.27 |  |
+| Mean NIS of the offered fixes | 0.5061 | 0.496 | 0.5026 | 0.4989 | 0.4979 |  |
+| Rejections expected at that alpha if every fix were consistent (offered x alpha) | 1.537 | 1.537 | 1.537 | 1.537 | 1.537 | count |
+| Wilson 95% interval of the rejection rate on the raw count, lower end | 0 | 0 | 0 | 0 | 0 |  |
+| Wilson 95% interval of the rejection rate on the raw count, upper end | 0.002493 | 0.002493 | 0.002493 | 0.002493 | 0.002493 |  |
+| Effective number of fixes behind the rate (effective sample size of the over-the-level series) | 1537 | 1537 | 1537 | 1537 | 1537 | count |
+| That size could be estimated (1 yes, 0 no: the series is constant, so it counts every fix) | 0 | 0 | 0 | 0 | 0 | flag |
+| Wilson 95% interval on the effective count, lower end | 0 | 0 | 0 | 0 | 0 |  |
+| Wilson 95% interval on the effective count, upper end | 0.002493 | 0.002493 | 0.002493 | 0.002493 | 0.002493 |  |
+| GNSS channel declared faulty by the end | 0 | 0 | 0 | 0 | 0 | count |
+| Times a faulty channel was taken back | 0 | 0 | 0 | 0 | 0 | count |
+| Horizontal mean NEES over the whole run (2 degrees of freedom, expected 2) | 13.84 | 13.82 | 13.84 | 13.82 | 13.82 |  |
+| Horizontal mean NEES, first third of the run | 14.12 | 14.07 | 14.13 | 14.09 | 14.07 |  |
+| Horizontal mean NEES, middle third of the run | 22.44 | 22.43 | 22.43 | 22.44 | 22.44 |  |
+| Horizontal mean NEES, last third of the run | 4.949 | 4.951 | 4.952 | 4.951 | 4.951 |  |
+| Effective sample size of the horizontal NEES series (it has one value per IMU step) | 18.03 | 18.05 | 18.06 | 18.05 | 18.05 | count |
+| That size is an upper bound (1 yes, 0 no) | 0 | 0 | 0 | 0 | 0 | flag |
+| Attitude mean NEES over the whole run (3 degrees of freedom, expected 3) | 14.12 | 13.46 | 13.64 | 13.5 | 13.49 |  |
+| Attitude mean NEES, first third of the run | 20.27 | 18.28 | 18.81 | 18.43 | 18.4 |  |
+| Attitude mean NEES, middle third of the run | 12.89 | 12.88 | 12.88 | 12.88 | 12.88 |  |
+| Attitude mean NEES, last third of the run | 9.183 | 9.205 | 9.216 | 9.199 | 9.199 |  |
+| Effective sample size of the attitude NEES series | 62.38 | 163.6 | 160.7 | 159 | 158.5 | count |
+| That size is an upper bound (1 yes, 0 no) | 0 | 0 | 0 | 0 | 0 | flag |
+| Pooled 2-sigma per-axis coverage, east and north (a Gaussian gives 0.9545) | 0.606 | 0.6079 | 0.6075 | 0.6078 | 0.6081 |  |
+| Share of epochs inside the horizontal 95% ellipse (expected 0.95) | 0.4459 | 0.4488 | 0.4512 | 0.4522 | 0.4538 |  |
+| Horizontal position RMSE over the recording | 4.354 | 4.348 | 4.351 | 4.352 | 4.352 | m |
+| Vertical RMSE (the height is almost unused by design) | 11.44 | 10.19 | 10.56 | 10.25 | 10.4 | m |
+| Fix horizontal difference from the reference, median | 2.361 | 2.361 | 2.361 | 2.361 | 2.361 | m |
+| Fix horizontal difference, 95th percentile | 7.497 | 7.497 | 7.497 | 7.497 | 7.497 | m |
+| Fix horizontal difference, 99th percentile | 12.97 | 12.97 | 12.97 | 12.97 | 12.97 | m |
+| Fixes more than 3 of the receiver's own per-axis sigmas from the reference | 166 | 166 | 166 | 166 | 166 | count |
+| Receiver's own reported per-axis sigma, median | 2.164 | 2.164 | 2.164 | 2.164 | 2.164 | m |
+| Per-axis position sigma the filter claims, median over the run | 1.173 | 1.173 | 1.173 | 1.173 | 1.173 | m |
+| Fixes alone: mean of (horizontal difference / receiver sigma) squared (expected 2) | 3.285 | 3.285 | 3.285 | 3.285 | 3.285 |  |
+| Fixes whose NIS is over the 0.1% chi-square level | 0 | 0 | 0 | 0 | 0 | count |
+| Valid fixes over 10 m from the reference | 48 | 48 | 48 | 48 | 48 | count |
+| Of those, over the 0.1% chi-square level | 0 | 0 | 0 | 0 | 0 | count |
+| Receiver epochs the reader did not pass on (no fix or no position) | 0 | 0 | 0 | 0 | 0 | count |
+| Fixes dropped because a reported variance was negative, NaN or infinite | 0 | 0 | 0 | 0 | 0 | count |
+| Fixes with a reported sigma below the filter's floor | 0 | 0 | 0 | 0 | 0 | count |
+| The start-bias stretch was judged at rest (1 yes, 0 no) | 0 | 0 | 0 | 0 | 0 | flag |
 
 <!-- urbannav-deep-urban-run-declared:end -->
 
@@ -314,7 +384,54 @@ No rows for Deep-Urban-1 are in the committed CSV, so it has not been run for th
 
 <!-- urbannav-deep-urban-run-per-fix:start -->
 
-No rows for Deep-Urban-1 are in the committed CSV, so it has not been run for this page. The table appears here when the CSV has its rows.
+| Quantity | seed 0 | seed 1 | seed 2 | seed 3 | seed 4 | Unit |
+|---|---:|---:|---:|---:|---:|---|
+| Valid fixes offered to the filter | 1537 | 1537 | 1537 | 1537 | 1537 | count |
+| Fixes the filter used | 1537 | 1537 | 1537 | 1537 | 1537 | count |
+| Fixes the filter rejected | 0 | 0 | 0 | 0 | 0 | count |
+| Share of the offered fixes the gate rejected | 0 | 0 | 0 | 0 | 0 |  |
+| The gate's alpha (the FDIR default) | 0.001 | 0.001 | 0.001 | 0.001 | 0.001 |  |
+| The gate's level on the NIS (3 degrees of freedom) | 16.27 | 16.27 | 16.27 | 16.27 | 16.27 |  |
+| Mean NIS of the offered fixes | 0.5249 | 0.5132 | 0.5206 | 0.5164 | 0.5152 |  |
+| Rejections expected at that alpha if every fix were consistent (offered x alpha) | 1.537 | 1.537 | 1.537 | 1.537 | 1.537 | count |
+| Wilson 95% interval of the rejection rate on the raw count, lower end | 0 | 0 | 0 | 0 | 0 |  |
+| Wilson 95% interval of the rejection rate on the raw count, upper end | 0.002493 | 0.002493 | 0.002493 | 0.002493 | 0.002493 |  |
+| Effective number of fixes behind the rate (effective sample size of the over-the-level series) | 1537 | 1537 | 1537 | 1537 | 1537 | count |
+| That size could be estimated (1 yes, 0 no: the series is constant, so it counts every fix) | 0 | 0 | 0 | 0 | 0 | flag |
+| Wilson 95% interval on the effective count, lower end | 0 | 0 | 0 | 0 | 0 |  |
+| Wilson 95% interval on the effective count, upper end | 0.002493 | 0.002493 | 0.002493 | 0.002493 | 0.002493 |  |
+| GNSS channel declared faulty by the end | 0 | 0 | 0 | 0 | 0 | count |
+| Times a faulty channel was taken back | 0 | 0 | 0 | 0 | 0 | count |
+| Horizontal mean NEES over the whole run (2 degrees of freedom, expected 2) | 15.08 | 15.07 | 15.08 | 15.07 | 15.07 |  |
+| Horizontal mean NEES, first third of the run | 18.97 | 18.94 | 18.97 | 18.94 | 18.93 |  |
+| Horizontal mean NEES, middle third of the run | 20.51 | 20.51 | 20.5 | 20.51 | 20.51 |  |
+| Horizontal mean NEES, last third of the run | 5.772 | 5.774 | 5.775 | 5.774 | 5.774 |  |
+| Effective sample size of the horizontal NEES series (it has one value per IMU step) | 13.55 | 13.6 | 13.59 | 13.58 | 13.59 | count |
+| That size is an upper bound (1 yes, 0 no) | 0 | 0 | 0 | 0 | 0 | flag |
+| Attitude mean NEES over the whole run (3 degrees of freedom, expected 3) | 13.33 | 13.07 | 13.26 | 13.07 | 13.05 |  |
+| Attitude mean NEES, first third of the run | 18.9 | 18.03 | 18.54 | 18.04 | 18 |  |
+| Attitude mean NEES, middle third of the run | 11.64 | 11.71 | 11.73 | 11.69 | 11.69 |  |
+| Attitude mean NEES, last third of the run | 9.448 | 9.479 | 9.49 | 9.471 | 9.471 |  |
+| Effective sample size of the attitude NEES series | 178.6 | 195.6 | 188.2 | 195.8 | 195.9 | count |
+| That size is an upper bound (1 yes, 0 no) | 0 | 0 | 0 | 0 | 0 | flag |
+| Pooled 2-sigma per-axis coverage, east and north (a Gaussian gives 0.9545) | 0.5734 | 0.5719 | 0.5714 | 0.5714 | 0.5713 |  |
+| Share of epochs inside the horizontal 95% ellipse (expected 0.95) | 0.4242 | 0.4243 | 0.4256 | 0.4223 | 0.422 |  |
+| Horizontal position RMSE over the recording | 4.302 | 4.301 | 4.302 | 4.302 | 4.302 | m |
+| Vertical RMSE (the height is almost unused by design) | 11.38 | 10.14 | 10.52 | 10.19 | 10.34 | m |
+| Fix horizontal difference from the reference, median | 2.361 | 2.361 | 2.361 | 2.361 | 2.361 | m |
+| Fix horizontal difference, 95th percentile | 7.497 | 7.497 | 7.497 | 7.497 | 7.497 | m |
+| Fix horizontal difference, 99th percentile | 12.97 | 12.97 | 12.97 | 12.97 | 12.97 | m |
+| Fixes more than 3 of the receiver's own per-axis sigmas from the reference | 166 | 166 | 166 | 166 | 166 | count |
+| Receiver's own reported per-axis sigma, median | 2.164 | 2.164 | 2.164 | 2.164 | 2.164 | m |
+| Per-axis position sigma the filter claims, median over the run | 1.137 | 1.137 | 1.137 | 1.137 | 1.137 | m |
+| Fixes alone: mean of (horizontal difference / receiver sigma) squared (expected 2) | 3.285 | 3.285 | 3.285 | 3.285 | 3.285 |  |
+| Fixes whose NIS is over the 0.1% chi-square level | 0 | 0 | 0 | 0 | 0 | count |
+| Valid fixes over 10 m from the reference | 48 | 48 | 48 | 48 | 48 | count |
+| Of those, over the 0.1% chi-square level | 0 | 0 | 0 | 0 | 0 | count |
+| Receiver epochs the reader did not pass on (no fix or no position) | 0 | 0 | 0 | 0 | 0 | count |
+| Fixes dropped because a reported variance was negative, NaN or infinite | 0 | 0 | 0 | 0 | 0 | count |
+| Fixes with a reported sigma below the filter's floor | 0 | 0 | 0 | 0 | 0 | count |
+| The start-bias stretch was judged at rest (1 yes, 0 no) | 0 | 0 | 0 | 0 | 0 | flag |
 
 <!-- urbannav-deep-urban-run-per-fix:end -->
 
@@ -322,19 +439,123 @@ No rows for Deep-Urban-1 are in the committed CSV, so it has not been run for th
 
 <!-- urbannav-deep-urban-oracle:start -->
 
-No rows for Deep-Urban-1 are in the committed CSV, so it has not been run for this page. The table appears here when the CSV has its rows.
+Not applicable: the receiver reports no outage on this sequence by the outage rule, and an oracle diagnostic acts only inside an outage. The oracle variants are not run.
 
 <!-- urbannav-deep-urban-oracle:end -->
 
-What this section will not show, whatever the rows say:
+The effective count behind the rejection rate has one convention. When no fix is over the gate's level the series of
+yes and no answers is constant and has no autocorrelation to estimate, so it counts every fix as an independent
+sample. The effective interval is then the raw one, and the row "That size could be estimated" is the flag for no.
 
-- It does not say how the filter does through an outage. Imposed outages are a separate experiment.
+**The receiver's fix errors in time.** This table has no filter in it. It is the receiver's fixes against the
+reference, for both sequences, with the mean offset taken out. The correlation at a lag is over the pairs of fixes
+that far apart, and the effective sample size is per axis. Tunnel-1 has far fewer fixes, and its fixes are joined
+across the outage, so its numbers are rougher.
+
+<!-- urbannav-fix-errors:start -->
+
+| Sequence | Quantity | Value | Unit |
+|---|---|---:|---|
+| tunnel1 | Valid fixes | 250 | count |
+| tunnel1 | Pairs for a lag: time difference within this of the lag | 0.5 | s |
+| tunnel1 | Mean offset of the fixes from the reference, east | -1.234 | m |
+| tunnel1 | Mean offset of the fixes from the reference, north | 1.95 | m |
+| tunnel1 | Horizontal root mean square of the difference about that offset | 10.87 | m |
+| tunnel1 | Pairs of fixes 1 s apart | 248 | count |
+| tunnel1 | Correlation of the fix difference 1 s apart, east | 0.9405 |  |
+| tunnel1 | Correlation of the fix difference 1 s apart, north | 0.9908 |  |
+| tunnel1 | Correlation of the fix difference 1 s apart, pooled | 0.9704 |  |
+| tunnel1 | Pairs of fixes 10 s apart | 230 | count |
+| tunnel1 | Correlation of the fix difference 10 s apart, east | 0.07743 |  |
+| tunnel1 | Correlation of the fix difference 10 s apart, north | 0.3562 |  |
+| tunnel1 | Correlation of the fix difference 10 s apart, pooled | 0.2331 |  |
+| tunnel1 | Pairs of fixes 30 s apart | 190 | count |
+| tunnel1 | Correlation of the fix difference 30 s apart, east | -0.05684 |  |
+| tunnel1 | Correlation of the fix difference 30 s apart, north | 0.03377 |  |
+| tunnel1 | Correlation of the fix difference 30 s apart, pooled | -0.00567 |  |
+| tunnel1 | Pairs of fixes 60 s apart | 130 | count |
+| tunnel1 | Correlation of the fix difference 60 s apart, east | -0.07971 |  |
+| tunnel1 | Correlation of the fix difference 60 s apart, north | -0.1313 |  |
+| tunnel1 | Correlation of the fix difference 60 s apart, pooled | -0.1038 |  |
+| tunnel1 | Effective sample size of the fix difference, east | 66.8 | count |
+| tunnel1 | That size is an upper bound, east (1 yes, 0 no) | 0 | flag |
+| tunnel1 | Effective sample size of the fix difference, north | 18.33 | count |
+| tunnel1 | That size is an upper bound, north (1 yes, 0 no) | 0 | flag |
+| deepurban1 | Valid fixes | 1539 | count |
+| deepurban1 | Pairs for a lag: time difference within this of the lag | 0.5 | s |
+| deepurban1 | Mean offset of the fixes from the reference, east | 0.9633 | m |
+| deepurban1 | Mean offset of the fixes from the reference, north | -1.233 | m |
+| deepurban1 | Horizontal root mean square of the difference about that offset | 3.508 | m |
+| deepurban1 | Pairs of fixes 1 s apart | 1538 | count |
+| deepurban1 | Correlation of the fix difference 1 s apart, east | 0.9983 |  |
+| deepurban1 | Correlation of the fix difference 1 s apart, north | 0.9985 |  |
+| deepurban1 | Correlation of the fix difference 1 s apart, pooled | 0.9984 |  |
+| deepurban1 | Pairs of fixes 10 s apart | 1529 | count |
+| deepurban1 | Correlation of the fix difference 10 s apart, east | 0.9455 |  |
+| deepurban1 | Correlation of the fix difference 10 s apart, north | 0.95 |  |
+| deepurban1 | Correlation of the fix difference 10 s apart, pooled | 0.9477 |  |
+| deepurban1 | Pairs of fixes 30 s apart | 1509 | count |
+| deepurban1 | Correlation of the fix difference 30 s apart, east | 0.7442 |  |
+| deepurban1 | Correlation of the fix difference 30 s apart, north | 0.777 |  |
+| deepurban1 | Correlation of the fix difference 30 s apart, pooled | 0.7599 |  |
+| deepurban1 | Pairs of fixes 60 s apart | 1479 | count |
+| deepurban1 | Correlation of the fix difference 60 s apart, east | 0.4217 |  |
+| deepurban1 | Correlation of the fix difference 60 s apart, north | 0.5265 |  |
+| deepurban1 | Correlation of the fix difference 60 s apart, pooled | 0.4719 |  |
+| deepurban1 | Effective sample size of the fix difference, east | 16.46 | count |
+| deepurban1 | That size is an upper bound, east (1 yes, 0 no) | 0 | flag |
+| deepurban1 | Effective sample size of the fix difference, north | 17.87 | count |
+| deepurban1 | That size is an upper bound, north (1 yes, 0 no) | 0 | flag |
+
+<!-- urbannav-fix-errors:end -->
+
+### What the section shows
+
+Every statement is about one sequence and one receiver, and points at rows of the generated tables above.
+
+1. **The gate rejects none of the offered fixes.** Some fixes are more than three of the receiver's own sigmas from
+   the reference, and some are more than ten metres from it (the two rows of counts of far fixes). The mean NIS stays far below the gate's level (rows "Mean NIS" and "The gate's
+   level"). The rejection rate is zero, and the gate's alpha lies inside its Wilson interval, so the rows do not
+   show the gate failing its own level. They show that it rejects none of these fixes. The channel is never declared
+   faulty.
+2. **The filter is overconfident against this reference, in position and in attitude.** The horizontal and the
+   attitude normalised errors are far above their expected values, and the pooled 2-sigma coverage is far below the
+   Gaussian value. The per-axis sigma the filter claims is below the receiver's own median sigma. This holds in both
+   variants and on every seed.
+3. **The excess is not a start-up transient.** The horizontal and the attitude normalised errors are above their
+   expected values in each third of the run, in both variants and on every seed. This does not say what causes it,
+   and the first, middle and last thirds differ from each other.
+4. **The means have few independent samples behind them.** The normalised-error series has one value per IMU step, and
+   its effective sample size is a small fraction of its length (rows "Effective sample size"). The means say the
+   filter is overconfident. They do not give a precise value.
+5. **The receiver's own sigma is optimistic against the reference.** The mean of the fixes' squared difference over
+   their reported sigma is above its expected value. This is a statement about the receiver and the reference. The
+   reference's own error is not known.
+6. **Each variant sees the same fixes.** The fix statistics are identical in the two variants, because they are
+   statistics of the fixes and not of the filter.
+7. **The seeds agree**, because the start perturbation is small against the effect. They are not independent tests.
+
+**INTERPRETATION, not a result of this page.** The filter treats the receiver's fixes as independent measurements.
+The table of fix errors above shows that on this sequence the receiver's errors are correlated over tens of seconds:
+the correlation is high at the longer lags, and the effective sample size per axis is a small fraction of the number
+of fixes. Averaging correlated errors does not reduce the error the way the claimed covariance assumes, and the
+innovations stay small because the estimate follows the fixes. This is consistent with the rows above. It does not
+prove the cause, because the filter was not run with a correlated-error model here. The reference's own error is not
+known, and some of the correlated difference could be in the reference and not in the receiver.
+
+### What the section does not show
+
+- It does not say how the filter does through an outage. Imposed outages are a separate experiment, and this section
+  did not run one.
 - It does not carry over to another receiver, another city or another day.
-- The antenna offset from the IMU is not corrected, and the height is almost unused by design.
+- It does not say whether a correlated-error model would repair the overconfidence. That was not run.
+- It makes no claim about the height, and the antenna offset from the IMU is not corrected.
+- It does not say how accurate the receiver is. The reference is a post-processed estimate with several quality codes,
+  and its error is not known.
 - It is not field performance.
 
 ## What follows
 
 The attitude is the next thing to understand: a run that starts from a better alignment, or that holds the gyroscope
-bias, would show how much of this is the start and how much is the sensor. The planned unseen check on Deep-Urban-1
-needs its NMEA file. See [ADR-0026](adr/0026-urbannav-as-a-real-gnss-dataset.md).
+bias, would show how much of this is the start and how much is the sensor. A filter model for correlated receiver
+errors, which this page does not run, would be the next thing to try on Deep-Urban-1. See [ADR-0026](adr/0026-urbannav-as-a-real-gnss-dataset.md).

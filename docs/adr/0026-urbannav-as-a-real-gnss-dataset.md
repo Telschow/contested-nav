@@ -64,8 +64,9 @@ and is labelled as not blind. Both variants agree on the outage. One sequence, o
 
 ## What this does not settle
 
-- The run is one sequence, one receiver and five start perturbations, not five independent tests. Deep-Urban-1, the
-  planned unseen check, has not been fetched or run.
+- The run is one sequence, one receiver and five start perturbations, not five independent tests. Deep-Urban-1 has
+  since been run as an aided run, and its section of the page says what that does and does not show (see the dated
+  section below).
 - The reference inside the outage is an inertial estimate of unknown error.
 - The start attitude needs the rotation between the NovAtel and Xsens units, which is not in the files.
 - The F9P height is biased differently on the two sides of the outage, so a run would use the horizontal axes or declare
@@ -124,3 +125,24 @@ not an outage sequence. The run for it is the aided run over the whole sequence:
 no oracle diagnostics (they act only inside an outage and are reported as not applicable), and quantities that do not
 need an outage: the normalised errors, the pooled 2-sigma coverage per axis, the gate's rejection rate and the fixes'
 own errors against the reference. Outages imposed on this sequence would be a separate experiment, with its own record.
+
+## Added 2026-10-24: the Deep-Urban-1 aided run
+
+This section is dated context. It does not change the Decision section above.
+
+Option A of the section above (the text reference only, no INSPVAX reader) was used, as the maintainer chose. The
+receiver file reports a valid fix at every epoch, so the outage rule finds no outage, and the rule was not changed.
+The run is the aided run over the whole sequence, with the declared and per-fix variants, five seeds that perturb
+only the start state, and the oracle diagnostics not applicable. The rows are in `docs/data/urbannav_run.csv`, the
+data rows in `docs/data/urbannav_data.csv`, and the new `docs/data/urbannav_fix_errors.csv` holds the time behaviour
+of the receiver's fix errors for both sequences. Tunnel-1 rows in the first two files are byte-identical to before.
+
+What the run found, in words, with every number on [the UrbanNav page](../urbannav.md): the gate rejects none of the
+offered fixes although some are far from the reference; the filter is overconfident against the reference in
+position and attitude, and the excess is present in every third of the run; the receiver's fix errors are correlated
+over tens of seconds on this sequence, which the filter does not model. The last point is an interpretation. The
+filter was not run with a correlated-error model, and the reference is a post-processed estimate whose own error is
+not known, so some of the correlated difference could be in the reference.
+
+What it does not settle: it is one sequence, one receiver and one recording, and the seeds are not independent tests.
+It says nothing about the filter through an outage on this sequence. Imposed outages would be a separate experiment.

@@ -203,7 +203,8 @@ def test_the_run_reports_what_the_reader_dropped_and_the_variances_the_filter_wo
 
 def test_the_page_says_what_it_does_not_show():
     text = PAGE.read_text(encoding="utf-8")
-    assert "Deep-Urban-1, the planned unseen check, has not been fetched or run" in text
+    assert "has not been fetched or run" not in text  # Deep-Urban-1 has been run, as an aided run
+    assert "does not say how the filter does on a sequence where the receiver reports no outage" in text
     assert "not blind" in text and "not field performance" in text
 
 
@@ -255,34 +256,200 @@ def test_the_deep_urban_section_has_its_generated_blocks_and_nothing_typed_in_th
 
 def test_the_deep_urban_prose_has_no_typed_numbers():
     prose = _outside_blocks(_deep_section())
-    for allowed in ("Deep-Urban-1", "Tunnel-1", "issue #95", "2-sigma"):
+    for allowed in ("Deep-Urban-1", "Tunnel-1", "issue #95", "2-sigma", "SPAN-CPT"):
         prose = prose.replace(allowed, "")
     prose = re.sub(r"^\s*\d+\. ", "", prose, flags=re.M)  # the numbering of a list
     assert not re.search(r"\d", prose), re.findall(r".{20}\d.{20}", prose)
 
 
-def test_until_it_is_run_the_page_says_deep_urban_1_has_not_been_run(rows):
-    if ur.rows_of(rows, DEEP):
-        pytest.skip("Deep-Urban-1 has rows in the CSV; the statements below are for the state without them")
+def test_a_sequence_with_no_rows_is_said_not_to_have_been_run():
+    assert "has not been run for this page" in ur.run_markdown([], "declared", DEEP)
+    assert "has not been run for this page" in ur.oracle_markdown([], DEEP)
+    assert "has not been run" not in ur.run_markdown(ur.rows_from_csv(CSV), "declared", DEEP)
+
+
+def test_the_deep_urban_status_is_that_it_has_been_run(rows):
     section = _deep_section()
-    assert "Status: not run for this page" in section
-    assert section.count("has not been run for this page") == 3  # the three generated blocks
-    assert "Deep-Urban-1, the planned unseen check, has not been fetched or run" in PAGE.read_text(encoding="utf-8")
+    assert ur.rows_of(rows, DEEP) and "Status: run for this page" in section
+    assert "has not been run for this page" not in section
+    assert "Status: not run" not in PAGE.read_text(encoding="utf-8")
 
 
-def test_when_deep_urban_1_has_rows_they_are_the_aided_run(rows):
-    """Switched on by the commit that adds the rows. Until then it skips, and the test above holds."""
+def test_deep_urban_1_has_rows_and_they_are_the_aided_run(rows):
     deep = ur.rows_of(rows, DEEP)
-    if not deep:
-        pytest.skip("no Deep-Urban-1 rows in the committed CSV yet")
     assert {r["variant"] for r in deep} == set(ur.VARIANTS)  # no oracle rows
     assert ur.oracle_markdown(rows, DEEP) == ur.ORACLE_NOT_APPLICABLE
+    assert ur.ORACLE_NOT_APPLICABLE in PAGE.read_text(encoding="utf-8")
     for v in ur.VARIANTS:
         used, rejected = _q(rows, v, "fixes_used", DEEP), _q(rows, v, "gnss_updates_rejected", DEEP)
         assert np.all(used + rejected == _q(rows, v, "fixes_total", DEEP))
         assert np.all(_q(rows, v, "epochs_not_valid", DEEP) == 0)
         for key, _, _ in ur.AIDED_QUANTITIES:
             assert len(_q(rows, v, key, DEEP)) == len(ur.SEEDS), (v, key)
+
+
+def test_the_absolute_trajectory_error_is_in_the_csv_and_not_in_the_page_tables(rows):
+    assert all(len(_q(rows, v, "ate_rmse_m", DEEP)) == len(ur.SEEDS) for v in ur.VARIANTS)
+    for v in ur.VARIANTS:
+        assert "Absolute trajectory error" not in ur.run_markdown(rows, v, DEEP)
+        assert "Horizontal position RMSE" in ur.run_markdown(rows, v, DEEP)
+    assert "Absolute trajectory error" not in PAGE.read_text(encoding="utf-8")
+
+
+# -------------------------------------- the statements of the Deep-Urban-1 section, each tied to the CSVs
+
+DATA_CSV = ROOT / "docs" / "data" / "urbannav_data.csv"
+FIX_ERRORS_CSV = ROOT / "docs" / "data" / "urbannav_fix_errors.csv"
+HOR_NEES_EXPECTED, ATT_NEES_EXPECTED = 2.0, 3.0
+
+
+def _fix_errors(sequence, quantity):
+    from navkit import urbannav_fix_errors as fe
+
+    (value,) = [
+        float(r["value"])
+        for r in fe.rows_from_csv(FIX_ERRORS_CSV)
+        if r["sequence"] == sequence and r["quantity"] == quantity
+    ]
+    return value
+
+
+def _data(sequence, quantity):
+    from navkit import urbannav_check as uc
+
+    (value,) = [
+        float(r["value"]) for r in uc.rows_from_csv(DATA_CSV) if r["sequence"] == sequence and r["quantity"] == quantity
+    ]
+    return value
+
+
+def test_statement_the_receiver_reports_no_outage(rows):
+    assert _data(DEEP, "gnss_outages") == 0 and _data(DEEP, "gnss_denied_epochs") == 0
+    assert _data(DEEP, "gnss_epochs") == _data(DEEP, "reference_epochs")
+    assert _data(TUNNEL, "gnss_outages") == 1  # the control: the same rule does find the tunnel
+    assert "The receiver reports no outage here" in _deep_section()
+
+
+def test_statement_the_gate_rejects_none_though_far_fixes_exist_and_the_nis_is_far_below_its_level(rows):
+    for v in ur.VARIANTS:
+        assert np.all(_q(rows, v, "gnss_updates_rejected", DEEP) == 0)
+        assert np.all(_q(rows, v, "gnss_channel_faulted", DEEP) == 0)
+        assert np.all(_q(rows, v, "fixes_over_3sigma", DEEP) > 0) and np.all(_q(rows, v, "wrong_fixes", DEEP) > 0)
+        assert np.all(_q(rows, v, "wrong_fixes_over_gate", DEEP) == 0)
+        assert np.all(_q(rows, v, "nis_mean", DEEP) < 0.25 * _q(rows, v, "fix_gate_level", DEEP))
+        alpha = _q(rows, v, "fix_gate_alpha", DEEP)
+        assert np.all(_q(rows, v, "fix_rejection_wilson_lo", DEEP) <= alpha)
+        assert np.all(alpha <= _q(rows, v, "fix_rejection_wilson_hi", DEEP))
+        assert np.all(_q(rows, v, "fix_gate_level", DEEP) == pytest.approx(chi2_threshold(3, ur.GATE_ALPHA), rel=1e-3))
+    assert "The gate rejects none of the offered fixes" in _deep_section()
+
+
+def test_statement_the_rejection_count_convention_for_a_constant_series(rows):
+    for v in ur.VARIANTS:
+        assert np.all(_q(rows, v, "fix_rejection_ess_defined", DEEP) == 0)
+        assert np.all(_q(rows, v, "fix_rejection_ess", DEEP) == _q(rows, v, "fixes_total", DEEP))
+        assert np.all(_q(rows, v, "fix_rejection_eff_wilson_hi", DEEP) == _q(rows, v, "fix_rejection_wilson_hi", DEEP))
+    assert "counts every fix as an independent" in " ".join(_deep_section().split())
+
+
+def test_statement_the_filter_is_overconfident_in_position_and_attitude(rows):
+    for v in ur.VARIANTS:
+        assert np.all(_q(rows, v, "hor_nees_mean", DEEP) > 3 * HOR_NEES_EXPECTED)
+        assert np.all(_q(rows, v, "att_nees_mean", DEEP) > 3 * ATT_NEES_EXPECTED)
+        assert np.all(_q(rows, v, "hor_coverage_2sigma", DEEP) < ur.COVERAGE_2SIGMA_GAUSSIAN - 0.25)
+        assert np.all(_q(rows, v, "claimed_sigma_median_m", DEEP) < _q(rows, v, "receiver_sigma_median_m", DEEP))
+    assert "The filter is overconfident against this reference" in _deep_section()
+
+
+def test_statement_the_excess_is_in_every_third_so_it_is_not_a_start_up_transient(rows):
+    for v in ur.VARIANTS:
+        for k in (1, 2, 3):
+            assert np.all(_q(rows, v, f"hor_nees_third{k}", DEEP) > 2 * HOR_NEES_EXPECTED), (v, k)
+            assert np.all(_q(rows, v, f"att_nees_third{k}", DEEP) > 2 * ATT_NEES_EXPECTED), (v, k)
+        mean = (
+            _q(rows, v, "hor_nees_third1", DEEP)
+            + _q(rows, v, "hor_nees_third2", DEEP)
+            + _q(rows, v, "hor_nees_third3", DEEP)
+        ) / 3
+        assert mean == pytest.approx(_q(rows, v, "hor_nees_mean", DEEP), rel=0.01)  # the thirds are the run's parts
+    assert "not a start-up transient" in _deep_section()
+
+
+def test_statement_the_means_have_few_independent_samples_behind_them(rows):
+    for v in ur.VARIANTS:
+        n = _q(rows, v, "fixes_total", DEEP)
+        assert np.all(_q(rows, v, "hor_nees_ess", DEEP) < 100)  # of 614782 IMU steps
+        assert np.all(_q(rows, v, "hor_nees_ess", DEEP) < n) and np.all(_q(rows, v, "att_nees_ess", DEEP) < n)
+    assert "few independent samples" in _deep_section()
+
+
+def test_statement_the_receivers_own_sigma_is_optimistic_and_both_variants_see_the_same_fixes(rows):
+    for key in ("fix_nees_mean", "fix_err_p50_m", "fix_err_p95_m", "fix_err_p99_m", "fixes_over_3sigma", "wrong_fixes"):
+        assert np.array_equal(_q(rows, "declared", key, DEEP), _q(rows, "per_fix", key, DEEP)), key
+    assert np.all(_q(rows, "declared", "fix_nees_mean", DEEP) > HOR_NEES_EXPECTED)
+
+
+def test_statement_the_height_is_not_relied_on_and_its_error_is_large(rows):
+    assert float(ur.DECLARED["gnss_vertical_sigma"][0]) == 100.0
+    for v in ur.VARIANTS:
+        assert np.all(_q(rows, v, "ver_rmse_m", DEEP) > 2 * _q(rows, v, "hor_rmse_m", DEEP))
+    assert "The height is not relied on" in _deep_section()
+
+
+def test_statement_the_reference_is_an_estimate_with_several_quality_codes():
+    assert _data(DEEP, "reference_quality_codes") > 1
+    section = " ".join(_deep_section().split())
+    assert "post-processed estimate" in section and "its error is not known" in section
+
+
+def test_interpretation_the_fix_errors_are_correlated_over_tens_of_seconds_and_few_samples_are_independent():
+    n = _fix_errors(DEEP, "fix_error_fixes")
+    assert _fix_errors(DEEP, "fix_error_corr_pooled_lag10s") > 0.9
+    assert _fix_errors(DEEP, "fix_error_corr_pooled_lag30s") > 0.5
+    assert _fix_errors(DEEP, "fix_error_corr_pooled_lag60s") > 0.3
+    for axis in ("east", "north"):
+        assert _fix_errors(DEEP, f"fix_error_ess_{axis}") < 0.05 * n
+        assert _fix_errors(DEEP, f"fix_error_ess_{axis}_truncated") == 0
+    # the other sequence is less correlated at ten seconds: the correlation is not a property of every sequence
+    assert _fix_errors(TUNNEL, "fix_error_corr_pooled_lag10s") < 0.5 * _fix_errors(DEEP, "fix_error_corr_pooled_lag10s")
+    section = " ".join(_deep_section().split())
+    for phrase in (
+        "INTERPRETATION, not a result of this page",
+        "treats the receiver's fixes as independent measurements",
+        "correlated over tens of seconds",
+        "does not prove the cause",
+        "the filter was not run with a correlated-error model here",
+        "some of the correlated difference could be in the reference",
+    ):
+        assert phrase in section, phrase
+
+
+def test_the_fix_error_block_is_what_the_code_and_its_csv_produce():
+    from navkit import urbannav_fix_errors as fe
+
+    rows = fe.rows_from_csv(FIX_ERRORS_CSV)
+    assert {r["sequence"] for r in rows} == {TUNNEL, DEEP}
+    text = PAGE.read_text(encoding="utf-8")
+    for fn in fe.BLOCKS.values():
+        assert fn(rows) in text
+
+
+def test_the_fix_error_csv_holds_aggregates_only_and_the_tunnel_data_rows_are_untouched():
+    from navkit import urbannav_fix_errors as fe
+
+    text = FIX_ERRORS_CSV.read_text(encoding="utf-8")
+    assert text.splitlines()[0] == ",".join(fe.CSV_COLUMNS)
+    assert all(r["quantity"] in fe.LABELS for r in fe.rows_from_csv(FIX_ERRORS_CSV))
+    assert len(text.splitlines()) < 100  # a table of aggregates, not of fixes
+    # the committed Tunnel-1 lines of the two older CSVs, hashed (the values recorded before Deep-Urban-1 was added)
+    import hashlib
+
+    def tunnel_hash(path):
+        lines = [x for x in path.read_bytes().splitlines(keepends=True) if x.startswith(b"tunnel1,")]
+        return hashlib.sha256(b"".join(lines)).hexdigest()
+
+    assert tunnel_hash(CSV) == "de65bb1c4a9cee30aaaafc02f8046ab23b339d0bf7379d3a279433ec815783c3"
+    assert tunnel_hash(DATA_CSV) == "b9d3fc433e183e15c30c6a44a5c9a4c28b86cdc973fc0da8b439486a480a0b68"
 
 
 # ----------------------------------------------------- the reader's report and the oracles
