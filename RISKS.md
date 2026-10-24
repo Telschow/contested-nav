@@ -49,7 +49,7 @@ deliberate decision to live with it). A risk's status changes only with evidence
 - **In place.** `vision_enabled` ships off ([ADR-0003](docs/adr/0003-ship-visual-disabled.md));
   the failing case is a benchmark row and a pinned test, not a hidden one.
 - **Status reason.** Accepted for the shipped configuration only, because `vision_enabled` is `False`. Enabling it
-  would reopen this risk. B1 stays open: see `CONSTRAINTS.md`.
+  would reopen this risk. B1 is closed as characterised, not solved (ADR-0036): see `CONSTRAINTS.md`.
 - **Early warning.** Any change that moves the NEES or coverage of `outage_visual`.
 
 ### R3. Estimator and generator share a conceptual error

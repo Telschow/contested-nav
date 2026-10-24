@@ -51,6 +51,7 @@ from . import (
     seed_sweep,
     separability,
     slow_ramp,
+    start_draw_study,
     urbannav_check,
     urbannav_fix_errors,
     urbannav_run,
@@ -71,6 +72,7 @@ _SWEEPS: dict[str, Callable[[list[str] | None], int]] = {
     "multipath": multipath_study.main,
     "faultclass": fault_classification.main,
     "vision-ramp": vision_ramp.main,
+    "start-draw": start_draw_study.main,
 }
 
 
@@ -93,6 +95,7 @@ def _sweep(argv: list[str] | None) -> int:
             "  multipath  evaluate the multipath signature on injected faults",
             "  ramp     slow-ramp GNSS spoofs on real recorded IMU data",
             "  vision-ramp  slow-ramp GNSS spoofs with a simulated visual second source",
+            "  start-draw  which part of the start draw the single anchor fails on (seeds 0 to 9 only)",
         )
         print("\n".join((usage, *kinds)), file=sys.stderr)
         return 0 if args and args[0] in ("-h", "--help") else 2

@@ -22,7 +22,7 @@ decision, not a tuning pass:
   the filter *more* accurate and therefore *harder* to catch by ranking on error. With the start drawn from the
   declared prior the anchor model is no longer the more accurate one in most draws, but the lesson stands.
 - **So the mitigation is to refuse the feature.** Visual fusion ships
-  `vision_enabled=False`, and the residual NEES gap is an open blocker recorded in
+  `vision_enabled=False`, and the residual NEES gap is a known limit, closed as characterised and not solved (ADR-0036), recorded in
   [CONSTRAINTS.md](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md), not a caveat in a footnote.
   [Why it cannot be fixed by more filtering](#the-one-thing-this-cannot-do).
 

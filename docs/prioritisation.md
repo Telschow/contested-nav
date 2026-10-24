@@ -96,3 +96,32 @@ Perturbations that change the set:
   blocking the merge. It is a demonstration, not a feature, and needs the owner's approval.
 - Latency compensation. It is not worth designing until P5-02 measures what a timestamp offset
   actually does to the filter.
+
+## Open issues, October 2026
+
+Scored on 24 October 2026 with the scales above. The audit boost multiplies Impact by 1.5 for issues that close a finding of the 24 October docs audit. Each issue carries the same numbers in its own `## RICE` section, and the issue is the source if the two differ. These are judgements, not measurements. The table lists the open contested-nav issues; P5-03 and P5-11 keep the scores above.
+
+| Issue | Item | Reach | Impact | Audit boost | Confidence | Effort (days) | Score |
+|---|---|---:|---:|---|---:|---:|---:|
+| #197 | Docs audit: one B1 status phrase, FAQ coverage wording | 10 | 1 | x1.5 | 80% | 0.5 | 24.00 |
+| #168 | Re-measure the start-attitude-draw study on the corrected fixture, as a generated CSV | 6 | 1 | x1.5 | 80% | 1 | 7.20 |
+| #165 | Integrity status record: a per-epoch output for downstream decision logic | 8 | 2 | none | 80% | 2 | 6.40 |
+| #188 | Select docs-only tests by pytest marker, not a hand-kept list in CI | 2 | 1 | none | 80% | 0.5 | 3.20 |
+| #183 | Show the innovation gate is blind to slow, correlated GNSS error (synthetic) | 6 | 1 | none | 80% | 2 | 2.40 |
+| #166 | Dead-reckoning horizon: time until the claimed bound exceeds an alert limit | 6 | 2 | none | 50% | 3 | 2.00 |
+| #190 | Compare the run-record summary helpers across the sweeps | 2 | 0.25 | none | 80% | 0.25 | 1.60 |
+| #193 | Remove the old page and CSV helper copies and forbid new ones | 2 | 0.5 | none | 80% | 0.5 | 1.60 |
+| #182 | UrbanNav: commit the scratch sanity checks as generated rows | 4 | 1 | none | 80% | 2 | 1.60 |
+| #181 | Integrity status record v2: staleness of the NIS windows | 4 | 1 | none | 50% | 1.5 | 1.33 |
+| #119 | Consolidate overlapping documentation pages | 4 | 0.5 | none | 80% | 1.5 | 1.07 |
+| #131 | UrbanNav follow-up: Deep-Urban-1 rows and the INSPVAX decision (left over from #95) | 4 | 1 | none | 80% | 3 | 1.07 |
+| #118 | Protection level from the calibrated covariance | 6 | 1 | none | 50% | 3 | 1.00 |
+| #189 | Generated-page module: one place for splice, table and CSV, with mismatch_sweep moved onto it | 2 | 0.5 | none | 80% | 1 | 0.80 |
+| #191 | Move the splice and table studies onto the generated-page module | 2 | 0.5 | none | 80% | 1 | 0.80 |
+| #192 | Move the remaining CSV-writing studies onto the generated-page module | 2 | 0.5 | none | 80% | 1 | 0.80 |
+| #186 | UrbanNav: start alignment versus gyro bias in the attitude NEES excess | 4 | 0.5 | none | 80% | 2 | 0.80 |
+| #117 | Camera-IMU extrinsic and time-offset sensitivity | 4 | 1 | none | 50% | 3 | 0.67 |
+| #184 | Run Deep-Urban-1 with a correlated-error GNSS model | 4 | 1 | none | 50% | 3 | 0.67 |
+| #185 | Imposed outages on Deep-Urban-1 | 4 | 1 | none | 50% | 3 | 0.67 |
+| #194 | Extract the shared run-record summary module, if the comparison supports it | 2 | 0.5 | none | 50% | 1 | 0.50 |
+| #116 | Covariance intersection as a visual-update baseline | 4 | 1 | none | 50% | 5 | 0.40 |

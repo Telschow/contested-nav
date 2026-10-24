@@ -37,9 +37,10 @@ epochs. See [Results](results.md) and [the ensemble over seeds](calibration.md#t
 
 ## Why 99.3% coverage for "2σ"?
 
-"2σ means 95%" is a one-dimensional statement. For a 3-D position error and an ellipsoid whose
-semi-axes are 2σ, the expected coverage is the chi-square probability P(χ²₃ ≤ 12) = 0.9926. The
-code states coverage against that, never against 95%.
+"2σ means 95%" is a one-dimensional statement. For a 3-D position error, the 2σ ellipsoid
+is the set where the NEES is at most 4 times the degrees of freedom (12 in 3-D), the expected coverage is the
+chi-square probability P(χ²₃ ≤ 12) = 0.9926. Coverage is reported against that value. The pass bar for the gate
+is 95% (AC-04).
 
 ## Why no SciPy, GTSAM or pytest-cov?
 
