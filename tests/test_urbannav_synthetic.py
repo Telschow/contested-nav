@@ -487,6 +487,88 @@ def test_the_aided_summary_against_known_answers(error_sigmas, att_error_rad, co
     assert out["fix_err_p50_m"] == pytest.approx(2.5) and out["aided"] == 1
 
 
+def _known_detail(n: int = 50) -> dict[str, Any]:
+    ref = _trajectory(np.zeros((n, 3)), np.tile(np.eye(3), (n, 1, 1)))
+    return {
+        "est": ref,
+        "reference": ref,
+        "position_cov": np.tile(np.diag([4.0] * 3), (n, 1, 1)),
+        "rotation_cov": np.tile(np.eye(3) * 0.05**2, (n, 1, 1)),
+    }
+
+
+def test_the_rejection_rate_has_wilson_intervals_on_the_raw_and_the_effective_count():
+    from navkit.eval.calibration import wilson_interval
+
+    level = ur.chi2_threshold(3, ur.GATE_ALPHA)
+    rng = np.random.default_rng(5)
+    nis = rng.uniform(0.0, 0.9 * level, 400)  # independent, and none over the level
+    nis[[100, 101, 102, 103]] = 2.0 * level  # four in a row over it
+    out = ur.aided_summary(
+        _known_detail(),
+        {"gnss_updates_used": 396, "gnss_updates_rejected": 4},
+        400,
+        np.ones(4),
+        np.ones(4),
+        nis=nis,
+        gate_level=level,
+    )
+    assert out["fix_gate_alpha"] == ur.GATE_ALPHA
+    assert out["fix_rejections_expected"] == pytest.approx(400 * ur.GATE_ALPHA)
+    lo, hi = wilson_interval(4, 400)
+    assert (out["fix_rejection_wilson_lo"], out["fix_rejection_wilson_hi"]) == (lo, hi)
+    # four rejections in a row are one cluster, not four: the effective count is smaller and the interval wider
+    assert out["fix_rejection_ess_defined"] == 1 and 1.0 <= out["fix_rejection_ess"] < 400.0
+    eff_k = 4 * out["fix_rejection_ess"] / 400
+    elo, ehi = wilson_interval(eff_k, out["fix_rejection_ess"])
+    assert (out["fix_rejection_eff_wilson_lo"], out["fix_rejection_eff_wilson_hi"]) == (elo, ehi)
+    assert ehi - elo > hi - lo
+
+
+def test_with_no_rejection_the_effective_interval_is_the_raw_one_and_says_so():
+    from navkit.eval.calibration import wilson_interval
+
+    level = ur.chi2_threshold(3, ur.GATE_ALPHA)
+    nis = np.linspace(0.1, 0.5 * level, 300)
+    out = ur.aided_summary(
+        _known_detail(),
+        {"gnss_updates_used": 300, "gnss_updates_rejected": 0},
+        300,
+        np.ones(4),
+        np.ones(4),
+        nis=nis,
+        gate_level=level,
+    )
+    assert out["fix_rejection_ess_defined"] == 0 and out["fix_rejection_ess"] == 300.0
+    assert (out["fix_rejection_wilson_lo"], out["fix_rejection_wilson_hi"]) == wilson_interval(0, 300)
+    assert (out["fix_rejection_eff_wilson_lo"], out["fix_rejection_eff_wilson_hi"]) == wilson_interval(0, 300)
+
+
+def test_the_nees_means_carry_their_effective_sample_sizes():
+    from navkit.eval.calibration import effective_samples
+
+    n = 400
+    rng = np.random.default_rng(2)
+    slow = np.cumsum(rng.normal(size=n)) ** 2 + 1.0  # strongly autocorrelated
+    out = ur.aided_summary(
+        _known_detail(n), {"gnss_updates_used": 4, "gnss_updates_rejected": 0}, 4, np.ones(4), np.ones(4), nees_h=slow
+    )
+    n_eff, truncated = effective_samples(slow)
+    assert out["hor_nees_ess"] == pytest.approx(n_eff) and out["hor_nees_ess_truncated"] == int(truncated)
+    assert 1.0 <= out["hor_nees_ess"] < n
+    # the attitude series here is constant (zero error), which has no estimate: it is NaN and not a made-up number
+    assert math.isnan(out["att_nees_ess"]) and out["att_nees_ess_truncated"] == 0
+
+
+def test_the_aided_run_reports_the_intervals_and_sample_sizes_it_documents(aided):
+    for v, r in aided.items():
+        assert 0.0 <= r["fix_rejection_wilson_lo"] <= r["fix_rejection_rate"] <= r["fix_rejection_wilson_hi"] <= 1.0, v
+        assert r["fix_rejection_eff_wilson_lo"] <= r["fix_rejection_rate"] <= r["fix_rejection_eff_wilson_hi"], v
+        assert 1.0 <= r["fix_rejection_ess"] <= r["fixes_total"], v
+        assert r["fix_rejections_expected"] == pytest.approx(r["fixes_total"] * ur.GATE_ALPHA), v
+        assert r["hor_nees_ess"] >= 1.0 and r["att_nees_ess"] >= 1.0, v
+
+
 def test_the_coverage_expectation_is_the_gaussian_two_sigma_share():
     assert abs(ur.COVERAGE_2SIGMA_GAUSSIAN - 0.9545) < 5e-5
 
