@@ -158,6 +158,7 @@ nav:
       - "0032 The adaptive visual scale takes every visual update": adr/0032-the-adaptive-visual-scale-takes-every-visual-update.md
       - "0033 One convention for the synthetic visual translation noise": adr/0033-one-convention-for-the-synthetic-visual-translation-noise.md
       - "0034 A Gauss-Markov model of the correlated visual error": adr/0034-a-gauss-markov-model-of-the-correlated-visual-error.md
+      - "0035 The integrity status record": adr/0035-the-integrity-status-record.md
   - Project:
       - Scope and responsible use: scope.md
       - Status and limits: status.md

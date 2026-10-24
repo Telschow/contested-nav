@@ -28,3 +28,17 @@ coverage). Synthetic evidence only unless a results row says otherwise.
 - Small PRs, each with tests, green CI before merge.
 - Decisions get an ADR; the maintainer writes the decision section.
 - Ask before: force-push, history rewrite, deleting docs other pages link to, tagging releases.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on Telschow/contested-nav, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one root `GLOSSARY.md` plus `docs/adr/`. See `docs/agents/domain.md`.
