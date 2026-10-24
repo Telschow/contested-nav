@@ -137,11 +137,27 @@ def _stub(sequence):
 def test_writing_another_sequence_keeps_the_committed_rows_byte_for_byte(tmp_path):
     copy = tmp_path / "copy.csv"
     copy.write_bytes(CSV.read_bytes())
+    uc.write_csv(copy, _stub("stubseq"))  # a sequence the file does not hold: added at the end
+    assert copy.read_bytes().startswith(CSV.read_bytes())
+    uc.write_csv(copy, _stub("stubseq"))  # again: replaced, not added
+    assert [r["sequence"] for r in uc.rows_from_csv(copy)].count("stubseq") == len(_stub("stubseq"))
+    assert copy.read_bytes().startswith(CSV.read_bytes())
+
+
+def _lines_of(path, sequence):
+    return [x for x in path.read_bytes().splitlines(keepends=True) if x.startswith(f"{sequence},".encode())]
+
+
+def test_rewriting_one_sequence_leaves_the_other_sequences_lines_byte_identical_and_in_place(tmp_path):
+    copy = tmp_path / "copy.csv"
+    copy.write_bytes(CSV.read_bytes())
+    tunnel, deep = _lines_of(CSV, "tunnel1"), _lines_of(CSV, "deepurban1")
+    assert tunnel and deep  # both sequences are in the committed file
     uc.write_csv(copy, _stub("deepurban1"))
-    assert copy.read_bytes().startswith(CSV.read_bytes())
-    uc.write_csv(copy, _stub("deepurban1"))  # again: replaced, not added
-    assert [r["sequence"] for r in uc.rows_from_csv(copy)].count("deepurban1") == 1
-    assert copy.read_bytes().startswith(CSV.read_bytes())
+    assert _lines_of(copy, "tunnel1") == tunnel
+    assert _lines_of(copy, "deepurban1") != deep  # the rewritten sequence did change
+    uc.write_csv(copy, uc.rows_from_csv(CSV))  # writing back what the file holds reproduces the committed bytes
+    assert copy.read_bytes() == CSV.read_bytes()
 
 
 def test_a_csv_with_another_header_is_refused_and_left_alone(tmp_path):

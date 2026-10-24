@@ -50,6 +50,7 @@ from . import (
     separability,
     slow_ramp,
     urbannav_check,
+    urbannav_fix_errors,
     urbannav_run,
     vision_ramp,
 )
@@ -130,15 +131,21 @@ def _gate(argv: list[str] | None) -> int:
 
 
 def _urbannav(argv: list[str] | None) -> int:
-    """Route ``navkit urbannav fetch`` and ``navkit urbannav check``."""
+    """Route ``navkit urbannav fetch``, ``check``, ``run`` and ``fixerrors``."""
     args = list(argv or [])
-    routes = {"fetch": urbannav_fetch.main, "check": urbannav_check.main, "run": urbannav_run.main}
+    routes = {
+        "fetch": urbannav_fetch.main,
+        "check": urbannav_check.main,
+        "run": urbannav_run.main,
+        "fixerrors": urbannav_fix_errors.main,
+    }
     if not args or args[0] in ("-h", "--help") or args[0] not in routes:
-        usage = "usage: navkit urbannav {fetch,check,run} [options]"
+        usage = "usage: navkit urbannav {fetch,check,run,fixerrors} [options]"
         notes = (
             "  fetch  download the reference solution and IMU of UrbanNav sequences (MIT, cite Hsu et al. 2023)",
             "  check  measure what the fetched files contain and fill the UrbanNav data page",
             "  run    run the filter on a fetched sequence with the receiver's own fixes and outage",
+            "  fixerrors  measure how the receiver's fix errors behave in time against the reference",
         )
         print("\n".join((usage, *notes)), file=sys.stderr)
         return 0 if args and args[0] in ("-h", "--help") else 2
@@ -157,7 +164,7 @@ _COMMANDS: dict[str, tuple[Callable[[list[str] | None], int], str]] = {
     "tumvi": (_tumvi, "fetch TUM VI room sequences (CC BY 4.0); run them with `navkit euroc run --dataset tumvi`"),
     "urbannav": (
         _urbannav,
-        "fetch UrbanNav reference and IMU files (MIT); real GNSS outages, not yet run by the filter",
+        "fetch UrbanNav reference and IMU files (MIT) and run the filter on the receiver's own fixes",
     ),
     "euroc": (euroc_cli.main, "fetch EuRoC sequences and run the filter on them (recorded IMU, simulated GNSS)"),
 }

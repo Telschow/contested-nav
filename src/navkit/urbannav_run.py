@@ -360,6 +360,10 @@ def aided_summary(
       horizontal difference, and the mean of (horizontal difference / receiver sigma) squared, which is 2 when the
       receiver's sigma is right and the errors are Gaussian.
     * ``fix_rejection_*``, with ``nis`` and ``gate_level``: the Wilson intervals of :func:`rejection_intervals`.
+    * ``fixes_over_3sigma``, ``receiver_sigma_median_m``, ``claimed_sigma_median_m``: the fixes more than three of the
+      receiver's own per-axis sigmas from the reference, the receiver's median per-axis sigma, and the median per-axis
+      sigma the filter claims for its position. ``nis_mean`` and ``fix_gate_level`` come with ``nis``.
+    * ``*_nees_third1..3``: the mean of each NEES series over the first, middle and last third of the run.
     * ``*_nees_ess``, with ``nees_h`` for the horizontal one: the effective sample size of each NEES series, and
       whether it reached the largest window (then it is an upper bound, ADR-0029). The means are over every IMU step,
       so they are far from independent samples, and the effective size is what says how many there are.
@@ -374,11 +378,18 @@ def aided_summary(
         "fix_rejection_rate": float(stats.get("gnss_updates_rejected", 0)) / offered if offered else math.nan,
         "fix_nees_mean": float(np.mean((fix_difference_m / fix_sigma_h_m) ** 2)),
     }
+    out["fixes_over_3sigma"] = int(np.sum(fix_difference_m > 3.0 * fix_sigma_h_m))
+    out["receiver_sigma_median_m"] = float(np.median(fix_sigma_h_m))
+    out["claimed_sigma_median_m"] = float(np.median(np.sqrt(0.5 * (cov[:, 0, 0] + cov[:, 1, 1]))))
     if nis is not None and gate_level is not None:
+        out["nis_mean"] = float(np.mean(nis))
+        out["fix_gate_level"] = float(gate_level)
         out.update(rejection_intervals(int(stats.get("gnss_updates_rejected", 0)), offered, nis, gate_level))
     if nees_h is not None:
         out["hor_nees_ess"], truncated = effective_samples(nees_h)
         out["hor_nees_ess_truncated"] = int(truncated)
+        for k, part in enumerate(np.array_split(nees_h, 3), start=1):
+            out[f"hor_nees_third{k}"] = float(np.mean(part))
     rot_cov = detail.get("rotation_cov")
     if rot_cov is not None:
         dtheta = rot_log_batch(np.einsum("nji,njk->nik", est.rotations, ref.rotations))
@@ -386,6 +397,8 @@ def aided_summary(
         out["att_nees_mean"] = float(np.mean(nees_att))
         out["att_nees_ess"], truncated = effective_samples(nees_att)
         out["att_nees_ess_truncated"] = int(truncated)
+        for k, part in enumerate(np.array_split(nees_att, 3), start=1):
+            out[f"att_nees_third{k}"] = float(np.mean(part))
     for q in FIX_PERCENTILES:
         out[f"fix_err_p{q}_m"] = float(np.percentile(fix_difference_m, q))
     return out
@@ -551,6 +564,8 @@ AIDED_QUANTITIES = (
     ("gnss_updates_rejected", "Fixes the filter rejected", "count"),
     ("fix_rejection_rate", "Share of the offered fixes the gate rejected", ""),
     ("fix_gate_alpha", "The gate's alpha (the FDIR default)", ""),
+    ("fix_gate_level", "The gate's level on the NIS (3 degrees of freedom)", ""),
+    ("nis_mean", "Mean NIS of the offered fixes", ""),
     (
         "fix_rejections_expected",
         "Rejections expected at that alpha if every fix were consistent (offered x alpha)",
@@ -573,9 +588,15 @@ AIDED_QUANTITIES = (
     ("gnss_channel_faulted", "GNSS channel declared faulty by the end", "count"),
     ("gnss_reaccepted", "Times a faulty channel was taken back", "count"),
     ("hor_nees_mean", "Horizontal mean NEES over the whole run (2 degrees of freedom, expected 2)", ""),
+    ("hor_nees_third1", "Horizontal mean NEES, first third of the run", ""),
+    ("hor_nees_third2", "Horizontal mean NEES, middle third of the run", ""),
+    ("hor_nees_third3", "Horizontal mean NEES, last third of the run", ""),
     ("hor_nees_ess", "Effective sample size of the horizontal NEES series (it has one value per IMU step)", "count"),
     ("hor_nees_ess_truncated", "That size is an upper bound (1 yes, 0 no)", "flag"),
     ("att_nees_mean", "Attitude mean NEES over the whole run (3 degrees of freedom, expected 3)", ""),
+    ("att_nees_third1", "Attitude mean NEES, first third of the run", ""),
+    ("att_nees_third2", "Attitude mean NEES, middle third of the run", ""),
+    ("att_nees_third3", "Attitude mean NEES, last third of the run", ""),
     ("att_nees_ess", "Effective sample size of the attitude NEES series", "count"),
     ("att_nees_ess_truncated", "That size is an upper bound (1 yes, 0 no)", "flag"),
     (
@@ -590,6 +611,9 @@ AIDED_QUANTITIES = (
     ("fix_err_p50_m", "Fix horizontal difference from the reference, median", "m"),
     ("fix_err_p95_m", "Fix horizontal difference, 95th percentile", "m"),
     ("fix_err_p99_m", "Fix horizontal difference, 99th percentile", "m"),
+    ("fixes_over_3sigma", "Fixes more than 3 of the receiver's own per-axis sigmas from the reference", "count"),
+    ("receiver_sigma_median_m", "Receiver's own reported per-axis sigma, median", "m"),
+    ("claimed_sigma_median_m", "Per-axis position sigma the filter claims, median over the run", "m"),
     (
         "fix_nees_mean",
         "Fixes alone: mean of (horizontal difference / receiver sigma) squared (expected 2)",
@@ -605,6 +629,9 @@ AIDED_QUANTITIES = (
 )
 #: Keys only the aided run has. A sequence with rows for any of them is an aided sequence.
 AIDED_ONLY_KEYS = frozenset(k for k, _, _ in AIDED_QUANTITIES) - frozenset(k for k, _, _ in QUANTITIES)
+#: Rows of the aided run that are in the CSV and not in the page tables: the absolute trajectory error is a
+#: three-dimensional number that the unused height dominates, so the page quotes the horizontal RMSE.
+NOT_ON_PAGE = frozenset({"ate_rmse_m"})
 CSV_COLUMNS = ("sequence", "variant", "seed", "quantity", "value", "unit")
 
 
@@ -666,6 +693,8 @@ def run_markdown(rows: list[dict[str, Any]], variant: str = "declared", sequence
     head = "| Quantity | " + " | ".join(f"seed {s}" for s in seeds) + " | Unit |"
     lines = [head, "|---|" + "---:|" * len(seeds) + "---|"]
     for key, label, unit in quantities:
+        if key in NOT_ON_PAGE and quantities is AIDED_QUANTITIES:
+            continue
         if any((s, key) in by for s in seeds):
             lines.append(f"| {label} | " + " | ".join(str(by.get((s, key), "")) for s in seeds) + f" | {unit} |")
     return "\n".join(lines)

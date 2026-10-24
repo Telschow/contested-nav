@@ -458,6 +458,56 @@ def test_the_real_tunnel_is_one_outage_of_minutes_and_not_at_the_edges(real_fixe
     assert real.reference.utc_s[0] + 60.0 < start and end < real.reference.utc_s[-1] - 30.0
 
 
+# ----------------------------------------------- the real Deep-Urban-1 files (skipped without the data)
+
+DEEP = "deepurban1"
+
+
+@pytest.fixture(scope="module")
+def deep_fixes():
+    if not (FETCHED / DEEP / ud.NMEA_FILES[DEEP]).is_file():
+        pytest.skip("the deepurban1 NMEA file is not in data/raw/urbannav/deepurban1/")
+    return ud.load_gga(FETCHED, DEEP)
+
+
+@pytest.fixture(scope="module")
+def deep_real():
+    if not all((FETCHED / DEEP / name).is_file() for name in uf.SOURCES[DEEP]):
+        pytest.skip("deepurban1 is not fetched (navkit urbannav fetch --sequence deepurban1)")
+    return ud.load_sequence(FETCHED, DEEP)
+
+
+def test_the_real_deep_urban_receiver_has_a_valid_fix_at_every_epoch_and_the_rule_finds_no_outage(deep_fixes):
+    assert deep_fixes.skipped == 0 and len(deep_fixes) > 1000
+    assert np.all(deep_fixes.quality == 2) and np.all(deep_fixes.num_sats == 12)
+    assert np.all(np.isfinite(deep_fixes.lat_deg)) and ud.outage_intervals(deep_fixes) == []
+
+
+def test_the_real_deep_urban_receiver_epochs_sit_on_the_reference_seconds(deep_fixes, deep_real):
+    assert len(deep_fixes) == len(deep_real.reference)
+    assert np.all(np.isin(deep_fixes.utc_s, deep_real.reference.utc_s))
+    assert np.allclose(np.diff(deep_real.reference.utc_s), 1.0)
+
+
+def test_the_real_deep_urban_imu_runs_at_about_400_hz_and_reads_gravity_on_z(deep_real):
+    assert 350.0 < 1.0 / np.median(np.diff(deep_real.imu.t)) < 450.0
+    first = deep_real.imu.accel[deep_real.imu.t < 3.0].mean(axis=0)
+    assert 9.5 < first[2] < 10.1 and abs(first[0]) < 0.5 and abs(first[1]) < 0.5
+
+
+def test_the_real_deep_urban_attitude_convention_matches_the_positions_and_gravity(deep_real):
+    ref = deep_real.reference
+    r = ud.rpy_to_rotation(ref.rpy_deg[:, 0], ref.rpy_deg[:, 1], ref.rpy_deg[:, 2])
+    v = np.einsum("nij,nj->ni", r, ref.vel_body)[1:-1]
+    e, t = deep_real.truth_enu, deep_real.truth_t
+    fd = (e[2:] - e[:-2]) / (t[2:] - t[:-2])[:, None]
+    moving = np.linalg.norm(fd[:, :2], axis=1) > 3.0
+    assert moving.sum() > 100 and np.median(np.linalg.norm((v - fd)[moving], axis=1)) < 0.2
+    k = int(np.argmin(np.abs(t - 1.5)))
+    up = r[k] @ deep_real.imu.accel[deep_real.imu.t < 3.0].mean(axis=0)
+    assert up[2] > 9.3 and abs(up[0]) < 0.6 and abs(up[1]) < 0.6
+
+
 # ------------------------------------------------------------ GST and attitude
 
 

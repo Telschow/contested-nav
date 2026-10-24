@@ -569,6 +569,39 @@ def test_the_aided_run_reports_the_intervals_and_sample_sizes_it_documents(aided
         assert r["hor_nees_ess"] >= 1.0 and r["att_nees_ess"] >= 1.0, v
 
 
+def test_the_aided_summary_counts_fixes_over_three_sigma_and_compares_the_sigmas():
+    n = 60
+    d = np.array([1.0, 5.9, 6.1, 20.0])  # receiver sigma 2: two of these are over 3 sigma
+    nis = np.array([0.5, 1.5, 2.5, 0.1])
+    out = ur.aided_summary(
+        _known_detail(n),
+        {"gnss_updates_used": 4, "gnss_updates_rejected": 0},
+        4,
+        d,
+        np.full(4, 2.0),
+        nis=nis,
+        gate_level=16.0,
+    )
+    assert out["fixes_over_3sigma"] == 2
+    assert out["receiver_sigma_median_m"] == 2.0 and out["claimed_sigma_median_m"] == pytest.approx(2.0)  # sqrt(4)
+    assert out["nis_mean"] == pytest.approx(1.15) and out["fix_gate_level"] == 16.0
+
+
+def test_the_nees_thirds_are_the_means_of_the_first_middle_and_last_part():
+    n = 90
+    rng = np.random.default_rng(7)
+    ref = _trajectory(np.zeros((n, 3)), np.tile(np.eye(3), (n, 1, 1)))
+    ramp = np.repeat([0.0, 1.0, 2.0], n // 3)  # error of 0, 1 and 2 sigma in each axis, by third
+    est = _trajectory(np.column_stack([ramp * 2.0, ramp * 2.0, np.zeros(n)]), np.tile(np.eye(3), (n, 1, 1)))
+    detail = {**_known_detail(n), "est": est, "reference": ref}
+    nees = np.repeat([0.0, 2.0, 8.0], n // 3) + 0.0 * rng.normal(size=n)
+    out = ur.aided_summary(
+        detail, {"gnss_updates_used": 4, "gnss_updates_rejected": 0}, 4, np.ones(4), np.ones(4), nees_h=nees
+    )
+    assert [out[f"hor_nees_third{k}"] for k in (1, 2, 3)] == [0.0, 2.0, 8.0]
+    assert [out[f"att_nees_third{k}"] for k in (1, 2, 3)] == [0.0, 0.0, 0.0]
+
+
 def test_the_coverage_expectation_is_the_gaussian_two_sigma_share():
     assert abs(ur.COVERAGE_2SIGMA_GAUSSIAN - 0.9545) < 5e-5
 
@@ -673,11 +706,24 @@ def test_the_committed_csv_is_a_prefix_of_what_a_second_sequence_adds_to_it(tmp_
     committed = Path(__file__).resolve().parent.parent / "docs" / "data" / "urbannav_run.csv"
     copy = tmp_path / "copy.csv"
     copy.write_bytes(committed.read_bytes())
-    ur.write_csv(copy, _stub_rows(DEEP))
+    ur.write_csv(copy, _stub_rows("stubseq"))  # a sequence the file does not hold: added at the end
     assert copy.read_bytes().startswith(committed.read_bytes())
     # writing back the rows the file already holds gives the same bytes: the writer is the one that wrote them
-    ur.write_csv(copy, ur.rows_from_csv(committed))
-    assert copy.read_bytes().startswith(committed.read_bytes())
+    again = tmp_path / "again.csv"
+    again.write_bytes(committed.read_bytes())
+    ur.write_csv(again, ur.rows_from_csv(committed))
+    assert again.read_bytes() == committed.read_bytes()
+
+
+def test_rewriting_deep_urban_1_leaves_the_tunnel_1_lines_byte_identical(tmp_path):
+    committed = Path(__file__).resolve().parent.parent / "docs" / "data" / "urbannav_run.csv"
+    copy = tmp_path / "copy.csv"
+    copy.write_bytes(committed.read_bytes())
+    tunnel = _csv_lines(committed, SEQ)
+    assert tunnel and _csv_lines(committed, DEEP)
+    ur.write_csv(copy, _stub_rows(DEEP))
+    assert _csv_lines(copy, SEQ) == tunnel
+    assert _csv_lines(copy, DEEP) != _csv_lines(committed, DEEP)
 
 
 def test_a_csv_with_another_header_is_refused_and_not_overwritten(tmp_path):

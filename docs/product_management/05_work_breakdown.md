@@ -27,7 +27,7 @@ TUM VI data path was M. No hours are quoted, because none were recorded.
 | WB-6 | Remaining P5-09 and P5-12 | Baseline records and the pull-request clean-up | None | S | Stated in the roadmap item. |
 | WB-7 | UrbanNav | A licence answer, then a third dataset | Issue 94 | M | The licence permits the use, or the dataset is dropped. |
 
-WB-1 is done: the [vision-ramp study](../vision_ramp.md) puts the floor at about 2 m/s for independent visual errors. WB-2 has a feasibility result: the [fault classification study](../fault_classification.md) separates multipath, calls spoofing in about three quarters of runs and has a control false-alarm rate of 35% on unseen runs, so the exit test is not met and the package stays open. WB-6 is done: the baseline records are dated snapshots by decision, and no housekeeping item is open. WB-4 is done: option 3 was taken and B4 is resolved (R5 in `CONSTRAINTS.md`). WB-7 is unblocked on the licence question, and a first run on Tunnel-1 exists: see section 5 and the [UrbanNav page](../urbannav.md).
+WB-1 is done: the [vision-ramp study](../vision_ramp.md) puts the floor at about 2 m/s for independent visual errors. WB-2 has a feasibility result: the [fault classification study](../fault_classification.md) separates multipath, calls spoofing in about three quarters of runs and has a control false-alarm rate of 35% on unseen runs, so the exit test is not met and the package stays open. WB-6 is done: the baseline records are dated snapshots by decision, and no housekeeping item is open. WB-4 is done: option 3 was taken and B4 is resolved (R5 in `CONSTRAINTS.md`). WB-7 is unblocked on the licence question, and a first run on Tunnel-1 and an aided run on Deep-Urban-1 exist: see section 5 and the [UrbanNav page](../urbannav.md).
 
 ## 3. B4: the published TUM VI estimate
 
@@ -95,4 +95,4 @@ at 1 Hz and the comparison uses linear interpolation of its position. 5 is done:
 was fixed before any filter ran. 6 is a draft, with the decision section left to the maintainer.
 
 The exit test in the table is met on the licence, as step 1 confirms. A first run exists on Tunnel-1 (see the
-[UrbanNav page](../urbannav.md)). The package stays open until the unseen check on Deep-Urban-1 has been run.
+[UrbanNav page](../urbannav.md)). Deep-Urban-1 has been run as an aided run (it has no outage by the rule), which the page describes. Imposed outages on it would be a separate experiment.
