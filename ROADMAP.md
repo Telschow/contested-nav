@@ -5,7 +5,7 @@ Status markers: `[x]` done, `[~]` in progress, `[ ]` not started, `[!]`
 blocked. Checked items record what was measured when the item closed. They are not kept current: the
 current values are in the README tables, `docs/results.md` and `CONSTRAINTS.md` (B1).
 
-Measured baseline: more than <!-- metric:tests_collected_floor -->2300<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
+Measured baseline: more than <!-- metric:tests_collected_floor -->2400<!-- /metric --> tests collected and <!-- metric:coverage_percent -->94.3<!-- /metric -->% line coverage on CPython
 <!-- metric:coverage_python -->3.13<!-- /metric --> (`docs/data/metrics.json`, from `scripts/metrics.py` and `scripts/coverage_report.py`). Every
 number below re-measures against that, not against a remembered value.
 
@@ -230,6 +230,10 @@ test: it is not met.
 
 ### Track B: Back-end optimisation: sliding-window pose graph `[~]`
 
+Note (2026-10-24): work towards a default-on configuration for visual fusion has stopped. B1 is closed as
+characterised, not solved ([ADR-0036](docs/adr/0036-b1-is-closed-as-characterised-not-solved.md)). The text below is
+the record of what was planned and tried.
+
 This is the structural fix for B1, the only genuine unknown in the project.
 Everything in Milestone 1 makes the limitation reproducible and documented;
 this removes it.
@@ -330,7 +334,7 @@ Where each item stands:
 
 `CONSTRAINTS.md` holds the authoritative list. In short:
 
-- **B1** is open for the shipped configuration; see `CONSTRAINTS.md`.
+- **B1** is open for the shipped configuration, with work stopped (ADR-0036); see `CONSTRAINTS.md`.
 - **B4** is resolved (R5 in `CONSTRAINTS.md`): the claim of a reproduction of the published 0.069 m is retired
       and replaced by a gyroscope check on recorded data.
 
