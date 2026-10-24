@@ -122,7 +122,7 @@ the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
 
   <!-- b1-heldout-status:start -->
 
-Status: open. The gate of ADR-0028 failed on the held-out seeds 100 to 124 for the candidate configuration on condition 2 (Grand mean NEES, at least the lower bound). Any change to the candidate is tested on a new held-out set, starting at seed 125 (ADR-0028). vision_enabled stays False.
+Status: closed as characterised, not solved (ADR-0036). The gate of ADR-0028 failed on the held-out seeds 100 to 124 for the candidate configuration on condition 2 (Grand mean NEES, at least the lower bound). Any change to the candidate is tested on a new held-out set, starting at seed 125 (ADR-0028). vision_enabled stays False.
 
 <!-- b1-heldout-status:end -->
 

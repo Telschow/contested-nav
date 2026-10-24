@@ -49,7 +49,8 @@ PASSED = (
     "scenario, and the noise preset rests on one measured front end (ADR-0024)."
 )
 FAILED = (
-    "Status: open. The gate of ADR-0028 failed on the held-out seeds 100 to 124 for the candidate configuration "
+    "Status: closed as characterised, not solved (ADR-0036). The gate of ADR-0028 failed on the held-out "
+    "seeds 100 to 124 for the candidate configuration "
     "on condition {conditions}. Any change to the candidate is tested on a new held-out set, starting at seed 125 "
     "(ADR-0028). vision_enabled stays False."
 )
