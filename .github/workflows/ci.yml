@@ -191,7 +191,7 @@ jobs:
           tests/test_urbannav_check.py tests/test_vision_ramp_page.py tests/test_vo_page.py
           tests/test_quoted_numbers.py tests/test_urbannav_run.py tests/test_ensemble_page.py
           tests/test_b1_gate_page.py tests/test_b1_gate_heldout_page.py tests/test_ess_page.py tests/test_verdict_prose.py tests/test_candidate_gate_page.py tests/test_fdir_false_alarm_page.py
-          tests/test_scale_tuning_page.py tests/test_gm_tuning_page.py tests/test_front_page_claims.py
+          tests/test_scale_tuning_page.py tests/test_gm_tuning_page.py tests/test_gm_usefulness_page.py tests/test_front_page_claims.py
 
   build:
     name: build
