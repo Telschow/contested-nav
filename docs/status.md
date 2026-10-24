@@ -26,7 +26,7 @@
   adaptive GNSS covariance inflation, which re-gates a returning fix once
   under an inflated covariance. The ATE and the number of rejected fixes both fell, with the false-alarm
   rate unchanged (R2 in [CONSTRAINTS.md](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md)
-  records the figures at the time). B1 is still open, see below.
+  records the figures at the time). B1 is closed as characterised, not solved (ADR-0036), see below.
 - **The filter is still overconfident under visual aiding.** Over the GNSS outage window, `outage_visual`
   has a mean NEES of <!-- metric:outage_visual_window_nees -->2783.3<!-- /metric --> against a nominal 3 and a
   2σ coverage of <!-- metric:outage_visual_window_coverage_percent -->5.0<!-- /metric -->% where the SRS requires
@@ -34,9 +34,12 @@
   [ADR-0030](adr/0030-the-gate-for-the-next-visual-update-candidate.md) govern the gate, and the B1 status is in
   CONSTRAINTS.md. The full-run values are in the table in
   the [README](https://github.com/Telschow/contested-nav/blob/main/README.md). It converges and
-  is confidently wrong. This is blocker B1. The single anchor is structurally wrong. The stochastic clone is
-  consistent for independent visual errors in the synthetic scenario on the development seeds. Visual errors that are
-  correlated over time are the open part of B1 (scenario S2 of ADR-0030). No threshold in the FDIR subsystem will move
+  is confidently wrong. This is blocker B1, closed as characterised, not solved
+  ([ADR-0036](adr/0036-b1-is-closed-as-characterised-not-solved.md)). The single anchor is structurally wrong. The
+  stochastic clone is consistent for independent visual errors in the synthetic scenario on the development seeds.
+  Visual errors that are correlated over time are the part that no configuration here handles (scenario S2 of
+  ADR-0030): the adaptive scale and the Gauss-Markov model both failed on development seeds, and work on a default-on
+  configuration has stopped. No threshold in the FDIR subsystem will move
   it. In the seed, outage and scene sweeps it held in every run (measured once on one machine, not checked by CI, at
   946d661).
 

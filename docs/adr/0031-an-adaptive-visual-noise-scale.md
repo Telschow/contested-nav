@@ -56,3 +56,5 @@ What stays open. Whether the held-out evaluation passes, and whether vision_enab
 Note (2026-10-23): the rule that only accepted updates enter the mean is replaced by [ADR-0032](0032-the-adaptive-visual-scale-takes-every-visual-update.md).
 
 Note (2026-10-23): the synthetic visual translation noise this ADR was measured on is corrected by [ADR-0033](0033-one-convention-for-the-synthetic-visual-translation-noise.md); see there for what is regenerated.
+
+Note (2026-10-24): the work under this ADR is closed by [ADR-0036](0036-b1-is-closed-as-characterised-not-solved.md).
