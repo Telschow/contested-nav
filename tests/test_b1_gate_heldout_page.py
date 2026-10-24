@@ -93,10 +93,14 @@ def test_the_status_is_exactly_one_of_the_two_texts_and_the_right_one(rows):
 def test_the_old_gate_stays_as_dated_history_and_is_marked_superseded():
     text = CONSTRAINTS.read_text(encoding="utf-8")
     b1 = text[text.index("**B1: Visual fusion") :]
-    assert "History, dated 2026-10." in b1
-    assert "superseded by [ADR-0028]" in b1
-    assert "B1 is open for the shipped configuration" in b1  # the old text is still there
-    assert "The current gate is one-sided" in b1
+    assert "History (superseded gate), 2026-10." in b1
+    assert "supersedes" in b1 and "[ADR-0028]" in b1
+    assert "Current status." in b1
+    assert b1.index("Current status.") < b1.index("History (superseded gate), 2026-10.")
+    history = b1[b1.index("History (superseded gate), 2026-10.") :]
+    assert "B1 was open for the shipped configuration" in history  # the old text is still there
+    assert "The superseded gate is one-sided" in history
+    assert "meets the current gate" not in b1
 
 
 def test_the_page_says_when_how_often_and_with_what_code_it_was_run():

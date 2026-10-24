@@ -36,7 +36,7 @@ overconfidence held in every run of every sweep (see [Results](results.md)).
 
 ## Where to start
 
-- [Getting started](getting-started.md): install, run the headline case in 19 seconds (measured once on one machine, not checked by CI), reproduce every number.
+- [Getting started](getting-started.md): install, run the headline case in 19 seconds (measured once on one machine, not checked by CI), reproduce the generated tables.
 - [Concepts](concepts.md): why this is not a tuning problem, what is in the filter, how calibration is measured.
 - [Results](results.md): the benchmark scenarios, the sweeps and what they do and do not show.
 - On recorded data: [EuRoC](euroc.md), [TUM VI](tumvi.md), [where the outage error comes from](attribution.md) and

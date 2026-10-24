@@ -28,8 +28,8 @@ The engineering response is publicly termed *resilient* or *assured* PNT
 (alternative-PNT, "A-PNT"). It is an active commercial category: Hexagon
 completed its acquisition of Septentrio in March 2025 explicitly to expand
 "resilient, assured positioning" and lists robotics, UAVs and autonomy among the
-target segments; Safran has marketed a resilient-PNT product line since at
-least June 2025.
+target segments; commercial resilient-PNT products have been marketed since at
+least June 2025, as a vendor press release of that month describes.
 
 **VERIFIED BY EXTERNAL SOURCE**: [S4](SOURCES.md#s4), [S5](SOURCES.md#s5),
 [S9](SOURCES.md#s9).

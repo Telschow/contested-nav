@@ -46,9 +46,9 @@ the time) put it ahead, and the ATE column stopped flagging it. With the start d
 calibration columns point the same way for the anchor model. Ranking by error is still not a calibration check.
 
 **The anchor model does not recover from a start attitude error inside its own prior (MEASUREMENT).** Over 10 seeds
-the median ATE of `outage_visual` was 25.18 m with the full start draw and 4.33 m with the attitude draw switched
-off; for `vision_only` it was 54.15 m and 7.66 m. With only the attitude drawn the medians were 27.02 m and
-52.04 m. The clone's results did not change in any variant (measured once on one machine, not checked by CI, at e94c107). Produced under the earlier draw of the synthetic visual translation noise (ADR-0033); not regenerated. The mechanism is a HYPOTHESIS and was not tested:
+the median ATE of `outage_visual` was several times larger with the full start draw than with the attitude draw
+switched off, and the same held for `vision_only`. With only the attitude drawn the medians were close to those of the
+full draw. The clone's results did not change in any variant (measured once on one machine, not checked by CI, at e94c107). Produced under the earlier draw of the synthetic visual translation noise (ADR-0033); not regenerated (being re-measured as a generated table: issue #168). The mechanism is a HYPOTHESIS and was not tested:
 gravity leakage from the start tilt error plus absolute information that the anchor model invents.
 
 **One run is one draw.** Over 10 seeds the verdict of the `outage_control` row was consistent in 5, mixed

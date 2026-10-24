@@ -53,7 +53,7 @@ Every entry is anchored to a source.
 |---|---|---|
 | **Hexagon** | Completed acquisition of Septentrio, 19 March 2025, to expand "resilient, assured positioning"; target segments include robotics, UAVs, autonomy. [S4](SOURCES.md#s4) | Owns the receiver and correction-service layer this repository's FDIR sits above |
 | **Septentrio** (Hexagon) | Designs multi-frequency multi-constellation GNSS receivers with anti-jam/anti-spoof capability; IMO-derived research lineage. [S5](SOURCES.md#s5) | Interference *detection* is receiver-level, not estimator-level; this repository does not duplicate it |
-| **Safran** | Markets a resilient-PNT product line positioned against GNSS threats since June 2025. [S9](SOURCES.md#s9) | Commercial resilient-PNT integrator |
+| **Commercial resilient-PNT products** | A vendor press release of June 2025 describes a resilient-PNT product aimed at GNSS threats. [S9](SOURCES.md#s9) | Commercial category; not implemented here |
 | **Xona Space Systems** | LEO PNT satellite operator; publicly announced a receiver-development partnership with Septentrio, October 2025. [S22](SOURCES.md#s22) | Alternative PNT signal source; not implemented here |
 | **Satelles** | LEO PNT service; submitted a public response to the NIST PNT request for comment. [S6](SOURCES.md#s6) | Alternative PNT signal source; not implemented here |
 
