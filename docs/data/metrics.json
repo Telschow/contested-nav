@@ -6,5 +6,5 @@
   "coverage_python": "3.13",
   "outage_visual_window_coverage_percent": 5.0,
   "outage_visual_window_nees": 2783.35,
-  "tests_collected": 2312
+  "tests_collected": 2320
 }

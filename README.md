@@ -26,11 +26,14 @@ synthetic. The filter has also been run on recorded IMU data (EuRoC and TUM VI) 
 the ground truth; see [Status and limits](docs/status.md). None of it is a field test.
 
 **Next step.** A stochastic clone of the previous pose is built and stays opt-in
-([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)). It meets the bar for turning
-vision on when the visual errors are independent. Against the measured errors of a real two-view front
-end it needs the assumed noise inflated ([ADR-0023](docs/adr/0023-clone-against-a-measured-front-end.md)). That evidence is on recorded-data windows, a different fixture from the synthetic one, and ADR-0033 does not change it.
-The bar is written down: a mean NEES below 10 and a 2σ coverage above 90% with GNSS denied. The
-[roadmap](ROADMAP.md) calls the open problem B1.
+([ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)). It passes the S1 gate of
+[ADR-0030](docs/adr/0030-the-gate-for-the-next-visual-update-candidate.md) on the development seeds (25 to 49), where
+the visual errors are independent. It has not been evaluated on held-out seeds. Against the measured errors of a real
+two-view front end it needs the assumed noise inflated ([ADR-0023](docs/adr/0023-clone-against-a-measured-front-end.md)).
+That evidence is on recorded-data windows, a different fixture from the synthetic one, and ADR-0033 does not change it.
+The gate for turning vision on is no longer the old single-run bar. [ADR-0028](docs/adr/0028-the-b1-gate.md) and
+ADR-0030 govern it, and the B1 status is in [CONSTRAINTS.md](CONSTRAINTS.md). The [roadmap](ROADMAP.md) calls the
+open problem B1.
 
 ![Position error against the uncertainty the filter claims, through a GNSS outage, without and with vision](docs/figures/hero.png)
 
@@ -54,18 +57,20 @@ whether vision helps accuracy depends on the start draw, and here it mostly does
 every run of every sweep (see [what the sweeps show](#what-the-sweeps-show)).
 
 A stochastic clone of the previous pose (opt-in, `vision_model: clone`,
-[ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)) does not reject calibration in a single run on the
-same fixture when the visual errors are independent (`consistent` in the clone rows with independent visual errors,
-except the re-referenced degraded-camera row, which reads `mixed` with an underconfident bulk, and the vision-only
-row, whose verdict carries a dagger), and reads `overconfident†` when they are correlated over a couple of seconds;
-see the clone rows in the table below. A single run cannot establish calibration. The ensemble over seeds puts none
-of the independent clone rows below the band and most of them inside it, and the row with a drifting translation
-scale has a large share above it ([the ensemble over seeds](docs/calibration.md#the-ensemble-over-seeds)). On the
-development seeds and on the ADR-0033 fixture, the plain clone passes the gate of ADR-0030 in the scenario with
-independent visual errors and fails it by a wide margin in the scenario with errors correlated over time
-([the candidate gate](docs/calibration.md#the-candidate-gate-of-adr-0030-on-the-development-seeds)). The clone's
-earlier conservatism was largely the generator and the filter using different noise conventions ([ADR-0033](docs/adr/0033-one-convention-for-the-synthetic-visual-translation-noise.md)). It is a
-synthetic result, the default is unchanged, and visual fusion still ships off.
+[ADR-0017](docs/adr/0017-stochastic-clone-for-the-visual-update.md)) is the candidate fix. The pre-registered
+held-out gate ([ADR-0028](docs/adr/0028-the-b1-gate.md)) was run once and failed, and the result was accepted rather
+than tuned away. A single run cannot establish calibration, so the table lists what was measured and its status. It is
+all synthetic, the default is unchanged, and visual fusion still ships off.
+
+**What the evidence shows**
+
+| Configuration | What was measured | Status |
+|---|---|---|
+| Single anchor | overconfident in every run of every sweep; does not recover from a start attitude error inside its own declared prior ([the ensemble over seeds](docs/calibration.md#the-ensemble-over-seeds), [what the sweeps show](#what-the-sweeps-show)) | fails; kept as the control |
+| Stochastic clone, independent visual errors | passes the S1 gate of [ADR-0030](docs/adr/0030-the-gate-for-the-next-visual-update-candidate.md) on the development seeds (25 to 49) ([the candidate gate](docs/calibration.md#the-candidate-gate-of-adr-0030-on-the-development-seeds)) | not evaluated on held-out seeds |
+| Clone with the measured-front-end noise preset | conservative; failed the held-out gate of [ADR-0028](docs/adr/0028-the-b1-gate.md) on condition 2, on the fixture before ADR-0033 ([the decision run](docs/calibration.md#the-b1-gate-the-decision-run-on-the-held-out-seeds)) | recorded, accepted as final ([B1 in CONSTRAINTS.md](CONSTRAINTS.md)) |
+| Stochastic clone, visual errors correlated over time | fails the S2 gate of [ADR-0030](docs/adr/0030-the-gate-for-the-next-visual-update-candidate.md) on the development seeds ([the candidate gate](docs/calibration.md#the-candidate-gate-of-adr-0030-on-the-development-seeds)) | open |
+| Adaptive visual noise scale ([ADR-0031](docs/adr/0031-an-adaptive-visual-noise-scale.md), [ADR-0032](docs/adr/0032-the-adaptive-visual-scale-takes-every-visual-update.md)) | failed on development seeds, on the fixture before ADR-0033 | recorded |
 
 > **Mostly synthetic evidence.** The tables on this page come from a deterministic known-answer
 > fixture: an analytic trajectory with generated sensor streams. The recorded-data pages use a real
@@ -152,7 +157,7 @@ commit them are decided. `navkit sweep seeds`, `navkit sweep outages` and `navki
 A sentence below that was not re-run is labelled as produced under the earlier draw.
 
 - **Not a bad seed.** Over 10 seeds, each with its own start draw, `outage_visual` and `vision_only` were
-  overconfident at every one (measured once on one machine, not checked by CI, at 7e33158).
+  overconfident at every one (measured once on one machine, not checked by CI, at a992aa7).
 - **Not a long-outage effect.** Over 8 outage windows (start 5 s or 10 s, length 5 to 20 s, 5 seeds each) the
   visual case was overconfident in all 40 runs, including 5 s outages (measured once on one machine, not checked by CI, at 946d661).
 - **Not one path.** Over 8 synthetic scenes (trajectories), each of the five single-anchor rows read `overconfident`
@@ -161,11 +166,11 @@ A sentence below that was not re-run is labelled as produced under the earlier d
   seeds, and in all 8 outage windows with the seeds averaged. `vision_only` was less accurate than dead reckoning
   in 10 of 10 seeds (measured once on one machine, not checked by CI, at 946d661).
 - **The start attitude draw is what the anchor model fails on (MEASUREMENT).** Over 10 seeds the median ATE of
-  `outage_visual` was 25.18 m with the full start draw and 4.33 m with the attitude draw switched off and the
-  position and velocity draws on. For `vision_only` it was 54.15 m and 7.66 m. With only the attitude drawn, the
-  medians were 27.02 m and 52.04 m. The attitude prior is 2 degrees per axis, so the anchor model does not recover
+  `outage_visual` was several times larger with the full start draw than with the attitude draw switched off and the
+  position and velocity draws on. The same held for `vision_only`. With only the attitude drawn, the medians were close
+  to those of the full draw. The attitude prior is 2 degrees per axis, so the anchor model does not recover
   from a start attitude error inside its own declared prior. The clone's ATE and NEES did not change in any variant
-  (measured once on one machine, not checked by CI, at e94c107). Produced under the earlier draw of the synthetic visual translation noise (ADR-0033); not regenerated. Why the anchor model fails is a HYPOTHESIS and was not tested: gravity leakage from the start tilt
+  (measured once on one machine, not checked by CI, at e94c107). Produced under the earlier draw of the synthetic visual translation noise (ADR-0033); not regenerated (being re-measured as a generated table: issue #168). Why the anchor model fails is a HYPOTHESIS and was not tested: gravity leakage from the start tilt
   error plus absolute information that the anchor model invents.
 - **A control's verdict is one draw.** Over 10 seeds the `outage_control` verdict was consistent in 5,
   mixed (bulk overconfident, tail consistent) in 2 and mixed (bulk underconfident, tail consistent) in 3. The mean
