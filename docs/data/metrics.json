@@ -1,10 +1,10 @@
 {
-  "adr_count": 34,
+  "adr_count": 35,
   "coverage_lines_hit": 10033,
   "coverage_lines_total": 10638,
   "coverage_percent": 94.31,
   "coverage_python": "3.13",
   "outage_visual_window_coverage_percent": 5.0,
   "outage_visual_window_nees": 2783.35,
-  "tests_collected": 2406
+  "tests_collected_floor": 2400
 }
