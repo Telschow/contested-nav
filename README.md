@@ -166,12 +166,12 @@ A sentence below that was not re-run is labelled as produced under the earlier d
   seeds, and in all 8 outage windows with the seeds averaged. `vision_only` was less accurate than dead reckoning
   in 10 of 10 seeds (measured once on one machine, not checked by CI, at 946d661).
 - **The start attitude draw is what the anchor model fails on (MEASUREMENT).** Over 10 seeds the median ATE of
-  `outage_visual` was several times larger with the full start draw than with the attitude draw switched off and the
-  position and velocity draws on. The same held for `vision_only`. With only the attitude drawn, the medians were close
-  to those of the full draw. The attitude prior is 2 degrees per axis, so the anchor model does not recover
-  from a start attitude error inside its own declared prior. The clone's ATE and NEES did not change in any variant
-  (measured once on one machine, not checked by CI, at e94c107). Produced under the earlier draw of the synthetic visual translation noise (ADR-0033); not regenerated (being re-measured as a generated table: issue #168). Why the anchor model fails is a HYPOTHESIS and was not tested: gravity leakage from the start tilt
-  error plus absolute information that the anchor model invents.
+  `outage_visual` and of `vision_only` is several times larger with the attitude drawn than without it, and close to
+  the full-draw value with only the attitude drawn. The attitude prior is 2 degrees per axis, so the anchor model does
+  not recover from a start attitude error inside its own declared prior. The clone's ATE and NEES do not follow the
+  attitude draw. The table is generated from `docs/data/start_draw_study.csv` and shown on the
+  [Results page](docs/results.md). Why the anchor model fails is a HYPOTHESIS and was not tested: gravity leakage from
+  the start tilt error plus absolute information that the anchor model invents.
 - **A control's verdict is one draw.** Over 10 seeds the `outage_control` verdict was consistent in 5,
   mixed (bulk overconfident, tail consistent) in 2 and mixed (bulk underconfident, tail consistent) in 3. The mean
   NEES of `outage_visual` spanned about two orders of magnitude over the seeds and that of `vision_only` about one,
