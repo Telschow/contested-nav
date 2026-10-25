@@ -29,6 +29,7 @@ import numpy as np
 
 from . import urbannav_data as ud
 from .recorded import SequenceError
+from .report.page import write_block as _write_page_block
 
 CSV_COLUMNS = ("sequence", "quantity", "value", "unit")
 DEFAULT_ROOT = "data/raw/urbannav"
@@ -175,14 +176,8 @@ def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
 
 
 def write_block(path: str | Path, name: str, block: str) -> None:
-    page = Path(path)
-    text = page.read_text(encoding="utf-8")
-    start, end = f"<!-- {name}:start -->", f"<!-- {name}:end -->"
-    if start not in text or end not in text or text.index(start) > text.index(end):
-        raise ValueError(f"{page} needs the lines {start} and {end}, in that order")
-    head, rest = text.split(start, 1)
-    _, tail = rest.split(end, 1)
-    page.write_text(f"{head}{start}\n\n{block}\n\n{end}{tail}", encoding="utf-8")
+    """Replace the text between a block's markers in a Markdown page."""
+    _write_page_block(path, name, block)
 
 
 def build_parser() -> argparse.ArgumentParser:
