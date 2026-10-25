@@ -14,6 +14,8 @@ from navkit import cli, mismatch_sweep
 from navkit.benchmark import _eskf_config, default_config_path, run_case
 from navkit.degrade import scenario_from_dict
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 CSV = ROOT / "docs" / "data" / "mismatch_sweep.csv"
 PAGE = ROOT / "docs" / "mismatch.md"

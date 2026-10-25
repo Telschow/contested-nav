@@ -5,6 +5,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 
 #: A table cell that is a team or a manager: "Estimator team", "Release manager".

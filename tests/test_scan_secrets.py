@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 _spec = importlib.util.spec_from_file_location("scan_secrets", ROOT / "scripts" / "scan_secrets.py")
 assert _spec and _spec.loader

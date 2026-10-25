@@ -14,6 +14,8 @@ import pytest
 from navkit import candidate_gate as run
 from navkit.eval import candidate_gate as cg
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 CSV = ROOT / "docs" / "data" / "candidate_gate_dev.csv"
 PAGE = ROOT / "docs" / "calibration.md"

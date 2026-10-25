@@ -14,6 +14,8 @@ from navkit import cli, fault_matrix
 from navkit.benchmark import default_config_path, run_case
 from navkit.types import GnssFix
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 CSV = ROOT / "docs" / "data" / "fault_matrix.csv"
 PAGE = ROOT / "docs" / "faults.md"

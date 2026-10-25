@@ -15,6 +15,8 @@ from navkit import urbannav_check as uc
 from navkit import urbannav_data as ud
 from navkit.types import ImuSample
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = ROOT / "docs" / "urbannav.md"
 CSV = ROOT / "docs" / "data" / "urbannav_data.csv"

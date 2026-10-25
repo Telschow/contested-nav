@@ -11,6 +11,8 @@ from navkit import euroc_eval as ee
 from navkit import fault_classification as fc
 from navkit.types import GnssFix, ImuSample
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = ROOT / "docs" / "fault_classification.md"
 CSV = ROOT / "docs" / "data" / "fault_classification.csv"

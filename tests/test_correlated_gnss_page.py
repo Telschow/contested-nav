@@ -13,6 +13,8 @@ import pytest
 
 from navkit import correlated_gnss_study as cg
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 CSV = ROOT / "docs" / "data" / "correlated_gnss.csv"
 PAGE = ROOT / "docs" / "urbannav.md"

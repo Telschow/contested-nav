@@ -1,7 +1,8 @@
 """A documentation-only pull request skips the test jobs, so every test that reads a page must run in the lint job.
 
-``ci.yml`` lists those tests in the "Documentation tests" step. This reads that list and every test file, and fails if
-a test that opens a documentation page, or a Markdown file at the root, is not in the list.
+A test declares itself documentation-only with ``pytestmark = pytest.mark.docs_only``, and the "Documentation tests"
+step of ``ci.yml`` selects by that marker, so a new page test touches only its own file. This reads every test file and
+fails if a test that opens a documentation page, or a Markdown file at the root, lacks the marker.
 """
 
 from __future__ import annotations
@@ -33,8 +34,11 @@ def _documentation_step() -> str:
     return next(s["run"] for s in steps if s.get("name") == "Documentation tests")
 
 
-def listed() -> set[str]:
-    return {Path(p).name for p in re.findall(r"tests/test_\w+\.py", _documentation_step())}
+_MARKER = re.compile(r"^pytestmark\s*=.*\bdocs_only\b", re.MULTILINE)
+
+
+def marked() -> set[str]:
+    return {p.name for p in sorted(TESTS.glob("test_*.py")) if _MARKER.search(p.read_text(encoding="utf-8"))}
 
 
 def readers() -> set[str]:
@@ -49,12 +53,14 @@ def readers() -> set[str]:
 
 
 def test_every_test_that_reads_a_page_runs_in_a_documentation_only_pull_request() -> None:
-    missing = sorted(readers() - listed() - set(EXCLUDED))
-    assert missing == [], f"add to the Documentation tests step of ci.yml, or exclude with a reason: {missing}"
+    missing = sorted(readers() - marked() - set(EXCLUDED))
+    assert missing == [], f"add `pytestmark = pytest.mark.docs_only`, or exclude with a reason: {missing}"
 
 
-def test_the_list_names_only_tests_that_exist() -> None:
-    assert sorted(n for n in listed() if not (TESTS / n).is_file()) == []
+def test_the_step_selects_by_the_marker_and_keeps_no_hand_written_list() -> None:
+    step = _documentation_step()
+    assert "-m docs_only" in step
+    assert re.findall(r"tests/test_\w+\.py", step) == []
 
 
 def test_every_exclusion_names_a_test_that_reads_a_page() -> None:

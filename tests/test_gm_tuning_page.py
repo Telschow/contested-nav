@@ -17,6 +17,8 @@ from navkit import gm_tuning as gt
 from navkit.estimators.eskf import EskfConfig
 from navkit.io.imu import ImuNoiseModel
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 CSV = ROOT / "docs" / "data" / "gm_tuning.csv"
 ROB_CSV = ROOT / "docs" / "data" / "gm_tuning_robustness.csv"

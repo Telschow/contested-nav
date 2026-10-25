@@ -21,6 +21,8 @@ from navkit.fdir.gating import chi2_threshold
 from navkit.recorded import EurocSequence
 from navkit.types import GRAVITY, GnssFix, ImuSample, Trajectory, interpolate_trajectory
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = ROOT / "docs" / "urbannav.md"
 CSV = ROOT / "docs" / "data" / "urbannav_run.csv"
