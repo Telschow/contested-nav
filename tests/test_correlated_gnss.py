@@ -113,3 +113,21 @@ def test_the_csv_round_trips_and_the_comparison_names_a_changed_cell() -> None:
 def test_held_out_seeds_are_refused() -> None:
     with pytest.raises(ValueError, match="held-out"):
         cg.refuse_held_out([3, 100])
+
+
+def test_comparing_a_csv_with_itself_cannot_overwrite_it_first(tmp_path, monkeypatch) -> None:
+    committed = tmp_path / "committed.csv"
+    stale = [row(c, s, 100, 0, 3.0, 3.0) for c in cg.CASES for s in range(2)]
+    committed.write_text(cg.csv_text(stale), encoding="utf-8")
+    fresh = [{**r, "fixes_rejected": 1} for r in stale]
+    monkeypatch.setattr(cg, "run_study", lambda doc, seeds=None: fresh)
+    argv = ["--csv", str(committed), "--compare", str(committed), "--seeds", "0-1"]
+    assert cg.main(argv) == 1  # the fresh rows differ from the committed ones
+    # The comparison failed, and the committed file now holds the fresh rows only after it read the old ones.
+    assert cg.parse_csv(committed.read_text(encoding="utf-8")) == fresh
+
+
+def test_a_missing_case_is_a_clear_error_and_not_a_key_error() -> None:
+    rows = [row("independent", 0, 100, 0, 3.0, 3.0)]
+    with pytest.raises(ValueError, match="correlated"):
+        cg.markdown_section(rows)

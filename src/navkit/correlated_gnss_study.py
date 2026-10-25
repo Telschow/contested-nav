@@ -191,6 +191,9 @@ LABELS = {
 def markdown_section(rows: list[dict[str, Any]]) -> str:
     """The generated section of ``docs/urbannav.md``: a table, and sentences the page test checks against the rows."""
     s = summarise(rows)
+    missing = [c for c in CASES if c not in s]
+    if missing:
+        raise ValueError(f"the rows have no case {', '.join(missing)}")
     n = s["independent"]["seeds"]
     lines = [
         "**Is the gate blind to a slow, correlated GNSS error? Synthetic, not the real receiver (MEASUREMENT).** "
@@ -261,10 +264,12 @@ def main(argv: list[str] | None = None) -> int:
         ap.error(str(exc))
     doc = yaml.safe_load((args.config or default_config_path()).read_text()) or {}
     rows = run_study(doc, seeds)
+    # The committed rows are read before the new ones are written, so that --csv and --compare may name one file.
+    committed = parse_csv(args.compare.read_text(encoding="utf-8")) if args.compare is not None else None
     args.csv.write_text(csv_text(rows), encoding="utf-8")
     print(f"wrote {args.csv}: {len(rows)} rows", file=sys.stderr)
-    if args.compare is not None:
-        problems = compare(rows, parse_csv(args.compare.read_text(encoding="utf-8")))
+    if committed is not None:
+        problems = compare(rows, committed)
         for line in problems[:20]:
             print(f"  {line}", file=sys.stderr)
         if problems:
