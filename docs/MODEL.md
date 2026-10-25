@@ -348,6 +348,35 @@ Each case record:
 The golden snapshot (`tests/golden/benchmark.json`) is the executable form of this
 contract for the seeded benchmark.
 
+## Integrity status record
+
+The ESKF runner puts one `IntegrityStatus` per epoch in `trajectory.metadata["integrity"]` (schema version 1,
+[ADR-0035](adr/0035-the-integrity-status-record.md)). `navkit.integrity.write_csv` writes the same records, one row per
+epoch in time order, with the schema version on every row. It is for downstream decision logic that must not read
+filter internals. It says whether the claimed uncertainty may be believed. It says nothing about accuracy.
+
+| Field | Meaning |
+|---|---|
+| `t`, `position` | Epoch time in seconds and the estimated position. |
+| `sigma_h`, `sigma_v` | Claimed standard deviation: horizontal is the square root of the mean of the two horizontal variances. |
+| `nis_state` | `ok`, `diverging` or `unknown`, derived from the NIS window monitor of ADR-0006 with no new threshold. `diverging` when any channel has its last three outcomes rejected. `unknown` when no channel has history. |
+| `monitored` | True when at least one channel has history in its NIS window at this epoch. |
+| `seconds_since_absolute_fix` | Time since the last accepted GNSS fix, or since the start when there has been none. |
+| `aiding` | The enabled aiding sources, from `gnss` and `vision`. |
+| `usable`, `reason` | The usable rule, below, and the code of the first condition that failed or `ok`. |
+
+`usable` is true only when all of these hold, tested in this order: `sigma_h` and `sigma_v` are finite
+(`sigma_not_finite`); `nis_state` is not `diverging`, where `unknown` counts as not contradicted (`nis_diverging`);
+every enabled aiding source other than `gnss` has passed a calibration gate (`aiding_not_calibrated`). No vision
+configuration has passed the gate of ADR-0028 or ADR-0030, and B1 is closed as characterised (ADR-0036), so with
+vision on the record is never usable.
+
+The NIS state is not evidence of calibration. A filter that is confidently wrong can report `ok`; the single-anchor
+case is the control for that. Where GNSS is denied and vision is off, `monitored` is false and `nis_state` is
+`unknown` once the windows hold nothing, which tells a consumer that nothing could be checked. The NIS windows do not
+age (issue #181), so `monitored` can stay true on old history after GNSS is lost. Read `seconds_since_absolute_fix`
+with it. A change of fields, of their meaning or of the rule is a new schema version and a new ADR.
+
 ## As implemented: things a reader should know
 
 These are observations of the code as it stands, recorded so that nobody has to

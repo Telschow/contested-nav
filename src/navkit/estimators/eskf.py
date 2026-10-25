@@ -171,6 +171,7 @@ from ..fdir.fdir_manager import (
 )
 from ..geometry.rigid import rot_exp, rot_log, rot_right_jacobian
 from ..geometry.rigid import skew as _skew
+from ..integrity import IntegrityStatus, make_status
 from ..io.imu import ImuNoiseModel
 from ..types import GRAVITY, GnssFix, ImuSample, Trajectory, VisionUpdate
 from .dead_reckoning import EstimatorResult
@@ -1429,6 +1430,10 @@ class ErrorStateKalmanFilter:
         # model reads them.
         gm_rot_sq = gm_trans_sq = 0.0
         gm_epochs = 0
+        integrity: list[IntegrityStatus] = []
+        aiding = tuple(name for name, on in (("gnss", use_gnss), ("vision", use_vision)) if on)
+        t_start = float(imu.t[0])
+        last_accepted_gnss_s: float | None = None
 
         for k in range(n):
             t_k = float(imu.t[k])
@@ -1468,6 +1473,8 @@ class ErrorStateKalmanFilter:
                         variance=own,
                     )
                     n_gnss_used += int(ok)
+                    if ok:
+                        last_accepted_gnss_s = t_k
                     n_gnss_rejected += int(not ok)
                     g_ptr += 1
 
@@ -1500,6 +1507,18 @@ class ErrorStateKalmanFilter:
             pos_cov[k] = x["P"][_IDX_P, _IDX_P]
             rot_cov[k] = x["P"][_IDX_THETA, _IDX_THETA]
             sigma_p[k] = float(np.sqrt(max(np.trace(x["P"][_IDX_P, _IDX_P]), 0.0) / 3.0))
+            p_var = np.diag(x["P"][_IDX_P, _IDX_P])
+            integrity.append(
+                make_status(
+                    t_k,
+                    x["p"],
+                    math.sqrt(max(float(p_var[0] + p_var[1]) / 2.0, 0.0)),
+                    math.sqrt(max(float(p_var[2]), 0.0)),
+                    self.fdir.nis,
+                    t_k - (t_start if last_accepted_gnss_s is None else last_accepted_gnss_s),
+                    aiding,
+                )
+            )
             if self._gm:
                 gm_rot_sq += float(x["e_rot"] @ x["e_rot"])
                 gm_trans_sq += float(x["e_trans"] @ x["e_trans"])
@@ -1557,6 +1576,8 @@ class ErrorStateKalmanFilter:
         traj.metadata["gnss_innovations"] = self.gnss_innovations
         traj.metadata["bias_log"] = self.bias_log
         traj.metadata["fdir_events"] = [e.as_dict() for e in self.fdir.events]
+        # One record per epoch for downstream decision logic (ADR-0035). In the metadata, as the covariance is.
+        traj.metadata["integrity"] = integrity
         return EstimatorResult(
             trajectory=traj,
             runtime_s=elapsed,
