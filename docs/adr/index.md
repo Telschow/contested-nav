@@ -42,3 +42,4 @@ what it cost, and what was rejected.
 | [ADR-0035](0035-the-integrity-status-record.md) | The integrity status record | accepted |
 | [ADR-0036](0036-b1-is-closed-as-characterised-not-solved.md) | B1 is closed as characterised, not solved | accepted |
 | [ADR-0037](0037-covariance-intersection-as-a-visual-update-baseline.md) | Covariance intersection as a visual-update baseline | proposed |
+| [ADR-0038](0038-one-report-package-for-generated-pages-and-results-tables.md) | One report package for generated pages and results tables | proposed |
