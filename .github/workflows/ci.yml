@@ -79,7 +79,8 @@ jobs:
       - name: Test
         # The 3.13 leg runs the suite under the coverage tracer in the next step, so it does not run it twice.
         if: needs.changes.outputs.code == 'true' && matrix.python-version != '3.13'
-        run: python -m pytest -q
+        # Four vCPU on a public-repository Linux runner. `loadfile` builds each module-scoped fixture once per file.
+        run: python -m pytest -q -n auto --dist loadfile --durations=25
 
       - name: Coverage ratchet
         # This step is the test run of the 3.13 leg. Fails if any module drops below its floor, or if
@@ -128,7 +129,8 @@ jobs:
 
       - name: Test
         if: needs.changes.outputs.code == 'true'
-        run: python -m pytest -q
+        # Four vCPU on windows-latest and three on macos-latest, for a public repository.
+        run: python -m pytest -q -n ${{ matrix.os == 'macos-latest' && '3' || 'auto' }} --dist loadfile --durations=25
 
   lint:
     name: lint
