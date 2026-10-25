@@ -46,10 +46,13 @@ class Table:
     def header(self) -> list[str]:
         return [c.name for c in self.columns]
 
+    def _cells(self, rows: list[Row]) -> list[list[str]]:
+        return [[c.format(r.get(c.name)) for c in self.columns] for r in rows]
+
     def write(self, path: str | Path, rows: list[Row]) -> None:
         target = Path(path)
         target.parent.mkdir(parents=True, exist_ok=True)
-        cells = [[c.format(r.get(c.name)) for c in self.columns] for r in rows]
+        cells = self._cells(rows)
         with target.open("w", newline="", encoding="utf-8") as fh:
             writer = csv.writer(fh)
             writer.writerow(self.header)
@@ -83,7 +86,7 @@ class Table:
     def is_current(self, path: str | Path, rows: list[Row]) -> bool:
         """True if the file at ``path`` holds exactly ``rows`` once written."""
         target = Path(path)
-        expected = [[c.format(r.get(c.name)) for c in self.columns] for r in rows]
+        expected = self._cells(rows)
         with target.open(newline="", encoding="utf-8") as fh:
             found = list(csv.reader(fh))
         return found == [self.header, *expected]
