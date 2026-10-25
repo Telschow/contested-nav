@@ -17,6 +17,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 DOC = ROOT / "docs" / "MODEL.md"
 GOLDEN = Path(__file__).resolve().parent / "golden" / "benchmark.json"

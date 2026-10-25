@@ -11,6 +11,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parents[1]
 
 CAREER = re.compile(

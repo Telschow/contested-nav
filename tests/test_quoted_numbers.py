@@ -30,6 +30,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 
 #: The pages, as paths, so that ``tests/test_ci_docs_tests.py`` sees that this file reads them and requires it to run

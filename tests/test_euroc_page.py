@@ -14,6 +14,8 @@ import pytest
 
 from navkit import euroc_compare as ec
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = ROOT / "docs" / "euroc.md"
 MAIN = ROOT / "docs" / "data" / "euroc_compare.csv"

@@ -153,4 +153,5 @@ warn_unused_configs = true
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "--strict-markers"
+markers = ["docs_only: reads a documentation page, so it also runs in the lint job of a documentation-only pull request"]
 filterwarnings = ["error::RuntimeWarning"]

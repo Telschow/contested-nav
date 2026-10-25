@@ -13,6 +13,8 @@ import pytest
 
 from navkit import gm_usefulness as gu
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 CSV = ROOT / "docs" / "data" / "gm_s2_usefulness.csv"
 PAGE = ROOT / "docs" / "calibration.md"

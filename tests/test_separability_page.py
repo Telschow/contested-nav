@@ -8,6 +8,8 @@ import pytest
 
 from navkit import separability as sp
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = ROOT / "docs" / "separability.md"
 
