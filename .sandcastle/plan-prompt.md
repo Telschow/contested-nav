@@ -14,9 +14,11 @@ Issue B is blocked by A if B needs code or a decision from A, or if A and B edit
 
 Never pick an issue that changes `vision_enabled`, a B1 gate decision, or an ADR decision section. Those belong to the maintainer.
 
+An issue is also blocked if it names an ADR whose Decision section still says "To be written by the maintainer". Check with `grep -l "To be written by the maintainer" docs/adr/*.md`.
+
 Branch name is exactly `sandcastle/issue-{id}`.
 
-If every issue is blocked, pick the single least blocked one.
+If every issue is blocked, pick nothing and emit an empty plan.
 
 # OUTPUT
 
