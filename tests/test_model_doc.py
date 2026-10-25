@@ -101,4 +101,4 @@ def test_the_case_record_keys_match_the_golden_snapshot() -> None:
 
 
 def test_the_page_has_no_em_dashes() -> None:
-    assert "—" not in DOC.read_text()
+    assert "\u2014" not in DOC.read_text()
