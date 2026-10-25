@@ -563,6 +563,7 @@ def test_the_accelerometer_only_drift_is_zero_without_a_bias_and_half_a_t_square
     assert biased == pytest.approx(0.5 * 0.1 * 50.0**2, rel=0.02)
 
 
+@pytest.mark.rerun
 def test_run_sequence_takes_real_fixes_labels_the_record_and_honours_per_fix_covariance(tmp_path):
     ee.write_fixture(tmp_path, "MH_01_easy", duration_s=80.0, seed=1)
     seq = ee.load_sequence(tmp_path, "MH_01_easy")

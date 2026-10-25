@@ -116,6 +116,7 @@ def _exact_frontend(monkeypatch, seq_dir, noise_deg=0.0):
     _exact(monkeypatch, seq_dir, noise_deg=noise_deg)
 
 
+@pytest.mark.rerun
 def test_a_replay_stream_with_no_errors_is_the_true_body_motion(tmp_path, monkeypatch):
     d = _synthetic(tmp_path)
     _exact_frontend(monkeypatch, d)
@@ -135,6 +136,7 @@ def test_a_replay_stream_with_no_errors_is_the_true_body_motion(tmp_path, monkey
         ve.replay_stream(rows, seq.truth, cam, 100.0, 110.0)
 
 
+@pytest.mark.rerun
 def test_clone_and_replay_runs_on_a_synthetic_sequence(tmp_path, monkeypatch):
     d = _synthetic(tmp_path)
     _exact_frontend(monkeypatch, d, noise_deg=0.05)
@@ -280,6 +282,7 @@ def test_the_gate_is_nees_below_ten_and_coverage_above_ninety_percent():
     assert ve.passes(9.9, 0.91) and not ve.passes(10.0, 0.95) and not ve.passes(2.0, 0.9)
 
 
+@pytest.mark.rerun
 def test_wide_study_on_a_synthetic_sequence(tmp_path, monkeypatch):
     from test_vo_error import _write_cam
 

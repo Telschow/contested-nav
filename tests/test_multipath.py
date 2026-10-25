@@ -108,6 +108,7 @@ def test_the_sensitive_rule_calls_about_two_thirds_of_the_five_metre_steps(fresh
     assert 0.6 < ms._share(sel, "sensitive") < 0.7 and ms._share(sel, "specific") == 0.0
 
 
+@pytest.mark.rerun
 def test_run_case_and_sweep_on_a_synthetic_sequence(tmp_path):
     ee.write_fixture(tmp_path, "MH_01_easy", duration_s=80.0, seed=1)
     seq = ee.load_sequence(tmp_path, "MH_01_easy")

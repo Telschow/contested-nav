@@ -58,6 +58,7 @@ def test_spoof_zero_matches_honest(rows):
     assert sp.spoof_d2(r, 0.0).max() == pytest.approx(sp.honest_d2(r))
 
 
+@pytest.mark.rerun
 def test_honest_rows_run_on_a_synthetic_sequence(tmp_path):
     from navkit import euroc_eval as ee
 

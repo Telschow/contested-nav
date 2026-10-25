@@ -9,7 +9,7 @@ PYTHON ?= python
 RESULTS ?= results/benchmark.json
 
 .DEFAULT_GOAL := help
-.PHONY: help install hooks test lint format cov check bench figures docs-check srs docs docs-serve demo repro docker secrets clean
+.PHONY: help install hooks test lint format cov check docs-fast bench figures docs-check srs docs docs-serve demo repro docker secrets clean
 
 help: ## list the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -36,6 +36,10 @@ cov: ## coverage ratchet (project tracer, not pytest-cov)
 	$(PYTHON) scripts/coverage_report.py --ratchet
 
 check: lint srs test cov ## the local gates, in CI order
+
+docs-fast: ## every documentation-number check, without the full suite (the pre-commit hook for Markdown runs it)
+	$(PYTHON) scripts/metrics.py --check
+	$(PYTHON) -m pytest -q -m "docs_only and not rerun" tests
 
 bench: ## run the benchmark and write results/benchmark.json
 	$(PYTHON) -m navkit run --out $(RESULTS) --markdown

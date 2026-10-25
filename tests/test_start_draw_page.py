@@ -61,6 +61,7 @@ def test_every_cell_of_the_table_is_recomputed_from_the_rows(rows, section):
         assert f"| `{case}` | {' | '.join(medians)} | {k} of 10 |" in section, case
 
 
+@pytest.mark.rerun
 def test_a_fresh_run_of_seed_zero_matches_the_committed_rows(rows):
     doc = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
     fresh = sds.run_study(doc, [0])

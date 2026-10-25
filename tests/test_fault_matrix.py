@@ -165,6 +165,7 @@ def test_the_command_refuses_bad_arguments() -> None:
         cli.main(["sweep", "faults", "--faults", "nope", "--seeds", "2"])
 
 
+@pytest.mark.rerun
 def test_compare_exits_nonzero_when_the_result_differs(tmp_path: Path) -> None:
     csv_path = tmp_path / "f.csv"
     args = ["sweep", "faults", "--faults", "gnss_multipath_spike", "--seeds", "2"]
