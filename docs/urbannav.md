@@ -543,6 +543,26 @@ innovations stay small because the estimate follows the fixes. This is consisten
 prove the cause, because the filter was not run with a correlated-error model here. The reference's own error is not
 known, and some of the correlated difference could be in the reference and not in the receiver.
 
+The synthetic counterpart, where the cause is known, is below.
+
+<!-- correlated-gnss:start -->
+
+**Is the gate blind to a slow, correlated GNSS error? Synthetic, not the real receiver (MEASUREMENT).** Each case was run over 10 development seeds. The correlated case adds a first-order Gauss-Markov error with a standard deviation of 1.5 m and a correlation time of 30 s to the fixes, both declared before the run. The rejection column pools the fixes of all seeds with a Wilson 95% interval that treats them as independent trials, which they are not under correlated error, so it is too narrow. The gate level is 16.27 (three degrees of freedom).
+
+| Case | Fixes | Rejected (Wilson 95%) | Mean NIS (expected 3) | Mean NEES (expected 3) |
+|---|---:|---:|---:|---:|
+| Independent noise (control) | 1510 | 2 (0.0% to 0.5%) | 2.83 | 3.4 |
+| Correlated error, 1.5 m, 30 s | 1510 | 8 (0.3% to 1.0%) | 4.50 | 106.7 |
+| Single anchor with an outage (control) | 760 | 502 (62.6% to 69.3%) | 7016.27 | 45042.1 |
+
+The criteria for "blind" were declared first: an upper Wilson bound of the rejection rate under 5%, a mean NIS under the gate level, and a mean NEES at least 3 times its expected value. In the correlated case the gate rejected 8 of 1510 fixes, the mean NIS was 4.50 against 2.83 for independent noise, and the mean NEES was 106.7. The criteria were met.
+
+What this shows: the rows, for this scenario. What it does not show: that the real receiver's errors follow this model, why Deep-Urban-1 behaved as it did, or what a correlated-error model in the filter would change. The run is 30 s long, the same length as the correlation time, so the error is close to one slow wave. The single-anchor row is the overconfident control and is not a GNSS-error case.
+
+The rows are in `docs/data/correlated_gnss.csv`, written by `navkit sweep correlated-gnss`, and the sentences above are checked against them by `tests/test_correlated_gnss_page.py`.
+
+<!-- correlated-gnss:end -->
+
 ### What the section does not show
 
 - It does not say how the filter does through an outage. Imposed outages are a separate experiment, and this section

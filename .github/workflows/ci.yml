@@ -433,6 +433,10 @@ jobs:
         # Development seeds 0 to 9 only (issue #168). Text and seeds exactly, floats to 1e-6 relative.
         run: navkit sweep start-draw --csv /tmp/start_draw_study.csv --compare docs/data/start_draw_study.csv
 
+      - name: The committed correlated-GNSS study matches a fresh run
+        # Development seeds 0 to 9 only (issue #183). Text and counts exactly, floats to 1e-6 relative.
+        run: navkit sweep correlated-gnss --csv /tmp/correlated_gnss.csv --compare docs/data/correlated_gnss.csv
+
       - name: The committed development gate matches a fresh run
         # The B1 gate of ADR-0028 on the development seeds 0 to 24, once. Never the held-out seeds 100 to 124: they
         # are single use. The same comparison as above: text, integers and flags exactly, floats to 1e-6 relative.
