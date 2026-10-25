@@ -17,6 +17,8 @@ from navkit import ensemble
 from navkit.benchmark import default_config_path
 from navkit.eval.statistics import chi2_ppf
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 
 ANCHOR = (

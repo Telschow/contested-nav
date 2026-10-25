@@ -11,6 +11,8 @@ from navkit import euroc_eval as ee
 from navkit import vo_error as ve
 from navkit import vo_frontend as vf
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = ROOT / "docs" / "real_front_end.md"
 

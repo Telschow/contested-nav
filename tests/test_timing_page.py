@@ -8,6 +8,8 @@ import pytest
 
 from navkit import timing_check as tc
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = ROOT / "docs" / "product_management" / "04_sensor_sync_and_calibration_spec.md"
 CSV = ROOT / "docs" / "data" / "timing.csv"

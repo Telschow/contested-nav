@@ -12,6 +12,8 @@ from navkit import multipath_study as ms
 from navkit.fault_classification import features
 from navkit.fdir import multipath as mp
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = ROOT / "docs" / "multipath.md"
 

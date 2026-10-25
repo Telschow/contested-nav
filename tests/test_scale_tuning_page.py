@@ -17,6 +17,8 @@ from navkit import scale_tuning as st
 from navkit.estimators.eskf import EskfConfig
 from navkit.io.imu import ImuNoiseModel
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 CSV = ROOT / "docs" / "data" / "adaptive_scale_tuning.csv"
 PAGE = ROOT / "docs" / "calibration.md"

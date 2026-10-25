@@ -16,6 +16,8 @@ import pytest
 from navkit import ensemble, mismatch_ensemble, mismatch_sweep
 from navkit.eval.calibration import ensemble_nees_band
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 CSV = ROOT / "docs" / "data" / "mismatch_ensemble.csv"
 SINGLE_CSV = ROOT / "docs" / "data" / "mismatch_sweep.csv"

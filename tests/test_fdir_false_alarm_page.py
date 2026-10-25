@@ -18,6 +18,8 @@ from navkit.benchmark import default_config_path
 from navkit.eval.calibration import wilson_interval
 from navkit.fdir.config import FdirConfig
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 RATE_CSV = ROOT / "docs" / "data" / "fdir_false_alarm.csv"
 SENS_CSV = ROOT / "docs" / "data" / "fdir_sensitivity.csv"

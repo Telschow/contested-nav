@@ -15,6 +15,8 @@ import yaml
 from navkit import start_draw_study as sds
 from navkit.estimators.eskf import EskfConfig
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 CSV = ROOT / "docs" / "data" / "start_draw_study.csv"
 PAGE = ROOT / "docs" / "results.md"

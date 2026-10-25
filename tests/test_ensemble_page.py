@@ -13,6 +13,8 @@ import pytest
 from navkit import ensemble
 from navkit.eval.calibration import ensemble_nees_band
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 CSV = ROOT / "docs" / "data" / "ensemble_nees.csv"
 PAGE = ROOT / "docs" / "calibration.md"

@@ -10,6 +10,8 @@ from navkit import euroc_eval as ee
 from navkit import slow_ramp as sr
 from navkit import vision_ramp as vr
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = ROOT / "docs" / "vision_ramp.md"
 CSV = ROOT / "docs" / "data" / "vision_ramp.csv"

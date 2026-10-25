@@ -12,6 +12,8 @@ import pytest
 
 from navkit import ensemble
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 CSV = ROOT / "docs" / "data" / "effective_sample_size.csv"
 ENSEMBLE_CSV = ROOT / "docs" / "data" / "ensemble_nees.csv"

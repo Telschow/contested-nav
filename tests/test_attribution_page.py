@@ -12,6 +12,8 @@ import pytest
 
 from navkit import attribution as at
 
+pytestmark = pytest.mark.docs_only
+
 ROOT = Path(__file__).resolve().parent.parent
 PAGE = ROOT / "docs" / "attribution.md"
 CSV = ROOT / "docs" / "data" / "attribution.csv"
