@@ -1,6 +1,6 @@
 # ADR-0038: One report package for generated pages and results tables
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0010](0010-determinism-and-seeding.md), [ADR-0035](0035-the-integrity-status-record.md)
 
@@ -20,13 +20,13 @@ The cost is locality. A change to the marker rule or to how a value round-trips 
 
 (a) Leave the copies. Rejected in the candidate review: the drift is the evidence that the copies do not stay equal.
 
-(b) One package, `navkit.report`, with three modules, in this order: a page-splice module, a results-table module, then a study-runner module that uses both. Each is migrated by expand-contract: the new module is added beside the old code, studies move over in small batches, and the old copies are deleted last. Proposed.
+(b) One package, `navkit.report`, with three modules, in this order: a page-splice module, a results-table module, then a study-runner module that uses both. Each is migrated by expand-contract: the new module is added beside the old code, studies move over in small batches, and the old copies are deleted last.
 
 (c) One module for all three. Rejected in the candidate review: the study-runner depends on the other two, and a single module would make the first migration batch as large as the last.
 
 ## Decision
 
-To be written by the maintainer.
+One package, `navkit.report`, with three modules, in this order: a page-splice module, a results-table module, then a study-runner module that uses both. Each is migrated by expand-contract: the new module is added beside the old code, studies move over in small batches, and the old copies are deleted last.
 
 ## Consequences
 
