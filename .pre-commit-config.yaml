@@ -39,7 +39,7 @@ repos:
         name: documentation numbers (make docs-fast)
         entry: make docs-fast
         language: system
-        types: [markdown]
+        files: ^(README\.md|CLAUDE\.md|CONSTRAINTS\.md|docs/.*\.md)$
         pass_filenames: false
       - id: scan-secrets
         name: scan tracked files for credential-shaped strings

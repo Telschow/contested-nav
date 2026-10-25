@@ -22,7 +22,7 @@ def test_pre_commit_runs_the_gate_when_a_markdown_file_is_staged() -> None:
     config = (ROOT / ".pre-commit-config.yaml").read_text(encoding="utf-8")
     hook = config.split("- id: docs-fast", 1)[1].split("- id:", 1)[0]
     assert "entry: make docs-fast" in hook
-    assert "types: [markdown]" in hook
+    assert "files: ^(README" in hook and "docs/" in hook
     assert "pass_filenames: false" in hook
 
 
