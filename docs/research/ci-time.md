@@ -69,7 +69,7 @@ Time per file, summed over the 40 slowest entries only (so a lower bound; the to
 
 The single slowest test is 81.7 s (`test_vo_page.py::test_a_replay_stream_with_no_errors_is_the_true_body_motion`). No test is longer than 82 s. This matters for parallelism: the longest single test is far below any target time, so work can be balanced well.
 
-Mid-suite progress timestamps in the CI log show the time is spread, not in one place: stretches of 72 tests took from 1 s up to 8 minutes (last block, 97% to 100%).
+Mid-suite progress timestamps in the CI log show the time is spread, not in one place: stretches of consecutive tests took from 1 s up to 8 minutes (last block, 97% to 100%).
 
 Local run left no new tracked or untracked files from the tests (`git status` showed only `node_modules/`, `package.json`, `package-lock.json`, which I did not create and which were not in the initial status snapshot).
 
@@ -91,11 +91,11 @@ Dev dependency rule. CONSTRAINTS.md S1: "S1 constrains the runtime (`[project] d
 
 Checked by reading tests and `tests/conftest.py`. Not proven: I did not run the suite under xdist.
 
-- Shared files. Writers use `tmp_path` or `tmp_path_factory` (51 test files use temp paths; `test_demo_generation.py` uses a module-scoped `tmp_path_factory` directory, which xdist makes per worker). `test_golden_benchmark.py` writes the golden only under `__main__ --update`. `test_coverage_report.py` redirects `COV` to `tmp_path`. I found no test that writes into the repo or into `docs/data`. `results/benchmark.json` is only read, and its test skips when absent.
+- Shared files. Writers use `tmp_path` or `tmp_path_factory` (many test files use temp paths; `test_demo_generation.py` uses a module-scoped `tmp_path_factory` directory, which xdist makes per worker). `test_golden_benchmark.py` writes the golden only under `__main__ --update`. `test_coverage_report.py` redirects `COV` to `tmp_path`. I found no test that writes into the repo or into `docs/data`. `results/benchmark.json` is only read, and its test skips when absent.
 - Committed CSVs. Read only.
 - Global state. `test_coverage_report.py` calls `sys.settrace` and relies on restoring an outer tracer. That is per process and safe under xdist, but it is the key coupling to the coverage tool (lever 3). `test_cli.py` and `test_coverage_report.py` use `monkeypatch.chdir`, which is per process.
 - Hypothesis. `conftest.py` uses profile `ci` with `derandomize=True`. `.hypothesis/` holds only `constants/`, no examples database, so there is no shared database file contention.
-- Module-scoped fixtures. 51 test files declare fixtures with a scope. With `--dist load` or `worksteal`, each worker that gets a test from a module builds that module's expensive fixture again. Use `--dist loadfile` first. The largest file (`test_vo_page.py`, at least 220 s) then sets a floor of about 4 minutes per run, which is fine.
+- Module-scoped fixtures. Many test files declare fixtures with a scope. With `--dist load` or `worksteal`, each worker that gets a test from a module builds that module's expensive fixture again. Use `--dist loadfile` first. The largest file (`test_vo_page.py`, at least 220 s) then sets a floor of about 4 minutes per run, which is fine.
 - Ordering. I did not find ordering dependence, but there is no proof. Test: run with `-p no:randomly` and xdist, compare to serial.
 - Memory. The Linux and Windows public runners have 16 GB. macOS has 7 GB and 3 cores, so use `-n 3` there, or leave macOS serial.
 - Determinism. Seeds are set per call (ADR-0010). Parallelism changes which process runs a test, not the test's seed. The risk is only floating-point differences from BLAS threads, which exist today and the golden test already compares with a tolerance.
