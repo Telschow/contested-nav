@@ -38,6 +38,7 @@ def _share(scored, pick, called):
     return sum(r["predicted"] == called(r) for r in sel) / len(sel)
 
 
+@pytest.mark.rerun
 def test_blocks_match_csv(rows):
     text = PAGE.read_text(encoding="utf-8")
     for fn in fc.BLOCKS.values():
@@ -218,6 +219,7 @@ def test_model_text_names_both_stages(rows):
     assert "stage 1" in text and "stage 2" in text
 
 
+@pytest.mark.rerun
 def test_csv_round_trip_cli_rebuild_and_missing_markers(rows, tmp_path, capsys):
     out = tmp_path / "again.csv"
     fc.write_csv(out, rows)
@@ -237,6 +239,7 @@ def confirm(rows):
     return fc.frozen_predictions(rows, fc.rows_from_csv(CONFIRM_CSV))
 
 
+@pytest.mark.rerun
 def test_confirmation_blocks_match_csv():
     text = PAGE.read_text(encoding="utf-8")
     confirm_rows = fc.rows_from_csv(CONFIRM_CSV)
@@ -294,6 +297,7 @@ def test_the_unseen_control_alarms_are_spread_over_most_sequences(confirm):
     assert set(Counter((r["dataset"], r["sequence"]) for r in controls).values()) == {4}
 
 
+@pytest.mark.rerun
 def test_the_confirmation_cli_rebuilds_and_the_design_is_fixed(tmp_path, capsys):
     assert fc.main(["--confirm", "--from-csv", str(CONFIRM_CSV), "--markdown"]) == 0
     assert "frozen model" in capsys.readouterr().out
