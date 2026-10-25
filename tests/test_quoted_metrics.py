@@ -90,6 +90,17 @@ class TestCheck:
         assert any("12 ADRs" in p for p in problems)
         assert any("884 passed" in p for p in problems)
 
+    def test_a_list_of_adr_references_is_not_a_count(self, tmp_path):
+        text = "The gate of ADR-0028, ADR-0030, ADR-0036 applies. See ADR-0035 and ADR 12."
+        root = make_tree(tmp_path, text)
+        assert metrics.check(root, collected=150) == []
+
+    def test_a_count_still_fails_next_to_adr_references(self, tmp_path):
+        root = make_tree(tmp_path, "ADR-0028, ADR-0030 and 12 ADRs, 884 passed.")
+        problems = metrics.check(root, collected=150)
+        assert any("12 ADRs" in p for p in problems)
+        assert any("884 passed" in p for p in problems)
+
     def test_a_hand_typed_line_coverage_is_reported(self, tmp_path):
         root = make_tree(tmp_path, "Reached 92.86% line coverage.")
         assert any("line coverage" in p for p in metrics.check(root, collected=150))
