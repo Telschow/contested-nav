@@ -192,6 +192,7 @@ jobs:
           tests/test_quoted_numbers.py tests/test_urbannav_run.py tests/test_ensemble_page.py
           tests/test_b1_gate_page.py tests/test_b1_gate_heldout_page.py tests/test_ess_page.py tests/test_verdict_prose.py tests/test_candidate_gate_page.py tests/test_fdir_false_alarm_page.py
           tests/test_scale_tuning_page.py tests/test_gm_tuning_page.py tests/test_gm_usefulness_page.py tests/test_start_draw_page.py tests/test_front_page_claims.py tests/test_mismatch_ensemble_page.py
+          tests/test_correlated_gnss_page.py
 
   build:
     name: build
@@ -441,6 +442,10 @@ jobs:
       - name: The committed start-draw study matches a fresh run
         # Development seeds 0 to 9 only (issue #168). Text and seeds exactly, floats to 1e-6 relative.
         run: navkit sweep start-draw --csv /tmp/start_draw_study.csv --compare docs/data/start_draw_study.csv
+
+      - name: The committed correlated-GNSS study matches a fresh run
+        # Development seeds 0 to 9 only (issue #183). Text and counts exactly, floats to 1e-6 relative.
+        run: navkit sweep correlated-gnss --csv /tmp/correlated_gnss.csv --compare docs/data/correlated_gnss.csv
 
       - name: The committed development gate matches a fresh run
         # The B1 gate of ADR-0028 on the development seeds 0 to 24, once. Never the held-out seeds 100 to 124: they
