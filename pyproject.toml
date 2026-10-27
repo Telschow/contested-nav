@@ -41,7 +41,7 @@ dev = ["pytest>=7.4", "hypothesis>=6.100", "pre-commit>=3.7", "ruff==0.17.1", "m
 # below 2.0, which removes the plugin system the site uses.
 docs = [
     "mkdocs>=1.6,<2",
-    "mkdocs-material==9.7.7",
+    "mkdocs-material==9.8.0",
     "mkdocstrings[python]==1.0.7",
     "mkdocs-include-markdown-plugin==7.3.0",
     # 12.2 broke mkdocstrings: Highlight.__init__() missing the argument "md" (strict docs build failed). 12.3 fixed it.
