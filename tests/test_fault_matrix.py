@@ -208,8 +208,14 @@ def test_the_page_table_is_the_committed_csv() -> None:
 
 
 def test_a_page_without_markers_is_refused() -> None:
-    with pytest.raises(ValueError, match="markers"):
+    with pytest.raises(ValueError, match="in that order"):
         fault_matrix.splice_table("no markers", "x")
+
+
+def test_a_page_with_reversed_markers_is_refused() -> None:
+    page = "<!-- faults:end -->\n<!-- faults:start -->"
+    with pytest.raises(ValueError, match="in that order"):
+        fault_matrix.splice_table(page, "x")
 
 
 def test_the_csv_has_a_control_for_every_base_and_a_row_for_every_fault_level() -> None:

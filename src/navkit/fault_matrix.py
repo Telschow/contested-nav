@@ -46,6 +46,7 @@ import yaml
 from .benchmark import MEASUREMENT, _config_label, _jsonable, default_config_path, run_case
 from .fdir.status import STATUS_REACCEPTED_WITH_INFLATION, STATUS_SENSOR_FAULT
 from .outage_sweep import METRICS, _collect, _interval, summarise_cell
+from .report.page import splice_block
 from .report.table import Column, Table
 from .types import GnssFix
 
@@ -395,11 +396,7 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
 
 def splice_table(page: str, table: str) -> str:
     """Replace the generated block of the fault page with ``table``."""
-    if PAGE_START not in page or PAGE_END not in page:
-        raise ValueError(f"the page needs {PAGE_START} ... {PAGE_END} markers")
-    head, rest = page.split(PAGE_START, 1)
-    _, tail = rest.split(PAGE_END, 1)
-    return f"{head}{PAGE_START}\n\n{table}\n\n{PAGE_END}{tail}"
+    return splice_block(page, "faults", table)
 
 
 def _run_cell(
