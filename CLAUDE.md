@@ -28,6 +28,7 @@ coverage). Synthetic evidence only unless a results row says otherwise.
 
 ## Workflow
 - Small PRs, each with tests, green CI before merge.
+- Sandcastle is the exception (`.sandcastle/`). Label an issue `Sandcastle` and its merger pushes straight to `main` after ruff, mypy and `make docs-fast`. The full suite runs on `main` afterwards, so a red `main` is fixed first. Maintainer decision, 2026-10-30.
 - Decisions get an ADR; the maintainer writes the decision section.
 - Ask before: force-push, history rewrite, deleting docs other pages link to, tagging releases.
 
