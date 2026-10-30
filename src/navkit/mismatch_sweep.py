@@ -207,9 +207,6 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-PAGE_START, PAGE_END = "<!-- mismatch:start -->", "<!-- mismatch:end -->"
-
-
 def splice_table(page: str, table: str) -> str:
     """Replace the generated block of the mismatch page with ``table``."""
     return splice_block(page, "mismatch", table)

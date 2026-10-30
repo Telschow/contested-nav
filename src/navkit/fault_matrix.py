@@ -52,8 +52,6 @@ from .types import GnssFix
 
 GnssHook = Callable[[GnssFix], GnssFix]
 
-PAGE_START, PAGE_END = "<!-- faults:start -->", "<!-- faults:end -->"
-
 #: The fault window used by the spoofing and spike faults, seconds into the 30 s scenario.
 SPOOF_START_S, SPOOF_END_S = 10.0, 20.0
 SPIKE_AT_S = 15.0
