@@ -34,7 +34,6 @@ import csv
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 
@@ -524,30 +523,7 @@ def rotation_to_rpy(rotation: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.nd
 # ------------------------------------------------------------------------ CSV
 
 
-def merge_rows(existing: list[dict[str, Any]], rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """``existing`` with the rows of every sequence in ``rows`` replaced by ``rows``, and the others untouched.
-
-    A replaced sequence keeps its place in the file. A new sequence goes at the end. So rewriting one sequence never
-    moves or changes another's rows.
-    """
-    groups: dict[str, list[dict[str, Any]]] = {}
-    for r in existing:
-        groups.setdefault(r["sequence"], []).append(r)
-    fresh: dict[str, list[dict[str, Any]]] = {}
-    for r in rows:
-        fresh.setdefault(r["sequence"], []).append(r)
-    groups.update(fresh)
-    return [r for group in groups.values() for r in group]
-
-
 def csv_table(columns: tuple[str, ...]) -> Table:
     """The UrbanNav results layout: text cells, CRLF line ends, one block of rows per ``sequence``."""
     return Table(tuple(Column(n, str, optional=True) for n in columns), key="sequence", lineterminator="\r\n")
 
-
-def write_merged_csv(path: str | Path, columns: tuple[str, ...], rows: list[dict[str, Any]]) -> None:
-    """Write ``rows`` to ``path``, replacing the rows of those sequences and keeping the rows of any other.
-
-    A file with another header is refused with a ``ValueError`` and is not touched.
-    """
-    csv_table(columns).merge(path, rows)
