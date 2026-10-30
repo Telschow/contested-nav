@@ -1,0 +1,74 @@
+"""Lifecycle test for the study-runner module."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from navkit.report.runner import Flags, Study, run_study
+from navkit.report.table import Column, Table
+
+TABLE = Table((Column("name", str), Column("value", float)), key="name")
+PAGE = "intro\n<!-- demo:start -->\n\nold\n\n<!-- demo:end -->\noutro\n"
+
+
+def make_study(calls: list[tuple[int, ...]], scale: float = 1.0) -> Study:
+    def run(seeds: tuple[int, ...] | None) -> list[dict[str, object]]:
+        calls.append(seeds or ())
+        return [{"name": "a", "value": 1.0 * scale}, {"name": "b", "value": 2.5 * scale}]
+
+    def render(rows: list[dict[str, object]]) -> str:
+        return "\n".join(f"{r['name']}={r['value']}" for r in rows)
+
+    return Study(
+        table=TABLE,
+        run=run,
+        render=render,
+        page_name="demo",
+        flags=Flags(csv=True, page=True, markdown=True, seeds=True, from_csv=True, compare=True),
+    )
+
+
+def test_lifecycle(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    csv_path = tmp_path / "r.csv"
+    page = tmp_path / "p.md"
+    page.write_text(PAGE, encoding="utf-8")
+    calls: list[tuple[int, ...]] = []
+    study = make_study(calls)
+
+    # run, write the CSV, splice the page
+    assert run_study(study, ["--csv", str(csv_path), "--page", str(page), "--seeds", "3,4"]) == 0
+    assert calls == [(3, 4)]
+    assert "a=1.0\nb=2.5" in page.read_text(encoding="utf-8")
+    assert TABLE.read(csv_path)[1]["value"] == 2.5
+
+    # from-csv reads instead of running; markdown prints the block
+    capsys.readouterr()
+    assert run_study(study, ["--from-csv", str(csv_path), "--markdown"]) == 0
+    assert calls == [(3, 4)]
+    assert capsys.readouterr().out.strip() == "a=1.0\nb=2.5"
+
+    # compare equal
+    assert run_study(study, ["--compare", str(csv_path)]) == 0
+    assert run_study(study, ["--from-csv", str(csv_path), "--page", str(page), "--compare", str(csv_path)]) == 0
+
+    # compare different gives exit 1
+    assert run_study(make_study(calls, scale=2.0), ["--compare", str(csv_path)]) == 1
+
+
+def test_page_drift_gives_exit_1(tmp_path: Path) -> None:
+    csv_path = tmp_path / "r.csv"
+    page = tmp_path / "p.md"
+    page.write_text(PAGE, encoding="utf-8")
+    study = make_study([])
+    assert run_study(study, ["--csv", str(csv_path)]) == 0
+    # the page still holds "old", so regenerate-and-compare differs
+    assert run_study(study, ["--from-csv", str(csv_path), "--page", str(page), "--compare", str(csv_path)]) == 1
+
+
+def test_undeclared_flag_is_refused() -> None:
+    study = make_study([])
+    study = Study(table=study.table, run=study.run, render=study.render, flags=Flags(csv=True))
+    with pytest.raises(SystemExit):
+        run_study(study, ["--page", "x.md"])
