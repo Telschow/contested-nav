@@ -86,3 +86,9 @@ def test_write_ends_lines_with_lf(tmp_path: Path) -> None:
     path = tmp_path / "t.csv"
     TABLE.write(path, [row("a", 3, 0.5)])
     assert b"\r" not in path.read_bytes()
+
+
+def test_write_with_crlf_line_terminator(tmp_path: Path) -> None:
+    path = tmp_path / "t.csv"
+    Table(TABLE.columns, key=TABLE.key, lineterminator="\r\n").write(path, [row("a", 3, 0.5)])
+    assert path.read_bytes().count(b"\r\n") == 2
