@@ -41,6 +41,7 @@ class Column:
 class Table:
     columns: tuple[Column, ...]
     key: str
+    lineterminator: str = "\n"
 
     @property
     def header(self) -> list[str]:
@@ -54,7 +55,7 @@ class Table:
         target.parent.mkdir(parents=True, exist_ok=True)
         cells = self._cells(rows)
         with target.open("w", newline="", encoding="utf-8") as fh:
-            writer = csv.writer(fh, lineterminator="\n")
+            writer = csv.writer(fh, lineterminator=self.lineterminator)
             writer.writerow(self.header)
             writer.writerows(cells)
 
