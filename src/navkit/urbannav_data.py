@@ -526,4 +526,3 @@ def rotation_to_rpy(rotation: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.nd
 def csv_table(columns: tuple[str, ...]) -> Table:
     """The UrbanNav results layout: text cells, CRLF line ends, one block of rows per ``sequence``."""
     return Table(tuple(Column(n, str, optional=True) for n in columns), key="sequence", lineterminator="\r\n")
-
