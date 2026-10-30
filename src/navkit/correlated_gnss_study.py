@@ -39,6 +39,7 @@ from .benchmark import default_config_path, run_case
 from .eval.calibration import wilson_interval
 from .fdir.config import FdirConfig
 from .fdir.gating import chi2_threshold
+from .report.page import splice_block
 
 #: Declared before the study was run.
 CORR_SIGMA_M = 1.5
@@ -235,11 +236,7 @@ def markdown_section(rows: list[dict[str, Any]]) -> str:
 
 
 def splice_section(page: str, text: str) -> str:
-    if START not in page or END not in page or page.index(START) > page.index(END):
-        raise ValueError(f"the page needs the lines {START} and {END}, in that order")
-    head, rest = page.split(START, 1)
-    _, tail = rest.split(END, 1)
-    return f"{head}{START}\n\n{text}\n\n{END}{tail}"
+    return splice_block(page, "correlated-gnss", text)
 
 
 def parse_seeds(text: str) -> list[int]:
