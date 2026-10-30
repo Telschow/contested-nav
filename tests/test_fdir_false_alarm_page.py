@@ -106,7 +106,10 @@ def test_each_pooled_row_is_rebuilt_from_its_per_seed_rows(rate_rows):
         ]
         want = fa.pooled_row(pooled["case"], pooled["scope"], runs, fa.gate_threshold())
         for key in fa.RATE_FIELDS:
-            assert pooled[key] == pytest.approx(want[key], rel=1e-9, abs=1e-12), (pooled["case"], key)
+            if isinstance(want[key], str):  # case, scope and seed are labels, and pytest 9.2 rejects approx on a str
+                assert pooled[key] == want[key], (pooled["case"], key)
+            else:
+                assert pooled[key] == pytest.approx(want[key], rel=1e-9, abs=1e-12), (pooled["case"], key)
 
 
 def test_the_stated_alpha_and_threshold_are_the_configs(rate_rows):
