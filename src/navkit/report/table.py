@@ -54,7 +54,7 @@ class Table:
         target.parent.mkdir(parents=True, exist_ok=True)
         cells = self._cells(rows)
         with target.open("w", newline="", encoding="utf-8") as fh:
-            writer = csv.writer(fh)
+            writer = csv.writer(fh, lineterminator="\n")
             writer.writerow(self.header)
             writer.writerows(cells)
 
