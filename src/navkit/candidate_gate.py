@@ -44,6 +44,7 @@ from .eval.candidate_gate import (
     parse_pool_csv,
     pool_csv_text,
 )
+from .report.page import splice_block
 
 #: The two scenarios of ADR-0030: the cases whose scenario block each one uses.
 SCENARIOS = {"S1": "outage_visual", "S2": "outage_visual_clone_correlated"}
@@ -388,11 +389,7 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
 
 def splice_table(page: str, table: str) -> str:
     """``page`` with the text between the candidate-gate markers replaced by ``table``."""
-    if START not in page or END not in page or page.index(START) > page.index(END):
-        raise ValueError(f"the page needs the lines {START} and {END}, in that order")
-    head, rest = page.split(START, 1)
-    _, tail = rest.split(END, 1)
-    return f"{head}{START}\n\n{table}\n\n{END}{tail}"
+    return splice_block(page, "candidate-gate-dev", table)
 
 
 # ------------------------------------------------------------------------------------------- commands

@@ -35,6 +35,7 @@ import yaml
 from .b1_gate import parse_seeds
 from .benchmark import StartError, default_config_path, run_case
 from .ensemble import COMPARE_RTOL
+from .report.page import splice_block
 
 CASES = ("outage_visual", "vision_only", "outage_visual_clone", "outage_control")
 SINGLE_ANCHOR = ("outage_visual", "vision_only")
@@ -201,11 +202,7 @@ def markdown_section(rows: list[dict[str, Any]]) -> str:
 
 
 def splice_section(page: str, text: str) -> str:
-    if START not in page or END not in page or page.index(START) > page.index(END):
-        raise ValueError(f"the page needs the lines {START} and {END}, in that order")
-    head, rest = page.split(START, 1)
-    _, tail = rest.split(END, 1)
-    return f"{head}{START}\n\n{text}\n\n{END}{tail}"
+    return splice_block(page, "start-draw", text)
 
 
 def main(argv: list[str] | None = None) -> int:

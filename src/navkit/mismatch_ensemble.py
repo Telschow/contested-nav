@@ -27,6 +27,7 @@ from typing import Any
 
 from .benchmark import run_case
 from .ensemble import Collector
+from .report.page import splice_block
 
 #: The ensemble runs the development seeds of ADR-0030, 25 to 49. The single-run sweep uses seeds 0 to 4, so the two
 #: tables do not share a draw. The held-out seeds (100 and up) are never used here.
@@ -175,11 +176,7 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
 
 def splice_table(page: str, table: str) -> str:
     """``page`` with the text between the mismatch-ensemble markers replaced by ``table``."""
-    if START not in page or END not in page or page.index(START) > page.index(END):
-        raise ValueError(f"the page needs the lines {START} and {END}, in that order")
-    head, rest = page.split(START, 1)
-    _, tail = rest.split(END, 1)
-    return f"{head}{START}\n\n{table}\n\n{END}{tail}"
+    return splice_block(page, "mismatch-ensemble", table)
 
 
 # ------------------------------------------------------------------------------------------------------ sentences
