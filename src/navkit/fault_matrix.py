@@ -29,7 +29,6 @@ from __future__ import annotations
 
 import argparse
 import copy
-import csv
 import hashlib
 import json
 import platform
@@ -47,6 +46,7 @@ import yaml
 from .benchmark import MEASUREMENT, _config_label, _jsonable, default_config_path, run_case
 from .fdir.status import STATUS_REACCEPTED_WITH_INFLATION, STATUS_SENSOR_FAULT
 from .outage_sweep import METRICS, _collect, _interval, summarise_cell
+from .report.table import Column, Table
 from .types import GnssFix
 
 GnssHook = Callable[[GnssFix], GnssFix]
@@ -245,6 +245,17 @@ TEXT_FIELDS = ("fault", "base", "unit", "declared_channels")
 INT_FIELDS = ("n_seeds", "detected_n", "declared_n", "granted_n")
 
 
+def _column(name: str) -> Column:
+    if name in TEXT_FIELDS:
+        return Column(name, str)
+    if name in INT_FIELDS:
+        return Column(name, int)
+    return Column(name, float, optional=True)
+
+
+TABLE = Table(tuple(_column(n) for n in CSV_FIELDS), key="fault")
+
+
 def detection_stats(record: dict[str, Any], onset_s: float | None = None) -> dict[str, Any]:
     """What the gate and the FDIR layer did in one run.
 
@@ -306,28 +317,12 @@ def cell_row(cell: dict[str, Any]) -> dict[str, Any]:
 
 
 def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS, lineterminator="\n")
-        writer.writeheader()
-        writer.writerows(rows)
+    TABLE.write(path, rows)
 
 
 def read_csv(path: Path) -> list[dict[str, Any]]:
-    """Read a CSV written by :func:`write_csv`; empty cells come back as ``None``."""
-    out = []
-    with path.open(newline="", encoding="utf-8") as f:
-        for raw in csv.DictReader(f):
-            row: dict[str, Any] = {}
-            for key, value in raw.items():
-                if key in TEXT_FIELDS:
-                    row[key] = value
-                elif key in INT_FIELDS:
-                    row[key] = int(value)
-                else:
-                    row[key] = None if value == "" else float(value)
-            out.append(row)
-    return out
+    """Read a CSV written by :func:`write_csv`; empty float cells come back as ``None``."""
+    return TABLE.read(path)
 
 
 def compare_rows(
