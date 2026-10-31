@@ -235,10 +235,6 @@ def markdown_section(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_section(page: str, text: str) -> str:
-    return splice_block(page, "correlated-gnss", text)
-
-
 def parse_seeds(text: str) -> list[int]:
     if "-" in text and "," not in text:
         a, b = text.split("-", 1)
@@ -274,5 +270,5 @@ def main(argv: list[str] | None = None) -> int:
             return 1
     if args.page is not None:
         page = args.page.read_text(encoding="utf-8")
-        args.page.write_text(splice_section(page, markdown_section(rows)), encoding="utf-8")
+        args.page.write_text(splice_block(page, "correlated-gnss", markdown_section(rows)), encoding="utf-8")
     return 0

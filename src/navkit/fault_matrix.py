@@ -46,7 +46,8 @@ import yaml
 from .benchmark import MEASUREMENT, _config_label, _jsonable, default_config_path, run_case
 from .fdir.status import STATUS_REACCEPTED_WITH_INFLATION, STATUS_SENSOR_FAULT
 from .outage_sweep import METRICS, _collect, _interval, summarise_cell
-from .report.page import splice_block
+from .report.runner import Flags, Study, run_study
+from .report.runner import build_parser as runner_parser
 from .report.table import Column, Table
 from .types import GnssFix
 
@@ -315,15 +316,6 @@ def cell_row(cell: dict[str, Any]) -> dict[str, Any]:
     return row
 
 
-def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
-    TABLE.write(path, rows)
-
-
-def read_csv(path: Path) -> list[dict[str, Any]]:
-    """Read a CSV written by :func:`write_csv`; empty float cells come back as ``None``."""
-    return TABLE.read(path)
-
-
 def compare_rows(
     got: list[dict[str, Any]], want: list[dict[str, Any]], rel_tol: float = 1e-6, abs_tol: float = 1e-9
 ) -> list[str]:
@@ -392,11 +384,6 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_table(page: str, table: str) -> str:
-    """Replace the generated block of the fault page with ``table``."""
-    return splice_block(page, "faults", table)
-
-
 def _run_cell(
     fault_id: str,
     base: str,
@@ -417,30 +404,16 @@ def _run_cell(
     return rows, runs
 
 
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(
-        prog="navkit sweep faults", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
+def _add_arguments(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--config", type=Path, default=None, help="scenario file (default: the packaged benchmark.yaml)")
     ap.add_argument("--out", type=Path, default=Path("results") / "fault_matrix.json")
-    ap.add_argument("--csv", type=Path, default=None, help="also write one row per cell to this CSV")
-    ap.add_argument("--page", type=Path, default=None, help="rewrite the generated table block in this page")
     ap.add_argument("--faults", nargs="+", default=None, help="fault ids to run (default: all); see --list")
     ap.add_argument("--list", action="store_true", help="list the fault ids and exit")
     ap.add_argument("--seeds", type=int, default=5, help="noise seeds per cell, starting at 0")
-    ap.add_argument("--markdown", action="store_true", help="print the summary table")
-    ap.add_argument(
-        "--compare",
-        type=Path,
-        default=None,
-        help="after the run, exit 1 unless the result matches this committed CSV (numbers within 1e-6)",
-    )
-    args = ap.parse_args(argv)
 
-    if args.list:
-        for f in FAULTS:
-            print(f"{f.id:<26} {f.base:<14} levels {', '.join(f'{lv:g}' for lv in f.levels)} {f.unit}")
-        return 0
+
+def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
+
     config_given = args.config is not None
     if args.config is None:
         args.config = default_config_path()
@@ -526,30 +499,39 @@ def main(argv: list[str] | None = None) -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(_jsonable(payload), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"wrote {args.out}", file=sys.stderr)
-    if args.csv is not None:
-        write_csv(args.csv, flat)
-        print(f"wrote {args.csv}", file=sys.stderr)
-    if args.page is not None:
-        page_text = splice_table(args.page.read_text(encoding="utf-8"), markdown_table(flat))
-        args.page.write_text(page_text, encoding="utf-8")
-        print(f"wrote {args.page}", file=sys.stderr)
-    if args.markdown:
-        print()
-        print(markdown_table(flat))
-    if args.compare is not None:
-        tmp = args.out.with_suffix(".compare.csv")
-        write_csv(tmp, flat)
-        try:
-            problems = compare_rows(read_csv(tmp), read_csv(args.compare))
-        finally:
-            tmp.unlink(missing_ok=True)
-        if problems:
-            print(f"result differs from {args.compare}:", file=sys.stderr)
-            for p in problems[:10]:
-                print(f"  {p}", file=sys.stderr)
-            return 1
-        print(f"result matches {args.compare}", file=sys.stderr)
-    return 0
+    return flat
+
+
+STUDY = Study(
+    table=TABLE,
+    run_args=_run,
+    render=markdown_table,
+    page_name="faults",
+    flags=Flags(csv=True, page=True, markdown=True, compare=True),
+    add_arguments=_add_arguments,
+    prog="navkit sweep faults",
+    description=__doc__,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    help={
+        "csv": "also write one row per cell to this CSV",
+        "page": "rewrite the generated table block in this page",
+        "markdown": "print the summary table",
+        "compare": "after the run, exit 1 unless the result matches this committed CSV (numbers within 1e-6)",
+    },
+    compare_rows=compare_rows,
+)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    return runner_parser(STUDY)
+
+
+def main(argv: list[str] | None = None) -> int:
+    if build_parser().parse_args(argv).list:
+        for f in FAULTS:
+            print(f"{f.id:<26} {f.base:<14} levels {', '.join(f'{lv:g}' for lv in f.levels)} {f.unit}")
+        return 0
+    return run_study(STUDY, argv)
 
 
 if __name__ == "__main__":

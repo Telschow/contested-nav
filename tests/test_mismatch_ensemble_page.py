@@ -15,6 +15,7 @@ import pytest
 
 from navkit import ensemble, mismatch_ensemble, mismatch_sweep
 from navkit.eval.calibration import ensemble_nees_band
+from navkit.report.page import splice_block
 
 pytestmark = pytest.mark.docs_only
 
@@ -183,12 +184,12 @@ def rows() -> list[dict[str, Any]]:
 
 @pytest.fixture(scope="module")
 def single() -> list[dict[str, Any]]:
-    return mismatch_sweep.read_csv(SINGLE_CSV)
+    return mismatch_sweep.TABLE.read(SINGLE_CSV)
 
 
 def test_the_page_block_is_what_the_rules_give_for_the_committed_csvs(rows, single) -> None:
     page = PAGE.read_text(encoding="utf-8")
-    assert page == mismatch_ensemble.splice_table(page, mismatch_ensemble.page_block(rows, single))
+    assert page == splice_block(page, "mismatch-ensemble", mismatch_ensemble.page_block(rows, single))
 
 
 def test_the_committed_file_is_the_documented_ensemble_on_seeds_25_to_49(rows) -> None:

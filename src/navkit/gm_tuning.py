@@ -52,6 +52,7 @@ import numpy as np
 from . import candidate_gate as _gate
 from .b1_gate import format_seeds
 from .eval.candidate_gate import CANDIDATE_GATE_UPPER_QUANTILE, ScenarioGateResult, evaluate_scenario_gate
+from .report.page import splice_block
 from .scale_tuning import (
     CONFIRMATION_BLOCKS,
     GRID_SEEDS,
@@ -598,15 +599,6 @@ def robustness_markdown(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_section(page: str, text: str, start: str = START, end: str = END) -> str:
-    """``page`` with the text between the two marker lines replaced by ``text``."""
-    if start not in page or end not in page or page.index(start) > page.index(end):
-        raise ValueError(f"the page needs the lines {start} and {end}, in that order")
-    head, rest = page.split(start, 1)
-    _, tail = rest.split(end, 1)
-    return f"{head}{start}\n\n{text}\n\n{end}{tail}"
-
-
 # ------------------------------------------------------------------------------------------ command
 
 
@@ -643,8 +635,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"wrote {args.csv} and {rob_path}", file=sys.stderr)
     if args.page is not None:
         page = args.page.read_text(encoding="utf-8")
-        page = splice_section(page, markdown_section(rows), START, END)
-        page = splice_section(page, robustness_markdown(rob_rows), ROB_START, ROB_END)
+        page = splice_block(page, "gm-tuning", markdown_section(rows))
+        page = splice_block(page, "gm-tuning-robustness", robustness_markdown(rob_rows))
         args.page.write_text(page, encoding="utf-8")
         print(f"wrote the tables into {args.page}", file=sys.stderr)
     print(f"{run.outcome.kind}; elapsed {time.perf_counter() - started:.1f} s", file=sys.stderr)

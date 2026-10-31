@@ -25,7 +25,6 @@ import csv
 import io
 import math
 import statistics
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -35,7 +34,10 @@ import yaml
 from .b1_gate import parse_seeds
 from .benchmark import StartError, default_config_path, run_case
 from .ensemble import COMPARE_RTOL
-from .report.page import splice_block
+from .report.runner import Flags, Study
+from .report.runner import build_parser as runner_parser
+from .report.runner import run_study as runner_run_study
+from .report.table import Column, Table
 
 CASES = ("outage_visual", "vision_only", "outage_visual_clone", "outage_control")
 SINGLE_ANCHOR = ("outage_visual", "vision_only")
@@ -45,6 +47,10 @@ DEFAULT_SEEDS = range(0, 10)
 #: Seeds from here are the held-out set of ADR-0028.
 HELD_OUT_FROM = 100
 CSV_FIELDS = ("case", "variant", "seed", "ate_rmse_m", "nees_mean")
+TABLE = Table(
+    (Column("case"), Column("variant"), Column("seed", int), Column("ate_rmse_m", float), Column("nees_mean", float)),
+    key="case",
+)
 START, END = "<!-- start-draw:start -->", "<!-- start-draw:end -->"
 #: The clone's ATE and mean NEES may differ across the three variants of one seed by this fraction of their mean.
 CLONE_TOLERANCE = 0.25
@@ -201,35 +207,43 @@ def markdown_section(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_section(page: str, text: str) -> str:
-    return splice_block(page, "start-draw", text)
-
-
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+def _add_arguments(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--config", type=Path, default=None, help="scenario file (default: the packaged benchmark.yaml)")
+    # The runner reads ``args.csv`` by name, so the flag stays required here.
     ap.add_argument("--csv", type=Path, required=True, help="write the rows here")
-    ap.add_argument("--page", type=Path, default=None, help="also write the section between the markers of this page")
-    ap.add_argument("--compare", type=Path, default=None, help="exit 1 if the rows differ from this committed CSV")
     ap.add_argument("--seeds", default="0-9", help="development seeds, A-B or a comma list; from 100 are refused")
-    args = ap.parse_args(argv)
+
+
+def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
     try:
         seeds = parse_seeds(args.seeds)
         refuse_held_out(seeds)
     except ValueError as exc:
-        ap.error(str(exc))
+        build_parser().error(str(exc))
     doc = yaml.safe_load((args.config or default_config_path()).read_text()) or {}
-    rows = run_study(doc, seeds)
-    args.csv.write_text(csv_text(rows), encoding="utf-8")
-    print(f"wrote {args.csv}: {len(rows)} rows", file=sys.stderr)
-    if args.compare is not None:
-        problems = compare(rows, parse_csv(args.compare.read_text(encoding="utf-8")))
-        for line in problems[:20]:
-            print(f"  {line}", file=sys.stderr)
-        if problems:
-            print(f"{len(problems)} difference(s) from {args.compare}", file=sys.stderr)
-            return 1
-    if args.page is not None:
-        page = args.page.read_text(encoding="utf-8")
-        args.page.write_text(splice_section(page, markdown_section(rows)), encoding="utf-8")
-    return 0
+    return run_study(doc, seeds)
+
+
+STUDY = Study(
+    table=TABLE,
+    run_args=_run,
+    render=markdown_section,
+    page_name="start-draw",
+    flags=Flags(page=True, compare=True),
+    add_arguments=_add_arguments,
+    description=__doc__,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    help={
+        "page": "also write the section between the markers of this page",
+        "compare": "exit 1 if the rows differ from this committed CSV",
+    },
+    compare_rows=compare,
+)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    return runner_parser(STUDY)
+
+
+def main(argv: list[str] | None = None) -> int:
+    return runner_run_study(STUDY, argv)

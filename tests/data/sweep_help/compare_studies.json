@@ -1,0 +1,423 @@
+{
+ "fault_matrix": {
+  "actions": [
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--compare"
+    ],
+    "help": "after the run, exit 1 unless the result matches this committed CSV (numbers within 1e-6)",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--config"
+    ],
+    "help": "scenario file (default: the packaged benchmark.yaml)",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--csv"
+    ],
+    "help": "also write one row per cell to this CSV",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--faults"
+    ],
+    "help": "fault ids to run (default: all); see --list",
+    "nargs": "+",
+    "required": false,
+    "type": null
+   },
+   {
+    "action": "_StoreTrueAction",
+    "choices": null,
+    "default": "False",
+    "flags": [
+     "--list"
+    ],
+    "help": "list the fault ids and exit",
+    "nargs": 0,
+    "required": false,
+    "type": null
+   },
+   {
+    "action": "_StoreTrueAction",
+    "choices": null,
+    "default": "False",
+    "flags": [
+     "--markdown"
+    ],
+    "help": "print the summary table",
+    "nargs": 0,
+    "required": false,
+    "type": null
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "PosixPath('results/fault_matrix.json')",
+    "flags": [
+     "--out"
+    ],
+    "help": null,
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--page"
+    ],
+    "help": "rewrite the generated table block in this page",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "5",
+    "flags": [
+     "--seeds"
+    ],
+    "help": "noise seeds per cell, starting at 0",
+    "nargs": null,
+    "required": false,
+    "type": "int"
+   },
+   {
+    "action": "_HelpAction",
+    "choices": null,
+    "default": "'==SUPPRESS=='",
+    "flags": [
+     "-h",
+     "--help"
+    ],
+    "help": "show this help message and exit",
+    "nargs": 0,
+    "required": false,
+    "type": null
+   }
+  ],
+  "description": "Measure the fault modes the simulator can inject, against a clean control.\n\nThe FMEA-lite table in ``docs/MODEL.md`` lists every fault the injection layer can produce and,\nuntil this sweep, marked most of them \"unit-tested only\": the code path is tested, the effect\non accuracy and calibration is not measured. This runs each one on a benchmark case over several\nnoise seeds and puts it next to the same case with no fault.\n\n    navkit sweep faults\n    navkit sweep faults --faults gnss_spoof_sustained gnss_time_offset --seeds 5 --markdown\n    navkit sweep faults --csv docs/data/fault_matrix.csv --page docs/faults.md\n\nWhat is measured for each cell, over N seeds:\n\n* the usual error and calibration numbers (ATE, mean NEES, 2-sigma coverage, claimed sigma);\n* **detected**: in how many seeds the gate rejected at least one measurement;\n* **declared**: in how many seeds the FDIR layer isolated a channel as faulty (the strict test,\n  and the one a downstream consumer could act on);\n* the share of measurements rejected.\n\nThe same three are measured on each fault's control (the base case with no fault), and on the\ncontrol they are the **false-alarm** measures. A gate that rejects a healthy fix is a false\nalarm, so a control that is rejected from is reported as such rather than excluded.\n\nThe output is synthetic. A sweep over a known-answer fixture is not a field measurement, so the\npayload carries the same disclaimer and ``claim_type`` as ``results/benchmark.json``.\n",
+  "prog": "navkit sweep faults"
+ },
+ "mismatch_sweep": {
+  "actions": [
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "['gnss_only', 'outage_control']",
+    "flags": [
+     "--cases"
+    ],
+    "help": "cases to run (default: two GNSS cases)",
+    "nargs": "+",
+    "required": false,
+    "type": null
+   },
+   {
+    "action": "_StoreAction",
+    "choices": [
+     "gnss",
+     "vision",
+     "both"
+    ],
+    "default": "'both'",
+    "flags": [
+     "--channel"
+    ],
+    "help": "which sensor's assumed noise to scale (a channel a case does not use has no effect)",
+    "nargs": null,
+    "required": false,
+    "type": null
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--compare"
+    ],
+    "help": "after the run, exit 1 unless the result matches this committed CSV (numbers within 1e-6)",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--config"
+    ],
+    "help": "scenario file (default: the packaged benchmark.yaml)",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--csv"
+    ],
+    "help": "also write one row per (case, factor) to this CSV",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--ensemble-compare"
+    ],
+    "help": "with --ensemble-csv: exit 1 unless the ensemble matches this committed CSV (floats to 1e-6)",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--ensemble-csv"
+    ],
+    "help": "also run the ensemble over seeds for every cell and write its CSV here (navkit.mismatch_ensemble)",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--ensemble-page"
+    ],
+    "help": "with --ensemble-csv: write the table between the mismatch-ensemble markers of this page",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "25",
+    "flags": [
+     "--ensemble-seeds"
+    ],
+    "help": "runs per cell of the ensemble, from seed 25 (the development seeds)",
+    "nargs": null,
+    "required": false,
+    "type": "int"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--figure"
+    ],
+    "help": "also render the sweep figure to this PNG",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreTrueAction",
+    "choices": null,
+    "default": "False",
+    "flags": [
+     "--markdown"
+    ],
+    "help": "print a summary table",
+    "nargs": 0,
+    "required": false,
+    "type": null
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "90.0",
+    "flags": [
+     "--min-coverage"
+    ],
+    "help": "2-sigma coverage band, %% (an analyst's choice, printed with the result)",
+    "nargs": null,
+    "required": false,
+    "type": "float"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "PosixPath('results/mismatch_sweep.json')",
+    "flags": [
+     "--out"
+    ],
+    "help": null,
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--page"
+    ],
+    "help": "rewrite the generated table block in this page",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "[0.25, 0.5, 0.7, 0.8, 0.9, 1.0, 1.25, 2.0, 4.0]",
+    "flags": [
+     "--scales"
+    ],
+    "help": "factors on the assumed noise",
+    "nargs": "+",
+    "required": false,
+    "type": "float"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "5",
+    "flags": [
+     "--seeds"
+    ],
+    "help": "noise seeds per cell, starting at 0",
+    "nargs": null,
+    "required": false,
+    "type": "int"
+   },
+   {
+    "action": "_HelpAction",
+    "choices": null,
+    "default": "'==SUPPRESS=='",
+    "flags": [
+     "-h",
+     "--help"
+    ],
+    "help": "show this help message and exit",
+    "nargs": 0,
+    "required": false,
+    "type": null
+   }
+  ],
+  "description": "Sweep how wrong the filter's noise model is: tell it a sensor is better or worse than it is.\n\nEvery calibrated result in the benchmark has the filter told the true sensor noise. That is\nthe easiest possible case for a Kalman filter, and a real filter never gets it. This sweep\ngenerates the data once with the scenario's true noise and filters it with the assumed\nGNSS and vision sigmas multiplied by a factor. A factor below 1 makes the filter trust the\nsensor more than it should; above 1, less.\n\n    navkit sweep mismatch\n    navkit sweep mismatch --scales 0.5 1 2 --seeds 5 --markdown\n    navkit sweep mismatch --csv docs/data/mismatch_sweep.csv --figure docs/figures/mismatch-sweep.png         --page docs/mismatch.md\n\nEach cell is one (case, factor) repeated over N noise seeds; the table reports the mean\nwith a percentile-bootstrap 95% interval. Only the filter's assumed noise changes, so a\ndifference between cells is a difference in the mismatch.\n\nThe output is synthetic. A sweep over a known-answer fixture does not make it a field\nmeasurement, so the payload carries the same disclaimer and ``claim_type`` as\n``results/benchmark.json``. With few seeds the interval is a rough guide, not a guarantee:\n``n`` and ``n_distinct`` are reported beside it.\n",
+  "prog": "navkit sweep mismatch"
+ },
+ "start_draw_study": {
+  "actions": [
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--compare"
+    ],
+    "help": "exit 1 if the rows differ from this committed CSV",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--config"
+    ],
+    "help": "scenario file (default: the packaged benchmark.yaml)",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--csv"
+    ],
+    "help": "write the rows here",
+    "nargs": null,
+    "required": true,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "None",
+    "flags": [
+     "--page"
+    ],
+    "help": "also write the section between the markers of this page",
+    "nargs": null,
+    "required": false,
+    "type": "Path"
+   },
+   {
+    "action": "_StoreAction",
+    "choices": null,
+    "default": "'0-9'",
+    "flags": [
+     "--seeds"
+    ],
+    "help": "development seeds, A-B or a comma list; from 100 are refused",
+    "nargs": null,
+    "required": false,
+    "type": null
+   },
+   {
+    "action": "_HelpAction",
+    "choices": null,
+    "default": "'==SUPPRESS=='",
+    "flags": [
+     "-h",
+     "--help"
+    ],
+    "help": "show this help message and exit",
+    "nargs": 0,
+    "required": false,
+    "type": null
+   }
+  ],
+  "description": "Which part of the start draw does the single anchor fail on? (issue #168)\n\n    navkit sweep start-draw --csv docs/data/start_draw_study.csv --page docs/results.md\n\nEvery ESKF case starts at the truth plus an error drawn from the filter's declared prior (ADR-0027): position,\nvelocity and attitude. This study runs four cases of ``configs/benchmark.yaml`` on the development seeds 0 to 9, each in\nthree variants of the same draw:\n\n* ``full``: the draw as it is.\n* ``no_attitude``: the attitude part is set to zero, the position and velocity parts stay.\n* ``attitude_only``: the position and velocity parts are set to zero, the attitude part stays.\n\nThe draw is made first, on its own stream, and :func:`navkit.benchmark.run_case` takes the variant through its\n``start_hook``, so every variant of a seed sees the same draw. The file has one row per (case, variant, seed): the ATE\nRMSE with alignment ``none`` over the full run, and the mean NEES over the full run. It holds no verdicts.\n\nSeeds from 100 are the held-out set of ADR-0028 and are refused. The output is synthetic and deterministic.\n",
+  "prog": "navkit"
+ }
+}

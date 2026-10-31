@@ -54,27 +54,3 @@ def test_block_is_current(tmp_path) -> None:
     path.write_text(splice_block(PAGE, "t", "new"), encoding="utf-8")
     assert block_is_current(path, "t", "new")
     assert not block_is_current(path, "t", "different")
-
-
-@pytest.mark.parametrize(
-    ("module", "func", "name"),
-    [
-        ("start_draw_study", "splice_section", "start-draw"),
-        ("correlated_gnss_study", "splice_section", "correlated-gnss"),
-        ("b1_gate", "splice_table", "b1-gate-dev"),
-        ("scale_tuning", "splice_section", "scale-tuning"),
-        ("candidate_gate", "splice_table", "candidate-gate-dev"),
-        ("mismatch_ensemble", "splice_table", "mismatch-ensemble"),
-    ],
-)
-def test_strict_page_wrappers_use_the_shared_splice(module: str, func: str, name: str) -> None:
-    import importlib
-
-    splice = getattr(importlib.import_module(f"navkit.{module}"), func)
-    page = f"a\n<!-- {name}:start -->\n\nold\n\n<!-- {name}:end -->\nb\n"
-    assert splice(page, "new") == splice_block(page, name, "new")
-    reversed_page = f"<!-- {name}:end -->\n<!-- {name}:start -->"
-    with pytest.raises(ValueError, match="in that order") as exc:
-        splice(reversed_page, "new")
-    start, end = f"<!-- {name}:start -->", f"<!-- {name}:end -->"
-    assert str(exc.value) == f"the page needs the lines {start} and {end}, in that order"

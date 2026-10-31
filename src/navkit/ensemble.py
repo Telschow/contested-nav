@@ -28,6 +28,7 @@ import numpy as np
 
 from .benchmark import run_case
 from .eval.calibration import effective_samples, ensemble_nees, window_mask
+from .report.page import write_block
 
 CSV_FIELDS = (
     "case",
@@ -206,27 +207,6 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def _splice(page: str, table: str, start: str, end: str) -> str:
-    if start not in page or end not in page or page.index(start) > page.index(end):
-        raise ValueError(f"the page needs the lines {start} and {end}, in that order")
-    head, rest = page.split(start, 1)
-    _, tail = rest.split(end, 1)
-    return f"{head}{start}\n\n{table}\n\n{end}{tail}"
-
-
-def splice_table(page: str, table: str) -> str:
-    """``page`` with the text between the ensemble markers replaced by ``table``."""
-    return _splice(page, table, START, END)
-
-
-ESS_START, ESS_END = "<!-- ess:start -->", "<!-- ess:end -->"
-
-
-def splice_ess_table(page: str, table: str) -> str:
-    """``page`` with the text between the effective-sample-size markers replaced by ``table``."""
-    return _splice(page, table, ESS_START, ESS_END)
-
-
 def ess_markdown_table(rows: list[dict[str, Any]]) -> str:
     """The generated block for the effective sample sizes: one line per case and scope."""
     if not rows:
@@ -270,8 +250,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--page", type=Path, required=True)
     args = ap.parse_args(argv)
     rows = parse_csv(args.csv.read_text(encoding="utf-8"))
-    page = args.page.read_text(encoding="utf-8")
-    args.page.write_text(splice_table(page, markdown_table(rows)), encoding="utf-8")
+    write_block(args.page, "ensemble", markdown_table(rows))
     print(f"wrote the ensemble table into {args.page}", file=sys.stderr)
     return 0
 

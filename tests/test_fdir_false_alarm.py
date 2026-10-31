@@ -263,14 +263,18 @@ def test_the_per_run_record_counts_the_updates_the_filter_gated() -> None:
     assert rec["mean_nis"] == pytest.approx(float(nis.mean()))
 
 
-def test_the_csv_columns_and_determinism() -> None:
-    text_1 = fa.rate_csv_text(fa.rate_rows(seeds=[0, 1]))
-    text_2 = fa.rate_csv_text(fa.rate_rows(seeds=[0, 1]))
+def _write_read(table, rows, path):
+    table.write(path, rows)
+    return path.read_text(encoding="utf-8"), table.read(path)
+
+
+def test_the_csv_columns_and_determinism(tmp_path) -> None:
+    text_1, parsed = _write_read(fa.RATE_TABLE, fa.rate_rows(seeds=[0, 1]), tmp_path / "a.csv")
+    text_2, _ = _write_read(fa.RATE_TABLE, fa.rate_rows(seeds=[0, 1]), tmp_path / "b.csv")
     assert text_1 == text_2
     lines = text_1.splitlines()
     assert lines[0] == ",".join(fa.RATE_FIELDS)
     assert fa.RATE_FIELDS[:3] == ("case", "scope", "seed")
-    parsed = fa.parse_rate_csv(text_1)
     assert [(r["case"], r["scope"], r["seed"]) for r in parsed] == [
         ("gnss_only", "all", 0),
         ("gnss_only", "all", 1),
@@ -282,7 +286,7 @@ def test_the_csv_columns_and_determinism() -> None:
         ("outage_control", "settling", 1),
         ("outage_control", "settling", "all"),
     ]
-    assert fa.parse_rate_csv(text_1) == fa.parse_rate_csv(fa.rate_csv_text(parsed))
+    assert _write_read(fa.RATE_TABLE, parsed, tmp_path / "c.csv")[1] == parsed
 
 
 def test_comparing_a_subset_of_seeds_checks_the_per_seed_rows_and_skips_the_pooled_ones() -> None:
@@ -295,13 +299,12 @@ def test_comparing_a_subset_of_seeds_checks_the_per_seed_rows_and_skips_the_pool
     assert fa.compare_rate_rows(subset, broken)
 
 
-def test_the_sensitivity_csv_columns_and_determinism_on_one_small_cell_set() -> None:
+def test_the_sensitivity_csv_columns_and_determinism_on_one_small_cell_set(tmp_path) -> None:
     kwargs = {"faults": ["gnss_spoof_sustained"], "constants": ["reacq_sigma_m"], "seeds": 2}
-    text_1 = fa.sensitivity_csv_text(fa.sensitivity_rows(**kwargs))
-    text_2 = fa.sensitivity_csv_text(fa.sensitivity_rows(**kwargs))
+    text_1, rows = _write_read(fa.SENSITIVITY_TABLE, fa.sensitivity_rows(**kwargs), tmp_path / "a.csv")
+    text_2, _ = _write_read(fa.SENSITIVITY_TABLE, fa.sensitivity_rows(**kwargs), tmp_path / "b.csv")
     assert text_1 == text_2
     assert text_1.splitlines()[0] == ",".join(fa.SENSITIVITY_FIELDS)
-    rows = fa.parse_sensitivity_csv(text_1)
     # gnss_only control + three spoof levels, at the default and at half and double reacq_sigma_m.
     assert len(rows) == 4 * 3
     assert {(r["constant"], r["setting"]) for r in rows} == {

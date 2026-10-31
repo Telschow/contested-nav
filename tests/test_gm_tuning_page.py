@@ -16,6 +16,7 @@ import pytest
 from navkit import gm_tuning as gt
 from navkit.estimators.eskf import EskfConfig
 from navkit.io.imu import ImuNoiseModel
+from navkit.report.page import splice_block
 
 pytestmark = pytest.mark.docs_only
 
@@ -65,8 +66,8 @@ def _group(rows, stage, key):
 
 def test_the_page_tables_are_the_committed_csvs(rows, rob_rows):
     page = PAGE.read_text(encoding="utf-8")
-    once = gt.splice_section(page, gt.markdown_section(rows), gt.START, gt.END)
-    twice = gt.splice_section(once, gt.robustness_markdown(rob_rows), gt.ROB_START, gt.ROB_END)
+    once = splice_block(page, "gm-tuning", gt.markdown_section(rows))
+    twice = splice_block(once, "gm-tuning-robustness", gt.robustness_markdown(rob_rows))
     assert page == twice
 
 

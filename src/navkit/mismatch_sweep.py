@@ -39,7 +39,8 @@ import yaml
 from . import mismatch_ensemble
 from .benchmark import MEASUREMENT, _config_label, _jsonable, default_config_path, run_case
 from .outage_sweep import METRICS, _collect, _interval, summarise_cell
-from .report.page import splice_block
+from .report.runner import Flags, Study, run_study
+from .report.runner import build_parser as runner_parser
 from .report.table import Column, Table
 
 DEFAULT_CASES = ("gnss_only", "outage_control")
@@ -139,15 +140,6 @@ def cell_row(cell: dict[str, Any], channel: str) -> dict[str, Any]:
     return row
 
 
-def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
-    TABLE.write(path, rows)
-
-
-def read_csv(path: Path) -> list[dict[str, Any]]:
-    """Read a CSV written by :func:`write_csv`; empty float cells come back as ``None``."""
-    return TABLE.read(path)
-
-
 def compare_rows(
     got: list[dict[str, Any]], want: list[dict[str, Any]], rel_tol: float = 1e-6, abs_tol: float = 1e-9
 ) -> list[str]:
@@ -207,11 +199,6 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_table(page: str, table: str) -> str:
-    """Replace the generated block of the mismatch page with ``table``."""
-    return splice_block(page, "mismatch", table)
-
-
 def tolerance(rows: list[dict[str, Any]], min_coverage_pct: float) -> dict[str, dict[str, list[float]]]:
     """Per case, the factors whose mean 2-sigma coverage is at or above the band, and those below."""
     out: dict[str, dict[str, list[float]]] = {}
@@ -223,15 +210,10 @@ def tolerance(rows: list[dict[str, Any]], min_coverage_pct: float) -> dict[str, 
     return out
 
 
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(
-        prog="navkit sweep mismatch", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
+def _add_arguments(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--config", type=Path, default=None, help="scenario file (default: the packaged benchmark.yaml)")
     ap.add_argument("--out", type=Path, default=Path("results") / "mismatch_sweep.json")
-    ap.add_argument("--csv", type=Path, default=None, help="also write one row per (case, factor) to this CSV")
     ap.add_argument("--figure", type=Path, default=None, help="also render the sweep figure to this PNG")
-    ap.add_argument("--page", type=Path, default=None, help="rewrite the generated table block in this page")
     ap.add_argument("--cases", nargs="+", default=list(DEFAULT_CASES), help="cases to run (default: two GNSS cases)")
     ap.add_argument(
         "--scales", nargs="+", type=float, default=list(DEFAULT_SCALES), help="factors on the assumed noise"
@@ -273,14 +255,13 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_MIN_COVERAGE_PCT,
         help="2-sigma coverage band, %% (an analyst's choice, printed with the result)",
     )
-    ap.add_argument("--markdown", action="store_true", help="print a summary table")
-    ap.add_argument(
-        "--compare",
-        type=Path,
-        default=None,
-        help="after the run, exit 1 unless the result matches this committed CSV (numbers within 1e-6)",
-    )
-    args = ap.parse_args(argv)
+
+
+#: ``--ensemble-compare`` turns the exit code to 1 even when the main result matches.
+_STATE = {"ensemble_failed": False}
+
+
+def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
     config_given = args.config is not None
     if args.config is None:
         args.config = default_config_path()
@@ -348,13 +329,6 @@ def main(argv: list[str] | None = None) -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(_jsonable(payload), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"wrote {args.out}", file=sys.stderr)
-    if args.csv is not None:
-        write_csv(args.csv, flat)
-        print(f"wrote {args.csv}", file=sys.stderr)
-    if args.page is not None:
-        page_text = splice_table(args.page.read_text(encoding="utf-8"), markdown_table(flat))
-        args.page.write_text(page_text, encoding="utf-8")
-        print(f"wrote {args.page}", file=sys.stderr)
     if args.figure is not None:
         from .figures import fig_mismatch_sweep
 
@@ -367,10 +341,6 @@ def main(argv: list[str] | None = None) -> int:
             f"{', x'.join(f'{s:g}' for s in band['outside']) or 'none'}",
             file=sys.stderr,
         )
-    if args.markdown:
-        print()
-        print(markdown_table(flat))
-    status = 0
     if args.ensemble_csv is not None:
         ensemble_cells = [
             (name, scale, with_scale(cases[name], scale, args.channel)) for name in args.cases for scale in args.scales
@@ -386,25 +356,40 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"the ensemble differs from {args.ensemble_compare}:", file=sys.stderr)
                 for p in problems[:10]:
                     print(f"  {p}", file=sys.stderr)
-                status = 1
+                _STATE["ensemble_failed"] = True
             else:
                 print(f"the ensemble matches {args.ensemble_compare}", file=sys.stderr)
-    if args.compare is not None:
-        # Compare what a reader of the CSV would see, so a number that survives the round
-        # trip through text is the one that is checked.
-        tmp = args.out.with_suffix(".compare.csv")
-        write_csv(tmp, flat)
-        try:
-            problems = compare_rows(read_csv(tmp), read_csv(args.compare))
-        finally:
-            tmp.unlink(missing_ok=True)
-        if problems:
-            print(f"result differs from {args.compare}:", file=sys.stderr)
-            for p in problems[:10]:
-                print(f"  {p}", file=sys.stderr)
-            return 1
-        print(f"result matches {args.compare}", file=sys.stderr)
-    return status
+    return flat
+
+
+STUDY = Study(
+    table=TABLE,
+    run_args=_run,
+    render=markdown_table,
+    page_name="mismatch",
+    flags=Flags(csv=True, page=True, markdown=True, compare=True),
+    add_arguments=_add_arguments,
+    prog="navkit sweep mismatch",
+    description=__doc__,
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    help={
+        "csv": "also write one row per (case, factor) to this CSV",
+        "page": "rewrite the generated table block in this page",
+        "markdown": "print a summary table",
+        "compare": "after the run, exit 1 unless the result matches this committed CSV (numbers within 1e-6)",
+    },
+    compare_rows=compare_rows,
+)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    return runner_parser(STUDY)
+
+
+def main(argv: list[str] | None = None) -> int:
+    _STATE["ensemble_failed"] = False
+    status = run_study(STUDY, argv)
+    return 1 if _STATE["ensemble_failed"] else status
 
 
 if __name__ == "__main__":

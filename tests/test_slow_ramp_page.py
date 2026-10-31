@@ -98,7 +98,7 @@ def test_a_recording_too_short_for_the_ramp_is_skipped(tmp_path):
 
 def test_csv_round_trip_cli_rebuild_and_missing_markers(rows, tmp_path, capsys):
     out = tmp_path / "again.csv"
-    sr.write_csv(out, rows)
+    sr.TABLE.write(out, rows)
     assert sr.rows_from_csv(out) == rows
     assert sr.main(["--from-csv", str(out), "--markdown"]) == 0
     assert "Over the gate" in capsys.readouterr().out

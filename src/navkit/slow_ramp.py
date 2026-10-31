@@ -24,7 +24,9 @@ import numpy as np
 from .euroc_compare import _ALL_CONFIGS
 from .euroc_eval import RunOptions, dataset_loader, list_sequence_dirs, run_sequence
 from .fdir.status import STATUS_REACCEPTED_WITH_INFLATION, STATUS_SENSOR_FAULT
-from .report.page import write_block as _write_page_block
+from .report.runner import Flags, Study, run_study
+from .report.runner import build_parser as runner_parser
+from .report.table import Column, Table
 from .separability import shipped_gate
 
 RATES_M_S = (0.0, 0.05, 0.2, 0.5, 1.0, 2.0)
@@ -188,13 +190,8 @@ BLOCKS = {
 # ------------------------------------------------------------------------- I/O
 
 
-def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
-        writer.writeheader()
-        writer.writerows(rows)
+# The committed CSV has CRLF line ends.
+TABLE = Table(tuple(Column(n, str, optional=True) for n in CSV_COLUMNS), key="case", lineterminator="\r\n")
 
 
 def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
@@ -202,48 +199,43 @@ def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
         return list(csv.DictReader(fh))
 
 
-def write_block(path: str | Path, name: str, block: str) -> None:
-    """Replace the text between a block's markers in a Markdown page."""
-    _write_page_block(path, name, block)
-
-
-def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
-        prog="navkit sweep ramp",
-        description="Slow-ramp GNSS spoofs on real recorded IMU data.",
-    )
+def _add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--euroc-root", default="data/raw/euroc")
     p.add_argument("--tumvi-root", default="data/raw/tumvi")
     p.add_argument("--seeds", type=int, default=2)
-    p.add_argument("--csv", default=None, help="write one row per run")
-    p.add_argument("--from-csv", default=None, help="rebuild the tables and page from a saved --csv file; no runs")
-    p.add_argument("--page", default=None, help="fill the ramp blocks of this Markdown page")
-    p.add_argument("--markdown", action="store_true", help="print the tables")
-    return p
+
+
+def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for ds, root in (("euroc", args.euroc_root), ("tumvi", args.tumvi_root)):
+        rows += sweep_rows(ds, root, SETTINGS[ds], args.seeds)
+    return rows
+
+
+STUDY = Study(
+    table=TABLE,
+    run_args=_run,
+    blocks=lambda rows, args: {name: fn(rows) for name, fn in BLOCKS.items()},
+    flags=Flags(csv=True, page=True, markdown=True, from_csv=True, print_default=True),
+    add_arguments=_add_arguments,
+    read=rows_from_csv,
+    prog="navkit sweep ramp",
+    description="Slow-ramp GNSS spoofs on real recorded IMU data.",
+    help={
+        "csv": "write one row per run",
+        "from_csv": "rebuild the tables and page from a saved --csv file; no runs",
+        "page": "fill the ramp blocks of this Markdown page",
+        "markdown": "print the tables",
+    },
+)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    return runner_parser(STUDY)
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    if args.from_csv:
-        rows = rows_from_csv(args.from_csv)
-    else:
-        rows = []
-        for ds, root in (("euroc", args.euroc_root), ("tumvi", args.tumvi_root)):
-            rows += sweep_rows(ds, root, SETTINGS[ds], args.seeds)
-    if args.csv:
-        write_csv(args.csv, rows)
-        print(f"wrote {args.csv}", file=sys.stderr)
-    tables = {name: fn(rows) for name, fn in BLOCKS.items()}
-    if args.page:
-        try:
-            for name, text in tables.items():
-                write_block(args.page, name, text)
-        except ValueError as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 1
-    if args.markdown or not (args.csv or args.page):
-        print("\n\n".join(tables.values()))
-    return 0
+    return run_study(STUDY, argv)
 
 
 if __name__ == "__main__":  # pragma: no cover

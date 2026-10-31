@@ -17,6 +17,7 @@ from navkit import fdir_false_alarm as fa
 from navkit.benchmark import default_config_path
 from navkit.eval.calibration import wilson_interval
 from navkit.fdir.config import FdirConfig
+from navkit.report.page import splice_block
 
 pytestmark = pytest.mark.docs_only
 
@@ -33,12 +34,12 @@ VERDICT_WORDS = ("calibrated", "miscalibrated", "well-tuned", "overly sensitive"
 
 @pytest.fixture(scope="module")
 def rate_rows() -> list[dict]:
-    return fa.parse_rate_csv(RATE_CSV.read_text(encoding="utf-8"))
+    return fa.RATE_TABLE.read(RATE_CSV)
 
 
 @pytest.fixture(scope="module")
 def sens_rows() -> list[dict]:
-    return fa.parse_sensitivity_csv(SENS_CSV.read_text(encoding="utf-8"))
+    return fa.SENSITIVITY_TABLE.read(SENS_CSV)
 
 
 @pytest.fixture(scope="module")
@@ -57,17 +58,19 @@ def _words(text: str) -> str:
 
 def test_the_false_alarm_block_is_the_committed_csv(rate_rows):
     page = PAGE.read_text(encoding="utf-8")
-    assert page == fa.splice_block(page, "rate", fa.rate_tables(rate_rows))
+    assert page == splice_block(page, "fdir-false-alarm", fa.rate_tables(rate_rows))
 
 
 def test_the_sensitivity_block_is_the_committed_csv(sens_rows):
     page = PAGE.read_text(encoding="utf-8")
-    assert page == fa.splice_block(page, "sensitivity", fa.sensitivity_tables(sens_rows))
+    assert page == splice_block(page, "fdir-sensitivity", fa.sensitivity_tables(sens_rows))
 
 
-def test_the_csv_files_are_written_by_the_writers_byte_for_byte(rate_rows, sens_rows):
-    assert RATE_CSV.read_text(encoding="utf-8") == fa.rate_csv_text(rate_rows)
-    assert SENS_CSV.read_text(encoding="utf-8") == fa.sensitivity_csv_text(sens_rows)
+def test_the_csv_files_are_written_by_the_writers_byte_for_byte(rate_rows, sens_rows, tmp_path):
+    fa.RATE_TABLE.write(tmp_path / "rate.csv", rate_rows)
+    fa.SENSITIVITY_TABLE.write(tmp_path / "sens.csv", sens_rows)
+    assert RATE_CSV.read_bytes() == (tmp_path / "rate.csv").read_bytes()
+    assert SENS_CSV.read_bytes() == (tmp_path / "sens.csv").read_bytes()
 
 
 def test_the_headers_are_the_documented_columns():
@@ -234,7 +237,7 @@ def test_the_half_and_double_values_are_the_live_defaults_scaled(sens_rows):
 
 
 def test_the_counts_at_the_defaults_are_the_fault_matrix_counts(sens_rows):
-    matrix = fault_matrix.read_csv(MATRIX_CSV)
+    matrix = fault_matrix.TABLE.read(MATRIX_CSV)
     want = {(m["fault"], m["base"], m["level"]): (m["detected_n"], m["declared_n"]) for m in matrix}
     got = {
         (r["fault"], r["base"], r["level"]): (r["detected_n"], r["declared_n"])

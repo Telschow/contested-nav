@@ -14,6 +14,7 @@ import pytest
 
 from navkit import b1_gate
 from navkit.eval import gate
+from navkit.report.page import markers, splice_block
 
 pytestmark = pytest.mark.docs_only
 
@@ -77,7 +78,8 @@ def test_every_value_and_threshold_is_in_the_page_table(rows):
 
 def test_the_status_is_exactly_one_of_the_two_texts_and_the_right_one(rows):
     constraints = CONSTRAINTS.read_text(encoding="utf-8")
-    block = constraints.split(render.STATUS_MARKERS[0], 1)[1].split(render.STATUS_MARKERS[1], 1)[0].strip()
+    start, end = markers(render.STATUS_BLOCK)
+    block = constraints.split(start, 1)[1].split(end, 1)[0].strip()
     failed = [r["condition"] for r in rows if not r["passed"]]
     if failed:
         assert block.startswith(
@@ -126,4 +128,4 @@ def test_the_renderer_refuses_a_csv_that_is_not_the_held_out_set(rows):
     with pytest.raises(ValueError, match="held-out"):
         render.status_text(dev)
     with pytest.raises(ValueError, match="needs the lines"):
-        render.splice("no markers", render.PAGE_MARKERS, "x")
+        splice_block("no markers", render.PAGE_BLOCK, "x")

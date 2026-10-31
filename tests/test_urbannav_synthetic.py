@@ -326,7 +326,7 @@ def test_a_page_without_the_block_lines_is_refused_with_a_message(tmp_path, monk
     page = tmp_path / "page.md"
     page.write_text("no blocks here\n", encoding="utf-8")
     csv_path = tmp_path / "x.csv"
-    ur.write_csv(csv_path, [])
+    ur.TABLE.merge(csv_path, [])
     assert ur.main(["--from-csv", str(csv_path), "--page", str(page)]) == 1
     assert "needs the lines" in capsys.readouterr().err
 
@@ -685,7 +685,7 @@ def test_writing_another_sequence_leaves_the_tunnel_rows_byte_identical(tunnel, 
     assert ur.main(["--root", str(tunnel), "--csv", str(path)]) == 0
     before, tunnel_lines = path.read_bytes(), _csv_lines(path, SEQ)
     assert tunnel_lines
-    ur.write_csv(path, _stub_rows(DEEP))
+    ur.TABLE.merge(path, _stub_rows(DEEP))
     assert path.read_bytes().startswith(before)  # nothing before the new rows moved or changed
     assert _csv_lines(path, SEQ) == tunnel_lines
     assert hashlib.sha256(b"".join(_csv_lines(path, SEQ))).digest() == hashlib.sha256(b"".join(tunnel_lines)).digest()
@@ -694,11 +694,11 @@ def test_writing_another_sequence_leaves_the_tunnel_rows_byte_identical(tunnel, 
 
 def test_writing_a_sequence_again_replaces_its_rows_and_keeps_its_place(tmp_path):
     path = tmp_path / "run.csv"
-    ur.write_csv(path, _stub_rows(SEQ, 2))
-    ur.write_csv(path, _stub_rows(DEEP, 2))
-    ur.write_csv(path, _stub_rows(SEQ, 4))  # the first sequence again, with more rows
+    ur.TABLE.merge(path, _stub_rows(SEQ, 2))
+    ur.TABLE.merge(path, _stub_rows(DEEP, 2))
+    ur.TABLE.merge(path, _stub_rows(SEQ, 4))  # the first sequence again, with more rows
     assert [r["sequence"] for r in ur.rows_from_csv(path)] == [SEQ] * 4 + [DEEP] * 2
-    ur.write_csv(path, _stub_rows(DEEP, 1))
+    ur.TABLE.merge(path, _stub_rows(DEEP, 1))
     assert [r["sequence"] for r in ur.rows_from_csv(path)] == [SEQ] * 4 + [DEEP]
 
 
@@ -706,12 +706,12 @@ def test_the_committed_csv_is_a_prefix_of_what_a_second_sequence_adds_to_it(tmp_
     committed = Path(__file__).resolve().parent.parent / "docs" / "data" / "urbannav_run.csv"
     copy = tmp_path / "copy.csv"
     copy.write_bytes(committed.read_bytes())
-    ur.write_csv(copy, _stub_rows("stubseq"))  # a sequence the file does not hold: added at the end
+    ur.TABLE.merge(copy, _stub_rows("stubseq"))  # a sequence the file does not hold: added at the end
     assert copy.read_bytes().startswith(committed.read_bytes())
     # writing back the rows the file already holds gives the same bytes: the writer is the one that wrote them
     again = tmp_path / "again.csv"
     again.write_bytes(committed.read_bytes())
-    ur.write_csv(again, ur.rows_from_csv(committed))
+    ur.TABLE.merge(again, ur.rows_from_csv(committed))
     assert again.read_bytes() == committed.read_bytes()
 
 
@@ -721,7 +721,7 @@ def test_rewriting_deep_urban_1_leaves_the_tunnel_1_lines_byte_identical(tmp_pat
     copy.write_bytes(committed.read_bytes())
     tunnel = _csv_lines(committed, SEQ)
     assert tunnel and _csv_lines(committed, DEEP)
-    ur.write_csv(copy, _stub_rows(DEEP))
+    ur.TABLE.merge(copy, _stub_rows(DEEP))
     assert _csv_lines(copy, SEQ) == tunnel
     assert _csv_lines(copy, DEEP) != _csv_lines(committed, DEEP)
 
@@ -730,7 +730,7 @@ def test_a_csv_with_another_header_is_refused_and_not_overwritten(tmp_path):
     path = tmp_path / "run.csv"
     path.write_text("a,b,c\n1,2,3\n", encoding="utf-8")
     with pytest.raises(ValueError, match="header"):
-        ur.write_csv(path, _stub_rows(DEEP))
+        ur.TABLE.merge(path, _stub_rows(DEEP))
     assert path.read_text(encoding="utf-8") == "a,b,c\n1,2,3\n"
 
 

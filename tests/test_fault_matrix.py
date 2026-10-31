@@ -12,6 +12,7 @@ import yaml
 
 from navkit import cli, fault_matrix
 from navkit.benchmark import default_config_path, run_case
+from navkit.report.page import splice_block
 from navkit.types import GnssFix
 
 pytestmark = pytest.mark.docs_only
@@ -148,7 +149,7 @@ def test_the_command_runs_one_fault_and_writes_the_csv_json_and_page(tmp_path: P
         ]
     )
     assert code == 0
-    rows = fault_matrix.read_csv(csv_path)
+    rows = fault_matrix.TABLE.read(csv_path)
     assert [(r["fault"], r["level"]) for r in rows] == [("control", 0.0), ("gnss_multipath_spike", 20.0)]
     assert "old" not in page.read_text(encoding="utf-8")
     import json
@@ -171,9 +172,9 @@ def test_compare_exits_nonzero_when_the_result_differs(tmp_path: Path) -> None:
     args = ["sweep", "faults", "--faults", "gnss_multipath_spike", "--seeds", "2"]
     assert cli.main([*args, "--out", str(tmp_path / "a.json"), "--csv", str(csv_path)]) == 0
     assert cli.main([*args, "--out", str(tmp_path / "b.json"), "--compare", str(csv_path)]) == 0
-    rows = fault_matrix.read_csv(csv_path)
+    rows = fault_matrix.TABLE.read(csv_path)
     rows[1]["declared_n"] += 1
-    fault_matrix.write_csv(csv_path, rows)
+    fault_matrix.TABLE.write(csv_path, rows)
     assert cli.main([*args, "--out", str(tmp_path / "c.json"), "--compare", str(csv_path)]) == 1
 
 
@@ -191,7 +192,7 @@ def test_compare_rows_tolerates_last_bit_differences_but_not_real_ones() -> None
 
 
 def _cell(fault: str, level: float = 0.0, base: str | None = None) -> dict[str, Any]:
-    for r in fault_matrix.read_csv(CSV):
+    for r in fault_matrix.TABLE.read(CSV):
         if r["fault"] == fault and r["level"] == level and (base is None or r["base"] == base):
             return r
     raise KeyError((fault, level))
@@ -203,23 +204,23 @@ def _control(base: str) -> dict[str, Any]:
 
 def test_the_page_table_is_the_committed_csv() -> None:
     page = PAGE.read_text(encoding="utf-8")
-    expected = fault_matrix.splice_table(page, fault_matrix.markdown_table(fault_matrix.read_csv(CSV)))
+    expected = splice_block(page, "faults", fault_matrix.markdown_table(fault_matrix.TABLE.read(CSV)))
     assert page == expected
 
 
 def test_a_page_without_markers_is_refused() -> None:
     with pytest.raises(ValueError, match="in that order"):
-        fault_matrix.splice_table("no markers", "x")
+        splice_block("no markers", "faults", "x")
 
 
 def test_a_page_with_reversed_markers_is_refused() -> None:
     page = "<!-- faults:end -->\n<!-- faults:start -->"
     with pytest.raises(ValueError, match="in that order"):
-        fault_matrix.splice_table(page, "x")
+        splice_block(page, "faults", "x")
 
 
 def test_the_csv_has_a_control_for_every_base_and_a_row_for_every_fault_level() -> None:
-    rows = fault_matrix.read_csv(CSV)
+    rows = fault_matrix.TABLE.read(CSV)
     expected = {("control", 0.0, b) for b in fault_matrix.BASES}
     expected |= {(f.id, lv, f.base) for f in fault_matrix.FAULTS for lv in f.levels}
     assert {(r["fault"], r["level"], r["base"]) for r in rows} == expected
@@ -326,7 +327,7 @@ def test_claim_10_vision_outages_raise_the_error_slowly_and_the_gate_rejects_but
 
 
 def test_the_track_a_restatement_counts_match_the_csv() -> None:
-    faulted = [r for r in fault_matrix.read_csv(CSV) if r["fault"] != "control"]
+    faulted = [r for r in fault_matrix.TABLE.read(CSV) if r["fault"] != "control"]
     assert len(faulted) == 18
     always = [(r["fault"], r["level"]) for r in faulted if r["declared_n"] == r["n_seeds"]]
     assert sorted(always) == [

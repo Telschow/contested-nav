@@ -16,6 +16,7 @@ import pytest
 from navkit import scale_tuning as st
 from navkit.estimators.eskf import EskfConfig
 from navkit.io.imu import ImuNoiseModel
+from navkit.report.page import splice_block
 
 pytestmark = pytest.mark.docs_only
 
@@ -59,7 +60,7 @@ def _group(rows, stage, key):
 
 def test_the_page_table_is_the_committed_csv(rows):
     page = PAGE.read_text(encoding="utf-8")
-    assert page == st.splice_section(page, st.markdown_section(rows))
+    assert page == splice_block(page, "scale-tuning", st.markdown_section(rows))
 
 
 def test_the_csv_round_trips_to_the_same_bytes(rows):

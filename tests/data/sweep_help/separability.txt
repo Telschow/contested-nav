@@ -1,0 +1,18 @@
+usage: navkit sweep separability [-h] [--euroc-root EUROC_ROOT]
+                                 [--tumvi-root TUMVI_ROOT] [--seeds SEEDS]
+                                 [--csv CSV] [--from-csv FROM_CSV]
+                                 [--page PAGE] [--markdown]
+
+Honest returns after real-IMU outages against spoofs of several sizes, at the
+first GNSS gate.
+
+options:
+  -h, --help            show this help message and exit
+  --euroc-root EUROC_ROOT
+  --tumvi-root TUMVI_ROOT
+  --seeds SEEDS
+  --csv CSV             write one row per honest return
+  --from-csv FROM_CSV   rebuild the tables and page from a saved --csv file;
+                        no runs
+  --page PAGE           fill the separability blocks of this Markdown page
+  --markdown            print the tables

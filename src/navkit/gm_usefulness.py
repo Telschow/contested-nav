@@ -34,7 +34,7 @@ import numpy as np
 from . import candidate_gate as _gate
 from .b1_gate import format_seeds
 from .eval.candidate_gate import CANDIDATE_GATE_UPPER_QUANTILE, evaluate_scenario_gate
-from .gm_tuning import splice_section as _splice
+from .report.page import splice_block
 from .scale_tuning import check_seeds
 
 SCENARIO = "S2"
@@ -302,11 +302,6 @@ def markdown_section(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_section(page: str, text: str) -> str:
-    """``page`` with the text between this section's marker lines replaced by ``text``."""
-    return _splice(page, text, START, END)
-
-
 # --------------------------------------------------------------------------------------------- the command
 
 
@@ -334,7 +329,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"wrote {args.csv}", file=sys.stderr)
     if args.page is not None:
         page = args.page.read_text(encoding="utf-8")
-        args.page.write_text(splice_section(page, markdown_section(rows)), encoding="utf-8")
+        args.page.write_text(splice_block(page, "gm-s2-usefulness", markdown_section(rows)), encoding="utf-8")
         print(f"wrote the tables into {args.page}", file=sys.stderr)
     print(f"elapsed {time.perf_counter() - started:.1f} s", file=sys.stderr)
     return 0

@@ -12,6 +12,7 @@ import pytest
 
 from navkit import ensemble
 from navkit.eval.calibration import ensemble_nees_band
+from navkit.report.page import splice_block
 
 pytestmark = pytest.mark.docs_only
 
@@ -57,7 +58,7 @@ def _of(rows: list[dict], case: str) -> list[dict]:
 
 def test_the_page_table_is_the_committed_csv(rows):
     page = PAGE.read_text(encoding="utf-8")
-    assert page == ensemble.splice_table(page, ensemble.markdown_table(rows))
+    assert page == splice_block(page, "ensemble", ensemble.markdown_table(rows))
 
 
 def test_the_committed_file_is_the_documented_ensemble(rows):

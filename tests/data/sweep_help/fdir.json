@@ -1,0 +1,116 @@
+{
+ "description": "How often the FDIR chi-square gate rejects a healthy GNSS update, and how outcomes move with three constants.\n\n``navkit.fdir.gating`` states that the gate rejects a healthy update with probability ``alpha`` when the innovation\ncovariance is right. This module measures that, and reports it. It does not change any ``FdirConfig`` default.\n\n    navkit sweep fdir rate --csv docs/data/fdir_false_alarm.csv --page docs/faults.md\n    navkit sweep fdir sensitivity --csv docs/data/fdir_sensitivity.csv --page docs/faults.md\n\nPart A, ``rate``. Cases ``gnss_only`` (healthy GNSS throughout) and ``outage_control`` (healthy GNSS outside a 15 s\noutage), seeds 0 to 24. For every GNSS update the filter gated, the squared Mahalanobis distance of the innovation\nis recomputed from the ``(residual, S)`` the filter recorded before it decided, and compared with the same\nthreshold the gate uses. That is the per-update test, not a fault declaration. On ``outage_control`` the updates\ninside the outage do not exist, and the updates in the first ``SETTLE_S`` seconds after the return are reported\napart, because rejecting them is the gate working. Seeds 100 and up are reserved for the B1 gate (ADR-0028) and are\nrefused here.\n\nPart B, ``sensitivity``. The fault matrix of :mod:`navkit.fault_matrix`, seeds 0 to 4, with one of\n``max_consecutive_rejections``, ``reacq_consecutive_rejections`` and ``reacq_sigma_m`` at half and at double its\ndefault, the others at their defaults. Per cell: in how many seeds the gate rejected a measurement and in how many a\nchannel was declared faulty. The control rows are the no-fault false-alarm counts.\n\nBoth CSVs are synthetic evidence from a known-answer fixture, not field measurements.\n",
+ "prog": "navkit sweep fdir",
+ "actions": [
+  {
+   "flags": [],
+   "help": "rate: per-update false alarms; sensitivity: constants",
+   "default": "None",
+   "required": true,
+   "choices": [
+    "rate",
+    "sensitivity"
+   ],
+   "nargs": null,
+   "type": null,
+   "action": "_StoreAction"
+  },
+  {
+   "flags": [
+    "--compare"
+   ],
+   "help": "exit 1 unless the run matches this committed CSV (1e-6 relative)",
+   "default": "None",
+   "required": false,
+   "choices": null,
+   "nargs": null,
+   "type": "Path",
+   "action": "_StoreAction"
+  },
+  {
+   "flags": [
+    "--constants"
+   ],
+   "help": "sensitivity only: constants (default: all three)",
+   "default": "None",
+   "required": false,
+   "choices": null,
+   "nargs": "+",
+   "type": null,
+   "action": "_StoreAction"
+  },
+  {
+   "flags": [
+    "--csv"
+   ],
+   "help": "write the rows to this CSV",
+   "default": "None",
+   "required": false,
+   "choices": null,
+   "nargs": null,
+   "type": "Path",
+   "action": "_StoreAction"
+  },
+  {
+   "flags": [
+    "--faults"
+   ],
+   "help": "sensitivity only: fault ids (default: all)",
+   "default": "None",
+   "required": false,
+   "choices": null,
+   "nargs": "+",
+   "type": null,
+   "action": "_StoreAction"
+  },
+  {
+   "flags": [
+    "--markdown"
+   ],
+   "help": "print the tables",
+   "default": "False",
+   "required": false,
+   "choices": null,
+   "nargs": 0,
+   "type": null,
+   "action": "_StoreTrueAction"
+  },
+  {
+   "flags": [
+    "--page"
+   ],
+   "help": "rewrite this part's generated block in this page",
+   "default": "None",
+   "required": false,
+   "choices": null,
+   "nargs": null,
+   "type": "Path",
+   "action": "_StoreAction"
+  },
+  {
+   "flags": [
+    "--seeds"
+   ],
+   "help": "seeds 0 .. N-1 (default 25 for rate, 5 for sensitivity; never 100 and up)",
+   "default": "None",
+   "required": false,
+   "choices": null,
+   "nargs": null,
+   "type": "int",
+   "action": "_StoreAction"
+  },
+  {
+   "flags": [
+    "-h",
+    "--help"
+   ],
+   "help": "show this help message and exit",
+   "default": "'==SUPPRESS=='",
+   "required": false,
+   "choices": null,
+   "nargs": 0,
+   "type": null,
+   "action": "_HelpAction"
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+usage: navkit sweep faultclass [-h] [--euroc-root EUROC_ROOT]
+                               [--tumvi-root TUMVI_ROOT] [--seeds SEEDS]
+                               [--confirm] [--csv CSV] [--from-csv FROM_CSV]
+                               [--page PAGE] [--markdown]
+
+Can GNSS innovations separate multipath, spoofing and degradation?
+
+options:
+  -h, --help            show this help message and exit
+  --euroc-root EUROC_ROOT
+  --tumvi-root TUMVI_ROOT
+  --seeds SEEDS
+  --confirm             run (or with --from-csv, read) the confirmation design
+                        on unseen sizes and seeds, with the model frozen on
+                        the training CSV
+  --csv CSV             write one row per run
+  --from-csv FROM_CSV   rebuild the tables and page from a saved --csv file;
+                        no runs
+  --page PAGE           fill the faultclass blocks of this Markdown page
+  --markdown            print the tables

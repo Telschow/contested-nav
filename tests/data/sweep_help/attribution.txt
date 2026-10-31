@@ -1,0 +1,23 @@
+usage: navkit sweep attribution [-h] [--seeds SEEDS]
+                                [--growth-seeds GROWTH_SEEDS]
+                                [--fault-seeds FAULT_SEEDS]
+                                [--only {ablation,escalation,growth,fault}]
+                                [--csv CSV] [--from-csv FROM_CSV]
+                                [--page PAGE] [--markdown]
+
+Where the error of a GNSS outage comes from: remove, inflate and grow each
+inertial source.
+
+options:
+  -h, --help            show this help message and exit
+  --seeds SEEDS         seeds for the ablation and escalation (default: 8)
+  --growth-seeds GROWTH_SEEDS
+                        seeds for the growth test (default: 5)
+  --fault-seeds FAULT_SEEDS
+                        seeds for the bias fault (default: 6)
+  --only {ablation,escalation,growth,fault}
+  --csv CSV             write one row per run
+  --from-csv FROM_CSV   rebuild the tables and page from a saved --csv file;
+                        no runs
+  --page PAGE           fill the attribution blocks of this Markdown page
+  --markdown            print the tables

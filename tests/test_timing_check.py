@@ -12,6 +12,7 @@ import pytest
 from navkit import euroc_cli
 from navkit import euroc_eval as ee
 from navkit import timing_check as tc
+from navkit.report.page import write_block
 from navkit.tumvi_data import write_fixture as write_tumvi_fixture
 from navkit.types import ImuSample, Trajectory
 
@@ -117,7 +118,7 @@ def test_a_sequence_row_has_every_column_and_the_offset_displacement_follows_fro
 def test_the_csv_round_trips_and_the_table_comes_from_it(seq, tmp_path):
     rows = [tc.sequence_row(seq)]
     out = tmp_path / "t.csv"
-    tc.write_csv(out, rows)
+    tc.TABLE.write(out, rows)
     back = tc.rows_from_csv(out)
     assert tuple(back[0]) == tc.CSV_COLUMNS
     assert tc.table_markdown(back) == tc.table_markdown(rows)
@@ -127,11 +128,11 @@ def test_the_csv_round_trips_and_the_table_comes_from_it(seq, tmp_path):
 def test_the_page_block_is_replaced_and_a_page_without_markers_is_refused(tmp_path):
     page = tmp_path / "p.md"
     page.write_text("a\n<!-- timing:start -->\nold\n<!-- timing:end -->\nb\n")
-    tc.write_block(page, "NEW")
+    write_block(page, "timing", "NEW")
     assert page.read_text() == "a\n<!-- timing:start -->\n\nNEW\n\n<!-- timing:end -->\nb\n"
     page.write_text("nothing")
     with pytest.raises(ValueError, match="timing:start"):
-        tc.write_block(page, "x")
+        write_block(page, "timing", "x")
 
 
 def test_the_command_reports_a_tumvi_fixture_and_is_routed_from_navkit_euroc(tmp_path, capsys):

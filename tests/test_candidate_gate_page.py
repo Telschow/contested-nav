@@ -13,6 +13,7 @@ import pytest
 
 from navkit import candidate_gate as run
 from navkit.eval import candidate_gate as cg
+from navkit.report.page import splice_block
 
 pytestmark = pytest.mark.docs_only
 
@@ -36,7 +37,7 @@ def section() -> str:
 
 def test_the_page_table_is_the_committed_csv(rows):
     page = PAGE.read_text(encoding="utf-8")
-    assert page == run.splice_table(page, run.markdown_table(rows))
+    assert page == splice_block(page, "candidate-gate-dev", run.markdown_table(rows))
 
 
 def test_the_csv_round_trips_to_the_same_bytes(rows):

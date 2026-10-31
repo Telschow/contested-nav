@@ -16,6 +16,7 @@ from navkit import benchmark as bm
 from navkit import ensemble
 from navkit.eval.calibration import EnsembleNees, ensemble_nees, ensemble_nees_band
 from navkit.eval.statistics import chi2_ppf
+from navkit.report.page import splice_block
 
 # ------------------------------------------------------------------------------------------------- the band
 
@@ -251,4 +252,4 @@ def test_the_command_writes_the_csv_and_the_page_table_and_compares(tmp_path):
 
 def test_a_page_without_the_markers_is_refused():
     with pytest.raises(ValueError, match="needs the lines"):
-        ensemble.splice_table("no markers here", "x")
+        splice_block("no markers here", "ensemble", "x")

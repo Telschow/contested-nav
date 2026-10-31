@@ -89,7 +89,7 @@ def test_run_case_with_vision_on_a_synthetic_sequence(tmp_path):
 
 def test_csv_write_cli_rebuild_and_missing_markers(rows, tmp_path, capsys):
     out = tmp_path / "again.csv"
-    vr.write_csv(out, rows)
+    vr.TABLE.write(out, rows)
     assert sr.rows_from_csv(out) == rows
     assert vr.main(["--from-csv", str(out), "--markdown"]) == 0
     assert "Front end" in capsys.readouterr().out

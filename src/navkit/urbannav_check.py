@@ -29,7 +29,7 @@ import numpy as np
 
 from . import urbannav_data as ud
 from .recorded import SequenceError
-from .report.page import write_block as _write_page_block
+from .report.page import write_block
 
 CSV_COLUMNS = ("sequence", "quantity", "value", "unit")
 DEFAULT_ROOT = "data/raw/urbannav"
@@ -165,19 +165,12 @@ def table_markdown(rows: list[dict[str, Any]]) -> str:
 BLOCKS = {"urbannav-data": table_markdown}
 
 
-def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    """Write ``rows`` to ``path``, replacing the rows of those sequences and keeping the rows of any other."""
-    ud.csv_table(CSV_COLUMNS).merge(path, rows)
+TABLE = ud.csv_table(CSV_COLUMNS)
 
 
 def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
     with Path(path).open(newline="", encoding="utf-8") as fh:
         return list(csv.DictReader(fh))
-
-
-def write_block(path: str | Path, name: str, block: str) -> None:
-    """Replace the text between a block's markers in a Markdown page."""
-    _write_page_block(path, name, block)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -213,7 +206,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if args.csv:
         try:
-            write_csv(args.csv, rows)
+            TABLE.merge(args.csv, rows)
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1

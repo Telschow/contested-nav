@@ -23,13 +23,14 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from navkit import b1_gate
+from navkit.report.page import splice_block
 
 CSV = ROOT / "docs" / "data" / "b1_gate_heldout.csv"
 PAGE = ROOT / "docs" / "calibration.md"
 CONSTRAINTS = ROOT / "CONSTRAINTS.md"
 
-PAGE_MARKERS = ("<!-- b1-gate-heldout:start -->", "<!-- b1-gate-heldout:end -->")
-STATUS_MARKERS = ("<!-- b1-heldout-status:start -->", "<!-- b1-heldout-status:end -->")
+PAGE_BLOCK = "b1-gate-heldout"
+STATUS_BLOCK = "b1-heldout-status"
 
 #: Which condition of the ADR-0028 Decision each row of the table is.
 ADR_CONDITION = {
@@ -74,19 +75,10 @@ def status_text(rows: list[dict]) -> str:
     return FAILED.format(conditions=named)
 
 
-def splice(text: str, markers: tuple[str, str], block: str) -> str:
-    start, end = markers
-    if start not in text or end not in text or text.index(start) > text.index(end):
-        raise ValueError(f"the document needs the lines {start} and {end}, in that order")
-    head, rest = text.split(start, 1)
-    _, tail = rest.split(end, 1)
-    return f"{head}{start}\n\n{block}\n\n{end}{tail}"
-
-
 def render(rows: list[dict], page: str, constraints: str) -> tuple[str, str]:
     return (
-        splice(page, PAGE_MARKERS, b1_gate.markdown_table(rows)),
-        splice(constraints, STATUS_MARKERS, status_text(rows)),
+        splice_block(page, PAGE_BLOCK, b1_gate.markdown_table(rows)),
+        splice_block(constraints, STATUS_BLOCK, status_text(rows)),
     )
 
 
