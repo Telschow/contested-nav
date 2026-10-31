@@ -814,3 +814,62 @@ def test_a_page_needs_a_csv_to_be_filled_from(canyon, tmp_path, capsys):
     page.write_text("x\n", encoding="utf-8")
     assert ur.main(["--root", str(canyon), "--sequence", DEEP, "--page", str(page)]) == 2
     assert "--page needs --csv or --from-csv" in capsys.readouterr().err
+
+
+# ------------------------------------------------------------------ the correlated-error variants (issue #244)
+
+
+@pytest.fixture(scope="module")
+def aided_gm(canyon_built: Any) -> dict[str, dict[str, Any]]:
+    seq, gnss, spans, info = canyon_built
+    return {v: ur.run_once(seq, gnss, spans, info, seed=0, variant=v) for v in ur.GM_VARIANTS}
+
+
+def test_the_correlated_error_settings_are_declared_in_code_and_in_the_table():
+    assert (
+        float(ur.DECLARED_GM["gnss_gm_tau_s"][0]),
+        float(ur.DECLARED_GM["gnss_gm_sigma_m"][0]),
+    ) == (ur.GM_TAU_S, ur.GM_SIGMA_M)
+    assert ur.GM_TAU_S > 0.0 and ur.GM_SIGMA_M > 0.0
+    assert "gnss_gm_tau_s" in ur.declared_gm_markdown() and "gnss_gm_sigma_m" in ur.declared_gm_markdown()
+
+
+def test_the_default_variants_and_declared_table_do_not_change():
+    assert ur.VARIANTS == ("declared", "per_fix")
+    assert set(ur.GM_VARIANTS).isdisjoint(ur.ALL_VARIANTS)
+    assert ur.variants_for([]) == ur.VARIANTS
+    assert not any("_gm" in k for k in ur.DECLARED)
+
+
+def test_the_run_options_without_the_term_serialise_as_before_and_with_it_carry_it():
+    from navkit.euroc_eval import RunOptions
+
+    assert "gnss_gm" not in RunOptions().as_dict()
+    assert RunOptions(gnss_gm=(30.0, 1.5)).as_dict()["gnss_gm"] == [30.0, 1.5]
+
+
+def test_a_correlated_variant_reports_the_same_rows_as_the_aided_run(aided_gm, aided):
+    for v, r in aided_gm.items():
+        assert set(r) == set(aided[v.removesuffix("_gm")]), v
+        assert r["variant"] == v
+    rows = ur.rows_for(DEEP, list(aided_gm.values()))
+    assert {r["quantity"] for r in rows} == {k for k, _, _ in ur.AIDED_QUANTITIES}
+
+
+def test_the_term_changes_the_filter_and_the_plain_variants_are_untouched(aided_gm, aided, canyon_built):
+    seq, gnss, spans, info = canyon_built
+    again = ur.run_once(seq, gnss, spans, info, seed=0, variant="declared")
+    assert again == aided["declared"]
+    assert aided_gm["declared_gm"]["hor_nees_mean"] != aided["declared"]["hor_nees_mean"]
+
+
+def test_main_runs_only_the_correlated_variants_on_request_and_refuses_an_outage_sequence(
+    canyon, tunnel, tmp_path, monkeypatch, capsys
+):
+    monkeypatch.setattr(ur, "SEEDS", (0,))
+    out = tmp_path / "gm.csv"
+    assert ur.main(["--root", str(canyon), "--sequence", DEEP, "--gnss-gm", "--csv", str(out)]) == 0
+    rows = ur.rows_from_csv(out)
+    assert {r["variant"] for r in rows} == set(ur.GM_VARIANTS)
+    assert ur.main(["--root", str(tunnel), "--gnss-gm"]) == 1
+    assert "aided" in capsys.readouterr().err

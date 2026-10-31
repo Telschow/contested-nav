@@ -104,6 +104,24 @@ DECLARED: dict[str, tuple[str, str]] = {
     ),
 }
 VARIANTS = ("declared", "per_fix")
+#: The optional time-correlated GNSS error term (issue #244, in the style of ADR-0034; ADR-0041). Declared here, before
+#: any run, and not changed after one. The values are those of the synthetic study of issue #183
+#: (``correlated_gnss_study``), which were declared before that study was run, and not a fit to this data. The
+#: receiver's own sigma stays the white part of each fix, and this amplitude is added on top of it.
+GM_TAU_S = 30.0
+GM_SIGMA_M = 1.5
+#: The aided variants with the term on: the declared and the per-fix variant with the same settings otherwise. They are
+#: not in :data:`VARIANTS`, so the default run, the committed CSV and the page are unchanged. ``--gnss-gm`` runs them.
+GM_VARIANTS = ("declared_gm", "per_fix_gm")
+DECLARED_GM: dict[str, tuple[str, str]] = {
+    "gnss_gm_tau_s": (f"{GM_TAU_S:g}", "s: correlation time of the first-order Gauss-Markov GNSS error, declared"),
+    "gnss_gm_sigma_m": (
+        f"{GM_SIGMA_M:g}",
+        "m per axis: stationary standard deviation of that error, added to the receiver's own sigma, declared",
+    ),
+    "variant: declared_gm": ("declared + term", "the declared variant with the correlated-error term on"),
+    "variant: per_fix_gm": ("per_fix + term", "the per-fix variant with the correlated-error term on"),
+}
 #: Diagnostics that separate where the outage error comes from. They use the reference, so they are not filters.
 ORACLE_VARIANTS = ("oracle_tilt", "oracle_yaw", "oracle_attitude")
 ALL_VARIANTS = VARIANTS + ORACLE_VARIANTS
@@ -420,7 +438,8 @@ def run_once(
         outages=tuple((a - t0, b - a) for a, b in spans),
         seed=seed,
         init_bias="static",
-        gnss_per_fix_covariance=variant == "per_fix",
+        gnss_per_fix_covariance=variant in ("per_fix", "per_fix_gm"),
+        gnss_gm=(GM_TAU_S, GM_SIGMA_M) if variant in GM_VARIANTS else None,
     )
     inn: list[tuple[float, np.ndarray, np.ndarray]] = []
     detail: dict[str, Any] = {}
@@ -667,6 +686,12 @@ def declared_markdown(_rows: list[dict[str, Any]] | None = None) -> str:
     return "\n".join(lines)
 
 
+def declared_gm_markdown() -> str:
+    lines = ["| Setting | Value | Meaning |", "|---|---|---|"]
+    lines += [f"| {k} | {v} | {m} |" for k, (v, m) in DECLARED_GM.items()]
+    return "\n".join(lines)
+
+
 def rows_of(rows: list[dict[str, Any]], sequence: str) -> list[dict[str, Any]]:
     """The rows of one sequence. A block never shows another sequence's rows."""
     return [r for r in rows if r["sequence"] == sequence]
@@ -772,6 +797,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--csv", default=None, help="write one row per seed and quantity; other sequences' rows in the file are kept"
     )
+    p.add_argument(
+        "--gnss-gm",
+        action="store_true",
+        help="run the aided sequence with the correlated GNSS error term (ADR-0041) instead of the usual variants",
+    )
     p.add_argument("--from-csv", default=None, help="rebuild the tables from a saved CSV; runs nothing")
     p.add_argument(
         "--page",
@@ -803,8 +833,12 @@ def main(argv: list[str] | None = None) -> int:
             )
             if not spans:
                 print(f"{args.sequence}: no outage, so this is the aided run. {ORACLE_NOT_APPLICABLE}", file=sys.stderr)
+            if args.gnss_gm and spans:
+                raise SequenceError(
+                    f"{args.sequence} has an outage: --gnss-gm is for the aided run, a sequence without one"
+                )
             results = []
-            for variant in variants_for(spans):
+            for variant in GM_VARIANTS if args.gnss_gm else variants_for(spans):
                 for seed in SEEDS:
                     results.append(run_once(seq, gnss, spans, info, seed, variant))
                     print(f"{variant} seed {seed} done", file=sys.stderr)
@@ -827,7 +861,11 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
-    if not (args.csv or args.page):
+    if args.gnss_gm and not (args.csv or args.page):
+        print(
+            declared_gm_markdown() + "".join(f"\n\n{v}\n\n{run_markdown(rows, v, args.sequence)}" for v in GM_VARIANTS)
+        )
+    elif not (args.csv or args.page):
         print(
             declared_markdown()
             + "".join(f"\n\n{v}\n\n{run_markdown(rows, v, args.sequence)}" for v in VARIANTS)
