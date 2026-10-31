@@ -128,7 +128,7 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 | `vision_gm_error` | none | `False` | A Gauss-Markov model of the temporally correlated part of the visual measurement error, as two more vector states in the stochastic clone ([ADR-0034](adr/0034-a-gauss-markov-model-of-the-correlated-visual-error.md)). Applies only to `vision_model='clone'`. It is refused together with `vision_adaptive_scale`, and the benchmark refuses it together with a noise preset. Off, every output is unchanged. |
 | `vision_gm_tau_s` | s | `1.0` | Correlation time of the two Gauss-Markov states. A placeholder inside the grid of ADR-0034, to be fixed by the tuning package. Must be finite and positive. |
 | `vision_gm_rho` | none | `0.5` | Share of the declared visual error variance that is correlated. A placeholder, as above. Must be strictly between 0 and 1. |
-| `gnss_gm_error` | none | `False` | Adds three Gauss-Markov states for a time-correlated GNSS position error (issue #244, ADR-0041). Off by default. Refused together with `vision_gm_error`. |
+| `gnss_gm_error` | none | `False` | Adds three Gauss-Markov states for a time-correlated GNSS position error (see ADR-0041). Off by default. Refused together with `vision_gm_error`. |
 | `gnss_gm_tau_s` | s | `30.0` | Correlation time of the GNSS error states. A placeholder until a run declares it. Must be finite and positive. |
 | `gnss_gm_sigma_m` | m | `1.5` | Stationary standard deviation per axis, added to the receiver sigma. A placeholder, as above. Must be finite and positive. |
 
