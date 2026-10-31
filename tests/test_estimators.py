@@ -1083,7 +1083,11 @@ def test_eskf_config_as_dict_covers_every_field() -> None:
 
     cfg = EskfConfig(imu_noise=ImuNoiseModel())
     declared = {f.name for f in dataclasses.fields(EskfConfig)}
-    assert declared - set(cfg.as_dict()) == set()
+    # The GNSS Gauss-Markov settings (#244) are listed only when the model is on, so the hash of every existing
+    # config stays what it was. Off, they cannot change the filter; on, all three must be listed.
+    gnss_gm = {"gnss_gm_error", "gnss_gm_tau_s", "gnss_gm_sigma_m"}
+    assert declared - set(cfg.as_dict()) == gnss_gm
+    assert gnss_gm <= set(EskfConfig(imu_noise=ImuNoiseModel(), gnss_gm_error=True).as_dict())
 
 
 def test_eskf_config_gravity_changes_serialised_config() -> None:
