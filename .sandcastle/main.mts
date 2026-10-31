@@ -1,4 +1,4 @@
-// Parallel Planner with Review — four-phase orchestration loop
+// Parallel Planner with Review: four-phase orchestration loop
 //
 // This template drives a multi-phase workflow:
 //   Phase 1 (Plan):             A sonnet agent analyzes open issues, builds a
@@ -27,7 +27,7 @@ import { z } from "zod";
 
 // The planner emits its plan as JSON inside <plan> tags; Output.object extracts
 // and validates it against this schema. We use Zod here, but any Standard
-// Schema validator works just as well — Valibot, ArkType, etc. See
+// Schema validator works just as well, Valibot, ArkType, etc. See
 // https://standardschema.dev.
 const planSchema = z.object({
   issues: z.array(
@@ -75,7 +75,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   // builds a dependency graph, and selects the issues that can be worked in
   // parallel right now (i.e., no blocking dependencies on other open issues).
   //
-  // It outputs a <plan> JSON block — Output.object parses and validates it.
+  // It outputs a <plan> JSON block: Output.object parses and validates it.
   // -------------------------------------------------------------------------
   const plan = await sandcastle.run({
     hooks,
@@ -89,14 +89,14 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     promptFile: "./.sandcastle/plan-prompt.md",
     // Extract and validate the <plan> JSON into a typed object. Throws
     // StructuredOutputError if the tag is missing, the JSON is malformed, or
-    // validation fails — which aborts the loop.
+    // validation fails: which aborts the loop.
     output: sandcastle.Output.object({ tag: "plan", schema: planSchema }),
   });
 
   const issues = plan.output.issues;
 
   if (issues.length === 0) {
-    // No unblocked work — either everything is done or everything is blocked.
+    // No unblocked work: either everything is done or everything is blocked.
     console.log("No unblocked issues to work on. Exiting.");
     break;
   }
@@ -198,7 +198,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   }
 
   if (completedBranches.length === 0) {
-    // All agents ran but none made commits — nothing to merge this cycle.
+    // All agents ran but none made commits: nothing to merge this cycle.
     console.log("No commits produced. Nothing to merge.");
     continue;
   }
