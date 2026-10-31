@@ -41,6 +41,12 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+      - id: docs-fast
+        name: documentation numbers (make docs-fast)
+        entry: make docs-fast
+        language: system
+        files: ^(README\.md|CLAUDE\.md|CONSTRAINTS\.md|docs/.*\.md)$
+        pass_filenames: false
       - id: scan-secrets
         name: scan tracked files for credential-shaped strings
         entry: python scripts/scan_secrets.py

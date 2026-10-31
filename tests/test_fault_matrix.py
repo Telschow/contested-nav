@@ -165,6 +165,7 @@ def test_the_command_refuses_bad_arguments() -> None:
         cli.main(["sweep", "faults", "--faults", "nope", "--seeds", "2"])
 
 
+@pytest.mark.rerun
 def test_compare_exits_nonzero_when_the_result_differs(tmp_path: Path) -> None:
     csv_path = tmp_path / "f.csv"
     args = ["sweep", "faults", "--faults", "gnss_multipath_spike", "--seeds", "2"]
@@ -207,8 +208,14 @@ def test_the_page_table_is_the_committed_csv() -> None:
 
 
 def test_a_page_without_markers_is_refused() -> None:
-    with pytest.raises(ValueError, match="markers"):
+    with pytest.raises(ValueError, match="in that order"):
         fault_matrix.splice_table("no markers", "x")
+
+
+def test_a_page_with_reversed_markers_is_refused() -> None:
+    page = "<!-- faults:end -->\n<!-- faults:start -->"
+    with pytest.raises(ValueError, match="in that order"):
+        fault_matrix.splice_table(page, "x")
 
 
 def test_the_csv_has_a_control_for_every_base_and_a_row_for_every_fault_level() -> None:

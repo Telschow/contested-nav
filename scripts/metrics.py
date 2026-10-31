@@ -81,8 +81,9 @@ LIVE_DIRS = ("docs",)
 HISTORY = ("docs/releases/",)
 
 MARKER = re.compile(r"<!--\s*metric:(\w+)\s*-->(.*?)<!--\s*/metric\s*-->")
+# A number after a hyphen is part of an identifier ("ADR-0028, ADR-0030"), not a count.
 HAND_TYPED = re.compile(
-    r"\b\d[\d,]*\s+(?:tests?\b|ADRs?\b|collected\b|passed\b|passing\b)|\b\d+(?:\.\d+)?%\s+line coverage",
+    r"(?<![\w-])\d[\d,]*\s+(?:tests?\b|ADRs?\b|collected\b|passed\b|passing\b)|\b\d+(?:\.\d+)?%\s+line coverage",
     re.IGNORECASE,
 )
 

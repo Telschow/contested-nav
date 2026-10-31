@@ -7,10 +7,12 @@ coverage). Synthetic evidence only unless a results row says otherwise.
 
 ## Commands
 - Install: `python -m venv .venv && .venv/bin/pip install -e ".[dev]"`
-- Tests: `.venv/bin/python -m pytest -q` (about 4 to 5 min)
+- Tests: `.venv/bin/python -m pytest -q` (the full suite; run it once at the end)
+- Documentation numbers: `make docs-fast` (counts, quoted numbers, page tests; skips the study re-runs and the benchmark tables, which `make docs-check` covers)
 - Lint/format/types: `ruff check src tests scripts`, `ruff format --check src tests scripts`, `mypy src --ignore-missing-imports`
 - Benchmark tables: `navkit run --markdown`; doc check: `python scripts/check_doc_tables.py`
-- Coverage: `python scripts/coverage_report.py`
+- Coverage: `python scripts/coverage_report.py`; `make check` runs lint, SRS trace, tests and the coverage ratchet
+- Worktree: `git fetch origin main && git worktree add ../wt-N -b <branch> origin/main`. It has no `.venv`: run tools from the main checkout's `.venv` with `PYTHONPATH=src`, and pass `PYTHON=<main>/.venv/bin/python` to `make`. Give the code review the branch name, or it reads the main checkout.
 
 ## Invariants (see CONSTRAINTS.md)
 - Runtime deps stay numpy, matplotlib, pyyaml (S1). No vendored third-party data (S2).
@@ -26,6 +28,7 @@ coverage). Synthetic evidence only unless a results row says otherwise.
 
 ## Workflow
 - Small PRs, each with tests, green CI before merge.
+- Sandcastle is the exception (`.sandcastle/`). Label an issue `Sandcastle` and its merger pushes straight to `main` after ruff, mypy and `make docs-fast`. The full suite runs on `main` afterwards, so a red `main` is fixed first. Maintainer decision, 2026-10-30.
 - Decisions get an ADR; the maintainer writes the decision section.
 - Ask before: force-push, history rewrite, deleting docs other pages link to, tagging releases.
 

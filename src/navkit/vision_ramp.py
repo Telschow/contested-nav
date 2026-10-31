@@ -19,6 +19,7 @@ from typing import Any
 
 from . import slow_ramp as sr
 from .euroc_eval import dataset_loader, list_sequence_dirs
+from .report.table import Column, Table
 
 FRONT_ENDS: dict[str, dict[str, Any]] = {
     "independent": {"vision": "clone", "vision_corr_s": 0.0, "vision_noise_scale": 1.0},
@@ -26,6 +27,8 @@ FRONT_ENDS: dict[str, dict[str, Any]] = {
 }
 SETTINGS = {"euroc": ("walk10",), "tumvi": ("file-walk10",)}
 CSV_COLUMNS = ("front_end", *sr.CSV_COLUMNS)
+# The committed docs/data/vision_ramp.csv has CRLF line ends.
+TABLE = Table(tuple(Column(n, str, optional=True) for n in CSV_COLUMNS), key="front_end", lineterminator="\r\n")
 
 
 def sweep_rows(dataset: str, root: str | Path, configs: tuple[str, ...], seeds: int) -> list[dict[str, Any]]:
@@ -81,14 +84,7 @@ BLOCKS = {
 
 
 def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    import csv
-
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
-        writer.writeheader()
-        writer.writerows(rows)
+    TABLE.write(path, rows)
 
 
 def build_parser() -> argparse.ArgumentParser:

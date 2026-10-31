@@ -64,7 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -79,7 +79,8 @@ jobs:
       - name: Test
         # The 3.13 leg runs the suite under the coverage tracer in the next step, so it does not run it twice.
         if: needs.changes.outputs.code == 'true' && matrix.python-version != '3.13'
-        run: python -m pytest -q
+        # Four vCPU on a public-repository Linux runner. `loadfile` builds each module-scoped fixture once per file.
+        run: python -m pytest -q -n auto --dist loadfile --durations=25
 
       - name: Coverage ratchet
         # This step is the test run of the 3.13 leg. Fails if any module drops below its floor, or if
@@ -114,7 +115,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
           cache: pip
@@ -128,7 +129,8 @@ jobs:
 
       - name: Test
         if: needs.changes.outputs.code == 'true'
-        run: python -m pytest -q
+        # Four vCPU on windows-latest and three on macos-latest, for a public repository.
+        run: python -m pytest -q -n ${{ matrix.os == 'macos-latest' && '3' || 'auto' }} --dist loadfile --durations=25
 
   lint:
     name: lint
@@ -136,7 +138,7 @@ jobs:
     needs: [changes]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
           cache: pip
@@ -191,7 +193,7 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
       - run: python -m pip install --upgrade pip build
@@ -226,7 +228,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
           cache: pip
@@ -260,7 +262,7 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
           cache: pip
@@ -310,31 +312,38 @@ jobs:
           python scripts/run_benchmark.py --out /tmp/bench.json
           python scripts/check_doc_tables.py --results /tmp/bench.json
 
-  sweeps:
-    name: sweep reproducibility
+  sweeps-legs:
+    name: sweep reproducibility (${{ matrix.leg }})
     runs-on: ubuntu-latest
     needs: [changes, lint]
-    if: needs.changes.outputs.code == 'true'
     # Three seeds, not ten. This job exists to catch an unseeded draw or a
     # broken sweep, not to regenerate the published distributions -- those take
     # minutes and their results are committed under results/, which is
     # gitignored. A full 8- or 10-scene run here would triple CI time to check
     # something the unit tests already cover.
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: [twice, mismatch, fault-matrix, fdir]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - if: needs.changes.outputs.code == 'true'
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
           cache: pip
           cache-dependency-path: pyproject.toml
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[dev]"
+      - if: needs.changes.outputs.code == 'true'
+        run: python -m pip install --upgrade pip
+      - if: needs.changes.outputs.code == 'true'
+        run: python -m pip install -e ".[dev]"
 
       - name: The sweeps run twice and must agree
         # The two sweeps vary different axes -- sensor noise and trajectory --
         # so a silent unseeded draw in either would make a published spread
         # unreproducible while still looking plausible. Two runs and a diff
         # catches that for the price of one extra sweep.
+        if: needs.changes.outputs.code == 'true' && matrix.leg == 'twice'
         run: |
           for script in seed_sweep scene_sweep; do
             python scripts/$script.py --seeds 3 --out /tmp/${script}_1.json
@@ -384,10 +393,12 @@ jobs:
         # tested against that file. This reruns the default grid and fails if the file no
         # longer matches, so a change that moves the result cannot leave the page describing
         # the old one. Numbers are compared to 1e-6 relative, as in ADR-0009.
+        if: needs.changes.outputs.code == 'true' && matrix.leg == 'mismatch'
         run: python scripts/mismatch_sweep.py --out /tmp/mismatch_full.json --compare docs/data/mismatch_sweep.csv
 
       - name: The committed fault matrix matches a fresh run
         # Same idea for docs/faults.md and docs/data/fault_matrix.csv.
+        if: needs.changes.outputs.code == 'true' && matrix.leg == 'fault-matrix'
         run: python scripts/fault_matrix.py --out /tmp/fault_full.json --compare docs/data/fault_matrix.csv
 
       - name: The committed FDIR false-alarm and sensitivity CSVs match a fresh reduced run
@@ -396,6 +407,7 @@ jobs:
         # the false-alarm rate on seeds 0 to 2 (the per-seed rows are compared, the pooled rows only when the seeds
         # match) and the sensitivity sweep on one fault and one constant at the full five seeds. The two runs must
         # also agree byte for byte. Numbers are compared to 1e-6 relative, as in ADR-0009.
+        if: needs.changes.outputs.code == 'true' && matrix.leg == 'fdir'
         run: |
           for n in 1 2; do
             python scripts/fdir_false_alarm.py rate --seeds 3 --csv /tmp/fdir_rate_$n.csv --compare docs/data/fdir_false_alarm.csv
@@ -404,26 +416,58 @@ jobs:
           cmp /tmp/fdir_rate_1.csv /tmp/fdir_rate_2.csv
           cmp /tmp/fdir_sens_1.csv /tmp/fdir_sens_2.csv
 
-  ensemble:
-    name: ensemble reproducibility
+  sweeps:
+    # Keeps the check name that branch protection waits on. The legs above run as a matrix; this job passes only when
+    # every leg succeeded. `always()` makes it run when a leg failed or was skipped, and the explicit result check
+    # turns that into a failure, so a skipped leg is never reported as a pass. A docs-only pull request needs no
+    # legs: their steps are skipped and they report success, and a lint failure that skips them is reported by lint.
+    name: sweep reproducibility
+    runs-on: ubuntu-latest
+    needs: [changes, sweeps-legs]
+    if: always()
+    steps:
+      - name: Every sweep leg passed
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          CODE: ${{ needs.changes.outputs.code }}
+          LEGS: ${{ needs.sweeps-legs.result }}
+        run: |
+          if [ "$CHANGES" != "success" ]; then
+            echo "the changes job did not succeed: $CHANGES"
+            exit 1
+          fi
+          if [ "$CODE" = "true" ] && [ "$LEGS" != "success" ]; then
+            echo "sweep legs: $LEGS"
+            exit 1
+          fi
+
+  ensemble-legs:
+    name: ensemble reproducibility (${{ matrix.leg }})
     runs-on: ubuntu-latest
     needs: [changes, lint]
-    if: needs.changes.outputs.code == 'true'
     # One run of the 25-seed ensemble, in parallel with the other jobs. docs/calibration.md is generated from
     # docs/data/ensemble_nees.csv and tested against it; this fails if the file no longer matches a fresh run.
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: [ensemble, start-draw, correlated-gnss, development-gate, candidate-gate]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - if: needs.changes.outputs.code == 'true'
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
           cache: pip
           cache-dependency-path: pyproject.toml
-      - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[dev]"
+      - if: needs.changes.outputs.code == 'true'
+        run: python -m pip install --upgrade pip
+      - if: needs.changes.outputs.code == 'true'
+        run: python -m pip install -e ".[dev]"
 
       - name: The committed ensemble matches a fresh run
         # Text and integers must match exactly. Floats are compared to 1e-6 relative, as in ADR-0009, because
         # the runner is not the machine that wrote the file and the last digits of a float can differ across platforms.
+        if: needs.changes.outputs.code == 'true' && matrix.leg == 'ensemble'
         run: |
           python scripts/seed_sweep.py --seeds 25 --out /tmp/ensemble_sweep.json \
             --ensemble-compare docs/data/ensemble_nees.csv \
@@ -431,11 +475,18 @@ jobs:
 
       - name: The committed start-draw study matches a fresh run
         # Development seeds 0 to 9 only (issue #168). Text and seeds exactly, floats to 1e-6 relative.
+        if: needs.changes.outputs.code == 'true' && matrix.leg == 'start-draw'
         run: navkit sweep start-draw --csv /tmp/start_draw_study.csv --compare docs/data/start_draw_study.csv
+
+      - name: The committed correlated-GNSS study matches a fresh run
+        # Development seeds 0 to 9 only (issue #183). Text and counts exactly, floats to 1e-6 relative.
+        if: needs.changes.outputs.code == 'true' && matrix.leg == 'correlated-gnss'
+        run: navkit sweep correlated-gnss --csv /tmp/correlated_gnss.csv --compare docs/data/correlated_gnss.csv
 
       - name: The committed development gate matches a fresh run
         # The B1 gate of ADR-0028 on the development seeds 0 to 24, once. Never the held-out seeds 100 to 124: they
         # are single use. The same comparison as above: text, integers and flags exactly, floats to 1e-6 relative.
+        if: needs.changes.outputs.code == 'true' && matrix.leg == 'development-gate'
         run: |
           navkit gate b1 --seeds 0-24 --csv /tmp/b1_gate_dev.csv
           python - <<'PY'
@@ -461,6 +512,32 @@ jobs:
         # sizes (seeds 25 to 99) that its simulated properties draw from. Held-out blocks (from seed 125) are
         # never run here: the command refuses them without --held-out, and CI does not pass it. Text, integers and
         # flags must match exactly; floats to 1e-6 relative.
+        if: needs.changes.outputs.code == 'true' && matrix.leg == 'candidate-gate'
         run: |
           navkit gate n-eff-pool --csv /tmp/gate_n_eff_pool.csv --compare docs/data/gate_n_eff_pool.csv
           navkit gate candidate --seeds 25-49 --csv /tmp/candidate_gate_dev.csv --compare docs/data/candidate_gate_dev.csv
+
+  ensemble:
+    # Keeps the check name that branch protection waits on. The legs above run as a matrix; this job passes only when
+    # every leg succeeded. `always()` makes it run when a leg failed or was skipped, and the explicit result check
+    # turns that into a failure, so a skipped leg is never reported as a pass. A docs-only pull request needs no
+    # legs: their steps are skipped and they report success, and a lint failure that skips them is reported by lint.
+    name: ensemble reproducibility
+    runs-on: ubuntu-latest
+    needs: [changes, ensemble-legs]
+    if: always()
+    steps:
+      - name: Every ensemble leg passed
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          CODE: ${{ needs.changes.outputs.code }}
+          LEGS: ${{ needs.ensemble-legs.result }}
+        run: |
+          if [ "$CHANGES" != "success" ]; then
+            echo "the changes job did not succeed: $CHANGES"
+            exit 1
+          fi
+          if [ "$CODE" = "true" ] && [ "$LEGS" != "success" ]; then
+            echo "ensemble legs: $LEGS"
+            exit 1
+          fi

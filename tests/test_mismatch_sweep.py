@@ -213,8 +213,14 @@ def test_the_page_table_is_the_committed_csv() -> None:
 
 
 def test_a_page_without_markers_is_refused() -> None:
-    with pytest.raises(ValueError, match="markers"):
+    with pytest.raises(ValueError, match="in that order"):
         mismatch_sweep.splice_table("no markers", "x")
+
+
+def test_a_page_with_reversed_markers_is_refused() -> None:
+    page = "<!-- mismatch:end -->\n<!-- mismatch:start -->"
+    with pytest.raises(ValueError, match="in that order"):
+        mismatch_sweep.splice_table(page, "x")
 
 
 def test_the_grid_has_the_scale_one_row_for_each_case() -> None:
