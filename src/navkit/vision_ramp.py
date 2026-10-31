@@ -84,10 +84,6 @@ BLOCKS = {
 }
 
 
-def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    TABLE.write(path, rows)
-
-
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="navkit sweep vision-ramp", description="Slow-ramp GNSS spoofs with a simulated visual second source."
@@ -111,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
         for ds, root in (("euroc", args.euroc_root), ("tumvi", args.tumvi_root)):
             rows += sweep_rows(ds, root, SETTINGS[ds], args.seeds)
     if args.csv:
-        write_csv(args.csv, rows)
+        TABLE.write(args.csv, rows)
         print(f"wrote {args.csv}", file=sys.stderr)
     tables = {name: fn(rows) for name, fn in BLOCKS.items()}
     if args.page:

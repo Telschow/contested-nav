@@ -315,15 +315,6 @@ def cell_row(cell: dict[str, Any]) -> dict[str, Any]:
     return row
 
 
-def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
-    TABLE.write(path, rows)
-
-
-def read_csv(path: Path) -> list[dict[str, Any]]:
-    """Read a CSV written by :func:`write_csv`; empty float cells come back as ``None``."""
-    return TABLE.read(path)
-
-
 def compare_rows(
     got: list[dict[str, Any]], want: list[dict[str, Any]], rel_tol: float = 1e-6, abs_tol: float = 1e-9
 ) -> list[str]:
@@ -522,7 +513,7 @@ def main(argv: list[str] | None = None) -> int:
     args.out.write_text(json.dumps(_jsonable(payload), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"wrote {args.out}", file=sys.stderr)
     if args.csv is not None:
-        write_csv(args.csv, flat)
+        TABLE.write(args.csv, flat)
         print(f"wrote {args.csv}", file=sys.stderr)
     if args.page is not None:
         page_text = splice_block(args.page.read_text(encoding="utf-8"), "faults", markdown_table(flat))
@@ -533,9 +524,9 @@ def main(argv: list[str] | None = None) -> int:
         print(markdown_table(flat))
     if args.compare is not None:
         tmp = args.out.with_suffix(".compare.csv")
-        write_csv(tmp, flat)
+        TABLE.write(tmp, flat)
         try:
-            problems = compare_rows(read_csv(tmp), read_csv(args.compare))
+            problems = compare_rows(TABLE.read(tmp), TABLE.read(args.compare))
         finally:
             tmp.unlink(missing_ok=True)
         if problems:

@@ -45,6 +45,7 @@ import yaml
 from .benchmark import default_config_path, run_case
 from .io.imu import DEFAULT_NOISE
 from .report.page import write_block
+from .report.table import Column, Table
 from .types import ImuSample
 
 CASE = "outage_control"
@@ -354,13 +355,8 @@ BLOCKS: dict[str, Callable[[list[dict[str, Any]]], str]] = {
 # ----------------------------------------------------------------------- I/O
 
 
-def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
-        writer.writeheader()
-        writer.writerows(rows)
+# The committed CSV has CRLF line ends.
+TABLE = Table(tuple(Column(n, str, optional=True) for n in CSV_COLUMNS), key="case", lineterminator="\r\n")
 
 
 def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
@@ -401,7 +397,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{name} ...", file=sys.stderr, flush=True)
             rows += steps[name]()
     if args.csv:
-        write_csv(args.csv, rows)
+        TABLE.write(args.csv, rows)
         print(f"wrote {args.csv}", file=sys.stderr)
     have = {r["experiment"] for r in rows}
     needs = {

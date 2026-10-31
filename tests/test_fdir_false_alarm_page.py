@@ -235,7 +235,7 @@ def test_the_half_and_double_values_are_the_live_defaults_scaled(sens_rows):
 
 
 def test_the_counts_at_the_defaults_are_the_fault_matrix_counts(sens_rows):
-    matrix = fault_matrix.read_csv(MATRIX_CSV)
+    matrix = fault_matrix.TABLE.read(MATRIX_CSV)
     want = {(m["fault"], m["base"], m["level"]): (m["detected_n"], m["declared_n"]) for m in matrix}
     got = {
         (r["fault"], r["base"], r["level"]): (r["detected_n"], r["declared_n"])

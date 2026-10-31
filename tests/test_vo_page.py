@@ -19,17 +19,17 @@ PAGE = ROOT / "docs" / "real_front_end.md"
 
 @pytest.fixture(scope="module")
 def rows():
-    return ve.read_csv(ROOT / "docs" / "data" / "vo_errors.csv")
+    return ve.read_table(ROOT / "docs" / "data" / "vo_errors.csv")
 
 
 @pytest.fixture(scope="module")
 def clone():
-    return ve.read_csv(ROOT / "docs" / "data" / "vo_clone_check.csv")
+    return ve.read_table(ROOT / "docs" / "data" / "vo_clone_check.csv")
 
 
 @pytest.fixture(scope="module")
 def wide():
-    return ve.read_csv(ROOT / "docs" / "data" / "vo_wide.csv")
+    return ve.read_table(ROOT / "docs" / "data" / "vo_wide.csv")
 
 
 @pytest.fixture(scope="module")
@@ -155,7 +155,7 @@ def test_clone_and_replay_runs_on_a_synthetic_sequence(tmp_path, monkeypatch):
     assert float(clone["final_error_m"]) < float(imu["final_error_m"]) + 1.0
     out = tmp_path / "c.csv"
     ve.write_clone_csv(out, sim + rep)
-    assert len(ve.read_csv(out)) == len(sim) + len(rep)
+    assert len(ve.read_table(out)) == len(sim) + len(rep)
     assert "replay, clone" in ve.clone_markdown(sim + rep)
 
 
@@ -297,7 +297,7 @@ def test_wide_study_on_a_synthetic_sequence(tmp_path, monkeypatch):
     assert {r["variant"] for r in replay} == {"clone x4"} and {r["sequence"] for r in replay} == {"MH_01_easy"}
     out = tmp_path / "w.csv"
     ve.write_wide_csv(out, replay)
-    assert "clone x4" in ve.wide_markdown(ve.read_csv(out))
+    assert "clone x4" in ve.wide_markdown(ve.read_table(out))
     assert ve.windows_markdown(new_rows, replay).count("MH_01_easy") >= 1
 
 

@@ -128,7 +128,7 @@ def test_the_command_is_routed_and_runs_a_small_grid(tmp_path: Path) -> None:
     assert payload["claim_type"] == "MEASUREMENT"
     assert payload["data_class"] == "synthetic"
     assert "min_coverage_note" in payload
-    rows = mismatch_sweep.read_csv(csv_path)
+    rows = mismatch_sweep.TABLE.read(csv_path)
     assert [r["scale"] for r in rows] == [0.5, 1.0]
     # An optimistic noise model makes the gate reject healthy fixes; the true one does not.
     assert rows[0]["gnss_rejected_pct_mean"] > 0.0
@@ -179,9 +179,9 @@ def test_compare_exits_nonzero_when_the_result_differs(tmp_path: Path) -> None:
     args = ["sweep", "mismatch", "--cases", "gnss_only", "--scales", "1", "--seeds", "2"]
     assert cli.main([*args, "--out", str(tmp_path / "a.json"), "--csv", str(csv_path)]) == 0
     assert cli.main([*args, "--out", str(tmp_path / "b.json"), "--compare", str(csv_path)]) == 0
-    rows = mismatch_sweep.read_csv(csv_path)
+    rows = mismatch_sweep.TABLE.read(csv_path)
     rows[0]["ate_rmse_m_mean"] *= 1.5
-    mismatch_sweep.write_csv(csv_path, rows)
+    mismatch_sweep.TABLE.write(csv_path, rows)
     assert cli.main([*args, "--out", str(tmp_path / "c.json"), "--compare", str(csv_path)]) == 1
 
 
@@ -196,7 +196,7 @@ def test_compare_rows_tolerates_last_bit_differences_but_not_real_ones() -> None
 
 
 def test_csv_round_trips_through_text() -> None:
-    rows = mismatch_sweep.read_csv(CSV)
+    rows = mismatch_sweep.TABLE.read(CSV)
     assert rows and all(r["n_seeds"] >= 2 for r in rows)
 
 
@@ -204,12 +204,12 @@ def test_csv_round_trips_through_text() -> None:
 
 
 def _by(case: str) -> dict[float, dict[str, Any]]:
-    return {r["scale"]: r for r in mismatch_sweep.read_csv(CSV) if r["case"] == case}
+    return {r["scale"]: r for r in mismatch_sweep.TABLE.read(CSV) if r["case"] == case}
 
 
 def test_the_page_table_is_the_committed_csv() -> None:
     page = PAGE.read_text(encoding="utf-8")
-    expected = splice_block(page, "mismatch", mismatch_sweep.markdown_table(mismatch_sweep.read_csv(CSV)))
+    expected = splice_block(page, "mismatch", mismatch_sweep.markdown_table(mismatch_sweep.TABLE.read(CSV)))
     assert page == expected
 
 
@@ -289,7 +289,7 @@ def test_the_csv_has_a_truncated_runs_column_and_no_dagger_in_the_verdict_counts
     assert mismatch_sweep.CSV_FIELDS[-1] == "n_eff_truncated_runs"
     text = CSV.read_text(encoding="utf-8")
     assert "\u2020" not in text
-    for row in mismatch_sweep.read_csv(CSV):
+    for row in mismatch_sweep.TABLE.read(CSV):
         assert 0 <= row["n_eff_truncated_runs"] <= row["n_seeds"]
         assert sum(int(part.rsplit("=", 1)[1]) for part in row["verdicts"].split(";")) == row["n_seeds"]
 
@@ -297,7 +297,7 @@ def test_the_csv_has_a_truncated_runs_column_and_no_dagger_in_the_verdict_counts
 def test_the_page_states_the_truncation_of_every_cell() -> None:
     page = PAGE.read_text(encoding="utf-8")
     assert "Runs with truncated n_eff" in page
-    for row in mismatch_sweep.read_csv(CSV):
+    for row in mismatch_sweep.TABLE.read(CSV):
         assert f"{row['n_eff_truncated_runs']} of {row['n_seeds']} |" in page
 
 
@@ -359,7 +359,7 @@ def test_the_committed_page_has_no_broken_mixed_verdicts() -> None:
 
 def test_the_csv_uses_only_the_current_verdict_words() -> None:
     words = {"overconfident", "underconfident", "consistent", "insufficient_data"}
-    for row in mismatch_sweep.read_csv(CSV):
+    for row in mismatch_sweep.TABLE.read(CSV):
         for verdict, _ in _counts(row):
             parts = verdict.replace("mixed(", "").replace(")", "").replace("bulk=", "").replace("tail=", "").split(", ")
             assert set(parts) <= words, verdict

@@ -132,7 +132,7 @@ def with_outage(case: dict[str, Any], start_s: float, duration_s: float) -> dict
     return out
 
 
-def write_csv(path: Path, cells: list[dict[str, Any]]) -> None:
+def cell_rows(cells: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for cell in cells:
         row: dict[str, Any] = {
@@ -151,7 +151,7 @@ def write_csv(path: Path, cells: list[dict[str, Any]]) -> None:
             for key in ("mean", "lo", "hi"):
                 row[f"{metric}_{key}"] = None if m is None else m[key]
         rows.append(row)
-    TABLE.write(path, rows)
+    return rows
 
 
 def as_markdown(cells: list[dict[str, Any]]) -> str:
@@ -256,7 +256,7 @@ def main(argv: list[str] | None = None) -> int:
     args.out.write_text(json.dumps(_jsonable(payload), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"wrote {args.out}", file=sys.stderr)
     if args.csv is not None:
-        write_csv(args.csv, cells)
+        TABLE.write(args.csv, cell_rows(cells))
         print(f"wrote {args.csv}", file=sys.stderr)
     if skipped:
         listed = ", ".join(f"{s:g}+{d:g}" for s, d in skipped)

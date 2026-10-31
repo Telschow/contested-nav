@@ -139,9 +139,9 @@ def _stub(sequence):
 def test_writing_another_sequence_keeps_the_committed_rows_byte_for_byte(tmp_path):
     copy = tmp_path / "copy.csv"
     copy.write_bytes(CSV.read_bytes())
-    uc.write_csv(copy, _stub("stubseq"))  # a sequence the file does not hold: added at the end
+    uc.TABLE.merge(copy, _stub("stubseq"))  # a sequence the file does not hold: added at the end
     assert copy.read_bytes().startswith(CSV.read_bytes())
-    uc.write_csv(copy, _stub("stubseq"))  # again: replaced, not added
+    uc.TABLE.merge(copy, _stub("stubseq"))  # again: replaced, not added
     assert [r["sequence"] for r in uc.rows_from_csv(copy)].count("stubseq") == len(_stub("stubseq"))
     assert copy.read_bytes().startswith(CSV.read_bytes())
 
@@ -155,10 +155,10 @@ def test_rewriting_one_sequence_leaves_the_other_sequences_lines_byte_identical_
     copy.write_bytes(CSV.read_bytes())
     tunnel, deep = _lines_of(CSV, "tunnel1"), _lines_of(CSV, "deepurban1")
     assert tunnel and deep  # both sequences are in the committed file
-    uc.write_csv(copy, _stub("deepurban1"))
+    uc.TABLE.merge(copy, _stub("deepurban1"))
     assert _lines_of(copy, "tunnel1") == tunnel
     assert _lines_of(copy, "deepurban1") != deep  # the rewritten sequence did change
-    uc.write_csv(copy, uc.rows_from_csv(CSV))  # writing back what the file holds reproduces the committed bytes
+    uc.TABLE.merge(copy, uc.rows_from_csv(CSV))  # writing back what the file holds reproduces the committed bytes
     assert copy.read_bytes() == CSV.read_bytes()
 
 
@@ -166,7 +166,7 @@ def test_a_csv_with_another_header_is_refused_and_left_alone(tmp_path):
     path = tmp_path / "x.csv"
     path.write_text("a,b\n1,2\n", encoding="utf-8")
     with pytest.raises(ValueError, match="header"):
-        uc.write_csv(path, _stub("deepurban1"))
+        uc.TABLE.merge(path, _stub("deepurban1"))
     assert path.read_text(encoding="utf-8") == "a,b\n1,2\n"
     assert uc.main(["--from-csv", str(CSV), "--csv", str(path)]) == 1
 
@@ -175,7 +175,7 @@ def test_a_page_is_filled_from_the_whole_csv_and_needs_one(tmp_path, capsys):
     page, merged = tmp_path / "p.md", tmp_path / "m.csv"
     page.write_text("<!-- urbannav-data:start -->\n<!-- urbannav-data:end -->\n", encoding="utf-8")
     merged.write_bytes(CSV.read_bytes())
-    uc.write_csv(merged, _stub("deepurban1"))
+    uc.TABLE.merge(merged, _stub("deepurban1"))
     assert uc.main(["--from-csv", str(merged), "--csv", str(merged), "--page", str(page)]) == 0
     text = page.read_text(encoding="utf-8")
     assert "| tunnel1 |" in text and "| deepurban1 |" in text

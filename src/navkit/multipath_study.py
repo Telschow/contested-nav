@@ -253,14 +253,6 @@ BLOCKS = {
 # ------------------------------------------------------------------------- I/O
 
 
-def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    CSV_TABLE.write(path, rows)
-
-
-def read_csv(path: str | Path) -> list[dict[str, Any]]:
-    return CSV_TABLE.read(path)
-
-
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="navkit sweep multipath", description="Evaluate the multipath signature.")
     p.add_argument("--euroc-root", default="data/raw/euroc")
@@ -283,10 +275,10 @@ def main(argv: list[str] | None = None) -> int:
         for ds, root in (("euroc", args.euroc_root), ("tumvi", args.tumvi_root)):
             rows += sweep_rows(ds, root, cases, seeds)
         target = args.csv or (args.floor_csv if args.set == "floor" else args.fresh_csv)
-        write_csv(target, rows)
+        CSV_TABLE.write(target, rows)
         print(f"wrote {target}", file=sys.stderr)
         return 0
-    floor, fresh = read_csv(args.floor_csv), read_csv(args.fresh_csv)
+    floor, fresh = CSV_TABLE.read(args.floor_csv), CSV_TABLE.read(args.fresh_csv)
     tables = {name: fn(floor, fresh) for name, fn in BLOCKS.items()}
     if args.page:
         try:

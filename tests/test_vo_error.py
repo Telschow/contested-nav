@@ -171,8 +171,8 @@ def test_csv_round_trip_cli_and_the_error_path(seq_dir, monkeypatch, tmp_path, c
     _exact(monkeypatch, seq_dir, noise_deg=0.5, seed=1)
     rows = ve.measure(seq_dir, gaps=(1,))
     out = tmp_path / "vo.csv"
-    ve.write_csv(out, rows)
-    assert len(ve.read_csv(out)) == len(rows)
+    ve.VO_TABLE.write(out, rows)
+    assert len(ve.read_table(out)) == len(rows)
     assert euroc_main(["vo", "--from-csv", str(out), "--markdown"]) == 0
     assert "Rotation correlation time" in capsys.readouterr().out
     assert ve.main(["--sequence", "MH_01_easy", "--root", str(tmp_path / "nowhere")]) == 1
@@ -220,11 +220,11 @@ def test_wide_windows_from_rows_match_the_committed_replay() -> None:
     euroc = root / "data" / "raw" / "euroc"
     if not (euroc / "MH_01_easy" / "mav0" / "state_groundtruth_estimate0").is_dir():
         pytest.skip("EuRoC Machine Hall is not fetched (navkit euroc fetch)")
-    rows = ve.read_csv(root / "docs" / "data" / "vo_errors.csv")
+    rows = ve.read_table(root / "docs" / "data" / "vo_errors.csv")
     got = {(name, round(start, 3)) for name, start, _ in ve.wide_windows(euroc, rows)}
     committed = {
         (r["sequence"], round(float(r["window_start_s"]), 3))
-        for r in ve.read_csv(root / "docs" / "data" / "vo_wide.csv")
+        for r in ve.read_table(root / "docs" / "data" / "vo_wide.csv")
     }
     assert got == committed
 

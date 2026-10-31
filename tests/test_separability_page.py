@@ -71,7 +71,7 @@ def test_honest_rows_run_on_a_synthetic_sequence(tmp_path):
 
 def test_csv_round_trip_and_cli_rebuild(rows, tmp_path, capsys):
     out = tmp_path / "again.csv"
-    sp.write_csv(out, rows)
+    sp.TABLE.write(out, rows)
     assert sp.rows_from_csv(out) == rows
     assert sp.main(["--from-csv", str(out), "--markdown"]) == 0
     assert "Honest returns" in capsys.readouterr().out

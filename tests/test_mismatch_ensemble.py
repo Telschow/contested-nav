@@ -229,7 +229,7 @@ def test_compare_and_page_use_the_ensemble_csv(tmp_path: Path) -> None:
     argv = _one_factor(tmp_path, "c", "--ensemble-csv", str(csv_path), "--ensemble-page", str(page))
     assert cli.main(argv) == 0
     rows = mismatch_ensemble.parse_csv(csv_path.read_text(encoding="utf-8"))
-    single = mismatch_sweep.read_csv(tmp_path / "c_single.csv")
+    single = mismatch_sweep.TABLE.read(tmp_path / "c_single.csv")
     assert page.read_text(encoding="utf-8") == splice_block(
         f"head\n{mismatch_ensemble.START}\nold\n{mismatch_ensemble.END}\ntail\n",
         "mismatch-ensemble",

@@ -117,7 +117,7 @@ def test_the_tables_are_made_from_the_rows_and_a_missing_arm_is_an_error():
 def test_the_csv_round_trips_and_a_page_without_markers_is_refused(tmp_path):
     rows = _synthetic_growth(2.0)
     path = tmp_path / "a.csv"
-    at.write_csv(path, rows)
+    at.TABLE.write(path, rows)
     back = at.rows_from_csv(path)
     assert tuple(back[0]) == at.CSV_COLUMNS and at.exponent(back, "a") == pytest.approx(2.0)
     page = tmp_path / "p.md"
@@ -132,7 +132,7 @@ def test_the_csv_round_trips_and_a_page_without_markers_is_refused(tmp_path):
 def test_the_command_rebuilds_tables_and_a_page_from_a_saved_csv(tmp_path, capsys):
     rows = at.ablation_rows(1) + at.fault_rows(1, sizes=(0.0, 0.2))
     csv_path, page = tmp_path / "a.csv", tmp_path / "p.md"
-    at.write_csv(csv_path, rows)
+    at.TABLE.write(csv_path, rows)
     page.write_text(
         "<!-- attribution-ablation:start -->\n<!-- attribution-ablation:end -->\n"
         "<!-- attribution-fault:start -->\n<!-- attribution-fault:end -->\n"

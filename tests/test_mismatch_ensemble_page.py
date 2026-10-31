@@ -184,7 +184,7 @@ def rows() -> list[dict[str, Any]]:
 
 @pytest.fixture(scope="module")
 def single() -> list[dict[str, Any]]:
-    return mismatch_sweep.read_csv(SINGLE_CSV)
+    return mismatch_sweep.TABLE.read(SINGLE_CSV)
 
 
 def test_the_page_block_is_what_the_rules_give_for_the_committed_csvs(rows, single) -> None:

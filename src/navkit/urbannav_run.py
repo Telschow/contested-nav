@@ -757,9 +757,7 @@ CODE_BLOCKS: dict[str, Callable[[list[dict[str, Any]]], str]] = {
 }
 
 
-def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    """Write ``rows`` to ``path``, replacing the rows of those sequences and keeping the rows of any other."""
-    ud.csv_table(CSV_COLUMNS).merge(path, rows)
+TABLE = ud.csv_table(CSV_COLUMNS)
 
 
 def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
@@ -816,7 +814,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if args.csv:
         try:
-            write_csv(args.csv, rows)
+            TABLE.merge(args.csv, rows)
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1

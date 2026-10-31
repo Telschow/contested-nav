@@ -670,11 +670,7 @@ def windows_markdown(
     return "\n".join(lines)
 
 
-def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    VO_TABLE.write(path, rows)
-
-
-def read_csv(path: str | Path) -> list[dict[str, Any]]:
+def read_table(path: str | Path) -> list[dict[str, Any]]:
     """Read a pair, clone or wide-window CSV, typed by the table whose header it has."""
     with Path(path).open(newline="", encoding="utf-8") as fh:
         header = next(csv.reader(fh), [])
@@ -738,7 +734,7 @@ def main(argv: list[str] | None = None) -> int:
             print("error: --wide-replay needs --from-csv", file=sys.stderr)
             return 1
         try:
-            replay = wide_replay(args.root, read_csv(args.from_csv))
+            replay = wide_replay(args.root, read_table(args.from_csv))
         except (OSError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
@@ -746,19 +742,19 @@ def main(argv: list[str] | None = None) -> int:
         print(wide_markdown(replay))
         return 0
     if args.wide:
-        existing = read_csv(args.csv) if args.csv and Path(args.csv).is_file() else []
+        existing = read_table(args.csv) if args.csv and Path(args.csv).is_file() else []
         try:
             new_rows, replay = wide_study(args.root, WIDE_SEQUENCES, existing)
         except (OSError, ValueError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
         if args.csv:
-            write_csv(args.csv, existing + new_rows)
+            VO_TABLE.write(args.csv, existing + new_rows)
         write_wide_csv(args.wide_csv, replay)
         print(wide_markdown(replay))
         return 0
     if args.from_csv:
-        rows = read_csv(args.from_csv)
+        rows = read_table(args.from_csv)
     else:
         gaps = tuple(int(g) for g in args.gaps.split(","))
         try:
@@ -767,7 +763,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: {exc}", file=sys.stderr)
             return 1
     if args.csv:
-        write_csv(args.csv, rows)
+        VO_TABLE.write(args.csv, rows)
         print(f"wrote {args.csv}", file=sys.stderr)
     first = rows_in(rows, *ORIGINAL_WINDOW)
     clone = None
@@ -781,14 +777,14 @@ def main(argv: list[str] | None = None) -> int:
             write_clone_csv(args.clone_csv, clone)
             print(f"wrote {args.clone_csv}", file=sys.stderr)
     elif args.clone_csv and Path(args.clone_csv).is_file():
-        clone = read_csv(args.clone_csv)
+        clone = read_table(args.clone_csv)
     if args.page:
         try:
             write_block(args.page, "vo-errors", summary_markdown(first))
             if clone is not None:
                 write_block(args.page, "vo-clone", clone_markdown(clone))
             if Path(args.wide_csv).is_file():
-                wide = read_csv(args.wide_csv)
+                wide = read_table(args.wide_csv)
                 write_block(args.page, "vo-wide-errors", windows_markdown(rows, wide))
                 write_block(args.page, "vo-wide-clone", wide_markdown(wide))
         except ValueError as exc:

@@ -118,7 +118,7 @@ def test_a_sequence_row_has_every_column_and_the_offset_displacement_follows_fro
 def test_the_csv_round_trips_and_the_table_comes_from_it(seq, tmp_path):
     rows = [tc.sequence_row(seq)]
     out = tmp_path / "t.csv"
-    tc.write_csv(out, rows)
+    tc.TABLE.write(out, rows)
     back = tc.rows_from_csv(out)
     assert tuple(back[0]) == tc.CSV_COLUMNS
     assert tc.table_markdown(back) == tc.table_markdown(rows)

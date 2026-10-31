@@ -41,6 +41,7 @@ from .euroc_compare import fetched_sequences
 from .euroc_eval import dataset_loader
 from .recorded import EurocSequence, SequenceError
 from .report.page import write_block
+from .report.table import Column, Table
 from .types import ImuSample, Trajectory, rot_log_batch
 
 CSV_COLUMNS = (
@@ -229,13 +230,8 @@ def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
         return list(csv.DictReader(fh))
 
 
-def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
-        writer.writeheader()
-        writer.writerows({k: r[k] for k in CSV_COLUMNS} for r in rows)
+# The committed CSV has CRLF line ends.
+TABLE = Table(tuple(Column(n, str, optional=True) for n in CSV_COLUMNS), key="sequence", lineterminator="\r\n")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -282,7 +278,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 1
     if args.csv:
-        write_csv(args.csv, rows)
+        TABLE.write(args.csv, rows)
         print(f"wrote {args.csv}", file=sys.stderr)
     if args.page:
         try:

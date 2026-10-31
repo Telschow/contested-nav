@@ -20,12 +20,12 @@ PAGE = ROOT / "docs" / "multipath.md"
 
 @pytest.fixture(scope="module")
 def floor():
-    return ms.read_csv(ROOT / "docs" / "data" / "multipath_detector.csv")
+    return ms.CSV_TABLE.read(ROOT / "docs" / "data" / "multipath_detector.csv")
 
 
 @pytest.fixture(scope="module")
 def fresh():
-    return ms.read_csv(ROOT / "docs" / "data" / "multipath_fresh.csv")
+    return ms.CSV_TABLE.read(ROOT / "docs" / "data" / "multipath_fresh.csv")
 
 
 def _window(scale=1.0, offset=0.0, n=100, seed=0):
@@ -126,8 +126,8 @@ def test_run_case_and_sweep_on_a_synthetic_sequence(tmp_path):
 
 def test_csv_round_trip_cli_and_missing_markers(floor, tmp_path, capsys):
     out = tmp_path / "again.csv"
-    ms.write_csv(out, floor)
-    assert ms.read_csv(out) == [{k: r[k] for k in ms.CSV_TABLE.header} for r in floor]
+    ms.CSV_TABLE.write(out, floor)
+    assert ms.CSV_TABLE.read(out) == [{k: r[k] for k in ms.CSV_TABLE.header} for r in floor]
     assert ms.main(["--markdown"]) == 0
     assert "Specific rule" in capsys.readouterr().out
     page = tmp_path / "p.md"

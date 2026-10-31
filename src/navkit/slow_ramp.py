@@ -25,6 +25,7 @@ from .euroc_compare import _ALL_CONFIGS
 from .euroc_eval import RunOptions, dataset_loader, list_sequence_dirs, run_sequence
 from .fdir.status import STATUS_REACCEPTED_WITH_INFLATION, STATUS_SENSOR_FAULT
 from .report.page import write_block
+from .report.table import Column, Table
 from .separability import shipped_gate
 
 RATES_M_S = (0.0, 0.05, 0.2, 0.5, 1.0, 2.0)
@@ -188,13 +189,8 @@ BLOCKS = {
 # ------------------------------------------------------------------------- I/O
 
 
-def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
-        writer.writeheader()
-        writer.writerows(rows)
+# The committed CSV has CRLF line ends.
+TABLE = Table(tuple(Column(n, str, optional=True) for n in CSV_COLUMNS), key="case", lineterminator="\r\n")
 
 
 def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
@@ -226,7 +222,7 @@ def main(argv: list[str] | None = None) -> int:
         for ds, root in (("euroc", args.euroc_root), ("tumvi", args.tumvi_root)):
             rows += sweep_rows(ds, root, SETTINGS[ds], args.seeds)
     if args.csv:
-        write_csv(args.csv, rows)
+        TABLE.write(args.csv, rows)
         print(f"wrote {args.csv}", file=sys.stderr)
     tables = {name: fn(rows) for name, fn in BLOCKS.items()}
     if args.page:

@@ -222,7 +222,7 @@ def test_model_text_names_both_stages(rows):
 @pytest.mark.rerun
 def test_csv_round_trip_cli_rebuild_and_missing_markers(rows, tmp_path, capsys):
     out = tmp_path / "again.csv"
-    fc.write_csv(out, rows)
+    fc.TABLE.write(out, rows)
     assert fc.rows_from_csv(out) == rows
     assert fc.main(["--from-csv", str(out), "--markdown"]) == 0
     assert "True class" in capsys.readouterr().out
