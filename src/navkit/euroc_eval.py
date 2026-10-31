@@ -214,6 +214,9 @@ class RunOptions:
     gnss_vertical_sigma_m: float | None = None
     #: Weight each fix with the variances its own ``GnssFix.cov`` carries. Only meaningful with ``gnss_override``.
     gnss_per_fix_covariance: bool = False
+    #: (correlation time in s, amplitude in m): the optional Gauss-Markov model of a time-correlated GNSS error
+    #: (``EskfConfig.gnss_gm_error``, issue #244). None leaves the filter as it was.
+    gnss_gm: tuple[float, float] | None = None
     outages: tuple[tuple[float, float], ...] = ()  # (start, duration) in seconds after the window start
     seed: int = 0
     noise_scale: float = 1.0
@@ -264,6 +267,7 @@ class RunOptions:
             "gnss_sigma_m": self.gnss_sigma_m,
             **({"gnss_vertical_sigma_m": self.gnss_vertical_sigma_m} if self.gnss_vertical_sigma_m is not None else {}),
             **({"gnss_per_fix_covariance": True} if self.gnss_per_fix_covariance else {}),
+            **({"gnss_gm": list(self.gnss_gm)} if self.gnss_gm is not None else {}),
             "outages": [list(o) for o in self.outages],
             "seed": self.seed,
             "noise_scale": self.noise_scale,
@@ -562,6 +566,9 @@ def run_sequence(
         cfg_kwargs["gnss_vertical_sigma_m"] = opts.gnss_vertical_sigma_m
     if opts.gnss_per_fix_covariance:
         cfg_kwargs["gnss_per_fix_covariance"] = True
+    if opts.gnss_gm is not None:
+        cfg_kwargs["gnss_gm_error"] = True
+        cfg_kwargs["gnss_gm_tau_s"], cfg_kwargs["gnss_gm_sigma_m"] = opts.gnss_gm
     base_noise = seq.noise if opts.noise_source == "file" else seq.noise_variants.get(opts.noise_source)
     if base_noise is None:
         known = ", ".join(["file", *seq.noise_variants])

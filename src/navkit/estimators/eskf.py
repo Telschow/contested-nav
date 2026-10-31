@@ -203,6 +203,10 @@ _N_STATES = 21
 _IDX_ER = slice(_N_STATES, _N_STATES + 3)
 _IDX_ET = slice(_N_STATES + 3, _N_STATES + 6)
 _N_GM = 6
+#: The optional Gauss-Markov model of a time-correlated GNSS error (issue #244) appends three states, the error of the
+#: GNSS position fix, in the same place. It is refused together with the visual model, so the two never share the slot.
+_IDX_EG = slice(_N_STATES, _N_STATES + 3)
+_N_GG = 3
 
 
 class _AnchorSnapshot(TypedDict):
@@ -261,6 +265,8 @@ class FilterState(TypedDict):
     # state of a filter without the model has exactly the entries it always had.
     e_rot: NotRequired[np.ndarray]
     e_trans: NotRequired[np.ndarray]
+    # The estimate of the correlated GNSS error. Present only with ``gnss_gm_error`` on.
+    e_gnss: NotRequired[np.ndarray]
 
 
 #: Which state block each measurement channel may have inflated, used to place
@@ -457,6 +463,17 @@ class EskfConfig:
     #: above. At 1 the white part of the measurement covariance would be singular, and the grid of ADR-0034 stops at
     #: 0.9.
     vision_gm_rho: float = 0.5
+    #: A Gauss-Markov model of a time-correlated GNSS position error (issue #244, in the style of ADR-0034): three more
+    #: error states, ``e_gnss``, one per axis. Each is a first-order Gauss-Markov process with correlation time
+    #: ``gnss_gm_tau_s`` and stationary standard deviation ``gnss_gm_sigma_m``, and the GNSS measurement becomes
+    #: ``p + e + n``. The white part ``n`` keeps the declared GNSS variance, so the amplitude is added on top of it.
+    #: Off by default, and with it off every output is byte-identical to the previous behaviour. Refused together
+    #: with ``vision_gm_error``. The correlation is declared in advance. It is not estimated from the data.
+    gnss_gm_error: bool = False
+    #: The correlation time in seconds. PLACEHOLDER until a run declares it. Must be finite and positive.
+    gnss_gm_tau_s: float = 30.0
+    #: The stationary standard deviation in metres, per axis. PLACEHOLDER as above. Must be finite and positive.
+    gnss_gm_sigma_m: float = 1.5
     #: Deprecated names of the two drift strengths above. The constructor accepts them and does not store them, so
     #: reading them gives ``None``: use the new names.
     anchor_pos_drift_sigma_m_s: InitVar[float | None] = None
@@ -488,6 +505,14 @@ class EskfConfig:
             raise ValueError(f"vision_gm_tau_s must be finite and positive, got {self.vision_gm_tau_s!r}")
         if not (math.isfinite(self.vision_gm_rho) and 0.0 < self.vision_gm_rho < 1.0):
             raise ValueError(f"vision_gm_rho must be strictly between 0 and 1, got {self.vision_gm_rho!r}")
+        if not (math.isfinite(self.gnss_gm_tau_s) and self.gnss_gm_tau_s > 0.0):
+            raise ValueError(f"gnss_gm_tau_s must be finite and positive, got {self.gnss_gm_tau_s!r}")
+        if not (math.isfinite(self.gnss_gm_sigma_m) and self.gnss_gm_sigma_m > 0.0):
+            raise ValueError(f"gnss_gm_sigma_m must be finite and positive, got {self.gnss_gm_sigma_m!r}")
+        if self.gnss_gm_error and self.vision_gm_error:
+            raise ValueError(
+                "gnss_gm_error and vision_gm_error cannot be used together: they share the extra-state slot"
+            )
         if self.vision_gm_error and self.vision_model != "clone":
             raise ValueError(
                 f"vision_gm_error applies only to vision_model 'clone', got vision_model {self.vision_model!r}"
@@ -510,7 +535,15 @@ class EskfConfig:
             setattr(self, new, float(value))
 
     def as_dict(self) -> dict[str, object]:
+        # The GNSS Gauss-Markov settings are listed only when the model is on, so the hash of every existing config
+        # stays what it was.
+        gnss_gm: dict[str, object] = (
+            {"gnss_gm_error": True, "gnss_gm_tau_s": self.gnss_gm_tau_s, "gnss_gm_sigma_m": self.gnss_gm_sigma_m}
+            if self.gnss_gm_error
+            else {}
+        )
         return {
+            **gnss_gm,
             "imu_noise": self.imu_noise.as_dict(),
             "gnss_position_sigma_m": self.gnss_position_sigma_m,
             "gnss_vertical_sigma_m": self.gnss_vertical_sigma_m,
@@ -587,7 +620,9 @@ class ErrorStateKalmanFilter:
         #: Whether the Gauss-Markov states of the visual error are in the filter (ADR-0034), and so how many error
         #: states there are: 21 without them, 27 with them. Fixed here, from the config, for the life of the filter.
         self._gm = bool(config.vision_gm_error)
-        self._n = _N_STATES + _N_GM if self._gm else _N_STATES
+        #: Whether the Gauss-Markov states of the GNSS error are in the filter (issue #244): 24 states with them.
+        self._gg = bool(config.gnss_gm_error)
+        self._n = _N_STATES + _N_GM if self._gm else _N_STATES + _N_GG if self._gg else _N_STATES
         self.g = GRAVITY.copy() if config.gravity is None else np.asarray(config.gravity, float)
         self.fdir = FdirManager(config.fdir_config)
         self.fdir_inflations = 0
@@ -625,6 +660,8 @@ class ErrorStateKalmanFilter:
             # The estimates of the correlated visual error start at zero (ADR-0034).
             state["e_rot"] = np.zeros(3)
             state["e_trans"] = np.zeros(3)
+        if self._gg:
+            state["e_gnss"] = np.zeros(3)
         return state
 
     def _gm_sigmas(self) -> tuple[float, float]:
@@ -656,6 +693,8 @@ class ErrorStateKalmanFilter:
             sigma_rot, sigma_trans = self._gm_sigmas()
             P[_IDX_ER, _IDX_ER] = np.eye(3) * sigma_rot**2
             P[_IDX_ET, _IDX_ET] = np.eye(3) * sigma_trans**2
+        if self._gg:
+            P[_IDX_EG, _IDX_EG] = np.eye(3) * cfg.gnss_gm_sigma_m**2
         return P
 
     def _commit_anchor_covariance(self, P: np.ndarray) -> None:
@@ -768,6 +807,9 @@ class ErrorStateKalmanFilter:
             keep = -math.expm1(-2.0 * d / self.cfg.vision_gm_tau_s)
             Q[_IDX_ER, _IDX_ER] = np.eye(3) * (sigma_rot**2 * keep)
             Q[_IDX_ET, _IDX_ET] = np.eye(3) * (sigma_trans**2 * keep)
+        if self._gg:
+            keep = -math.expm1(-2.0 * d / self.cfg.gnss_gm_tau_s)
+            Q[_IDX_EG, _IDX_EG] = np.eye(3) * (self.cfg.gnss_gm_sigma_m**2 * keep)
         return Q
 
     @staticmethod
@@ -798,6 +840,10 @@ class ErrorStateKalmanFilter:
             F[_IDX_ET, _IDX_ET] = np.eye(3) * coeff
             x["e_rot"] = coeff * x["e_rot"]
             x["e_trans"] = coeff * x["e_trans"]
+        if self._gg:
+            coeff = math.exp(-dt / self.cfg.gnss_gm_tau_s)
+            F[_IDX_EG, _IDX_EG] = np.eye(3) * coeff
+            x["e_gnss"] = coeff * x["e_gnss"]
         x["R"], x["p"], x["v"] = R_new, p_new, v_new
         x["P"] = F @ x["P"] @ F.T + self._process_noise(dt)
 
@@ -1035,6 +1081,8 @@ class ErrorStateKalmanFilter:
             # estimates, and the reset G above leaves their rows and columns alone (ADR-0034).
             x["e_rot"] = x["e_rot"] + dx[_IDX_ER]
             x["e_trans"] = x["e_trans"] + dx[_IDX_ET]
+        if self._gg:
+            x["e_gnss"] = x["e_gnss"] + dx[_IDX_EG]
         # The anchor nuisance corrections dx[_IDX_CP] and dx[_IDX_CT] are
         # computed above and deliberately NOT applied. This is not an oversight;
         # it is a recorded limitation, tracked as CN-003 and described in ADR-0001.
@@ -1088,7 +1136,12 @@ class ErrorStateKalmanFilter:
             Rcov = np.diag(np.maximum(per_fix, floor))
         H = np.zeros((3, self._n))
         H[0, 3] = H[1, 4] = H[2, 5] = 1.0
-        return self._update(x, p_meas - x["p"], H, Rcov, sensor="gnss", t_s=t_s)
+        predicted = x["p"]
+        if self._gg:
+            # The fix is the position plus the correlated error plus white noise (issue #244).
+            H[:, _IDX_EG] = np.eye(3)
+            predicted = predicted + x["e_gnss"]
+        return self._update(x, p_meas - predicted, H, Rcov, sensor="gnss", t_s=t_s)
 
     def _vision_update(
         self,
@@ -1170,7 +1223,7 @@ class ErrorStateKalmanFilter:
         # self-confirmation failure this state exists to prevent.
         R_rel_pred = R_prev.T @ R_cur
         Rcov_rot = np.eye(3) * np.deg2rad(rot_sigma_deg) ** 2
-        H_rot = np.zeros((3, _N_STATES))
+        H_rot = np.zeros((3, self._n))
         H_rot[:, _IDX_THETA] = R_rel_pred
         if self.cfg.vision_anchor_modelled:
             z_rot = rot_log(R_rel_meas @ rot_exp(x["c_t"]) @ R_rel_pred.T)
@@ -1209,7 +1262,7 @@ class ErrorStateKalmanFilter:
         # [0 R_prev^T 0 0 0 | 0 | -R_prev^T]. The anchor term is a state block
         # rather than an addition to the innovation covariance, for the same
         # reason as the attitude block above.
-        H_trans = np.zeros((3, _N_STATES))
+        H_trans = np.zeros((3, self._n))
         H_trans[:, _IDX_P] = R_prev.T
         Rcov_trans = np.eye(3) * trans_sigma_m**2
         if self.cfg.vision_anchor_modelled:
@@ -1430,6 +1483,8 @@ class ErrorStateKalmanFilter:
         # model reads them.
         gm_rot_sq = gm_trans_sq = 0.0
         gm_epochs = 0
+        gg_sq = 0.0
+        gg_epochs = 0
         integrity: list[IntegrityStatus] = []
         aiding = tuple(name for name, on in (("gnss", use_gnss), ("vision", use_vision)) if on)
         t_start = float(imu.t[0])
@@ -1523,6 +1578,9 @@ class ErrorStateKalmanFilter:
                 gm_rot_sq += float(x["e_rot"] @ x["e_rot"])
                 gm_trans_sq += float(x["e_trans"] @ x["e_trans"])
                 gm_epochs += 1
+            if self._gg:
+                gg_sq += float(x["e_gnss"] @ x["e_gnss"])
+                gg_epochs += 1
 
         traj = Trajectory(t=imu.t.copy(), poses=poses, name=self.name)
         elapsed = time.perf_counter() - wall_start
@@ -1569,6 +1627,9 @@ class ErrorStateKalmanFilter:
             stats["vision_gm_trans_state_rms"] = math.sqrt(gm_trans_sq / gm_epochs) if gm_epochs else 0.0
             stats["vision_gm_rot_std_final"] = float(np.sqrt(np.mean(np.diag(x["P"][_IDX_ER, _IDX_ER]))))
             stats["vision_gm_trans_std_final"] = float(np.sqrt(np.mean(np.diag(x["P"][_IDX_ET, _IDX_ET]))))
+        if self._gg:
+            stats["gnss_gm_state_rms"] = math.sqrt(gg_sq / gg_epochs) if gg_epochs else 0.0
+            stats["gnss_gm_std_final"] = float(np.sqrt(np.mean(np.diag(x["P"][_IDX_EG, _IDX_EG]))))
         traj.metadata["sigma_p"] = sigma_p
         # The attitude block of the covariance, for scoring the attitude. In the metadata and not in the result type, so
         # that no existing output or signature changes.
