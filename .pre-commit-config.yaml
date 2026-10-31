@@ -35,6 +35,12 @@ repos:
         language: system
         pass_filenames: false
         files: ^(src/|pyproject\.toml$)
+      - id: no-em-dash
+        name: no em dash in tracked text
+        entry: python -m pytest -q tests/test_no_em_dash.py
+        language: system
+        pass_filenames: false
+        always_run: true
       - id: docs-fast
         name: documentation numbers (make docs-fast)
         entry: make docs-fast

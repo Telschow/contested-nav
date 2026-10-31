@@ -2,7 +2,7 @@
 
 ``config.py`` was at 0% coverage: no config file had ever been loaded by the
 test suite. That is the module every published number flows through, so the
-tests here are mostly about *rejection* — a config that silently accepts a
+tests here are mostly about *rejection*: a config that silently accepts a
 nonsensical value is how an outage of 45 s quietly becomes an outage of 10 s
 and still reports a plausible-looking metric.
 """
