@@ -127,7 +127,7 @@ def test_run_case_and_sweep_on_a_synthetic_sequence(tmp_path):
 def test_csv_round_trip_cli_and_missing_markers(floor, tmp_path, capsys):
     out = tmp_path / "again.csv"
     ms.write_csv(out, floor)
-    assert ms.read_csv(out) == [{k: str(v) for k, v in r.items()} for r in floor]
+    assert ms.read_csv(out) == [{k: r[k] for k in ms.CSV_TABLE.header} for r in floor]
     assert ms.main(["--markdown"]) == 0
     assert "Specific rule" in capsys.readouterr().out
     page = tmp_path / "p.md"

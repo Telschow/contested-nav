@@ -18,7 +18,6 @@ the rule that is chosen. Simulated GNSS, injected faults, two datasets, the cali
 from __future__ import annotations
 
 import argparse
-import csv
 import sys
 from pathlib import Path
 from typing import Any
@@ -30,6 +29,7 @@ from .euroc_eval import RunOptions, dataset_loader, list_sequence_dirs, run_sequ
 from .fault_classification import ONSET_S, SETTINGS, WINDOW_S, rows_from_csv
 from .fdir import multipath as mp
 from .report.page import write_block as _write_page_block
+from .report.table import Column, Table
 
 FLOOR_LEVELS_M = (0.5, 1.0, 1.5, 2.0)
 FLOOR_SEEDS = (6, 7)
@@ -60,7 +60,19 @@ CLASS_OF = {
     "gyro_bias": "degradation",
 }
 CONFIRM_CSV = "docs/data/fault_classification_confirm.csv"
-CSV_COLUMNS = ("dataset", "sequence", "seed", "kind", "level", "nis", "ac1")
+CSV_TABLE = Table(
+    (
+        Column("dataset"),
+        Column("sequence"),
+        Column("seed", int),
+        Column("kind"),
+        Column("level", float),
+        Column("nis", float),
+        Column("ac1", float),
+    ),
+    key="sequence",
+    lineterminator="\r\n",
+)
 
 
 def run_case(seq: Any, config: str, seed: int, kind: str, level: float) -> dict[str, Any] | None:
@@ -114,7 +126,7 @@ def _pct(x: float) -> str:
 
 
 def called(row: dict[str, Any], rule: str) -> bool:
-    return mp.call(float(row["nis"]), float(row["ac1"]), rule)
+    return mp.call(row["nis"], row["ac1"], rule)
 
 
 def cls_of(row: dict[str, Any]) -> str:
@@ -129,7 +141,10 @@ def upper_bound(n: int) -> float:
 def confirm_rows(path: str | Path = CONFIRM_CSV) -> list[dict[str, Any]]:
     """The confirmation runs of the fault-classification study, as rows of this study."""
     kind_of = {"none": "none"}
-    return [{**r, "kind": kind_of.get(r["kind"], r["kind"])} for r in rows_from_csv(path)]
+    return [
+        {**r, "kind": kind_of.get(r["kind"], r["kind"]), **{c.name: c.parse(r[c.name]) for c in CSV_TABLE.columns}}
+        for r in rows_from_csv(path)
+    ]
 
 
 def _share(sel: list[dict[str, Any]], rule: str) -> float:
@@ -143,11 +158,11 @@ def floor_markdown(floor: list[dict[str, Any]], fresh: list[dict[str, Any]]) -> 
         "|---:|---:|---:|---:|---:|---:|",
     ]
     for level in (0.0, *FLOOR_LEVELS_M):
-        sel = [r for r in floor if float(r["level"]) == level]
+        sel = [r for r in floor if r["level"] == level]
         if sel:
             lines.append(
                 f"| {level:g} | {len(sel)} | {_pct(_share(sel, 'sensitive'))} | {_pct(_share(sel, 'specific'))} | "
-                f"{np.median([float(r['nis']) for r in sel]):.2f} | {np.median([float(r['ac1']) for r in sel]):.2f} |"
+                f"{np.median([r['nis'] for r in sel]):.2f} | {np.median([r['ac1'] for r in sel]):.2f} |"
             )
     return "\n".join(lines)
 
@@ -170,7 +185,7 @@ def fresh_markdown(floor: list[dict[str, Any]], fresh: list[dict[str, Any]]) -> 
         "|---|---|---:|---:|---:|---:|",
     ]
     for kind, level in FRESH_CASES:
-        sel = [r for r in fresh if r["kind"] == kind and float(r["level"]) == level]
+        sel = [r for r in fresh if r["kind"] == kind and r["level"] == level]
         if sel:
             lines.append(
                 f"| {CLASS_OF[kind]} | {kind} | {level:g} | {len(sel)} | {_pct(_share(sel, 'sensitive'))} | "
@@ -182,7 +197,7 @@ def fresh_markdown(floor: list[dict[str, Any]], fresh: list[dict[str, Any]]) -> 
 def criteria_results(fresh: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """The fresh-run recall and false-call rate of each rule, and whether the criteria are met."""
     out: dict[str, dict[str, Any]] = {}
-    big = [r for r in fresh if r["kind"] == "multipath" and float(r["level"]) >= 3.0]
+    big = [r for r in fresh if r["kind"] == "multipath" and r["level"] >= 3.0]
     other = [r for r in fresh if r["kind"] != "multipath"]
     for rule in mp.RULES:
         recall, false_rate = _share(big, rule), _share(other, rule)
@@ -239,17 +254,11 @@ BLOCKS = {
 
 
 def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS, extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(rows)
+    CSV_TABLE.write(path, rows)
 
 
 def read_csv(path: str | Path) -> list[dict[str, Any]]:
-    with Path(path).open(newline="", encoding="utf-8") as fh:
-        return list(csv.DictReader(fh))
+    return CSV_TABLE.read(path)
 
 
 def write_block(path: str | Path, name: str, block: str) -> None:

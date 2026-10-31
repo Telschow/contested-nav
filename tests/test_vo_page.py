@@ -155,7 +155,7 @@ def test_clone_and_replay_runs_on_a_synthetic_sequence(tmp_path, monkeypatch):
     assert float(clone["final_error_m"]) < float(imu["final_error_m"]) + 1.0
     out = tmp_path / "c.csv"
     ve.write_clone_csv(out, sim + rep)
-    assert len(ve.read_clone_csv(out)) == len(sim) + len(rep)
+    assert len(ve.read_csv(out)) == len(sim) + len(rep)
     assert "replay, clone" in ve.clone_markdown(sim + rep)
 
 

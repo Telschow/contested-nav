@@ -26,6 +26,7 @@ from .euroc_compare import CONFIGS
 from .euroc_eval import RunOptions, load_sequence, run_sequence
 from .geometry.rigid import rot_exp, rot_log
 from .report.page import write_block as _write_page_block
+from .report.table import Column, Table
 from .types import Trajectory, VisionUpdate, interpolate_trajectory
 from .vo_frontend import Camera, camera_from_yaml, load_gray, motion_from_pair, relative_poses_along
 
@@ -53,6 +54,17 @@ CSV_COLUMNS = (
     "tracked",
     "inliers",
 )
+_STR_COLUMNS = ("sequence", "variant", "seed")
+_INT_COLUMNS = ("gap_frames", "tracked", "inliers")
+
+
+def _table(columns: tuple[str, ...], key: str) -> Table:
+    """Typed columns for a study CSV (ADR-0038): text, counts as int, everything else as float. CRLF."""
+    kinds = [str if n in _STR_COLUMNS else int if n in _INT_COLUMNS else float for n in columns]
+    return Table(tuple(Column(n, k) for n, k in zip(columns, kinds, strict=True)), key=key, lineterminator="\r\n")
+
+
+VO_TABLE = _table(CSV_COLUMNS, "sequence")
 
 
 def frame_list(seq_dir: Path) -> list[tuple[float, Path]]:
@@ -196,7 +208,7 @@ def windows(rows: list[dict[str, Any]], max_gap_s: float = 1.0) -> list[tuple[st
     """``(sequence, start, stop)`` of each run of contiguous pairs in the rows."""
     out: list[tuple[str, float, float]] = []
     for seq in sorted({r["sequence"] for r in rows}):
-        ts = sorted({float(r["t_s"]) for r in rows if r["sequence"] == seq and int(r["gap_frames"]) == 1})
+        ts = sorted({r["t_s"] for r in rows if r["sequence"] == seq and r["gap_frames"] == 1})
         if not ts:
             continue
         start = prev = ts[0]
@@ -240,11 +252,11 @@ def correlation_time(acf: np.ndarray, step_s: float) -> float:
 
 def summary(rows: list[dict[str, Any]], gap: int, step_s: float) -> dict[str, float]:
     """Sizes, outliers and the correlation time of one gap's errors. ``step_s`` is the spacing between pairs."""
-    sel = sorted((r for r in rows if int(r["gap_frames"]) == gap), key=lambda r: float(r["t_s"]))
-    rot = np.array([[float(r[k]) for k in ("rot_x_deg", "rot_y_deg", "rot_z_deg")] for r in sel])
-    lat = np.array([[float(r[k]) for k in ("lat_x_m", "lat_y_m", "lat_z_m")] for r in sel])
-    ang = np.array([float(r["dir_err_deg"]) for r in sel])
-    base = np.array([float(r["baseline_m"]) for r in sel])
+    sel = sorted((r for r in rows if r["gap_frames"] == gap), key=lambda r: r["t_s"])
+    rot = np.array([[r[k] for k in ("rot_x_deg", "rot_y_deg", "rot_z_deg")] for r in sel])
+    lat = np.array([[r[k] for k in ("lat_x_m", "lat_y_m", "lat_z_m")] for r in sel])
+    ang = np.array([r["dir_err_deg"] for r in sel])
+    base = np.array([r["baseline_m"] for r in sel])
     rot_mag = np.linalg.norm(rot, axis=1)
     lat_mag = np.linalg.norm(lat, axis=1)
     med = float(np.median(rot_mag))
@@ -289,22 +301,18 @@ def replay_stream(
     a Gaussian surrogate. The translation has the true scale (a monocular front end has none).
     """
     sel = sorted(
-        (
-            r
-            for r in rows
-            if int(r["gap_frames"]) == 1 and t_from <= float(r["t_s"]) and float(r["t_s"]) + float(r["dt_s"]) <= t_to
-        ),
-        key=lambda r: float(r["t_s"]),
+        (r for r in rows if r["gap_frames"] == 1 and t_from <= r["t_s"] and r["t_s"] + r["dt_s"] <= t_to),
+        key=lambda r: r["t_s"],
     )
     if not sel:
         raise ValueError("no one-frame pairs inside the window")
     T_bs = cam.T_BS
     times, R_rel, t_rel = [], [], []
     for r in sel:
-        t0, t1 = float(r["t_s"]), float(r["t_s"]) + float(r["dt_s"])
+        t0, t1 = r["t_s"], r["t_s"] + r["dt_s"]
         R_c, t_c = true_motion(truth, cam, t0, t1)
-        e_rot = np.radians([float(r["rot_x_deg"]), float(r["rot_y_deg"]), float(r["rot_z_deg"])])
-        lateral = np.array([float(r["lat_x_m"]), float(r["lat_y_m"]), float(r["lat_z_m"])])
+        e_rot = np.radians([r["rot_x_deg"], r["rot_y_deg"], r["rot_z_deg"]])
+        lateral = np.array([r["lat_x_m"], r["lat_y_m"], r["lat_z_m"]])
         T_c = np.eye(4)
         T_c[:3, :3] = R_c @ rot_exp(e_rot)
         T_c[:3, 3] = t_c + lateral
@@ -345,11 +353,9 @@ def _replay_window(
     inside = [
         r
         for r in vo_rows
-        if r["sequence"] == seq.name
-        and start_s <= float(r["t_s"])
-        and float(r["t_s"]) + float(r["dt_s"]) <= start_s + duration_s
+        if r["sequence"] == seq.name and start_s <= r["t_s"] and r["t_s"] + r["dt_s"] <= start_s + duration_s
     ]
-    one = [r for r in inside if int(r["gap_frames"]) == 1]
+    one = [r for r in inside if r["gap_frames"] == 1]
     stream = replay_stream(one, seq.truth, cam, start_s, start_s + duration_s)
     summ = summary(one, 1, FRAME_STEP_S)
     # A floor, so that a window with (almost) no measured error does not hand the filter a zero measurement noise.
@@ -416,6 +422,8 @@ WIDE_SCALES: tuple[tuple[str, str, float], ...] = (
     ("anchor x1", "anchor", 1.0),
 )
 WIDE_COLUMNS = ("sequence", "window_start_s", *CLONE_COLUMNS)
+CLONE_TABLE = _table(CLONE_COLUMNS, "variant")
+WIDE_TABLE = _table(WIDE_COLUMNS, "sequence")
 
 
 def wide_study(
@@ -564,24 +572,19 @@ def clone_markdown(rows: list[dict[str, Any]]) -> str:
         sel = [r for r in rows if r["variant"] == name]
         if not sel:
             continue
-        nees = float(np.median([float(r["nees_mean"]) for r in sel]))
-        cov = float(np.median([float(r["coverage_2sigma"]) for r in sel]))
+        nees = float(np.median([r["nees_mean"] for r in sel]))
+        cov = float(np.median([r["coverage_2sigma"] for r in sel]))
         ok = "yes" if nees < 10.0 and cov > 0.9 else "no"
         lines.append(
             f"| {name} | {len(sel)} | {nees:.1f} | {100 * cov:.0f}% | "
-            f"{np.median([float(r['final_error_m']) for r in sel]):.2f} | "
-            f"{np.median([float(r['claimed_sigma_m']) for r in sel]):.2f} | {ok} |"
+            f"{np.median([r['final_error_m'] for r in sel]):.2f} | "
+            f"{np.median([r['claimed_sigma_m'] for r in sel]):.2f} | {ok} |"
         )
     return "\n".join(lines)
 
 
 def write_wide_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=WIDE_COLUMNS)
-        writer.writeheader()
-        writer.writerows(rows)
+    WIDE_TABLE.write(path, rows)
 
 
 def passes(nees: float, coverage: float) -> bool:
@@ -592,7 +595,7 @@ def passes(nees: float, coverage: float) -> bool:
 def wide_markdown(rows: list[dict[str, Any]]) -> str:
     """Per window and assumed-noise scale: the median over seeds, and whether it meets the gate."""
     names = [n for n, _, _ in WIDE_SCALES]
-    keys = sorted({(r["sequence"], float(r["window_start_s"])) for r in rows})
+    keys = sorted({(r["sequence"], r["window_start_s"]) for r in rows})
     lines = [
         "| Sequence | Window start s | " + " | ".join(f"{n}: NEES / coverage" for n in names) + " |",
         "|---|---:|" + "---|" * len(names),
@@ -601,14 +604,12 @@ def wide_markdown(rows: list[dict[str, Any]]) -> str:
     for seq, start in keys:
         cells = []
         for n in names:
-            sel = [
-                r for r in rows if r["sequence"] == seq and float(r["window_start_s"]) == start and r["variant"] == n
-            ]
+            sel = [r for r in rows if r["sequence"] == seq and r["window_start_s"] == start and r["variant"] == n]
             if not sel:
                 cells.append("-")
                 continue
-            nees = float(np.median([float(r["nees_mean"]) for r in sel]))
-            cov = float(np.median([float(r["coverage_2sigma"]) for r in sel]))
+            nees = float(np.median([r["nees_mean"] for r in sel]))
+            cov = float(np.median([r["coverage_2sigma"] for r in sel]))
             ok = passes(nees, cov)
             verdict[n].append(ok)
             cells.append(f"{nees:.3g} / {100 * cov:.0f}%{' ok' if ok else ''}")
@@ -621,12 +622,7 @@ def wide_markdown(rows: list[dict[str, Any]]) -> str:
 
 
 def write_clone_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=CLONE_COLUMNS)
-        writer.writeheader()
-        writer.writerows(rows)
+    CLONE_TABLE.write(path, rows)
 
 
 #: The window measured first (all five gaps), which the first tables of the page describe.
@@ -635,11 +631,7 @@ ORIGINAL_WINDOW = ("MH_01_easy", 60.0, 90.0)
 
 def rows_in(rows: list[dict[str, Any]], sequence: str, start_s: float, stop_s: float) -> list[dict[str, Any]]:
     """The rows of one sequence whose pair lies inside ``[start_s, stop_s]``."""
-    return [
-        r
-        for r in rows
-        if r["sequence"] == sequence and start_s <= float(r["t_s"]) and float(r["t_s"]) + float(r["dt_s"]) <= stop_s
-    ]
+    return [r for r in rows if r["sequence"] == sequence and start_s <= r["t_s"] and r["t_s"] + r["dt_s"] <= stop_s]
 
 
 def rows_in_window(rows: list[dict[str, Any]], sequence: str, start_s: float, length_s: float) -> list[dict[str, Any]]:
@@ -651,7 +643,7 @@ def rows_in_window(rows: list[dict[str, Any]], sequence: str, start_s: float, le
     return [
         r
         for r in rows
-        if r["sequence"] == sequence and start_s - 1e-6 <= float(r["t_s"]) < start_s + length_s - FRAME_STEP_S - 1e-6
+        if r["sequence"] == sequence and start_s - 1e-6 <= r["t_s"] < start_s + length_s - FRAME_STEP_S - 1e-6
     ]
 
 
@@ -664,11 +656,11 @@ def windows_markdown(
         "| Rotation correlation time s | Lateral correlation time s |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
-    keys = sorted({(r["sequence"], float(r["window_start_s"])) for r in wide_rows})
+    keys = sorted({(r["sequence"], r["window_start_s"]) for r in wide_rows})
     for seq, start in keys:
         sel = rows_in_window(rows, seq, start, WIDE_LENGTH_S)
         for gap in gaps:
-            if not any(int(r["gap_frames"]) == gap for r in sel):
+            if not any(r["gap_frames"] == gap for r in sel):
                 continue
             s = summary(sel, gap, FRAME_STEP_S)
             lines.append(
@@ -679,17 +671,17 @@ def windows_markdown(
 
 
 def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
-        writer.writeheader()
-        writer.writerows(rows)
+    VO_TABLE.write(path, rows)
 
 
 def read_csv(path: str | Path) -> list[dict[str, Any]]:
+    """Read a pair, clone or wide-window CSV, typed by the table whose header it has."""
     with Path(path).open(newline="", encoding="utf-8") as fh:
-        return list(csv.DictReader(fh))
+        header = next(csv.reader(fh), [])
+    for table in (VO_TABLE, CLONE_TABLE, WIDE_TABLE):
+        if header == table.header:
+            return table.read(path)
+    raise ValueError(f"{path}: the header {header} matches no table of this study")
 
 
 def summary_markdown(rows: list[dict[str, Any]], frame_step_s: float = 0.05) -> str:
@@ -699,7 +691,7 @@ def summary_markdown(rows: list[dict[str, Any]], frame_step_s: float = 0.05) -> 
         "| Rotation correlation time s | Lateral correlation time s |",
         "|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
-    for gap in sorted({int(r["gap_frames"]) for r in rows}):
+    for gap in sorted({r["gap_frames"] for r in rows}):
         s = summary(rows, gap, frame_step_s)
         lines.append(
             f"| {gap} | {s['pairs']:.0f} | {s['baseline_m']:.3f} | {s['rot_rms_deg']:.2f} | {s['lat_rms_m']:.3f} | "
@@ -737,10 +729,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--markdown", action="store_true", help="print the tables")
     return p
-
-
-def read_clone_csv(path: str | Path) -> list[dict[str, Any]]:
-    return read_csv(path)
 
 
 def write_block(path: str | Path, name: str, block: str) -> None:
@@ -798,7 +786,7 @@ def main(argv: list[str] | None = None) -> int:
             write_clone_csv(args.clone_csv, clone)
             print(f"wrote {args.clone_csv}", file=sys.stderr)
     elif args.clone_csv and Path(args.clone_csv).is_file():
-        clone = read_clone_csv(args.clone_csv)
+        clone = read_csv(args.clone_csv)
     if args.page:
         try:
             write_block(args.page, "vo-errors", summary_markdown(first))
