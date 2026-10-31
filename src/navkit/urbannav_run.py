@@ -32,6 +32,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import csv
+import dataclasses
 import math
 import sys
 from collections.abc import Callable, Iterator
@@ -40,15 +41,16 @@ from typing import Any
 
 import numpy as np
 
+from . import euroc_eval as ee
 from . import urbannav_data as ud
-from .estimators.eskf import ErrorStateKalmanFilter, EskfConfig
+from .estimators.eskf import ErrorStateKalmanFilter, EskfConfig, InitialState
 from .euroc_eval import RunOptions, run_sequence
 from .eval.calibration import effective_samples, wilson_interval
 from .fdir.gating import chi2_threshold
 from .io.imu import DEFAULT_NOISE, ImuNoiseModel
 from .recorded import EurocSequence, SequenceError
 from .report.page import write_block
-from .types import GRAVITY, GnssFix, Trajectory, interpolate_trajectory, rot_log_batch
+from .types import GRAVITY, GnssFix, ImuSample, Trajectory, interpolate_trajectory, rot_log_batch
 
 SEQUENCE = "tunnel1"
 DEG = math.pi / 180.0
@@ -107,6 +109,26 @@ VARIANTS = ("declared", "per_fix")
 #: Diagnostics that separate where the outage error comes from. They use the reference, so they are not filters.
 ORACLE_VARIANTS = ("oracle_tilt", "oracle_yaw", "oracle_attitude")
 ALL_VARIANTS = VARIANTS + ORACLE_VARIANTS
+#: Two diagnostics for the attitude NEES excess (issue #186). Each changes one thing and is reported for every
+#: sequence, with or without an outage. They are not in :data:`ALL_VARIANTS`: the committed rows do not change.
+ATTRIBUTION_VARIANTS = ("start_attitude", "held_gyro_bias")
+#: Declared in code before any run of the attribution variants, apart from :data:`DECLARED` so that the page's
+#: settings table does not change.
+ATTRIBUTION_DECLARED: dict[str, tuple[str, str]] = {
+    "variant: start_attitude": (
+        "reference attitude at the start state only",
+        "ATTRIBUTION DIAGNOSTIC, not a filter: the start rotation is the reference's at the first IMU sample, without "
+        "the seeded rotation perturbation. The start position, velocity and biases, the start covariance and every "
+        "later step are the declared run's. Declared before any run, to separate a bad start alignment from the "
+        "gyroscope bias in the attitude NEES excess",
+    ),
+    "variant: held_gyro_bias": (
+        "gyro bias held at its static start estimate",
+        "ATTRIBUTION DIAGNOSTIC, not a filter: the gyroscope bias keeps the static start estimate and is not "
+        "estimated (random walk and start sigma are zero). The start attitude, the accelerometer bias and everything "
+        "else are the declared run's. Declared before any run, for the same split as start_attitude",
+    ),
+}
 #: Said wherever the oracle variants would be, for a sequence in which the receiver reports no outage.
 ORACLE_NOT_APPLICABLE = (
     "Not applicable: the receiver reports no outage on this sequence by the outage rule, and an oracle diagnostic "
@@ -128,8 +150,13 @@ WRONG_FIX_M = 10.0
 GATE_ALPHA = 0.001  # the FDIR default, ADR-0005
 
 
-def variants_for(spans: list[tuple[float, float]]) -> tuple[str, ...]:
-    """The variants to run: all of them with an outage, the declared and per-fix variants without one."""
+def variants_for(spans: list[tuple[float, float]], attribution: bool = False) -> tuple[str, ...]:
+    """The variants to run: all of them with an outage, the declared and per-fix variants without one.
+
+    ``attribution`` gives the two attribution variants instead, for a sequence with or without an outage.
+    """
+    if attribution:
+        return ATTRIBUTION_VARIANTS
     return ALL_VARIANTS if spans else VARIANTS
 
 
@@ -214,6 +241,40 @@ def oracle_attitude(seq: EurocSequence, span: tuple[float, float], mode: str) ->
         yield
     finally:
         ErrorStateKalmanFilter._propagate = original  # type: ignore[method-assign]
+
+
+@contextlib.contextmanager
+def reference_start_attitude(seq: EurocSequence) -> Iterator[None]:
+    """ATTRIBUTION DIAGNOSTIC, not a filter: start the run with the reference's rotation instead of the perturbed one.
+
+    Only the start rotation is replaced, by the reference's at the first IMU sample of the window. The start position,
+    velocity and biases keep the values the declared run draws for the same seed, the start covariance is not touched,
+    and the reference is not used after the start. The start function is wrapped for the length of the ``with`` block
+    and restored on exit, also on an error.
+    """
+    original = ee._initial_state
+
+    def wrapped(
+        seq_: EurocSequence, opts: RunOptions, cfg: EskfConfig, t0: float, mode: str, imu: ImuSample
+    ) -> InitialState:
+        start = original(seq_, opts, cfg, t0, mode, imu)
+        start.R = interpolate_trajectory(seq.truth, np.array([t0])).rotations[0].copy()
+        return start
+
+    ee._initial_state = wrapped  # type: ignore[assignment]
+    try:
+        yield
+    finally:
+        ee._initial_state = original  # type: ignore[assignment]
+
+
+def with_held_gyro_bias(seq: EurocSequence) -> EurocSequence:
+    """ATTRIBUTION DIAGNOSTIC: the same sequence with a zero gyroscope bias random walk.
+
+    The run's start sigma for the bias is zero (``RunOptions.bias_sigma`` is not set), so with no walk the filter's
+    gyroscope bias keeps the static start estimate for the whole run. The accelerometer walk is not touched.
+    """
+    return dataclasses.replace(seq, noise=dataclasses.replace(seq.noise, gyro_bias_rw=0.0))
 
 
 def build(
@@ -424,10 +485,14 @@ def run_once(
     )
     inn: list[tuple[float, np.ndarray, np.ndarray]] = []
     detail: dict[str, Any] = {}
-    if variant in ORACLE_VARIANTS:
+    if variant == "held_gyro_bias":
+        seq = with_held_gyro_bias(seq)
+    if variant == "start_attitude":
+        guard: contextlib.AbstractContextManager[None] = reference_start_attitude(seq)
+    elif variant in ORACLE_VARIANTS:
         if not spans:
             raise SequenceError("an oracle diagnostic needs an outage to act in")
-        guard: contextlib.AbstractContextManager[None] = oracle_attitude(seq, spans[0], variant)
+        guard = oracle_attitude(seq, spans[0], variant)
     else:
         guard = contextlib.nullcontext()
     with guard:
@@ -465,6 +530,25 @@ def run_once(
         "fixes_variance_unusable": int(info["fixes_variance_unusable"]),
         "fixes_variance_below_floor": int(info["fixes_variance_below_floor"]),
     }
+    if variant in ATTRIBUTION_VARIANTS:
+        whole = aided_summary(
+            detail,
+            record["stats"],
+            int(nis.size),
+            info["fix_difference_m"],
+            info["fix_sigma_h_m"],
+            nis=nis,
+            gate_level=level,
+            nees_h=nees_h,
+        )
+        return {
+            "seed": seed,
+            "variant": variant,
+            "hor_rmse_m": out["hor_rmse_m"],
+            "hor_nees_mean": out["hor_nees_mean"],
+            "att_err_rms_deg": float(np.sqrt(np.mean(att**2))),
+            **{k: whole[k] for k, _, _ in ATTRIBUTION_QUANTITIES if k in whole},
+        }
     if spans:
         a, b = spans[0][0] - t0, spans[0][1] - t0
         i_a = max(int(np.searchsorted(t, a)) - 1, 0)
@@ -557,6 +641,21 @@ QUANTITIES = (
     ("wrong_fixes", "Valid fixes over 10 m from the reference", "count"),
     ("wrong_fixes_over_gate", "Of those, over the 0.1% chi-square level", "count"),
 )
+#: What the attribution variants report, over the whole recording and for any sequence. The attitude NEES comes with
+#: its effective sample size, because it has one value per IMU step.
+ATTRIBUTION_QUANTITIES = (
+    ("hor_rmse_m", "Horizontal position RMSE over the recording", "m"),
+    ("hor_nees_mean", "Horizontal mean NEES over the whole run (2 degrees of freedom, expected 2)", ""),
+    ("hor_nees_ess", "Effective sample size of the horizontal NEES series", "count"),
+    ("hor_nees_ess_truncated", "That size is an upper bound (1 yes, 0 no)", "flag"),
+    ("att_err_rms_deg", "Attitude error, root mean square over the recording", "deg"),
+    ("att_nees_mean", "Attitude mean NEES over the whole run (3 degrees of freedom, expected 3)", ""),
+    ("att_nees_third1", "Attitude mean NEES, first third of the run", ""),
+    ("att_nees_third2", "Attitude mean NEES, middle third of the run", ""),
+    ("att_nees_third3", "Attitude mean NEES, last third of the run", ""),
+    ("att_nees_ess", "Effective sample size of the attitude NEES series", "count"),
+    ("att_nees_ess_truncated", "That size is an upper bound (1 yes, 0 no)", "flag"),
+)
 #: What the aided run (a sequence without an outage) reports, over the whole recording. Several keys are those of
 #: :data:`QUANTITIES`, with the same meaning.
 AIDED_QUANTITIES = (
@@ -639,7 +738,12 @@ CSV_COLUMNS = ("sequence", "variant", "seed", "quantity", "value", "unit")
 def rows_for(seq_name: str, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows = []
     for r in results:
-        for key, _label, unit in AIDED_QUANTITIES if r.get("aided") else QUANTITIES:
+        quantities: tuple[tuple[str, str, str], ...]
+        if r["variant"] in ATTRIBUTION_VARIANTS:
+            quantities = ATTRIBUTION_QUANTITIES
+        else:
+            quantities = AIDED_QUANTITIES if r.get("aided") else QUANTITIES
+        for key, _label, unit in quantities:
             if r.get(key) is not None:
                 v = r[key]
                 rows.append(
@@ -681,7 +785,7 @@ def not_run_markdown(sequence: str) -> str:
 
 def is_aided(rows: list[dict[str, Any]]) -> bool:
     """True when the rows hold quantities that only the aided run (a sequence without an outage) reports."""
-    return any(r["quantity"] in AIDED_ONLY_KEYS for r in rows)
+    return any(r["quantity"] in AIDED_ONLY_KEYS for r in rows if r["variant"] not in ATTRIBUTION_VARIANTS)
 
 
 def run_markdown(rows: list[dict[str, Any]], variant: str = "declared", sequence: str = SEQUENCE) -> str:
@@ -774,6 +878,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--from-csv", default=None, help="rebuild the tables from a saved CSV; runs nothing")
     p.add_argument(
+        "--attribution",
+        action="store_true",
+        help="run the two attribution variants (start_attitude, held_gyro_bias) instead of the usual ones",
+    )
+    p.add_argument(
         "--page",
         default=None,
         help="fill the urbannav-run, urbannav-deep-urban and urbannav-declared blocks of this page from the CSV "
@@ -804,7 +913,7 @@ def main(argv: list[str] | None = None) -> int:
             if not spans:
                 print(f"{args.sequence}: no outage, so this is the aided run. {ORACLE_NOT_APPLICABLE}", file=sys.stderr)
             results = []
-            for variant in variants_for(spans):
+            for variant in variants_for(spans, args.attribution):
                 for seed in SEEDS:
                     results.append(run_once(seq, gnss, spans, info, seed, variant))
                     print(f"{variant} seed {seed} done", file=sys.stderr)
