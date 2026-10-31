@@ -52,6 +52,7 @@ class Study:
     read: Callable[[Path], list[Row]] | None = None
     prog: str | None = None
     description: str | None = None
+    formatter_class: type[argparse.HelpFormatter] = argparse.HelpFormatter
     help: dict[str, str] = field(default_factory=dict)
     #: Replaces the exact CSV compare. Takes the rows as a reader of the CSV sees them and the committed rows,
     #: and returns the differences. For a study whose numbers may differ in the last bits across platforms.
@@ -64,7 +65,7 @@ def _seeds(text: str) -> tuple[int, ...]:
 
 def build_parser(study: Study) -> argparse.ArgumentParser:
     f = study.flags
-    ap = argparse.ArgumentParser(prog=study.prog, description=study.description)
+    ap = argparse.ArgumentParser(prog=study.prog, description=study.description, formatter_class=study.formatter_class)
     if study.add_arguments is not None:
         study.add_arguments(ap)
 
