@@ -40,6 +40,7 @@ import numpy as np
 from .euroc_compare import fetched_sequences
 from .euroc_eval import dataset_loader
 from .recorded import EurocSequence, SequenceError
+from .report.page import write_block as write_page_block
 from .types import ImuSample, Trajectory, rot_log_batch
 
 CSV_COLUMNS = (
@@ -239,14 +240,7 @@ def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
 
 def write_block(path: str | Path, block: str, name: str = "timing") -> None:
     """Replace the text between a block's markers in a Markdown page. Refuses a page without them."""
-    page = Path(path)
-    text = page.read_text(encoding="utf-8")
-    start, end = f"<!-- {name}:start -->", f"<!-- {name}:end -->"
-    if start not in text or end not in text or text.index(start) > text.index(end):
-        raise ValueError(f"{page} needs the lines {start} and {end}, in that order")
-    head, rest = text.split(start, 1)
-    _, tail = rest.split(end, 1)
-    page.write_text(f"{head}{start}\n\n{block}\n\n{end}{tail}", encoding="utf-8")
+    write_page_block(path, name, block)
 
 
 def build_parser() -> argparse.ArgumentParser:

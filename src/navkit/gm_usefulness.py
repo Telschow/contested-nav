@@ -34,7 +34,7 @@ import numpy as np
 from . import candidate_gate as _gate
 from .b1_gate import format_seeds
 from .eval.candidate_gate import CANDIDATE_GATE_UPPER_QUANTILE, evaluate_scenario_gate
-from .gm_tuning import splice_section as _splice
+from .report.page import splice_block
 from .scale_tuning import check_seeds
 
 SCENARIO = "S2"
@@ -304,7 +304,7 @@ def markdown_section(rows: list[dict[str, Any]]) -> str:
 
 def splice_section(page: str, text: str) -> str:
     """``page`` with the text between this section's marker lines replaced by ``text``."""
-    return _splice(page, text, START, END)
+    return splice_block(page, "gm-s2-usefulness", text)
 
 
 # --------------------------------------------------------------------------------------------- the command
