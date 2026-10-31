@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -110,3 +111,19 @@ def test_extra_flags_blocks_and_default_print(tmp_path: Path, capsys: pytest.Cap
     bare = tmp_path / "bare.md"
     bare.write_text("nothing\n", encoding="utf-8")
     assert run_study(study, ["--page", str(bare)]) == 1
+
+
+def test_compare_with_a_tolerance(tmp_path: Path) -> None:
+    csv_path = tmp_path / "r.csv"
+
+    def close(got: list[dict[str, object]], want: list[dict[str, object]]) -> list[str]:
+        return [f"{g['name']}" for g, w in zip(got, want, strict=True) if abs(g["value"] - w["value"]) > 0.1]  # type: ignore[operator]
+
+    def study(scale: float) -> Study:
+        return replace(make_study([], scale=scale), compare_rows=close)
+
+    assert run_study(study(1.0), ["--csv", str(csv_path)]) == 0
+    assert run_study(study(1.0), ["--compare", str(csv_path)]) == 0
+    # 1.01 differs as text but is inside the tolerance
+    assert run_study(study(1.01), ["--compare", str(csv_path)]) == 0
+    assert run_study(study(2.0), ["--compare", str(csv_path)]) == 1

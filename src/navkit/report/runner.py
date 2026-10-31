@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -52,6 +53,9 @@ class Study:
     prog: str | None = None
     description: str | None = None
     help: dict[str, str] = field(default_factory=dict)
+    #: Replaces the exact CSV compare. Takes the rows as a reader of the CSV sees them and the committed rows,
+    #: and returns the differences. For a study whose numbers may differ in the last bits across platforms.
+    compare_rows: Callable[[list[Row], list[Row]], list[str]] | None = None
 
 
 def _seeds(text: str) -> tuple[int, ...]:
@@ -114,6 +118,19 @@ def _rows(study: Study, args: argparse.Namespace) -> list[Row]:
     return study.run(getattr(args, "seeds", None))
 
 
+def _csv_differences(study: Study, compare: Path, rows: list[Row]) -> list[str]:
+    if study.compare_rows is None:
+        return [] if study.table.is_current(compare, rows) else [f"the rows differ from {compare}"]
+    # Compare what a reader of the CSV would see, so a number that survives the round trip through text is checked.
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "rows.csv"
+        study.table.write(path, rows)
+        problems = study.compare_rows(study.table.read(path), study.table.read(compare))
+    if problems:
+        return [f"the rows differ from {compare}:", *(f"  {p}" for p in problems[:10])]
+    return []
+
+
 def run_study(study: Study, argv: list[str] | None = None) -> int:
     args = build_parser(study).parse_args(argv)
     csv_path: Path | None = getattr(args, "csv", None)
@@ -125,8 +142,9 @@ def run_study(study: Study, argv: list[str] | None = None) -> int:
 
     if compare is not None:
         differs = False
-        if not study.table.is_current(compare, rows):
-            print(f"the rows differ from {compare}", file=sys.stderr)
+        problems = _csv_differences(study, compare, rows)
+        if problems:
+            print("\n".join(problems), file=sys.stderr)
             differs = True
         if page_path is not None and not all(block_is_current(page_path, n, t) for n, t in blocks.items()):
             print(f"the block in {page_path} differs", file=sys.stderr)
