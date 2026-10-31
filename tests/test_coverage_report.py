@@ -35,7 +35,7 @@ def _run(monkeypatch: pytest.MonkeyPatch, code: int, argv: list[str]) -> int:
     import pytest as pt
 
     monkeypatch.setattr(pt, "main", lambda *_a, **_k: code)
-    monkeypatch.setattr(sys, "argv", ["coverage_report.py", *argv])
+    monkeypatch.setattr(sys, "argv", ["coverage_report.py", "--serial", *argv])
     return cr.main()
 
 
@@ -73,6 +73,35 @@ def test_the_script_leaves_an_outer_tracer_in_place(quiet, monkeypatch) -> None:
         assert sys.gettrace() is outer
     finally:
         sys.settrace(previous)
+
+
+def _fake_pytest(monkeypatch, writers: list[str], code: int = 0) -> None:
+    """A pytest.main that, like the conftest hook, writes one file per worker in ``writers``."""
+    import json
+    import os
+
+    import pytest as pt
+
+    def main(*_a, **_k):
+        for w in writers:
+            (Path(os.environ[cr.COV_DIR_ENV]) / f"{w}.json").write_text(json.dumps({str(cr.SRC / "m.py"): [1]}))
+        return code
+
+    monkeypatch.setattr(pt, "main", main)
+
+
+def test_the_parallel_run_takes_the_union_of_the_worker_files(quiet, monkeypatch) -> None:
+    _fake_pytest(monkeypatch, ["gw0", "gw1"])
+    monkeypatch.setattr(cr, "TOTAL_FLOOR", 100.0)
+    monkeypatch.setattr(sys, "argv", ["coverage_report.py", "--ratchet", "--workers", "2"])
+    assert cr.main() == 0
+
+
+def test_a_missing_worker_file_fails_the_run(quiet, monkeypatch) -> None:
+    _fake_pytest(monkeypatch, ["gw0"])  # gw1 crashed before it wrote
+    monkeypatch.setattr(sys, "argv", ["coverage_report.py", "--workers", "2"])
+    with pytest.raises(RuntimeError, match=r"gw1\.json"):
+        cr.main()
 
 
 def test_no_test_imports_another_through_the_tests_package() -> None:

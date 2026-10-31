@@ -12,6 +12,10 @@ Usage::
     python scripts/coverage_report.py            # report
     python scripts/coverage_report.py --ratchet  # exit 1 if a floor regressed
     python scripts/coverage_report.py --json     # machine-readable
+    python scripts/coverage_report.py --serial   # one process, as before
+
+The default runs pytest under xdist. Each worker traces the same way and writes its hit lines to
+``$NAVKIT_COV_DIR/<worker>.json`` (see ``tests/conftest.py``); the parent takes the union.
 """
 
 from __future__ import annotations
@@ -82,9 +86,13 @@ def executable_lines(path: pathlib.Path) -> set[int]:
     return {ln for ln in lines if 0 < ln <= src.count("\n") + 1}
 
 
-def instrumented(targets: dict[str, set[int]]) -> tuple[dict[str, set[int]], int]:
-    """Run pytest under a line tracer, returning the executed lines per file and pytest's exit code."""
-    seen: dict[str, set[int]] = {k: set() for k in targets}
+WORKER_ENV = "PYTEST_XDIST_WORKER"
+COV_DIR_ENV = "NAVKIT_COV_DIR"
+_worker: dict = {}
+
+
+def make_tracer(seen: dict[str, set[int]]):
+    """The line tracer shared by the serial run and the xdist workers."""
 
     def tracer(frame, event, _arg):
         name = frame.f_code.co_filename
@@ -94,11 +102,73 @@ def instrumented(targets: dict[str, set[int]]) -> tuple[dict[str, set[int]], int
             return tracer
         return None
 
+    return tracer
+
+
+def worker_start() -> None:
+    """Install the tracer in an xdist worker. Called from ``pytest_configure`` when NAVKIT_COV_DIR is set."""
+    seen: dict[str, set[int]] = {str(p.resolve()): set() for p in SRC.rglob("*.py")}
+    _worker["seen"] = seen
+    sys.settrace(make_tracer(seen))
+
+
+def worker_finish() -> None:
+    """Write this worker's hit lines. Called from ``pytest_unconfigure``."""
+    seen = _worker.pop("seen", None)
+    if seen is None:
+        return
+    sys.settrace(None)
+    out = pathlib.Path(os.environ[COV_DIR_ENV]) / f"{os.environ[WORKER_ENV]}.json"
+    out.write_text(json.dumps({k: sorted(v) for k, v in seen.items()}))
+
+
+def merge_worker_files(cov_dir: pathlib.Path, workers: int, targets: dict[str, set[int]]) -> dict[str, set[int]]:
+    """Union of the worker files. Exactly one file per worker, or the run fails: no hits are lost silently."""
+    expected = {f"gw{i}.json" for i in range(workers)}
+    found = {p.name for p in cov_dir.glob("*.json")}
+    if found != expected:
+        raise RuntimeError(
+            f"coverage worker files differ from the expected set: missing {sorted(expected - found)}, "
+            f"unexpected {sorted(found - expected)}"
+        )
+    seen: dict[str, set[int]] = {k: set() for k in targets}
+    for name in sorted(expected):
+        for k, lines in json.loads((cov_dir / name).read_text()).items():
+            if k in seen:
+                seen[k].update(lines)
+    return seen
+
+
+def instrumented_parallel(targets: dict[str, set[int]], workers: int) -> tuple[dict[str, set[int]], int]:
+    """Run pytest under xdist with every worker tracing, returning the merged lines and pytest's exit code."""
+    import tempfile
+
+    import pytest
+
+    os.chdir(ROOT)
+    with tempfile.TemporaryDirectory(prefix="navkit-cov-") as tmp:
+        saved = os.environ.get(COV_DIR_ENV)
+        os.environ[COV_DIR_ENV] = tmp
+        try:
+            args = ["-q", "--no-header", "-p", "no:cacheprovider", "-n", str(workers), "--dist", "loadfile"]
+            code = int(pytest.main(args))
+        finally:
+            if saved is None:
+                os.environ.pop(COV_DIR_ENV, None)
+            else:
+                os.environ[COV_DIR_ENV] = saved
+        return merge_worker_files(pathlib.Path(tmp), workers, targets), code
+
+
+def instrumented(targets: dict[str, set[int]]) -> tuple[dict[str, set[int]], int]:
+    """Run pytest under a line tracer, returning the executed lines per file and pytest's exit code."""
+    seen: dict[str, set[int]] = {k: set() for k in targets}
+
     import pytest
 
     os.chdir(ROOT)
     outer = sys.gettrace()
-    sys.settrace(tracer)
+    sys.settrace(make_tracer(seen))
     try:
         code = int(pytest.main(["-q", "--no-header", "-p", "no:cacheprovider"]))
     finally:
@@ -110,6 +180,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--ratchet", action="store_true", help="exit 1 if a floor regressed")
     ap.add_argument("--json", action="store_true", help="emit JSON")
+    ap.add_argument("--serial", action="store_true", help="run the suite in this process, not under xdist")
+    ap.add_argument("--workers", type=int, default=os.cpu_count() or 1, help="xdist workers (default: CPU count)")
     args = ap.parse_args()
 
     # Executable lines are enumerated with `dis`, so the denominator is a
@@ -129,7 +201,10 @@ def main() -> int:
         print(f"interpreter: {interp}")
 
     modules = {str(p.resolve()): executable_lines(p) for p in sorted(SRC.rglob("*.py"))}
-    seen, suite_code = instrumented(modules)
+    if args.serial:
+        seen, suite_code = instrumented(modules)
+    else:
+        seen, suite_code = instrumented_parallel(modules, args.workers)
 
     rows = []
     for name, exec_lines in sorted(modules.items()):
