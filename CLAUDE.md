@@ -28,7 +28,7 @@ coverage). Synthetic evidence only unless a results row says otherwise.
 
 ## Workflow
 - Small PRs, each with tests, green CI before merge.
-- Sandcastle is the exception (`.sandcastle/`). Label an issue `Sandcastle` and its merger pushes straight to `main` after ruff, mypy and `make docs-fast`. The full suite runs on `main` afterwards, so a red `main` is fixed first. Maintainer decision, 2026-10-30.
+- Sandcastle is the exception (`.sandcastle/`). Label an issue `Sandcastle`; its merger pushes `sandcastle/integration`, opens a PR with `Closes #N` lines and merges it if the repo allows, after ruff, mypy and `make docs-fast`. The full suite runs in CI on `main` afterwards, so a red `main` is fixed first. Maintainer decision, 2026-10-30; PR route since the sandbox token cannot push to `main`.
 - Decisions get an ADR; the maintainer writes the decision section.
 - Ask before: force-push, history rewrite, deleting docs other pages link to, tagging releases.
 
