@@ -481,11 +481,6 @@ def _outcome_sentence(rows: list[dict[str, Any]], out: Outcome, grid_seeds: str)
     )
 
 
-def splice_section(page: str, text: str) -> str:
-    """``page`` with the text between the tuning markers replaced by ``text``."""
-    return splice_block(page, "scale-tuning", text)
-
-
 # ------------------------------------------------------------------------------------------ command
 
 
@@ -514,7 +509,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"wrote {args.csv}", file=sys.stderr)
     if args.page is not None:
         page = args.page.read_text(encoding="utf-8")
-        args.page.write_text(splice_section(page, markdown_section(rows)), encoding="utf-8")
+        args.page.write_text(splice_block(page, "scale-tuning", markdown_section(rows)), encoding="utf-8")
         print(f"wrote the tables into {args.page}", file=sys.stderr)
     print(f"{run.outcome.kind}; elapsed {time.perf_counter() - started:.1f} s", file=sys.stderr)
     return 0

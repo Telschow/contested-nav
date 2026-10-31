@@ -29,7 +29,7 @@ import numpy as np
 
 from .euroc_compare import _ALL_CONFIGS
 from .euroc_eval import RunOptions, dataset_loader, list_sequence_dirs, run_sequence
-from .report.page import write_block as _write_page_block
+from .report.page import write_block
 
 ONSET_S = 35.0
 WINDOW_S = 20.0
@@ -528,11 +528,6 @@ def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
 def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
     with Path(path).open(newline="", encoding="utf-8") as fh:
         return list(csv.DictReader(fh))
-
-
-def write_block(path: str | Path, name: str, block: str) -> None:
-    """Replace the text between a block's markers in a Markdown page."""
-    _write_page_block(path, name, block)
 
 
 def build_parser() -> argparse.ArgumentParser:

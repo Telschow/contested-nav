@@ -44,7 +44,7 @@ import yaml
 
 from .benchmark import default_config_path, run_case
 from .io.imu import DEFAULT_NOISE
-from .report.page import write_block as _write_page_block
+from .report.page import write_block
 from .types import ImuSample
 
 CASE = "outage_control"
@@ -366,11 +366,6 @@ def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
 def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
     with Path(path).open(newline="", encoding="utf-8") as fh:
         return list(csv.DictReader(fh))
-
-
-def write_block(path: str | Path, name: str, block: str) -> None:
-    """Replace the text between a block's markers in a Markdown page. Refuses a page without them."""
-    _write_page_block(path, name, block)
 
 
 def build_parser() -> argparse.ArgumentParser:

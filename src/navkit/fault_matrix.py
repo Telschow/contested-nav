@@ -392,11 +392,6 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_table(page: str, table: str) -> str:
-    """Replace the generated block of the fault page with ``table``."""
-    return splice_block(page, "faults", table)
-
-
 def _run_cell(
     fault_id: str,
     base: str,
@@ -530,7 +525,7 @@ def main(argv: list[str] | None = None) -> int:
         write_csv(args.csv, flat)
         print(f"wrote {args.csv}", file=sys.stderr)
     if args.page is not None:
-        page_text = splice_table(args.page.read_text(encoding="utf-8"), markdown_table(flat))
+        page_text = splice_block(args.page.read_text(encoding="utf-8"), "faults", markdown_table(flat))
         args.page.write_text(page_text, encoding="utf-8")
         print(f"wrote {args.page}", file=sys.stderr)
     if args.markdown:

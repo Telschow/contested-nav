@@ -12,6 +12,7 @@ import yaml
 
 from navkit import cli, fault_matrix
 from navkit.benchmark import default_config_path, run_case
+from navkit.report.page import splice_block
 from navkit.types import GnssFix
 
 pytestmark = pytest.mark.docs_only
@@ -203,19 +204,19 @@ def _control(base: str) -> dict[str, Any]:
 
 def test_the_page_table_is_the_committed_csv() -> None:
     page = PAGE.read_text(encoding="utf-8")
-    expected = fault_matrix.splice_table(page, fault_matrix.markdown_table(fault_matrix.read_csv(CSV)))
+    expected = splice_block(page, "faults", fault_matrix.markdown_table(fault_matrix.read_csv(CSV)))
     assert page == expected
 
 
 def test_a_page_without_markers_is_refused() -> None:
     with pytest.raises(ValueError, match="in that order"):
-        fault_matrix.splice_table("no markers", "x")
+        splice_block("no markers", "faults", "x")
 
 
 def test_a_page_with_reversed_markers_is_refused() -> None:
     page = "<!-- faults:end -->\n<!-- faults:start -->"
     with pytest.raises(ValueError, match="in that order"):
-        fault_matrix.splice_table(page, "x")
+        splice_block(page, "faults", "x")
 
 
 def test_the_csv_has_a_control_for_every_base_and_a_row_for_every_fault_level() -> None:

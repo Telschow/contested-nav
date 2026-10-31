@@ -40,7 +40,7 @@ import numpy as np
 from .euroc_compare import fetched_sequences
 from .euroc_eval import dataset_loader
 from .recorded import EurocSequence, SequenceError
-from .report.page import write_block as write_page_block
+from .report.page import write_block
 from .types import ImuSample, Trajectory, rot_log_batch
 
 CSV_COLUMNS = (
@@ -238,11 +238,6 @@ def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows({k: r[k] for k in CSV_COLUMNS} for r in rows)
 
 
-def write_block(path: str | Path, block: str, name: str = "timing") -> None:
-    """Replace the text between a block's markers in a Markdown page. Refuses a page without them."""
-    write_page_block(path, name, block)
-
-
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="navkit euroc timing",
@@ -291,7 +286,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"wrote {args.csv}", file=sys.stderr)
     if args.page:
         try:
-            write_block(args.page, table_markdown(rows))
+            write_block(args.page, "timing", table_markdown(rows))
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1

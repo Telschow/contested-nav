@@ -599,12 +599,6 @@ def robustness_markdown(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_section(page: str, text: str, start: str = START, end: str = END) -> str:
-    """``page`` with the text between the two marker lines replaced by ``text``."""
-    name = start.removeprefix("<!-- ").removesuffix(":start -->")
-    return splice_block(page, name, text)
-
-
 # ------------------------------------------------------------------------------------------ command
 
 
@@ -641,8 +635,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"wrote {args.csv} and {rob_path}", file=sys.stderr)
     if args.page is not None:
         page = args.page.read_text(encoding="utf-8")
-        page = splice_section(page, markdown_section(rows), START, END)
-        page = splice_section(page, robustness_markdown(rob_rows), ROB_START, ROB_END)
+        page = splice_block(page, "gm-tuning", markdown_section(rows))
+        page = splice_block(page, "gm-tuning-robustness", robustness_markdown(rob_rows))
         args.page.write_text(page, encoding="utf-8")
         print(f"wrote the tables into {args.page}", file=sys.stderr)
     print(f"{run.outcome.kind}; elapsed {time.perf_counter() - started:.1f} s", file=sys.stderr)

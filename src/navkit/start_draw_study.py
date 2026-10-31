@@ -201,10 +201,6 @@ def markdown_section(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_section(page: str, text: str) -> str:
-    return splice_block(page, "start-draw", text)
-
-
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", type=Path, default=None, help="scenario file (default: the packaged benchmark.yaml)")
@@ -231,5 +227,5 @@ def main(argv: list[str] | None = None) -> int:
             return 1
     if args.page is not None:
         page = args.page.read_text(encoding="utf-8")
-        args.page.write_text(splice_section(page, markdown_section(rows)), encoding="utf-8")
+        args.page.write_text(splice_block(page, "start-draw", markdown_section(rows)), encoding="utf-8")
     return 0

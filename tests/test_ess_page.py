@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from navkit import ensemble
+from navkit.report.page import splice_block
 
 pytestmark = pytest.mark.docs_only
 
@@ -27,7 +28,7 @@ def rows() -> list[dict]:
 
 def test_the_page_table_is_the_committed_csv(rows):
     page = PAGE.read_text(encoding="utf-8")
-    assert page == ensemble.splice_ess_table(page, ensemble.ess_markdown_table(rows))
+    assert page == splice_block(page, "ess", ensemble.ess_markdown_table(rows))
 
 
 def test_the_csv_round_trips_to_the_same_bytes(rows):

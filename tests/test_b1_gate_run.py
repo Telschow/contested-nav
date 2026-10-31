@@ -11,6 +11,7 @@ import pytest
 from navkit import b1_gate
 from navkit import benchmark as bm
 from navkit.eval.gate import evaluate_b1_gate
+from navkit.report.page import splice_block
 
 DEV_SEEDS = list(range(25))
 
@@ -111,10 +112,10 @@ def test_the_table_is_generated_from_the_rows(three_seed_rows):
         assert label in table
     assert table.count("DIAGNOSTIC") == 2 + 12
     page = "x\n<!-- b1-gate-dev:start -->\nSTALE\n<!-- b1-gate-dev:end -->\ny\n"
-    out = b1_gate.splice_table(page, table)
+    out = splice_block(page, "b1-gate-dev", table)
     assert "STALE" not in out and table in out and out.startswith("x\n") and out.endswith("\ny\n")
     with pytest.raises(ValueError, match="needs the lines"):
-        b1_gate.splice_table("no markers", table)
+        splice_block("no markers", "b1-gate-dev", table)
 
 
 def test_the_anchor_diagnostic_fails_the_gate_on_the_development_seeds(doc):

@@ -19,6 +19,7 @@ from typing import Any
 
 from . import slow_ramp as sr
 from .euroc_eval import dataset_loader, list_sequence_dirs
+from .report.page import write_block
 from .report.table import Column, Table
 
 FRONT_ENDS: dict[str, dict[str, Any]] = {
@@ -116,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.page:
         try:
             for name, text in tables.items():
-                sr.write_block(args.page, name, text)
+                write_block(args.page, name, text)
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1

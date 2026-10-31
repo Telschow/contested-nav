@@ -25,7 +25,7 @@ import numpy as np
 from .euroc_compare import CONFIGS
 from .euroc_eval import RunOptions, load_sequence, run_sequence
 from .geometry.rigid import rot_exp, rot_log
-from .report.page import write_block as _write_page_block
+from .report.page import write_block
 from .types import Trajectory, VisionUpdate, interpolate_trajectory
 from .vo_frontend import Camera, camera_from_yaml, load_gray, motion_from_pair, relative_poses_along
 
@@ -741,11 +741,6 @@ def build_parser() -> argparse.ArgumentParser:
 
 def read_clone_csv(path: str | Path) -> list[dict[str, Any]]:
     return read_csv(path)
-
-
-def write_block(path: str | Path, name: str, block: str) -> None:
-    """Replace the text between a block's markers in a Markdown page."""
-    _write_page_block(path, name, block)
 
 
 def main(argv: list[str] | None = None) -> int:

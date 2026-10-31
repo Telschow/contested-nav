@@ -14,6 +14,7 @@ import pytest
 from navkit import urbannav_check as uc
 from navkit import urbannav_fix_errors as fe
 from navkit.recorded import SequenceError
+from navkit.report.page import write_block
 from test_urbannav_synthetic import SEQ, write_tunnel
 
 PAGE = "x\n<!-- {name}:start -->\n<!-- {name}:end -->\ny\n"
@@ -64,7 +65,7 @@ def test_a_csv_round_trips_and_fills_its_page_block(mod, name, check_rows, fix_r
     back = mod.rows_from_csv(csv_path)
     assert [r["quantity"] for r in back] == [r["quantity"] for r in rows]
     page.write_text(PAGE.format(name=name), encoding="utf-8")
-    mod.write_block(page, name, mod.table_markdown(back))
+    write_block(page, name, mod.table_markdown(back))
     assert mod.table_markdown(back) in page.read_text(encoding="utf-8")
 
 
