@@ -25,12 +25,10 @@ Both CSVs are synthetic evidence from a known-answer fixture, not field measurem
 from __future__ import annotations
 
 import argparse
-import csv
-import io
 import math
 import sys
 import time
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
 
@@ -43,7 +41,9 @@ from .eval.statistics import autocorrelation_estimate, chi2_cdf
 from .fault_matrix import BASES, BY_ID, GnssHook, detection_stats
 from .fdir.config import FdirConfig
 from .fdir.gating import chi2_threshold, mahalanobis_sq
-from .report.page import write_block
+from .report.runner import Flags, Study, run_study
+from .report.runner import build_parser as runner_parser
+from .report.table import Column, Table
 
 __all__ = ["main"]
 
@@ -101,10 +101,39 @@ SENSITIVITY_FIELDS = (
     "detected_n",
     "declared_n",
 )
-_RATE_TEXT = ("case", "scope")
-_RATE_INT = ("updates", "rejections", "ess_defined")
-_SENS_TEXT = ("constant", "setting", "fault", "base", "unit")
-_SENS_INT = ("n_seeds", "detected_n", "declared_n")
+
+
+def _seed(cell: str) -> int | str:
+    return cell if cell == "all" else int(cell)
+
+
+class _Setting(float):
+    """A constant's value, written as ``%g`` so that 3 and 3.0 are one spelling in the CSV."""
+
+    __slots__ = ()
+
+    def __str__(self) -> str:
+        return format(float(self), "g")
+
+
+def _rate_columns() -> tuple[Column, ...]:
+    text, ints = ("case", "scope"), ("updates", "rejections", "ess_defined")
+    kinds: dict[str, Any] = {
+        f: str if f in text else _seed if f == "seed" else int if f in ints else float for f in RATE_FIELDS
+    }
+    return tuple(Column(f, k, f not in ints and f != "seed") for f, k in kinds.items())
+
+
+def _sensitivity_columns() -> tuple[Column, ...]:
+    text, ints = ("constant", "setting", "fault", "base", "unit"), ("n_seeds", "detected_n", "declared_n")
+    kinds = {
+        f: str if f in text else int if f in ints else _Setting if f == "value" else float for f in SENSITIVITY_FIELDS
+    }
+    return tuple(Column(f, k, f not in ints) for f, k in kinds.items())
+
+
+RATE_TABLE = Table(_rate_columns(), key="case")
+SENSITIVITY_TABLE = Table(_sensitivity_columns(), key="constant")
 
 
 # --- seeds, the gate, the counting -----------------------------------------------------------
@@ -287,32 +316,6 @@ def rate_rows(seeds: list[int] | tuple[int, ...] = SEEDS, doc: dict[str, Any] | 
 # --- CSV ---------------------------------------------------------------------------------------
 
 
-def rate_csv_text(rows: list[dict[str, Any]]) -> str:
-    buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=RATE_FIELDS, lineterminator="\n")
-    writer.writeheader()
-    for r in rows:
-        writer.writerow({k: ("" if r.get(k) is None else r[k]) for k in RATE_FIELDS})
-    return buf.getvalue()
-
-
-def parse_rate_csv(text: str) -> list[dict[str, Any]]:
-    out = []
-    for raw in csv.DictReader(io.StringIO(text)):
-        row: dict[str, Any] = {}
-        for key, value in raw.items():
-            if key in _RATE_TEXT:
-                row[key] = value
-            elif key == "seed":
-                row[key] = value if value == "all" else int(value)
-            elif key in _RATE_INT:
-                row[key] = int(value)
-            else:
-                row[key] = None if value == "" else float(value)
-        out.append(row)
-    return out
-
-
 def _differ(a: Any, b: Any, rel_tol: float, abs_tol: float) -> bool:
     if isinstance(a, float) and isinstance(b, float):
         return abs(a - b) > max(abs_tol, rel_tol * max(abs(a), abs(b)))
@@ -344,33 +347,6 @@ def compare_rate_rows(
             if _differ(r.get(f), ref.get(f), rel_tol, abs_tol):
                 problems.append(f"{key} {f}: {r.get(f)!r} != {ref.get(f)!r}")
     return problems
-
-
-def sensitivity_csv_text(rows: list[dict[str, Any]]) -> str:
-    buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=SENSITIVITY_FIELDS, lineterminator="\n")
-    writer.writeheader()
-    for r in rows:
-        out = {k: ("" if r.get(k) is None else r[k]) for k in SENSITIVITY_FIELDS}
-        if r.get("value") is not None:
-            out["value"] = format(r["value"], "g")  # 3 and 3.0 are the same setting; one spelling survives a round trip
-        writer.writerow(out)
-    return buf.getvalue()
-
-
-def parse_sensitivity_csv(text: str) -> list[dict[str, Any]]:
-    out = []
-    for raw in csv.DictReader(io.StringIO(text)):
-        row: dict[str, Any] = {}
-        for key, value in raw.items():
-            if key in _SENS_TEXT:
-                row[key] = value
-            elif key in _SENS_INT:
-                row[key] = int(value)
-            else:
-                row[key] = None if value == "" else float(value)
-        out.append(row)
-    return out
 
 
 def compare_sensitivity_rows(
@@ -756,20 +732,10 @@ def sensitivity_setup(rows: list[dict[str, Any]]) -> list[str]:
 # --- command line ------------------------------------------------------------------------------
 
 
-def _write_page(path: Path, part: str, block: str) -> None:
-    write_block(path, PAGE_BLOCKS[part], block)
-    print(f"wrote {path}", file=sys.stderr)
-
-
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(
-        prog="navkit sweep fdir", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
+def _add_arguments(ap: argparse.ArgumentParser) -> None:
     ap.add_argument(
         "part", choices=("rate", "sensitivity"), help="rate: per-update false alarms; sensitivity: constants"
     )
-    ap.add_argument("--csv", type=Path, default=None, help="write the rows to this CSV")
-    ap.add_argument("--page", type=Path, default=None, help="rewrite this part's generated block in this page")
     ap.add_argument(
         "--seeds",
         type=int,
@@ -781,61 +747,75 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--faults", nargs="+", default=None, help="sensitivity only: fault ids (default: all)")
     ap.add_argument("--constants", nargs="+", default=None, help="sensitivity only: constants (default: all three)")
-    ap.add_argument("--markdown", action="store_true", help="print the tables")
-    ap.add_argument(
-        "--compare", type=Path, default=None, help="exit 1 unless the run matches this committed CSV (1e-6 relative)"
-    )
-    args = ap.parse_args(argv)
 
+
+def _write_under_compare(args: argparse.Namespace, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The runner writes nothing under ``--compare``; the CI reproducibility legs ``cmp`` two ``--csv`` outputs."""
+    if args.compare is not None and args.csv is not None:
+        STUDIES[args.part].table.write(args.csv, rows)
+        print(f"wrote {args.csv}", file=sys.stderr)
+    return rows
+
+
+def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
     full = args.faults is None and args.constants is None
     if args.part == "rate":
         n = len(SEEDS) if args.seeds is None else args.seeds
-        if n < 2:
-            raise SystemExit("a spread needs at least 2 seeds")
         reduced = n != len(SEEDS)
     else:
         n = SENSITIVITY_SEEDS if args.seeds is None else args.seeds
-        if n < 2:
-            raise SystemExit("a spread needs at least 2 seeds")
         reduced = n != SENSITIVITY_SEEDS or not full
+    if n < 2:
+        raise SystemExit("a spread needs at least 2 seeds")
     if args.page is not None and reduced:
         raise SystemExit("--page needs the full grid: drop --seeds, --faults and --constants")
     try:
+        check_seeds(range(n))
         if args.part == "rate":
-            seeds = list(range(n))
-            check_seeds(seeds)
-            rows = rate_rows(seeds)
-            text = rate_csv_text(rows)
-            block = rate_tables(rows)
-        else:
-            check_seeds(range(n))
-            srows = sensitivity_rows(args.faults, args.constants, n, progress=True)
-            text = sensitivity_csv_text(srows)
-            block = sensitivity_tables(srows)
+            return _write_under_compare(args, rate_rows(list(range(n))))
+        rows = sensitivity_rows(args.faults, args.constants, n, progress=True)
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
+    for r in rows:
+        if r.get("value") is not None:
+            r["value"] = _Setting(r["value"])
+    return _write_under_compare(args, rows)
 
-    if args.csv is not None:
-        args.csv.parent.mkdir(parents=True, exist_ok=True)
-        args.csv.write_text(text, encoding="utf-8")
-        print(f"wrote {args.csv}", file=sys.stderr)
-    if args.page is not None:
-        _write_page(args.page, args.part, block)
-    if args.markdown:
-        print(block)
-    if args.compare is not None:
-        committed = args.compare.read_text(encoding="utf-8")
-        if args.part == "rate":
-            problems = compare_rate_rows(parse_rate_csv(text), parse_rate_csv(committed))
-        else:
-            problems = compare_sensitivity_rows(parse_sensitivity_csv(text), parse_sensitivity_csv(committed))
-        if problems:
-            print(f"result differs from {args.compare}:", file=sys.stderr)
-            for p in problems[:10]:
-                print(f"  {p}", file=sys.stderr)
-            return 1
-        print(f"result matches {args.compare}", file=sys.stderr)
-    return 0
+
+def _study(part: str, table: Table, render: Callable[[list[dict[str, Any]]], str], compare: Any) -> Study:
+    return Study(
+        table=table,
+        run_args=_run,
+        render=render,
+        page_name=PAGE_BLOCKS[part],
+        flags=Flags(csv=True, page=True, markdown=True, compare=True),
+        add_arguments=_add_arguments,
+        prog="navkit sweep fdir",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        help={
+            "csv": "write the rows to this CSV",
+            "page": "rewrite this part's generated block in this page",
+            "markdown": "print the tables",
+            "compare": "exit 1 unless the run matches this committed CSV (1e-6 relative)",
+        },
+        compare_rows=compare,
+    )
+
+
+STUDIES = {
+    "rate": _study("rate", RATE_TABLE, rate_tables, compare_rate_rows),
+    "sensitivity": _study("sensitivity", SENSITIVITY_TABLE, sensitivity_tables, compare_sensitivity_rows),
+}
+
+
+def build_parser() -> argparse.ArgumentParser:
+    return runner_parser(STUDIES["rate"])
+
+
+def main(argv: list[str] | None = None) -> int:
+    part = build_parser().parse_args(argv).part
+    return run_study(STUDIES[part], argv)
 
 
 if __name__ == "__main__":

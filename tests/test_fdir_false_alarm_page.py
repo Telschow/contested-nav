@@ -34,12 +34,12 @@ VERDICT_WORDS = ("calibrated", "miscalibrated", "well-tuned", "overly sensitive"
 
 @pytest.fixture(scope="module")
 def rate_rows() -> list[dict]:
-    return fa.parse_rate_csv(RATE_CSV.read_text(encoding="utf-8"))
+    return fa.RATE_TABLE.read(RATE_CSV)
 
 
 @pytest.fixture(scope="module")
 def sens_rows() -> list[dict]:
-    return fa.parse_sensitivity_csv(SENS_CSV.read_text(encoding="utf-8"))
+    return fa.SENSITIVITY_TABLE.read(SENS_CSV)
 
 
 @pytest.fixture(scope="module")
@@ -66,9 +66,11 @@ def test_the_sensitivity_block_is_the_committed_csv(sens_rows):
     assert page == splice_block(page, "fdir-sensitivity", fa.sensitivity_tables(sens_rows))
 
 
-def test_the_csv_files_are_written_by_the_writers_byte_for_byte(rate_rows, sens_rows):
-    assert RATE_CSV.read_text(encoding="utf-8") == fa.rate_csv_text(rate_rows)
-    assert SENS_CSV.read_text(encoding="utf-8") == fa.sensitivity_csv_text(sens_rows)
+def test_the_csv_files_are_written_by_the_writers_byte_for_byte(rate_rows, sens_rows, tmp_path):
+    fa.RATE_TABLE.write(tmp_path / "rate.csv", rate_rows)
+    fa.SENSITIVITY_TABLE.write(tmp_path / "sens.csv", sens_rows)
+    assert RATE_CSV.read_bytes() == (tmp_path / "rate.csv").read_bytes()
+    assert SENS_CSV.read_bytes() == (tmp_path / "sens.csv").read_bytes()
 
 
 def test_the_headers_are_the_documented_columns():
