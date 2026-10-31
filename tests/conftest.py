@@ -31,3 +31,28 @@ settings.register_profile(
     suppress_health_check=[HealthCheck.too_slow],
 )
 settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "ci"))
+
+
+def _coverage_module():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parent.parent / "scripts" / "coverage_report.py"
+    spec = importlib.util.spec_from_file_location("_navkit_coverage_report", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def pytest_configure(config):
+    """Under ``scripts/coverage_report.py``, each xdist worker traces and writes its hit lines at the end."""
+    if os.environ.get("NAVKIT_COV_DIR") and os.environ.get("PYTEST_XDIST_WORKER"):
+        config._navkit_cov = _coverage_module()
+        config._navkit_cov.worker_start()
+
+
+def pytest_unconfigure(config):
+    cov = getattr(config, "_navkit_cov", None)
+    if cov is not None:
+        cov.worker_finish()
