@@ -14,7 +14,7 @@ import pytest
 pytestmark = pytest.mark.docs_only
 
 ROOT = Path(__file__).resolve().parent.parent
-EM_DASH = "—"
+EM_DASH = "\u2014"
 #: Path prefixes that may contain the character, each with the reason. Empty on purpose.
 EXCLUDED: dict[str, str] = {}
 
