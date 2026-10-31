@@ -13,6 +13,7 @@ import yaml
 from navkit import cli, mismatch_sweep
 from navkit.benchmark import _eskf_config, default_config_path, run_case
 from navkit.degrade import scenario_from_dict
+from navkit.report.page import splice_block
 
 pytestmark = pytest.mark.docs_only
 
@@ -208,19 +209,19 @@ def _by(case: str) -> dict[float, dict[str, Any]]:
 
 def test_the_page_table_is_the_committed_csv() -> None:
     page = PAGE.read_text(encoding="utf-8")
-    expected = mismatch_sweep.splice_table(page, mismatch_sweep.markdown_table(mismatch_sweep.read_csv(CSV)))
+    expected = splice_block(page, "mismatch", mismatch_sweep.markdown_table(mismatch_sweep.read_csv(CSV)))
     assert page == expected
 
 
 def test_a_page_without_markers_is_refused() -> None:
     with pytest.raises(ValueError, match="in that order"):
-        mismatch_sweep.splice_table("no markers", "x")
+        splice_block("no markers", "mismatch", "x")
 
 
 def test_a_page_with_reversed_markers_is_refused() -> None:
     page = "<!-- mismatch:end -->\n<!-- mismatch:start -->"
     with pytest.raises(ValueError, match="in that order"):
-        mismatch_sweep.splice_table(page, "x")
+        splice_block(page, "mismatch", "x")
 
 
 def test_the_grid_has_the_scale_one_row_for_each_case() -> None:

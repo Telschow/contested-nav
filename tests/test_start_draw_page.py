@@ -14,6 +14,7 @@ import yaml
 
 from navkit import start_draw_study as sds
 from navkit.estimators.eskf import EskfConfig
+from navkit.report.page import splice_block
 
 pytestmark = pytest.mark.docs_only
 
@@ -50,7 +51,7 @@ def test_the_csv_text_is_what_the_writer_produces(rows):
 
 def test_the_page_section_is_the_committed_csv(rows):
     page = PAGE.read_text(encoding="utf-8")
-    assert page == sds.splice_section(page, sds.markdown_section(rows))
+    assert page == splice_block(page, "start-draw", sds.markdown_section(rows))
 
 
 def test_every_cell_of_the_table_is_recomputed_from_the_rows(rows, section):

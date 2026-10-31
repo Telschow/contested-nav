@@ -19,6 +19,7 @@ from navkit.estimators.eskf import EskfConfig
 from navkit.eval.candidate_gate import ScenarioGateResult
 from navkit.eval.gate import Condition
 from navkit.io.imu import ImuNoiseModel
+from navkit.report.page import splice_block
 
 #: ADR-0031's twelve points, written out here from the ADR: tau in {2, 5, 10} s, s_min in {0.25, 0.5}, s_max in {8, 16}.
 ADR_POINTS = {
@@ -558,16 +559,16 @@ def test_the_section_for_a_failed_confirmation_names_the_block():
 
 def test_splice_section_replaces_only_what_is_between_the_markers():
     page = f"head\n{st.START}\nold\n{st.END}\ntail\n"
-    out = st.splice_section(page, "NEW")
+    out = splice_block(page, "scale-tuning", "NEW")
     assert out == f"head\n{st.START}\n\nNEW\n\n{st.END}\ntail\n"
-    assert st.splice_section(out, "NEW") == out
+    assert splice_block(out, "scale-tuning", "NEW") == out
 
 
 def test_splice_section_needs_both_markers_in_order():
     with pytest.raises(ValueError, match="needs"):
-        st.splice_section("no markers", "x")
+        splice_block("no markers", "scale-tuning", "x")
     with pytest.raises(ValueError, match="needs"):
-        st.splice_section(f"{st.END}\n{st.START}", "x")
+        splice_block(f"{st.END}\n{st.START}", "scale-tuning", "x")
 
 
 # --------------------------------------------------------------------------------- real cases, seeds 0, 1

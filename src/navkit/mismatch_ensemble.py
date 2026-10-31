@@ -174,11 +174,6 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_table(page: str, table: str) -> str:
-    """``page`` with the text between the mismatch-ensemble markers replaced by ``table``."""
-    return splice_block(page, "mismatch-ensemble", table)
-
-
 # ------------------------------------------------------------------------------------------------------ sentences
 
 #: The factors the page calls mild. They are my choice, like the 90% coverage band of the single-run sweep.
@@ -394,5 +389,5 @@ def write_outputs(
     print(f"wrote {csv_path}", file=sys.stderr)
     if page_path is not None:
         page = page_path.read_text(encoding="utf-8")
-        page_path.write_text(splice_table(page, page_block(rows, single_rows)), encoding="utf-8")
+        page_path.write_text(splice_block(page, "mismatch-ensemble", page_block(rows, single_rows)), encoding="utf-8")
         print(f"wrote the ensemble table into {page_path}", file=sys.stderr)

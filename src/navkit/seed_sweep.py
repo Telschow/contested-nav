@@ -45,10 +45,9 @@ from .ensemble import (
     ess_markdown_table,
     markdown_table,
     parse_csv,
-    splice_ess_table,
-    splice_table,
 )
 from .eval.calibration import verdict_label
+from .report.page import splice_block
 
 # Fields worth spreading. ATE and NEES and coverage are the three the docs quote,
 # and they fail differently: ATE is a physical error, NEES is calibration, and
@@ -239,7 +238,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"wrote {args.ensemble_csv}", file=sys.stderr)
         if args.ensemble_page is not None:
             page = args.ensemble_page.read_text(encoding="utf-8")
-            args.ensemble_page.write_text(splice_table(page, markdown_table(collector.rows())), encoding="utf-8")
+            args.ensemble_page.write_text(
+                splice_block(page, "ensemble", markdown_table(collector.rows())), encoding="utf-8"
+            )
             print(f"wrote the ensemble table into {args.ensemble_page}", file=sys.stderr)
     if args.ensemble_compare is not None:
         problems = compare_rows(collector.rows(), parse_csv(args.ensemble_compare.read_text(encoding="utf-8")))
@@ -255,7 +256,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"wrote {args.ess_csv}", file=sys.stderr)
         if args.ess_page is not None:
             page = args.ess_page.read_text(encoding="utf-8")
-            args.ess_page.write_text(splice_ess_table(page, ess_markdown_table(collector.ess_rows())), encoding="utf-8")
+            args.ess_page.write_text(
+                splice_block(page, "ess", ess_markdown_table(collector.ess_rows())), encoding="utf-8"
+            )
             print(f"wrote the effective sample size table into {args.ess_page}", file=sys.stderr)
     if args.ess_compare is not None:
         problems = compare_rows(

@@ -13,6 +13,7 @@ import pytest
 
 from navkit import b1_gate
 from navkit.eval import gate
+from navkit.report.page import splice_block
 
 pytestmark = pytest.mark.docs_only
 
@@ -38,7 +39,7 @@ def section() -> str:
 
 def test_the_page_table_is_the_committed_csv(rows):
     page = PAGE.read_text(encoding="utf-8")
-    assert page == b1_gate.splice_table(page, b1_gate.markdown_table(rows))
+    assert page == splice_block(page, "b1-gate-dev", b1_gate.markdown_table(rows))
 
 
 def test_the_csv_round_trips_to_the_same_bytes(rows):

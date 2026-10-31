@@ -47,7 +47,7 @@ from .eval.calibration import effective_samples, wilson_interval
 from .fdir.gating import chi2_threshold
 from .io.imu import DEFAULT_NOISE, ImuNoiseModel
 from .recorded import EurocSequence, SequenceError
-from .report.page import write_block as _write_page_block
+from .report.page import write_block
 from .types import GRAVITY, GnssFix, Trajectory, interpolate_trajectory, rot_log_batch
 
 SEQUENCE = "tunnel1"
@@ -765,11 +765,6 @@ def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
 def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
     with Path(path).open(newline="", encoding="utf-8") as fh:
         return list(csv.DictReader(fh))
-
-
-def write_block(path: str | Path, name: str, block: str) -> None:
-    """Replace the text between a block's markers in a Markdown page."""
-    _write_page_block(path, name, block)
 
 
 def build_parser() -> argparse.ArgumentParser:

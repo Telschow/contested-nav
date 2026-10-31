@@ -302,11 +302,6 @@ def markdown_section(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_section(page: str, text: str) -> str:
-    """``page`` with the text between this section's marker lines replaced by ``text``."""
-    return splice_block(page, "gm-s2-usefulness", text)
-
-
 # --------------------------------------------------------------------------------------------- the command
 
 
@@ -334,7 +329,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"wrote {args.csv}", file=sys.stderr)
     if args.page is not None:
         page = args.page.read_text(encoding="utf-8")
-        args.page.write_text(splice_section(page, markdown_section(rows)), encoding="utf-8")
+        args.page.write_text(splice_block(page, "gm-s2-usefulness", markdown_section(rows)), encoding="utf-8")
         print(f"wrote the tables into {args.page}", file=sys.stderr)
     print(f"elapsed {time.perf_counter() - started:.1f} s", file=sys.stderr)
     return 0

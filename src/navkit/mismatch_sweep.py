@@ -207,11 +207,6 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_table(page: str, table: str) -> str:
-    """Replace the generated block of the mismatch page with ``table``."""
-    return splice_block(page, "mismatch", table)
-
-
 def tolerance(rows: list[dict[str, Any]], min_coverage_pct: float) -> dict[str, dict[str, list[float]]]:
     """Per case, the factors whose mean 2-sigma coverage is at or above the band, and those below."""
     out: dict[str, dict[str, list[float]]] = {}
@@ -352,7 +347,7 @@ def main(argv: list[str] | None = None) -> int:
         write_csv(args.csv, flat)
         print(f"wrote {args.csv}", file=sys.stderr)
     if args.page is not None:
-        page_text = splice_table(args.page.read_text(encoding="utf-8"), markdown_table(flat))
+        page_text = splice_block(args.page.read_text(encoding="utf-8"), "mismatch", markdown_table(flat))
         args.page.write_text(page_text, encoding="utf-8")
         print(f"wrote {args.page}", file=sys.stderr)
     if args.figure is not None:

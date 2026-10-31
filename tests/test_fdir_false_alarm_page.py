@@ -17,6 +17,7 @@ from navkit import fdir_false_alarm as fa
 from navkit.benchmark import default_config_path
 from navkit.eval.calibration import wilson_interval
 from navkit.fdir.config import FdirConfig
+from navkit.report.page import splice_block
 
 pytestmark = pytest.mark.docs_only
 
@@ -57,12 +58,12 @@ def _words(text: str) -> str:
 
 def test_the_false_alarm_block_is_the_committed_csv(rate_rows):
     page = PAGE.read_text(encoding="utf-8")
-    assert page == fa.splice_block(page, "rate", fa.rate_tables(rate_rows))
+    assert page == splice_block(page, "fdir-false-alarm", fa.rate_tables(rate_rows))
 
 
 def test_the_sensitivity_block_is_the_committed_csv(sens_rows):
     page = PAGE.read_text(encoding="utf-8")
-    assert page == fa.splice_block(page, "sensitivity", fa.sensitivity_tables(sens_rows))
+    assert page == splice_block(page, "fdir-sensitivity", fa.sensitivity_tables(sens_rows))
 
 
 def test_the_csv_files_are_written_by_the_writers_byte_for_byte(rate_rows, sens_rows):

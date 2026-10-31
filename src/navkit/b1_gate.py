@@ -293,11 +293,6 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
     return "\n".join([*head, "", *body])
 
 
-def splice_table(page: str, table: str) -> str:
-    """``page`` with the text between the gate markers replaced by ``table``."""
-    return splice_block(page, "b1-gate-dev", table)
-
-
 # --------------------------------------------------------------------------------------------- command
 
 
@@ -340,7 +335,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"wrote {args.csv}", file=sys.stderr)
     if args.page is not None:
         page = args.page.read_text(encoding="utf-8")
-        args.page.write_text(splice_table(page, markdown_table(rows)), encoding="utf-8")
+        args.page.write_text(splice_block(page, "b1-gate-dev", markdown_table(rows)), encoding="utf-8")
         print(f"wrote the table into {args.page}", file=sys.stderr)
     for r in rows:
         if r["condition"] == "ate_worst":

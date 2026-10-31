@@ -28,7 +28,7 @@ import numpy as np
 
 from .benchmark import run_case
 from .eval.calibration import effective_samples, ensemble_nees, window_mask
-from .report.page import splice_block
+from .report.page import write_block
 
 CSV_FIELDS = (
     "case",
@@ -207,19 +207,6 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def splice_table(page: str, table: str) -> str:
-    """``page`` with the text between the ensemble markers replaced by ``table``."""
-    return splice_block(page, "ensemble", table)
-
-
-ESS_START, ESS_END = "<!-- ess:start -->", "<!-- ess:end -->"
-
-
-def splice_ess_table(page: str, table: str) -> str:
-    """``page`` with the text between the effective-sample-size markers replaced by ``table``."""
-    return splice_block(page, "ess", table)
-
-
 def ess_markdown_table(rows: list[dict[str, Any]]) -> str:
     """The generated block for the effective sample sizes: one line per case and scope."""
     if not rows:
@@ -263,8 +250,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--page", type=Path, required=True)
     args = ap.parse_args(argv)
     rows = parse_csv(args.csv.read_text(encoding="utf-8"))
-    page = args.page.read_text(encoding="utf-8")
-    args.page.write_text(splice_table(page, markdown_table(rows)), encoding="utf-8")
+    write_block(args.page, "ensemble", markdown_table(rows))
     print(f"wrote the ensemble table into {args.page}", file=sys.stderr)
     return 0
 

@@ -43,6 +43,7 @@ from .eval.statistics import autocorrelation_estimate, chi2_cdf
 from .fault_matrix import BASES, BY_ID, GnssHook, detection_stats
 from .fdir.config import FdirConfig
 from .fdir.gating import chi2_threshold, mahalanobis_sq
+from .report.page import write_block
 
 __all__ = ["main"]
 
@@ -65,10 +66,7 @@ CASES = ("gnss_only", "outage_control")
 #: The constants moved one at a time in part B.
 CONSTANTS = ("max_consecutive_rejections", "reacq_consecutive_rejections", "reacq_sigma_m")
 
-PAGE_MARKERS = {
-    "rate": ("<!-- fdir-false-alarm:start -->", "<!-- fdir-false-alarm:end -->"),
-    "sensitivity": ("<!-- fdir-sensitivity:start -->", "<!-- fdir-sensitivity:end -->"),
-}
+PAGE_BLOCKS = {"rate": "fdir-false-alarm", "sensitivity": "fdir-sensitivity"}
 
 RATE_FIELDS = (
     "case",
@@ -755,21 +753,11 @@ def sensitivity_setup(rows: list[dict[str, Any]]) -> list[str]:
     ]
 
 
-def splice_block(page: str, part: str, block: str) -> str:
-    """Replace the generated block of ``part`` (``rate`` or ``sensitivity``) in the fault page."""
-    start, end = PAGE_MARKERS[part]
-    if start not in page or end not in page:
-        raise ValueError(f"the page needs {start} ... {end} markers")
-    head, rest = page.split(start, 1)
-    _, tail = rest.split(end, 1)
-    return f"{head}{start}\n\n{block}\n\n{end}{tail}"
-
-
 # --- command line ------------------------------------------------------------------------------
 
 
 def _write_page(path: Path, part: str, block: str) -> None:
-    path.write_text(splice_block(path.read_text(encoding="utf-8"), part, block), encoding="utf-8")
+    write_block(path, PAGE_BLOCKS[part], block)
     print(f"wrote {path}", file=sys.stderr)
 
 

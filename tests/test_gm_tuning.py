@@ -16,6 +16,7 @@ from navkit import candidate_gate as cg_run
 from navkit import cli
 from navkit import gm_tuning as gt
 from navkit import scale_tuning as st
+from navkit.report.page import splice_block
 from test_scale_tuning import _cond, _scenario
 
 #: ADR-0034's twelve points, written out here from the ADR: tau in {0.25, 0.5, 1, 2} s, rho in {0.5, 0.75, 0.9}.
@@ -462,15 +463,15 @@ def test_the_robustness_table_is_labelled_diagnostic_and_is_not_a_pass_or_fail()
 
 def test_splice_section_replaces_only_what_is_between_the_markers():
     page = f"head\n{gt.START}\nold\n{gt.END}\ntail\n"
-    out = gt.splice_section(page, "new", gt.START, gt.END)
+    out = splice_block(page, "gm-tuning", "new")
     assert out == f"head\n{gt.START}\n\nnew\n\n{gt.END}\ntail\n"
-    assert gt.splice_section(out, "new", gt.START, gt.END) == out
+    assert splice_block(out, "gm-tuning", "new") == out
 
 
 def test_splice_section_needs_both_markers_in_order():
     for page in ("no markers", f"{gt.END}\n{gt.START}", gt.START):
         with pytest.raises(ValueError, match="needs the lines"):
-            gt.splice_section(page, "x", gt.START, gt.END)
+            splice_block(page, "gm-tuning", "x")
 
 
 # --------------------------------------------------------------------------------------- the evaluator
