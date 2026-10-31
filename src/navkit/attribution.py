@@ -44,7 +44,8 @@ import yaml
 
 from .benchmark import default_config_path, run_case
 from .io.imu import DEFAULT_NOISE
-from .report.page import write_block
+from .report.runner import Flags, Study, run_study
+from .report.runner import build_parser as runner_parser
 from .report.table import Column, Table
 from .types import ImuSample
 
@@ -364,41 +365,29 @@ def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
         return list(csv.DictReader(fh))
 
 
-def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
-        prog="navkit sweep attribution",
-        description="Where the error of a GNSS outage comes from: remove, inflate and grow each inertial source.",
-    )
+def _add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--seeds", type=int, default=8, help="seeds for the ablation and escalation (default: %(default)s)")
     p.add_argument("--growth-seeds", type=int, default=5, help="seeds for the growth test (default: %(default)s)")
     p.add_argument("--fault-seeds", type=int, default=6, help="seeds for the bias fault (default: %(default)s)")
     p.add_argument("--only", action="append", choices=("ablation", "escalation", "growth", "fault"), default=[])
-    p.add_argument("--csv", default=None, help="write one row per run")
-    p.add_argument("--from-csv", default=None, help="rebuild the tables and page from a saved --csv file; no runs")
-    p.add_argument("--page", default=None, help="fill the attribution blocks of this Markdown page")
-    p.add_argument("--markdown", action="store_true", help="print the tables")
-    return p
 
 
-def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    if args.from_csv:
-        rows = rows_from_csv(args.from_csv)
-    else:
-        wanted = args.only or ["ablation", "escalation", "growth", "fault"]
-        rows = []
-        steps: dict[str, Callable[[], list[dict[str, Any]]]] = {
-            "ablation": lambda: ablation_rows(args.seeds),
-            "escalation": lambda: escalation_rows(args.seeds),
-            "growth": lambda: growth_rows(args.growth_seeds),
-            "fault": lambda: fault_rows(args.fault_seeds),
-        }
-        for name in wanted:
-            print(f"{name} ...", file=sys.stderr, flush=True)
-            rows += steps[name]()
-    if args.csv:
-        TABLE.write(args.csv, rows)
-        print(f"wrote {args.csv}", file=sys.stderr)
+def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
+    wanted = args.only or ["ablation", "escalation", "growth", "fault"]
+    rows: list[dict[str, Any]] = []
+    steps: dict[str, Callable[[], list[dict[str, Any]]]] = {
+        "ablation": lambda: ablation_rows(args.seeds),
+        "escalation": lambda: escalation_rows(args.seeds),
+        "growth": lambda: growth_rows(args.growth_seeds),
+        "fault": lambda: fault_rows(args.fault_seeds),
+    }
+    for name in wanted:
+        print(f"{name} ...", file=sys.stderr, flush=True)
+        rows += steps[name]()
+    return rows
+
+
+def _blocks(rows: list[dict[str, Any]], args: argparse.Namespace) -> dict[str, str]:
     have = {r["experiment"] for r in rows}
     needs = {
         "attribution-ablation": "ablation",
@@ -406,22 +395,37 @@ def main(argv: list[str] | None = None) -> int:
         "attribution-growth": "growth",
         "attribution-fault": "fault",
     }
-    tables = {
+    return {
         name: BLOCKS[name](rows)
         for name, exp in needs.items()
         if exp in have and (exp != "escalation" or "ablation" in have)
     }
-    if args.page:
-        try:
-            for name, text in tables.items():
-                write_block(args.page, name, text)
-        except ValueError as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 1
-        print(f"wrote {args.page}", file=sys.stderr)
-    if args.markdown or not (args.csv or args.page):
-        print("\n\n".join(tables.values()))
-    return 0
+
+
+STUDY = Study(
+    table=TABLE,
+    run_args=_run,
+    blocks=_blocks,
+    flags=Flags(csv=True, page=True, markdown=True, from_csv=True, print_default=True),
+    add_arguments=_add_arguments,
+    read=rows_from_csv,
+    prog="navkit sweep attribution",
+    description="Where the error of a GNSS outage comes from: remove, inflate and grow each inertial source.",
+    help={
+        "csv": "write one row per run",
+        "from_csv": "rebuild the tables and page from a saved --csv file; no runs",
+        "page": "fill the attribution blocks of this Markdown page",
+        "markdown": "print the tables",
+    },
+)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    return runner_parser(STUDY)
+
+
+def main(argv: list[str] | None = None) -> int:
+    return run_study(STUDY, argv)
 
 
 if __name__ == "__main__":  # pragma: no cover

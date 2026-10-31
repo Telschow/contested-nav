@@ -24,7 +24,8 @@ from .euroc_compare import _ALL_CONFIGS, DEFAULT_OUTAGE_S, DEFAULT_STARTS, fitti
 from .euroc_eval import RunOptions, dataset_loader, list_sequence_dirs, run_sequence
 from .fdir.config import FdirConfig
 from .fdir.gating import chi2_threshold
-from .report.page import write_block
+from .report.runner import Flags, Study, run_study
+from .report.runner import build_parser as runner_parser
 from .report.table import Column, Table
 
 DOF = 3
@@ -236,44 +237,44 @@ def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:
         return list(csv.DictReader(fh))
 
 
-def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(
-        prog="navkit sweep separability",
-        description="Honest returns after real-IMU outages against spoofs of several sizes, at the first GNSS gate.",
-    )
+def _add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--euroc-root", default="data/raw/euroc")
     p.add_argument("--tumvi-root", default="data/raw/tumvi")
     p.add_argument("--seeds", type=int, default=3)
-    p.add_argument("--csv", default=None, help="write one row per honest return")
-    p.add_argument("--from-csv", default=None, help="rebuild the tables and page from a saved --csv file; no runs")
-    p.add_argument("--page", default=None, help="fill the separability blocks of this Markdown page")
-    p.add_argument("--markdown", action="store_true", help="print the tables")
-    return p
+
+
+def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for ds, root in (("euroc", args.euroc_root), ("tumvi", args.tumvi_root)):
+        print(f"{ds} ...", file=sys.stderr, flush=True)
+        rows += honest_rows(ds, root, SETTINGS[ds], args.seeds)
+    return rows
+
+
+STUDY = Study(
+    table=TABLE,
+    run_args=_run,
+    blocks=lambda rows, args: {name: fn(rows) for name, fn in BLOCKS.items()},
+    flags=Flags(csv=True, page=True, markdown=True, from_csv=True, print_default=True),
+    add_arguments=_add_arguments,
+    read=rows_from_csv,
+    prog="navkit sweep separability",
+    description="Honest returns after real-IMU outages against spoofs of several sizes, at the first GNSS gate.",
+    help={
+        "csv": "write one row per honest return",
+        "from_csv": "rebuild the tables and page from a saved --csv file; no runs",
+        "page": "fill the separability blocks of this Markdown page",
+        "markdown": "print the tables",
+    },
+)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    return runner_parser(STUDY)
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    if args.from_csv:
-        rows = rows_from_csv(args.from_csv)
-    else:
-        rows = []
-        for ds, root in (("euroc", args.euroc_root), ("tumvi", args.tumvi_root)):
-            print(f"{ds} ...", file=sys.stderr, flush=True)
-            rows += honest_rows(ds, root, SETTINGS[ds], args.seeds)
-    if args.csv:
-        TABLE.write(args.csv, rows)
-        print(f"wrote {args.csv}", file=sys.stderr)
-    tables = {name: fn(rows) for name, fn in BLOCKS.items()}
-    if args.page:
-        try:
-            for name, text in tables.items():
-                write_block(args.page, name, text)
-        except ValueError as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 1
-    if args.markdown or not (args.csv or args.page):
-        print("\n\n".join(tables.values()))
-    return 0
+    return run_study(STUDY, argv)
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -88,7 +88,7 @@ def test_extra_flags_blocks_and_default_print(tmp_path: Path, capsys: pytest.Cap
     study = Study(
         table=TABLE,
         run_args=run,
-        blocks=lambda rows: {"one": f"n={rows[0]['value']}", "two": "second"},
+        blocks=lambda rows, args: {"one": f"n={rows[0]['value']}", "two": "second"},
         flags=Flags(csv=True, page=True, markdown=True, from_csv=True, print_default=True),
         add_arguments=add,
         prog="demo",

@@ -35,9 +35,9 @@ class Flags:
 class Study:
     """One study. ``run`` takes the seeds; ``run_args`` takes all parsed flags and wins when both are set.
 
-    ``render`` gives the one block of ``page_name``. ``blocks`` gives several, by marker name, and wins.
-    ``add_arguments`` adds the study's own flags before the shared ones, ``help`` replaces the help of a shared
-    flag by its name, and ``read`` replaces ``table.read`` for ``--from-csv``.
+    ``render`` gives the one block of ``page_name``. ``blocks`` gives several by marker name, from the rows and
+    the parsed flags, and wins. ``add_arguments`` adds the study's own flags before the shared ones, ``help``
+    replaces the help of a shared flag by its name, and ``read`` replaces ``table.read`` for ``--from-csv``.
     """
 
     table: Table
@@ -46,7 +46,7 @@ class Study:
     page_name: str = ""
     flags: Flags = field(default_factory=Flags)
     run_args: Callable[[argparse.Namespace], list[Row]] | None = None
-    blocks: Callable[[list[Row]], dict[str, str]] | None = None
+    blocks: Callable[[list[Row], argparse.Namespace], dict[str, str]] | None = None
     add_arguments: Callable[[argparse.ArgumentParser], None] | None = None
     read: Callable[[Path], list[Row]] | None = None
     prog: str | None = None
@@ -69,6 +69,13 @@ def build_parser(study: Study) -> argparse.ArgumentParser:
 
     if f.csv:
         ap.add_argument("--csv", type=Path, default=None, help=h("csv", "write the rows here"))
+    if f.from_csv:
+        ap.add_argument(
+            "--from-csv",
+            type=Path,
+            default=None,
+            help=h("from_csv", "read the rows from this CSV instead of running"),
+        )
     if f.page:
         ap.add_argument(
             "--page",
@@ -80,13 +87,6 @@ def build_parser(study: Study) -> argparse.ArgumentParser:
         ap.add_argument("--markdown", action="store_true", help=h("markdown", "print the block to stdout"))
     if f.seeds:
         ap.add_argument("--seeds", type=_seeds, default=None, help=h("seeds", "comma-separated seeds"))
-    if f.from_csv:
-        ap.add_argument(
-            "--from-csv",
-            type=Path,
-            default=None,
-            help=h("from_csv", "read the rows from this CSV instead of running"),
-        )
     if f.compare:
         ap.add_argument(
             "--compare",
@@ -97,9 +97,9 @@ def build_parser(study: Study) -> argparse.ArgumentParser:
     return ap
 
 
-def _blocks(study: Study, rows: list[Row]) -> dict[str, str]:
+def _blocks(study: Study, rows: list[Row], args: argparse.Namespace) -> dict[str, str]:
     if study.blocks is not None:
-        return study.blocks(rows)
+        return study.blocks(rows, args)
     assert study.render is not None, "a study needs render or blocks"
     return {study.page_name: study.render(rows)}
 
@@ -121,7 +121,7 @@ def run_study(study: Study, argv: list[str] | None = None) -> int:
     compare: Path | None = getattr(args, "compare", None)
 
     rows = _rows(study, args)
-    blocks = _blocks(study, rows)
+    blocks = _blocks(study, rows, args)
 
     if compare is not None:
         differs = False
