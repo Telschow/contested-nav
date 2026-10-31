@@ -45,3 +45,4 @@ what it cost, and what was rejected.
 | [ADR-0038](0038-one-report-package-for-generated-pages-and-results-tables.md) | One report package for generated pages and results tables | proposed |
 | [ADR-0039](0039-pytest-xdist-in-the-dev-extra.md) | pytest-xdist in the dev extra | proposed |
 | [ADR-0040](0040-staleness-of-the-nis-windows.md) | Staleness of the NIS windows | proposed |
+| [ADR-0041](0041-a-correlated-error-term-for-the-gnss-update.md) | A correlated-error term for the GNSS update | proposed |
