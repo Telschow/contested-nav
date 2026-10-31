@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import argparse
 import copy
-import csv
 import hashlib
 import json
 import platform
@@ -39,6 +38,7 @@ import numpy as np
 import yaml
 
 from .benchmark import MEASUREMENT, _config_label, _jsonable, default_config_path, run_case
+from .report.table import Column, Table
 from .scene_sweep import bootstrap_ci
 
 DEFAULT_CASES = ("outage_control", "outage_visual")
@@ -64,6 +64,10 @@ CSV_FIELDS = (
     "coverage_2sigma_pct_hi",
     "claimed_sigma_p_m_mean",
     "verdicts",
+)
+TABLE = Table(
+    tuple(Column(n, str, optional=True) for n in CSV_FIELDS),
+    key="case",
 )
 
 
@@ -129,27 +133,25 @@ def with_outage(case: dict[str, Any], start_s: float, duration_s: float) -> dict
 
 
 def write_csv(path: Path, cells: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS, lineterminator="\n")
-        writer.writeheader()
-        for cell in cells:
-            row: dict[str, Any] = {
-                "case": cell["case"],
-                "start_s": cell["start_s"],
-                "duration_s": cell["duration_s"],
-                "end_s": cell["start_s"] + cell["duration_s"],
-                "n_seeds": cell["n_seeds"],
-                "verdicts": ";".join(f"{k}={v}" for k, v in cell["verdicts"].items()),
-            }
-            for metric in METRICS:
-                m = cell[metric]
-                if metric == "claimed_sigma_p_m":
-                    row[f"{metric}_mean"] = None if m is None else m["mean"]
-                    continue
-                for key in ("mean", "lo", "hi"):
-                    row[f"{metric}_{key}"] = None if m is None else m[key]
-            writer.writerow(row)
+    rows: list[dict[str, Any]] = []
+    for cell in cells:
+        row: dict[str, Any] = {
+            "case": cell["case"],
+            "start_s": cell["start_s"],
+            "duration_s": cell["duration_s"],
+            "end_s": cell["start_s"] + cell["duration_s"],
+            "n_seeds": cell["n_seeds"],
+            "verdicts": ";".join(f"{k}={v}" for k, v in cell["verdicts"].items()),
+        }
+        for metric in METRICS:
+            m = cell[metric]
+            if metric == "claimed_sigma_p_m":
+                row[f"{metric}_mean"] = None if m is None else m["mean"]
+                continue
+            for key in ("mean", "lo", "hi"):
+                row[f"{metric}_{key}"] = None if m is None else m[key]
+        rows.append(row)
+    TABLE.write(path, rows)
 
 
 def as_markdown(cells: list[dict[str, Any]]) -> str:

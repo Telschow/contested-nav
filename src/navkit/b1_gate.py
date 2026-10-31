@@ -33,6 +33,7 @@ import yaml
 from .benchmark import default_config_path, run_case
 from .eval.calibration import window_mask
 from .eval.gate import B1GateResult, evaluate_b1_gate
+from .report.page import splice_block
 
 #: The held-out set of ADR-0028, single use.
 HELD_OUT_SEEDS = range(100, 125)
@@ -294,11 +295,7 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
 
 def splice_table(page: str, table: str) -> str:
     """``page`` with the text between the gate markers replaced by ``table``."""
-    if START not in page or END not in page or page.index(START) > page.index(END):
-        raise ValueError(f"the page needs the lines {START} and {END}, in that order")
-    head, rest = page.split(START, 1)
-    _, tail = rest.split(END, 1)
-    return f"{head}{START}\n\n{table}\n\n{END}{tail}"
+    return splice_block(page, "b1-gate-dev", table)
 
 
 # --------------------------------------------------------------------------------------------- command

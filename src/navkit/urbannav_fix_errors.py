@@ -137,7 +137,7 @@ BLOCKS: dict[str, Callable[[list[dict[str, Any]]], str]] = {"urbannav-fix-errors
 
 def write_csv(path: str | Path, rows: list[dict[str, Any]]) -> None:
     """Write ``rows`` to ``path``, replacing the rows of those sequences and keeping the rows of any other."""
-    ud.write_merged_csv(path, CSV_COLUMNS, rows)
+    ud.csv_table(CSV_COLUMNS).merge(path, rows)
 
 
 def rows_from_csv(path: str | Path) -> list[dict[str, Any]]:

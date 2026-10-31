@@ -47,6 +47,7 @@ from . import candidate_gate as _gate
 from .b1_gate import format_seeds
 from .eval.candidate_gate import CANDIDATE_GATE_UPPER_QUANTILE, ScenarioGateResult, evaluate_scenario_gate
 from .eval.gate import Condition
+from .report.page import splice_block
 
 #: ADR-0031: "tau in {2, 5, 10} seconds, s_min in {0.25, 0.5}, s_max in {8, 16}: twelve points, and no others".
 GRID_TAU_S = (2.0, 5.0, 10.0)
@@ -482,11 +483,7 @@ def _outcome_sentence(rows: list[dict[str, Any]], out: Outcome, grid_seeds: str)
 
 def splice_section(page: str, text: str) -> str:
     """``page`` with the text between the tuning markers replaced by ``text``."""
-    if START not in page or END not in page or page.index(START) > page.index(END):
-        raise ValueError(f"the page needs the lines {START} and {END}, in that order")
-    head, rest = page.split(START, 1)
-    _, tail = rest.split(END, 1)
-    return f"{head}{START}\n\n{text}\n\n{END}{tail}"
+    return splice_block(page, "scale-tuning", text)
 
 
 # ------------------------------------------------------------------------------------------ command

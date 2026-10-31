@@ -80,3 +80,15 @@ def test_compare_equal_and_different(tmp_path: Path) -> None:
     assert TABLE.is_current(path, rows)
     assert not TABLE.is_current(path, [row("a", 1, 1.0), row("b", 2, 2.5)])
     assert not TABLE.is_current(path, rows[:1])
+
+
+def test_write_ends_lines_with_lf(tmp_path: Path) -> None:
+    path = tmp_path / "t.csv"
+    TABLE.write(path, [row("a", 3, 0.5)])
+    assert b"\r" not in path.read_bytes()
+
+
+def test_write_with_crlf_line_terminator(tmp_path: Path) -> None:
+    path = tmp_path / "t.csv"
+    Table(TABLE.columns, key=TABLE.key, lineterminator="\r\n").write(path, [row("a", 3, 0.5)])
+    assert path.read_bytes().count(b"\r\n") == 2
