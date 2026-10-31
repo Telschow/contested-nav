@@ -3,3 +3,6 @@
 # first Windows CI leg failed because autocrlf changed the bytes and so the hash.
 configs/*.yaml text eol=lf
 tests/golden/*.json text eol=lf
+# The FDIR study CSVs are written with LF and compared byte for byte in tests.
+docs/data/fdir_false_alarm.csv text eol=lf
+docs/data/fdir_sensitivity.csv text eol=lf

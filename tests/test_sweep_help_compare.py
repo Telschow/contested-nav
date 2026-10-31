@@ -8,12 +8,19 @@ from __future__ import annotations
 
 import json
 from importlib import import_module
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Any
 
 import pytest
 
 RECORD = json.loads((Path(__file__).parent / "data" / "sweep_help" / "compare_studies.json").read_text())
+
+
+def _default(value: Any) -> str:
+    """Paths print as PosixPath on every platform, as in the record."""
+    if isinstance(value, PurePath):
+        return f"PosixPath({value.as_posix()!r})"
+    return repr(value)
 
 
 def _actions(parser: Any) -> list[dict[str, Any]]:
@@ -22,7 +29,7 @@ def _actions(parser: Any) -> list[dict[str, Any]]:
             {
                 "flags": a.option_strings,
                 "help": a.help,
-                "default": repr(a.default),
+                "default": _default(a.default),
                 "required": a.required,
                 "choices": a.choices and list(a.choices),
                 "nargs": a.nargs,
