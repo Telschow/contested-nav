@@ -1,0 +1,17 @@
+usage: navkit sweep vision-ramp [-h] [--euroc-root EUROC_ROOT]
+                                [--tumvi-root TUMVI_ROOT] [--seeds SEEDS]
+                                [--csv CSV] [--from-csv FROM_CSV]
+                                [--page PAGE] [--markdown]
+
+Slow-ramp GNSS spoofs with a simulated visual second source.
+
+options:
+  -h, --help            show this help message and exit
+  --euroc-root EUROC_ROOT
+  --tumvi-root TUMVI_ROOT
+  --seeds SEEDS
+  --csv CSV             write one row per run
+  --from-csv FROM_CSV   rebuild the tables and page from a saved --csv file;
+                        no runs
+  --page PAGE           fill the vision-ramp blocks of this Markdown page
+  --markdown            print the tables

@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 
 import pytest
 
-from navkit.report.runner import Flags, Study, run_study
+from navkit.report.runner import Flags, Study, build_parser, run_study
 from navkit.report.table import Column, Table
 
 TABLE = Table((Column("name", str), Column("value", float)), key="name")
@@ -72,3 +73,40 @@ def test_undeclared_flag_is_refused() -> None:
     study = Study(table=study.table, run=study.run, render=study.render, flags=Flags(csv=True))
     with pytest.raises(SystemExit):
         run_study(study, ["--page", "x.md"])
+
+
+def test_extra_flags_blocks_and_default_print(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seen: list[int] = []
+
+    def add(ap: argparse.ArgumentParser) -> None:
+        ap.add_argument("--n", type=int, default=2)
+
+    def run(args: argparse.Namespace) -> list[dict[str, object]]:
+        seen.append(args.n)
+        return [{"name": "a", "value": float(args.n)}]
+
+    study = Study(
+        table=TABLE,
+        run_args=run,
+        blocks=lambda rows: {"one": f"n={rows[0]['value']}", "two": "second"},
+        flags=Flags(csv=True, page=True, markdown=True, from_csv=True, print_default=True),
+        add_arguments=add,
+        prog="demo",
+        help={"csv": "write one row per run"},
+    )
+    assert run_study(study, ["--n", "5"]) == 0
+    assert seen == [5]
+    assert capsys.readouterr().out == "n=5.0\n\nsecond\n"
+
+    page = tmp_path / "p.md"
+    markers = "<!-- one:start -->\n\n<!-- one:end -->\n<!-- two:start -->\n\n<!-- two:end -->\n"
+    page.write_text(markers, encoding="utf-8")
+    assert run_study(study, ["--csv", str(tmp_path / "r.csv"), "--page", str(page)]) == 0
+    assert capsys.readouterr().out == ""
+    assert "n=2.0" in page.read_text(encoding="utf-8")
+    assert "write one row per run" in build_parser(study).format_help()
+
+    # a page without the markers is an error exit, not a traceback
+    bare = tmp_path / "bare.md"
+    bare.write_text("nothing\n", encoding="utf-8")
+    assert run_study(study, ["--page", str(bare)]) == 1
