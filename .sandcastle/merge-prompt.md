@@ -31,13 +31,18 @@ Never force-push and never rewrite history. If the push is rejected, fetch, merg
 
 1. Look for an open PR from the current branch: `gh pr list --head "$(git branch --show-current)" --state open --json number`.
 2. If none, create one with `gh pr create --base main --title "<short summary of the merged work>" --body-file <file>`. If one exists, update its body with `gh pr edit <number> --body-file <file>`.
-3. The body lists the merged branches and the checks that passed, and has one line `Closes #<ID>` per issue below. GitHub closes the issues when the PR merges, so do not run `gh issue close`.
-4. Try `gh pr merge <number> --merge`. If it is refused (required checks pending, no permission), leave the PR open and say so. Do not use `--admin` and do not wait for CI.
+3. The body lists the merged branches and the checks that passed, and has one line `Closes #<ID>` per issue below. GitHub also closes them when the PR merges.
+4. Merge it: `gh pr merge <number> --merge`. If it is refused because required checks are pending, run `gh pr merge <number> --merge --auto` and say so. Do not use `--admin` and do not wait for CI.
+5. Confirm with `gh pr view <number> --json state --jq .state`.
+
+# ISSUES
+
+Only when the state is `MERGED`, close each issue that is still open with `gh issue close <ID> --comment "Merged by Sandcastle in PR #<number>; the full suite runs in CI on main"`. Check first with `gh issue view <ID> --json state`; the `Closes` lines may already have closed it. If the PR is not merged, close nothing and say why.
 
 Issues:
 
 {{ISSUES}}
 
-If any check or the push failed, create no PR and say which step failed.
+If any check or the push failed, create no PR, close nothing, and say which step failed.
 
 Output <promise>COMPLETE</promise> when done.
