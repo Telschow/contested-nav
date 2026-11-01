@@ -15,7 +15,7 @@ an analytic trajectory. No number here is a field measurement.
 ## Why is visual fusion off by default?
 
 Because with GNSS denied it makes the filter confidently wrong: its mean NEES is far above the
-expected 3 and its 2σ coverage far below the expected 99.3% (see [Results](results.md); the table there
+expected 3 and its 2σ ellipsoid coverage far below the expected 99.3% (see [Results](results.md); the table there
 is one run with one start draw). A caller who did not ask for that should
 not receive it ([ADR-0003](adr/0003-ship-visual-disabled.md)).
 

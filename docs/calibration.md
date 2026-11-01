@@ -59,7 +59,7 @@ others.
 honestly large `P`, and its NEES stays near nominal. A NEES in the hundreds
 requires both.
 
-## 2-sigma coverage
+## 2-sigma ellipsoid coverage
 
 The fraction of steps where the true error lies inside the claimed 2-sigma
 ellipsoid.

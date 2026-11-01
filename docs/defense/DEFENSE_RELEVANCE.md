@@ -66,7 +66,7 @@ actual error.
 
 **VERIFIED BY REPOSITORY**: with GNSS denied for 15 s and visual odometry on,
 the filter reports centimetres of 1σ position uncertainty while being metres wrong;
-its mean NEES is far above the expected 3 and its 2σ coverage far below the
+its mean NEES is far above the expected 3 and its 2σ ellipsoid coverage far below the
 expected 99.3%. The overconfidence held at all 10 seeds, each with its own start draw (measured once on one machine, not checked by CI, at 946d661). The
 scene sweep (8 scenes) was re-run at 946d661, and each of the five single-anchor rows read overconfident in every scene.
 

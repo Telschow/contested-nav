@@ -138,7 +138,7 @@ usually disqualified by warm-up and cost simultaneously, not by performance.
 > was never run. The benchmark config misspelled `drop_fraction`, so the case
 > executed at the 20% default. The config is fixed and both columns are now
 > genuinely 30% (`outage_visual_degraded_camera`: 2.008 m, mean NEES 203.7,
-> 2σ coverage 17.8%). The 20%→30% comparison is no longer available, so
+> 2σ ellipsoid coverage 17.8%). The 20%→30% comparison is no longer available, so
 > "verified" rests on the single 30% point; see ADR-0008.
 | Additional aiding | none | wheel/airspeed optional | wheel odometry, altitude |
 | Front-end processing | on SoC, CPU only | on SoC, CPU + NPU optional | dedicated, GPU optional |
@@ -318,7 +318,7 @@ power.
 ### 4.3 The hard constraint that does not move
 
 **AC-03 and AC-04 currently fail** (SRS §3.2): mean NEES 286.2 against an
-expected 3, and 2σ coverage of 20.5% where 95% is required. This is blocker
+expected 3, and 2σ ellipsoid coverage of 20.5% where 95% is required. This is blocker
 B1, it is a pose-graph problem, and it is true on *all three* platform profiles
 because it is a model error rather than a hardware limit.
 

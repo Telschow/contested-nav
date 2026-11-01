@@ -130,7 +130,7 @@ Each statement below is checked against the CSV files by `tests/test_euroc_page.
 3. **The bias-walk preset loses fewer runs than the noise-scale preset** in the main table.
 4. **In the later checks the bias-walk preset loses no run**, for either outage length. The noise-scale preset
    loses no run at the shorter outage and some at the longer one.
-5. **The bias-walk preset is slightly conservative.** Over all runs, its mean 2σ coverage is at
+5. **The bias-walk preset is slightly conservative.** Over all runs, its mean 2σ ellipsoid coverage is at
    or above the nominal 99.3% in each table, and its median NEES is below the expected 3.
 6. **The FDIR flag undercounts the lost runs of the default.** More runs are lost than are flagged.
 

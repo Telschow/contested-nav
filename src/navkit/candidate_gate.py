@@ -32,6 +32,7 @@ from typing import Any
 import numpy as np
 import yaml
 
+from . import seed_policy
 from .b1_gate import CANDIDATE_ESTIMATOR, format_seeds, parse_seeds, window_arrays
 from .benchmark import default_config_path, run_case
 from .eval.calibration import effective_samples
@@ -52,8 +53,8 @@ CONTROL = "outage_control"
 DEFAULT_ESTIMATOR: dict[str, Any] = dict(CANDIDATE_ESTIMATOR)
 
 #: The first held-out block (ADR-0028) is spent. Later blocks start here and have this many seeds.
-SPENT_SEEDS = range(100, 125)
-FIRST_HELD_OUT_SEED = 125
+SPENT_SEEDS = seed_policy.B1_HELD_OUT_SEEDS
+FIRST_HELD_OUT_SEED = seed_policy.FIRST_BLOCK_SEED
 BLOCK_SIZE = 25
 #: The seeds whose effective sample sizes the pre-registered simulation draws from (ADR-0030).
 POOL_SEEDS = list(range(25, 100))

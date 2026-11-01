@@ -35,6 +35,7 @@ from typing import Any
 
 import yaml
 
+from . import seed_policy
 from .benchmark import default_config_path, run_case
 from .eval.calibration import wilson_interval
 from .fdir.config import FdirConfig
@@ -49,8 +50,7 @@ BLIND_NEES_FACTOR = 3.0
 
 CASES = ("independent", "correlated", "single_anchor")
 DEFAULT_SEEDS = range(0, 10)
-#: Seeds from here are the held-out set of ADR-0028.
-HELD_OUT_FROM = 100
+HELD_OUT_FROM = seed_policy.HELD_OUT_FROM
 #: The position update has three degrees of freedom; the gate is the chi-square threshold at the default alpha.
 DOF = 3
 GATE_LEVEL = chi2_threshold(DOF, FdirConfig().alpha)

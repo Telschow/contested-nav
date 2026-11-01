@@ -37,6 +37,7 @@ from typing import Any
 import numpy as np
 import yaml
 
+from . import seed_policy
 from .benchmark import MEASUREMENT, _config_label, _jsonable, default_config_path, run_case
 from .report.table import Column, Table
 from .scene_sweep import bootstrap_ci
@@ -192,6 +193,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.config is None:
         args.config = default_config_path()
 
+    seed_policy.require_development_or_exit(args.seeds)
     if args.seeds < 2:
         raise SystemExit("a spread needs at least 2 seeds")
     if any(s < 0 for s in args.starts) or any(d <= 0 for d in args.durations):

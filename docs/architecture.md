@@ -184,7 +184,7 @@ benchmark note below and blocker B4.
 - **NEES**: normalised estimation error squared,
   `e^T P^-1 e`, against a chi-square distribution with `n` degrees of
   freedom. A well-calibrated filter sits near the nominal value.
-- **2-sigma coverage**: the fraction of steps where the true error falls
+- **2-sigma ellipsoid coverage**: the fraction of steps where the true error falls
   inside the claimed 2-sigma ellipsoid. The most direct read on whether a
   downstream consumer can trust the output.
 - **Calibration verdict**: over/underconfident/consistent classification, formed with the effective

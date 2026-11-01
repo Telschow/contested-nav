@@ -12,7 +12,7 @@ directly into the inertial position covariance via `H_cp = -R_prev^T`.
 Measured behaviour on the generated synthetic benchmark, 20 s, GNSS
 available throughout, noisy IMU (`python scripts/run_benchmark.py`):
 
-| Path | ATE RMSE | Claimed 1σ | Mean NEES | 2σ coverage |
+| Path | ATE RMSE | Claimed 1σ | Mean NEES | 2σ ellipsoid coverage |
 |---|---:|---:|---:|---:|
 | Anchor folded into `P` (defect) | 1.259 m | 0.091 m | 354.6 | 16.0% |
 | Anchor as filter state, GNSS aided | 0.503 m | 0.252 m | 3.7 | 100.0% |

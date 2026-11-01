@@ -94,12 +94,12 @@ Each statement below is checked against the CSV (and, for statement 5, the timin
 
 1. **The raw figures lose more runs than the authors' inflated figures**, and the inflated figures lose more than
    the bias-walk setting, which loses one run.
-2. **The same ordering holds for calibration.** The median NEES falls and the mean 2σ coverage rises from `allan`
+2. **The same ordering holds for calibration.** The median NEES falls and the mean 2σ ellipsoid coverage rises from `allan`
    to `file` to `file-walk10`.
 3. **With only the bias random walk changed, the loss falls from some runs to fewer.** `file-walk10` differs from
    `file` in the bias random walks alone, and still loses a run.
 4. **The bias-walk setting is close to nominal.** Over all runs its median NEES is below the expected 3, and its
-   mean 2σ coverage is within two points of the nominal 99.3%.
+   mean 2σ ellipsoid coverage is within two points of the nominal 99.3%.
 5. **The ordering also holds in the rooms with the fewest dropouts.** Leaving out the two rooms that spend most of their
    time in motion-capture dropouts, the raw figures still lose more runs than the inflated ones, which lose more
    than the bias-walk setting.
