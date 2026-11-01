@@ -46,7 +46,7 @@ regenerate it, because the dataset is not vendored.
 
 Lost = more than 20% of GNSS fixes rejected. Flag = FDIR declared the channel faulty.
 
-| Scope | Config | Runs | Lost | Flag | Median NEES (expected 3) | Mean 2σ ellipsoid coverage | Median max error m |
+| Scope | Config | Runs | Lost | Flag | Median NEES (expected 3) | Mean 2σ coverage | Median max error m |
 |---|---|---:|---:|---:|---:|---:|---:|
 | all | default | 72 | 39 | 32 | 10.84 | 59.6% | 91.5 |
 | all | preset | 72 | 2 | 1 | 3.23 | 96.7% | 22.1 |
@@ -109,7 +109,7 @@ eleven sequences. Generated from [`data/euroc_validation.csv`](data/euroc_valida
 
 Lost = more than 20% of GNSS fixes rejected.
 
-| Outage s | Config | Runs | Lost | Median NEES (expected 3) | Mean 2σ ellipsoid coverage |
+| Outage s | Config | Runs | Lost | Median NEES (expected 3) | Mean 2σ coverage |
 |---:|---|---:|---:|---:|---:|
 | 20 | default | 62 | 21 | 6.83 | 67.5% |
 | 20 | preset | 62 | 0 | 2.74 | 98.2% |

@@ -45,7 +45,7 @@ regenerate it, because the dataset is not vendored.
 
 Lost = more than 20% of GNSS fixes rejected. Flag = FDIR declared the channel faulty.
 
-| Scope | Config | Runs | Lost | Flag | Median NEES (expected 3) | Mean 2σ ellipsoid coverage | Median max error m |
+| Scope | Config | Runs | Lost | Flag | Median NEES (expected 3) | Mean 2σ coverage | Median max error m |
 |---|---|---:|---:|---:|---:|---:|---:|
 | all | file | 46 | 2 | 2 | 4.25 | 91.0% | 10.6 |
 | all | allan | 46 | 6 | 6 | 8.20 | 71.8% | 12.9 |
