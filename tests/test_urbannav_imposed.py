@@ -100,7 +100,6 @@ def test_existing_csv_rows_are_unchanged(name):
 
 def test_the_run_gives_rows_under_the_imposed_name_on_a_fixture(tmp_path):
     from navkit import euroc_eval as ee
-    from navkit import urbannav_run as ur
 
     ee.write_fixture(tmp_path, "MH_01_easy", duration_s=60.0, seed=1)
     seq = ee.load_sequence(tmp_path, "MH_01_easy")
@@ -121,4 +120,3 @@ def test_the_run_gives_rows_under_the_imposed_name_on_a_fixture(tmp_path):
     rows = ui.rows_for_outage("syn", o, seq, gnss, [], info, seeds=(0,))
     assert {r["sequence"] for r in rows} == {ui.row_sequence("syn", o)}
     assert {r["variant"] for r in rows} == set(ui.VARIANTS)
-    assert ur.rows_for  # the receiver's own rows come from the same function
