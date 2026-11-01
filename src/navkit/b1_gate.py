@@ -30,13 +30,13 @@ from typing import Any
 import numpy as np
 import yaml
 
+from . import seed_policy
 from .benchmark import default_config_path, run_case
 from .eval.calibration import window_mask
 from .eval.gate import B1GateResult, evaluate_b1_gate
 from .report.page import splice_block
 
-#: The held-out set of ADR-0028, single use.
-HELD_OUT_SEEDS = range(100, 125)
+HELD_OUT_SEEDS = seed_policy.B1_HELD_OUT_SEEDS
 #: The gate is decided on this many seeds.
 GATE_RUNS = 25
 CANDIDATE_ESTIMATOR = {"vision_model": "clone", "vision_noise_preset": "measured-front-end"}

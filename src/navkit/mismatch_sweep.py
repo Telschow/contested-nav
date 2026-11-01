@@ -36,7 +36,7 @@ from typing import Any
 import numpy as np
 import yaml
 
-from . import mismatch_ensemble
+from . import mismatch_ensemble, seed_policy
 from .benchmark import MEASUREMENT, _config_label, _jsonable, default_config_path, run_case
 from .outage_sweep import METRICS, _collect, _interval, summarise_cell
 from .report.runner import Flags, Study, run_study
@@ -266,6 +266,8 @@ def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
     if args.config is None:
         args.config = default_config_path()
 
+    seed_policy.require_development_or_exit(args.seeds)
+    seed_policy.require_development_or_exit(mismatch_ensemble.FIRST_SEED + args.ensemble_seeds)
     if args.seeds < 2:
         raise SystemExit("a spread needs at least 2 seeds")
     if args.ensemble_seeds < 2:

@@ -40,6 +40,7 @@ from typing import Any
 import numpy as np
 import yaml
 
+from . import seed_policy
 from .benchmark import MEASUREMENT, default_config_path, run_case
 
 # Number of bootstrap resamples. Large enough that the 95th percentile of the
@@ -144,6 +145,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.config is None:
         args.config = default_config_path()
 
+    seed_policy.require_development_or_exit(args.seeds)
     if args.seeds < 2:
         raise SystemExit("a spread needs at least 2 scenes")
 

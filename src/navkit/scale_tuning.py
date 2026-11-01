@@ -44,6 +44,7 @@ from typing import Any
 import numpy as np
 
 from . import candidate_gate as _gate
+from . import seed_policy
 from .b1_gate import format_seeds
 from .eval.candidate_gate import CANDIDATE_GATE_UPPER_QUANTILE, ScenarioGateResult, evaluate_scenario_gate
 from .eval.gate import Condition
@@ -62,7 +63,7 @@ CONFIRMATION_BLOCKS: dict[str, range] = {
     "confirm 75-99": range(75, 100),
 }
 #: The first seed this module will not run. Seeds 100 to 124 are spent (ADR-0028); from 125 they are held-out blocks.
-SEED_LIMIT = 100
+SEED_LIMIT = seed_policy.HELD_OUT_FROM
 SCENARIOS = ("S1", "S2")
 
 START, END = "<!-- scale-tuning:start -->", "<!-- scale-tuning:end -->"

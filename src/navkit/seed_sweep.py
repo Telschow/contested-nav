@@ -36,6 +36,7 @@ from typing import Any
 import numpy as np
 import yaml
 
+from . import seed_policy
 from .benchmark import MEASUREMENT, _config_label, _jsonable, default_config_path, run_case
 from .ensemble import (
     ESS_FIELDS,
@@ -136,6 +137,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.config is None:
         args.config = default_config_path()
 
+    seed_policy.require_development_or_exit(args.seeds)
     if args.seeds < 2:
         raise SystemExit("a spread needs at least 2 seeds")
 
