@@ -7,6 +7,7 @@ not one of those two procedures calls :func:`require_development` before it runs
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Iterable
 
 #: The first seed that is not a development seed.
@@ -34,8 +35,6 @@ def require_development(seeds: Iterable[int]) -> None:
 
 def require_development_or_exit(count: int) -> None:
     """For a command line: seeds ``range(count)`` must be development seeds, else print the reason and exit 2."""
-    import sys
-
     try:
         require_development(range(count))
     except ValueError as e:
