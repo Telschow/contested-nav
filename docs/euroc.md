@@ -5,6 +5,9 @@ This one uses the IMU recorded in the EuRoC MAV dataset and the dataset's own gr
 decision behind it is [ADR-0013](adr/0013-recorded-imu-with-simulated-gnss.md); the noise settings
 are discussed in [ADR-0014](adr/0014-textbook-imu-process-noise-by-default.md).
 
+Citation: Burri, M. et al. (2016). The EuRoC micro aerial vehicle datasets. *The International Journal of Robotics
+Research*, 35(10), 1157-1163. Licence: set by the dataset's authors; read the terms on the dataset page before reuse. Not verified here.
+
 ## Read this before quoting anything
 
 - **The GNSS is simulated.** EuRoC has no GNSS. The fixes are generated from the ground truth with

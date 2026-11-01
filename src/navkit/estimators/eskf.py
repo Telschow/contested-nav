@@ -28,7 +28,7 @@ cannot check by inspection.
 Process model (discrete, first order), with ``a = accel - b_a``:
 
     dp'    = dp + dv dt
-    dv'    = dv - R [a]x dt dp_theta - R dt db_a
+    dv'    = dv - R [a]x dt dtheta - R dt db_a
     dtheta' = Exp(-omega dt) dtheta - dt db_g
 
 Measurement models

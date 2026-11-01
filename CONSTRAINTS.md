@@ -89,7 +89,7 @@ These are floors, not goals. Each must not regress; raising one is welcome. Only
 generated (`scripts/metrics.py`). The per-module figures were measured once on one machine, not checked by CI;
 the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
 
-| Ratchet | Floor | Current (CPython 3.13) | Re-measure with |
+| Ratchet | Floor | Current (CPython <!-- metric:coverage_python -->3.12<!-- /metric -->) | Re-measure with |
 |---|---:|---:|---|
 | Tests collected | 405 | more than <!-- metric:tests_collected_floor -->2700<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
