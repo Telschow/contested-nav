@@ -56,7 +56,7 @@ Each statement below is checked against the CSV by `tests/test_mismatch_sweep.py
    more than an order of magnitude at the strongest mismatch; in `outage_control`, which starts
    from a large error, it still more than doubles. The gate meant to protect the filter from bad data turns an
    optimistic noise model into data loss. The rejection column shows it directly.
-2. **Calibration is lost well before the gate does much damage.** Mean 2σ coverage leaves a
+2. **Calibration is lost well before the gate does much damage.** Mean 2σ ellipsoid coverage leaves a
    90% band between factors 0.7 and 0.8 in both cases, while the rejection share is still in
    single digits. An underestimate of the sensor noise of between 20% and 30% is enough. The
    90% band is my choice, not a derived threshold.

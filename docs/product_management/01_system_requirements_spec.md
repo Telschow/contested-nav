@@ -75,7 +75,7 @@ without discarding the healthy fixes that arrive at the end of it.
 |---|---|---|---|
 | Accuracy through the gap | ATE RMSE < 3.0 m over `outage_visual` | **2.322 m** [M] | MET |
 | Accuracy, degraded front end | ATE RMSE < 3.0 m over `outage_visual_degraded_camera` | **2.008 m** [M] | MET |
-| Calibration through the gap | 2σ coverage ≥ 95% | **20.5%** / **17.8%** [M] | **NOT MET** |
+| Calibration through the gap | 2σ ellipsoid coverage ≥ 95% | **20.5%** / **17.8%** [M] | **NOT MET** |
 | Calibration, bulk | mean NEES within tolerance of expected 3 | **286.2** / **203.7** [M] | **NOT MET** |
 
 The accuracy leg passes on both cases. The calibration leg fails by a factor of
@@ -413,10 +413,10 @@ tier.
 
 | AC | Threshold | Measured | Verdict |
 |---|---|---|---|
-| AC-01 | < 3.0 m | 2.322 m | **PASS** |
-| AC-02 | < 3.0 m | 2.008 m | **PASS** |
-| AC-03 | ratio ≤ 2.0 | 95.4 (286.2 / 3) | **FAIL** |
-| AC-04 | ≥ 95% | 20.5%, 17.8%, 0.7%, 16.3% | **FAIL** |
+| AC-01 | < 3.0 m | 17.568 m | **FAIL** |
+| AC-02 | < 3.0 m | 7.434 m | **FAIL** |
+| AC-03 | ratio ≤ 2.0 | 927.8 (2783.3 / 3) | **FAIL** |
+| AC-04 | ≥ 95% (statistic pending maintainer decision) | 19.2%, 22.2%, 22.7%, 8.7% | **FAIL** |
 | AC-05 | 0 grants | 0 grants at 3/5/10/20/40/100 m; **21 m admitted after a 15 s denial** | **PASS at the tested offsets** |
 | AC-06 | 0 grants | 0 grants at 1/2 m | **PASS** |
 | AC-07 | exact | holds | **PASS** |
@@ -450,8 +450,8 @@ an enforced test. It is the criterion that protects the false-alarm rate the
 entire FDIR subsystem depends on, and a future refactor of `gating.py` could
 raise the nuisance rate without turning anything red.
 
-**9 pass, 2 fail.** The two acceptance criteria that define "safe to fly",
-AC-03 and AC-04, both fail, and they fail for one root cause: the visual
+**7 pass, 4 fail.** The four benchmark-measured criteria, AC-01 to AC-04, all fail.
+Position error and calibration, the two that define "safe to fly", fail for one root cause: the visual
 anchor error is folded into filter state but is not a state the filter models
 completely. A single anchor cannot represent correlated visual drift. The fix is
 a pose graph over visual keyframes, which is `CONSTRAINTS.md` B1 and the top

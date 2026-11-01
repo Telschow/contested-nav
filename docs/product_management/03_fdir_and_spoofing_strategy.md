@@ -244,7 +244,7 @@ measurements say).
 | Fixes rejected | 51 | 5 | −90% |
 | ATE RMSE | 5.059 m | **2.541 m** | −50% |
 | Mean NEES | 1996.5 | **419.4** | −79% |
-| 2σ coverage | 16.0% | 20.0% | +4 pts |
+| 2σ ellipsoid coverage | 16.0% | 20.0% | +4 pts |
 
 A single grant at t = 20.4 s carried the recovery:
 
@@ -378,7 +378,7 @@ success is not useful to the person deciding whether to rely on it.
 
 | # | Limitation | Impact | Status |
 |---|---|---|---|
-| L-1 | Calibration fails under visual aiding: NEES 286.2, 2σ coverage 20.5% against 95% required | The filter is confidently wrong through an outage. **Not an FDIR defect**: B1, needs a pose graph. | Open |
+| L-1 | Calibration fails under visual aiding: NEES 286.2, 2σ ellipsoid coverage 20.5% against 95% required | The filter is confidently wrong through an outage. **Not an FDIR defect**: B1, needs a pose graph. | Open |
 | L-2 | Gradual false-lock pulling is not detected | The most dangerous threat class is invisible to the current architecture | Open, ROADMAP |
 | L-3 | Jam-then-inject spoof is untested; after 15 s silence the bound admits 7.5 m against ~0.2 m of real platform drift | A provably-fake offset could be admitted | Open, highest priority probe |
 | L-4 | `max_drift_sigma_mps` = 0.5 is a single default, 33× loose for consumer MEMS and 7 500× for FOG | Spoof resistance is not matched to the installed hardware | Open, PM-SWAPC-002 action 2 |

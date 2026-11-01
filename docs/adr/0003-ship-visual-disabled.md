@@ -11,7 +11,7 @@ available: mean NEES 3.7 against 3 nominal, 2-sigma coverage 100%.
 It is not well calibrated when GNSS is denied. From the generated benchmark,
 15 s outage (`python scripts/run_benchmark.py`):
 
-| Scenario | ATE RMSE | Claimed 1σ | Mean NEES | 2σ coverage |
+| Scenario | ATE RMSE | Claimed 1σ | Mean NEES | 2σ ellipsoid coverage |
 |---|---:|---:|---:|---:|
 | GNSS denied 5–20 s, vision off (control) | 3.782 m | 0.567 m | 4.1 | 100.0% |
 | GNSS denied 5–20 s, vision on | 3.428 m | 0.154 m | 1051.3 | 16.0% |

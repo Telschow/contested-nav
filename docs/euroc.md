@@ -46,7 +46,7 @@ regenerate it, because the dataset is not vendored.
 
 Lost = more than 20% of GNSS fixes rejected. Flag = FDIR declared the channel faulty.
 
-| Scope | Config | Runs | Lost | Flag | Median NEES (expected 3) | Mean 2σ coverage | Median max error m |
+| Scope | Config | Runs | Lost | Flag | Median NEES (expected 3) | Mean 2σ ellipsoid coverage | Median max error m |
 |---|---|---:|---:|---:|---:|---:|---:|
 | all | default | 72 | 39 | 32 | 10.84 | 59.6% | 91.5 |
 | all | preset | 72 | 2 | 1 | 3.23 | 96.7% | 22.1 |
@@ -109,7 +109,7 @@ eleven sequences. Generated from [`data/euroc_validation.csv`](data/euroc_valida
 
 Lost = more than 20% of GNSS fixes rejected.
 
-| Outage s | Config | Runs | Lost | Median NEES (expected 3) | Mean 2σ coverage |
+| Outage s | Config | Runs | Lost | Median NEES (expected 3) | Mean 2σ ellipsoid coverage |
 |---:|---|---:|---:|---:|---:|
 | 20 | default | 62 | 21 | 6.83 | 67.5% |
 | 20 | preset | 62 | 0 | 2.74 | 98.2% |
@@ -130,7 +130,7 @@ Each statement below is checked against the CSV files by `tests/test_euroc_page.
 3. **The bias-walk preset loses fewer runs than the noise-scale preset** in the main table.
 4. **In the later checks the bias-walk preset loses no run**, for either outage length. The noise-scale preset
    loses no run at the shorter outage and some at the longer one.
-5. **The bias-walk preset is slightly conservative.** Over all runs, its mean 2σ coverage is at
+5. **The bias-walk preset is slightly conservative.** Over all runs, its mean 2σ ellipsoid coverage is at
    or above the nominal 99.3% in each table, and its median NEES is below the expected 3.
 6. **The FDIR flag undercounts the lost runs of the default.** More runs are lost than are flagged.
 

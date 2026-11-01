@@ -33,7 +33,7 @@ A noiseless IMU is still available to anyone who wants it: set `imu_noise_scale:
 The three outage cases are bit-identical: the golden snapshot has no changed path for them. The four
 cases that were not injected move, and none changes its calibration verdict:
 
-| Case | ATE m | Mean NEES | 2σ coverage |
+| Case | ATE m | Mean NEES | 2σ ellipsoid coverage |
 |---|---|---|---|
 | `gnss_only` | 0.503 to 0.509 | 3.7 to 4.0 | 100.0% to 100.0% |
 | `dead_reckoning` | 1.877 to 2.248 | n/a | n/a |

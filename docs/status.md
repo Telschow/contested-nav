@@ -29,7 +29,7 @@
   records the figures at the time). B1 is closed as characterised, not solved (ADR-0036), see below.
 - **The filter is still overconfident under visual aiding.** Over the GNSS outage window, `outage_visual`
   has a mean NEES of <!-- metric:outage_visual_window_nees -->2783.3<!-- /metric --> against a nominal 3 and a
-  2σ coverage of <!-- metric:outage_visual_window_coverage_percent -->5.0<!-- /metric -->% where the SRS requires
+  2σ ellipsoid coverage of <!-- metric:outage_visual_window_coverage_percent -->5.0<!-- /metric -->% where the SRS requires
   95% (AC-04). The old single-run bar for turning vision on is superseded: [ADR-0028](adr/0028-the-b1-gate.md) and
   [ADR-0030](adr/0030-the-gate-for-the-next-visual-update-candidate.md) govern the gate, and the B1 status is in
   CONSTRAINTS.md. The full-run values are in the table in

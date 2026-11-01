@@ -128,7 +128,7 @@ previously produced by ad-hoc scripts that were not in the repository.
 - [x] `docs/architecture.md`, `docs/calibration.md`, the documentation site (`mkdocs.yml`).
 - [x] GNSS-denial overconfidence framed explicitly as the headline *negative*
       result rather than a caveat: a mean NEES far above its expected value and a
-      2σ coverage far below it (the current values are in the README table and in
+      2σ ellipsoid coverage far below it (the current values are in the README table and in
       `CONSTRAINTS.md` B1), `vision_enabled = False` shipped as the
       default, and the failure pinned by
       `test_gnss_denial_still_over_trusts_vision_and_that_is_pinned`.
@@ -239,7 +239,7 @@ Everything in Milestone 1 makes the limitation reproducible and documented;
 this removes it.
 
 - [!] Blocker for the shipped configuration: a single-anchor ESKF cannot
-      represent correlated visual drift. The mean NEES and the 2σ coverage of
+      represent correlated visual drift. The mean NEES and the 2σ ellipsoid coverage of
       `outage_visual` are in the README table and in `CONSTRAINTS.md` B1. (The mean NEES was 1996.5 before
       ADR-0006; the number fell because the filter began taking its own
       uncertainty more seriously, not because the anchor is now modelled

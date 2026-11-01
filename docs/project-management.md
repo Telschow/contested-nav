@@ -14,6 +14,6 @@ or **[P]** proposed, and the two that are not verifiable today are marked
 | [Sensor synchronisation and calibration](product_management/04_sensor_sync_and_calibration_spec.md) | none | The timing model, what is measured on recordings and what is assumed. |
 | [Work breakdown](product_management/05_work_breakdown.md) | none | Remaining work packages, each with a deliverable, a dependency and an exit test. |
 
-Start with the SRS if you want one number: **AC-03 and AC-04 fail**, so the
+Start with the SRS if you want one number: **AC-01 to AC-04 fail**, so the
 filter is not yet trustworthy under GNSS denial, and the cause is a model error
 rather than a tuning error.
