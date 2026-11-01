@@ -91,8 +91,8 @@ Median of each feature by fault and level.
 
 <!-- faultclass-levels:start -->
 
-| Class | Fault | Level | Runs | Called correctly | Called control (missed) |
-|---|---|---:|---:|---:|---:|
+| Class | Fault | Level | Runs | Called correctly | Called control (missed) | Detected (any fault called) |
+|---|---|---:|---:|---:|---:|---:|
 | control | none | 0 | 34 | 88% | 88% | 12% |
 | multipath | multipath | 3 | 34 | 97% | 0% | 100% |
 | multipath | multipath | 10 | 34 | 100% | 0% | 100% |

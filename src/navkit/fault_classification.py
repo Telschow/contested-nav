@@ -348,8 +348,8 @@ def confusion_markdown(scored: list[dict[str, Any]]) -> str:
 
 def level_markdown(scored: list[dict[str, Any]]) -> str:
     lines = [
-        "| Class | Fault | Level | Runs | Called correctly | Called control (missed) |",
-        "|---|---|---:|---:|---:|---:|",
+        "| Class | Fault | Level | Runs | Called correctly | Called control (missed) | Detected (any fault called) |",
+        "|---|---|---:|---:|---:|---:|---:|",
     ]
     for cls, kind, level in CASES:
         sel = [r for r in scored if r["kind"] == kind and float(r["level"]) == level]
