@@ -2,7 +2,7 @@
 
 - **Not field validated.** The benchmark is a synthetic fixture. Recorded IMU data
   ([EuRoC](euroc.md), [TUM VI](tumvi.md)) and one set of real camera frames
-  ([a real front end](real_front_end.md)) are used with GNSS simulated from the ground truth. None of that
+  ([a real front end](real_front_end.md)) are used with GNSS simulated from the ground truth. UrbanNav ([page](urbannav.md)) uses the receiver's own fixes. None of that
   data is vendored, and no number is a field measurement.
 - **Visual aiding under GNSS denial is untrustworthy with the shipped single anchor**, and disabled by default.
   See [concepts](concepts.md#the-one-thing-this-cannot-do). The opt-in stochastic clone
@@ -11,8 +11,8 @@
   noise inflated by four, in all six windows measured, which is a named opt-in setting
   ([ADR-0023](adr/0023-clone-against-a-measured-front-end.md), [ADR-0024](adr/0024-assumed-noise-for-the-opt-in-clone.md)).
 - **FDIR detects implausible updates and can name only some causes.** The chi-square gate in `fdir/` isolates a
-  channel and says how long it was out ([ADR-0005](adr/0005-chi-square-fdir-gating.md)). A multipath call exists as
-  a function ([ADR-0022](adr/0022-multipath-signature.md)). Spoofing and degradation are called correctly
+  channel and says how long it was out ([ADR-0005](adr/0005-chi-square-fdir-gating.md)). A call for the white-noise surrogate of multipath exists as
+  a function ([ADR-0022](adr/0022-multipath-signature.md)). Injected position offsets (the spoof surrogate) and sensor biases are called correctly
   in most injected runs, weak faults are missed and the false-alarm rate is not zero; the rates are on the
   [fault classification](fault_classification.md) page
   ([ADR-0021](adr/0021-fault-classification-from-innovations.md)).

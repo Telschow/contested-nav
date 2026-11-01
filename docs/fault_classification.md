@@ -1,15 +1,15 @@
-# Telling multipath, spoofing and degradation apart
+# Telling noise inflation, position offsets and sensor bias apart
 
 Track A asks for more than "this channel is faulty". This page measures whether the GNSS innovations alone can say
-which of three causes is behind a fault, on real recorded IMU data with simulated GNSS. It is a feasibility study. It
+which of three injected signatures is behind a fault, on real recorded IMU data with simulated GNSS. It is a feasibility study. It
 does not ship a detector.
 
 ## Method
 
 A fault is injected 35 s into each recording (EuRoC, TUM VI), in the calibrated bias-walk setting, two seeds:
 
-- **Multipath**: extra white noise of 3, 10 or 30 m per axis on every fix for 20 s. No mean shift.
-- **Spoofing**: a ramp of 0.5, 1, 2 or 5 m/s, or a step offset of 10 or 50 m, on the GNSS positions.
+- **Noise inflation (multipath surrogate)**: extra white noise of 3, 10 or 30 m per axis on every fix for 20 s. No mean shift.
+- **Position step or ramp (spoof surrogate)**: a ramp of 0.5, 1, 2 or 5 m/s, or a step offset of 10 or 50 m, on the GNSS positions.
 - **Degradation**: a constant added to the accelerometer (0.2 or 1 m/s²) or the gyroscope (0.01 or 0.05 rad/s),
   spread over three axes. The GNSS is healthy; the IMU is wrong.
 - **Control**: nothing.
@@ -91,8 +91,8 @@ Median of each feature by fault and level.
 
 <!-- faultclass-levels:start -->
 
-| Class | Fault | Level | Runs | Called correctly | Called control (missed) |
-|---|---|---:|---:|---:|---:|
+| Class | Fault | Level | Runs | Called correctly | Called control (missed) | Detected (any fault called) |
+|---|---|---:|---:|---:|---:|---:|
 | control | none | 0 | 34 | 88% | 88% | 12% |
 | multipath | multipath | 3 | 34 | 97% | 0% | 100% |
 | multipath | multipath | 10 | 34 | 100% | 0% | 100% |
@@ -209,12 +209,12 @@ were scored. The first rule stays in the table as the control row. Stage 2 is un
 
 ## What it shows
 
-1. **Multipath is separable.** Noise on the fixes raises the normalised innovation without a matching persistent
-   offset, and 99% of multipath runs are called multipath, including at 3 m (97%).
+1. **The noise-inflation surrogate is separable.** This says nothing about real multipath. Noise on the fixes raises the normalised innovation without a matching persistent
+   offset, and 99% of noise-inflation runs are called multipath, including at 3 m (97%).
 2. **The added features fix the step.** With the original five features a 10 m step was called multipath in most
    runs, because the filter absorbs the offset within seconds. The autocorrelation separates a persistent offset
    from white noise, and with all ten features no 10 m step is called multipath and 94% of the step runs are called spoofing.
-3. **Spoofing is better separated and not solved.** The share of spoofed runs called spoofing rises from 40% to
+3. **The position-offset surrogate is better separated and not solved.** The share of step and ramp runs called spoofing rises from 40% to
    70%. A 5 m/s ramp is called spoofing in 91% of runs, against 18% before. Ramps of 1 m/s and below are still often
    missed.
 4. **The false-alarm rate did not improve.** About one in eight (12%) held-out control runs is called a fault, slightly
@@ -228,7 +228,7 @@ were scored. The first rule stays in the table as the control row. Stage 2 is un
 
 The Track A exit test, 95% detection per fault type at zero false alarms on the control, is still not met: the
 false-alarm rate is not zero (about a third of unseen controls), weak spoofs are missed, and spoofing is called in
-about 70% of runs. Only the multipath call survived the confirmation without a flaw: 100% recall and no
+about 70% of runs. Only the call for the noise-inflation surrogate survived the confirmation without a flaw: 100% recall and no
 other run called multipath. Richer innovation
 features helped where the signal was in the innovation's shape over time, and did not help where the fault is
 smaller than the noise. That is the limit [ADR-0019](adr/0019-slow-ramp-spoofing.md) and

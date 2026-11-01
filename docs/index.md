@@ -41,7 +41,7 @@ overconfidence held in every run of every sweep (see [Results](results.md)).
 - [Results](results.md): the benchmark scenarios, the sweeps and what they do and do not show.
 - On recorded data: [EuRoC](euroc.md), [TUM VI](tumvi.md), [where the outage error comes from](attribution.md) and
   [a real front end](real_front_end.md).
-- On spoofing and fault classes: [honest returns](separability.md), [slow ramps](slow_ramp.md),
+- On the spoof and multipath surrogates and fault classes: [honest returns](separability.md), [slow ramps](slow_ramp.md),
   [classification](fault_classification.md) and [multipath](multipath.md).
 - [Model and interface contract](MODEL.md): units, frames, every configuration key, the result format and a fault-mode table.
 - [Scope and responsible use](scope.md) and [Status and limits](status.md).

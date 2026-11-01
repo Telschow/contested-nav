@@ -59,7 +59,7 @@ rejects many honest returns. This is the lockout of the [attribution](attributio
 1. **With the default noise, honest and spoofed returns overlap.** On EuRoC the shipped gate rejects 56% of honest returns. No gate level fixes that, because the honest returns are the problem.
 2. **With a calibrated bias walk the two separate.** The shipped gate rejects 0% of honest EuRoC returns and 1% of honest TUM VI returns.
 3. **Separation costs sensitivity.** After 20 s the claimed uncertainty is tens of metres on EuRoC, so spoofs under 50 m pass. A spoof of 100 m is caught about half the time and 200 m almost always.
-4. **A gate fitted on EuRoC transfers imperfectly.** At 5% false alarms on EuRoC it rejects 16% of honest TUM VI returns.
+4. **A gate fitted on EuRoC transfers imperfectly.** The table above gives the share of honest TUM VI returns it rejects, against the share on EuRoC.
 
 ## What follows
 

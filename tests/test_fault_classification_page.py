@@ -395,3 +395,13 @@ def test_the_track_a_exit_test_is_still_not_met_with_the_bound(rows):
     sc = fc.with_predictions(rows, fc.FEATURES, "bound")
     recalls = [_share(sc, lambda r, c=c: r["cls"] == c, lambda r, c=c: c) for c in fc.FAULT_CLASSES]
     assert min(recalls) < 0.95
+
+
+def _cells(line):
+    return line.strip().strip("|").count("|") + 1
+
+
+@pytest.mark.parametrize("name", sorted(fc.BLOCKS))
+def test_generated_tables_have_as_many_cells_per_row_as_headers(rows, name):
+    lines = [x for x in fc.BLOCKS[name](rows).splitlines() if x.startswith("|")]
+    assert {_cells(x) for x in lines} == {_cells(lines[0])}
