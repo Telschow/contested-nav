@@ -31,6 +31,7 @@ from typing import Any
 import numpy as np
 import yaml
 
+from . import seed_policy
 from .b1_gate import parse_seeds
 from .benchmark import StartError, default_config_path, run_case
 from .ensemble import COMPARE_RTOL
@@ -44,8 +45,7 @@ SINGLE_ANCHOR = ("outage_visual", "vision_only")
 CLONE = "outage_visual_clone"
 VARIANTS = ("full", "no_attitude", "attitude_only")
 DEFAULT_SEEDS = range(0, 10)
-#: Seeds from here are the held-out set of ADR-0028.
-HELD_OUT_FROM = 100
+HELD_OUT_FROM = seed_policy.HELD_OUT_FROM
 CSV_FIELDS = ("case", "variant", "seed", "ate_rmse_m", "nees_mean")
 TABLE = Table(
     (Column("case"), Column("variant"), Column("seed", int), Column("ate_rmse_m", float), Column("nees_mean", float)),

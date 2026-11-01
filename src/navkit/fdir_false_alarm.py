@@ -35,6 +35,7 @@ from typing import Any
 import numpy as np
 import yaml
 
+from . import seed_policy
 from .benchmark import default_config_path, run_case
 from .eval.calibration import wilson_interval
 from .eval.statistics import autocorrelation_estimate, chi2_cdf
@@ -57,7 +58,7 @@ ALPHA = FdirConfig().alpha
 SETTLE_S = 5.0
 #: The development seeds of the ensemble (PR #140). Seeds from 100 are the B1 gate's held-out set (ADR-0028).
 SEEDS = tuple(range(25))
-RESERVED_SEED_START = 100
+RESERVED_SEED_START = seed_policy.HELD_OUT_FROM
 #: The fault matrix runs five seeds, and so does the sensitivity sweep, to stay comparable with it.
 SENSITIVITY_SEEDS = 5
 
