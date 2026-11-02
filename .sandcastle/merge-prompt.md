@@ -10,12 +10,16 @@ Merge these branches into the current branch, one at a time:
 
 For each: `git merge <branch> --no-edit`. On conflict, read both sides and resolve to keep both intents. Never force-push or rewrite history.
 
-After the last merge, run once:
+After the last merge, run once, in this order:
 
 1. `ruff check src tests scripts`
 2. `ruff format --check src tests scripts`
 3. `mypy src --ignore-missing-imports`
 4. `make docs-fast`
+5. `python -m pytest -q tests/test_ci_docs_tests.py tests/test_estimators.py tests/test_no_em_dash.py`
+6. `python scripts/metrics.py --check`
+
+Steps 5 and 6 are the quick checks that full-suite CI failed on after earlier merges: a test file that reads a page without the `docs_only` marker, the `as_dict` field test, and the generated counts.
 
 Do not run the full pytest suite. CI runs it on `main` after the push. Run each check in the foreground and wait for it. Do not start background watchers.
 
@@ -26,7 +30,7 @@ If something fails, fix it and rerun only what failed. If the doc tables or metr
 `main` rejects pushes from this sandbox (403), so deliver through a pull request. Only when every check above passes:
 
 1. `git fetch origin`
-2. `git merge origin/main --no-edit`. If this brings in changes, rerun the four checks.
+2. `git merge origin/main --no-edit`. If this brings in changes, rerun the checks.
 3. Check `git branch --show-current` is not `main`, then `git push origin HEAD` (the current branch, never `main`). If the current branch is `main`, stop and say so: a push to `main` skips the pull request, and the 403 is not guaranteed.
 
 Never force-push and never rewrite history. If the push is rejected, fetch, merge `origin/main` once more and try once more. If it is rejected again, stop and say so.
