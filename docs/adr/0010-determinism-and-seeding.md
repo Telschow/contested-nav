@@ -52,3 +52,17 @@ writes it down so the next stochastic stream follows it too.
 - **`hash()` for derived seeds.** Not stable across processes.
 - **Tighter cross-platform tolerances.** They failed on identical code on different GitHub
   runners (see ADR-0009), which would have made the build flaky for a reason that is not a bug.
+
+## Amendment (2026-11): one seed gives GNSS and visual rotation noise the same normals
+
+[Issue #251](https://github.com/Telschow/contested-nav/issues/251), from the independent audit of 2026-11-01 (finding CN-01), found that decision 2 holds for the seed fields and not for the generators behind them. `gnss.seed` and `vision.seed` are separate fields, but the base cases and `navkit sweep seeds` give them the same integer (decision 4), and both streams then start `np.random.default_rng` from it. At equal seeds the GNSS white noise and the visual rotation noise are the same normal sequence. The filter assumes independent sensor noise. The visual translation noise already has a stream of its own ([ADR-0033](0033-one-convention-for-the-synthetic-visual-translation-noise.md)).
+
+**What was measured.** The development seeds, 10 of them, were run twice: as they are, and with the vision seed derived from the case seed and a stream id ([issue #259](https://github.com/Telschow/contested-nav/issues/259), `docs/data/shared_stream_effect.csv`, `docs/calibration.md`). The result was within seed noise for the aggregate. The sign of the per-seed change was mixed, and the mean paired difference was within about one standard error of zero for ATE RMSE and mean NEES in all four cases. The single-anchor control stayed overconfident and the clone stayed calibrated. Single seeds moved far (seed 0 of `outage_visual`, 17.6 m to 7.9 m ATE). The comparison also changes the IMU noise draw, which is hashed from both seeds, so it measures both changes together. Ten seeds exclude a large systematic effect, not a small one.
+
+**Decision.** The streams are not changed. No committed number, table or golden is regenerated, and the B1 result in [ADR-0028](0028-the-b1-gate.md) stands as it was produced. The shared stream is documented instead, in `docs/MODEL.md` and in the calibration page, where the measurement is generated from its CSV.
+
+- Decision 2 is read as: each stream has its own seed field. It does not say the generators differ when the values are equal.
+- A new stochastic stream takes its own generator from `np.random.SeedSequence([seed, STREAM_ID])`, as the translation noise does, so it never repeats another stream.
+- A value quoted for one seed carries the caveat above. Aggregates over the development seeds do not need it.
+
+**What would reopen this.** A candidate or study whose result depends on the independence of the GNSS and visual rotation noise, or a measurement on more seeds that shows a systematic shift. The switch is then one change to `SeedSequence` streams for GNSS and vision, with every generated table and the golden snapshot regenerated, and a dated note on the calibration page.
