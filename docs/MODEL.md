@@ -63,10 +63,16 @@ part of why visual aiding stays overconfident ([ADR-0001](adr/0001-anchor-as-fil
 
 ## Seeding and determinism
 
-- Every stochastic stream has its own seed: `gnss.seed`, `vision.seed`,
+- Every stochastic stream has its own seed field: `gnss.seed`, `vision.seed`,
   `camera_drop.seed`. The IMU noise seed is derived from the scenario name, the string
   `imu` and the GNSS and vision seeds, so overriding the seeds also changes the IMU
   noise realisation.
+- The seed fields are separate but the sweeps and the base cases give them the same
+  integer. GNSS noise and visual rotation noise then start from the same generator and
+  are the same normal sequence (the visual translation noise has its own stream,
+  [ADR-0033](adr/0033-one-convention-for-the-synthetic-visual-translation-noise.md)). The filter assumes independent sensor
+  noise. On the development seeds the aggregate effect is within seed noise; see
+  [the shared noise stream](calibration.md#the-shared-noise-stream-measurement-only).
 - `navkit sweep seeds` overrides all three streams with the same integer. `navkit sweep
   scenes` varies the trajectory parameters instead (`seeded_scene`, ranges in
   `synthetic._SCENE_RANGES`) and leaves the noise seeds alone. The two axes are
