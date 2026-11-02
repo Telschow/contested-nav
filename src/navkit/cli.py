@@ -51,6 +51,7 @@ from . import (
     scene_sweep,
     seed_sweep,
     separability,
+    shared_stream_effect,
     slow_ramp,
     start_draw_study,
     urbannav_check,
@@ -76,6 +77,7 @@ _SWEEPS: dict[str, Callable[[list[str] | None], int]] = {
     "vision-ramp": vision_ramp.main,
     "start-draw": start_draw_study.main,
     "correlated-gnss": correlated_gnss_study.main,
+    "shared-stream": shared_stream_effect.main,
 }
 
 
@@ -100,6 +102,7 @@ def _sweep(argv: list[str] | None) -> int:
             "  vision-ramp  slow-ramp GNSS spoofs with a simulated visual second source",
             "  start-draw  which part of the start draw the single anchor fails on (seeds 0 to 9 only)",
             "  correlated-gnss  is the innovation gate blind to a slow, correlated GNSS error (seeds 0 to 9 only)",
+            "  shared-stream  does separating the GNSS and visual noise streams move the numbers (seeds 0 to 9 only)",
         )
         print("\n".join((usage, *kinds)), file=sys.stderr)
         return 0 if args and args[0] in ("-h", "--help") else 2
