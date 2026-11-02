@@ -53,7 +53,7 @@ CASES = ("outage_visual", "vision_only", "outage_visual_clone", "outage_control"
 SINGLE_ANCHOR = "outage_visual"
 SEEDINGS = ("shared", "independent")
 DEFAULT_SEEDS = range(0, 10)
-#: The second entry of the ``SeedSequence`` that gives the vision stream its own seed. Next to ADR-0033's 1013 and 1014.
+#: The second entry of the ``SeedSequence`` that gives the vision stream its own seed. After 1013 and 1014 in models.py.
 VISION_STREAM = 1015
 METRICS = ("ate_rmse_m", "nees_mean", "coverage_2sigma", "fdir_events")
 LABELS = {
