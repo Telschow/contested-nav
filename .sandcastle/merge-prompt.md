@@ -1,3 +1,7 @@
+# FIRST
+
+Run `git branch --show-current`. If it is `main`, run `git switch -C sandcastle/integration` before any merge. `-C` resets that branch to the current commit, so a stale local `sandcastle/integration` is not a reason to stay on `main`. Do not merge or push while on `main`.
+
 # TASK
 
 Merge these branches into the current branch, one at a time:
@@ -23,7 +27,7 @@ If something fails, fix it and rerun only what failed. If the doc tables or metr
 
 1. `git fetch origin`
 2. `git merge origin/main --no-edit`. If this brings in changes, rerun the four checks.
-3. `git push origin HEAD` (the current branch, never `main`)
+3. Check `git branch --show-current` is not `main`, then `git push origin HEAD` (the current branch, never `main`). If the current branch is `main`, stop and say so: a push to `main` skips the pull request, and the 403 is not guaranteed.
 
 Never force-push and never rewrite history. If the push is rejected, fetch, merge `origin/main` once more and try once more. If it is rejected again, stop and say so.
 
