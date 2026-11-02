@@ -10,6 +10,8 @@ import pytest
 from navkit import shared_stream_effect as sse
 from navkit.report.page import splice_block
 
+pytestmark = pytest.mark.docs_only
+
 
 def _normals(seed: int, n: int = 453) -> np.ndarray:
     return np.random.default_rng(seed).standard_normal(n)
