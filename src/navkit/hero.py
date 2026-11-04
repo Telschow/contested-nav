@@ -19,6 +19,7 @@ recorded run.
 from __future__ import annotations
 
 import math
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.animation import FuncAnimation, PillowWriter
+from matplotlib.patches import Circle
 
 C_ERR = "#1b6ca8"
 C_CLAIM = "#c0392b"
@@ -135,5 +137,94 @@ def animate_hero(cases: list[dict[str, Any]], out: Path, frames: int = 45, fps: 
     anim = FuncAnimation(fig, update, frames=len(times), blit=False)
     out.parent.mkdir(parents=True, exist_ok=True)
     anim.save(out, writer=PillowWriter(fps=fps), dpi=100)
+    plt.close(fig)
+    return out
+
+
+def plain_instant(case: dict[str, Any]) -> tuple[float, float, float]:
+    """The instant the plain-language figure quotes: ``(t, claimed bound, error)`` at the end of the last outage.
+
+    The rule is fixed in code and does not look at the values. The bound is the 2-sigma-per-axis radius of
+    :func:`_series`, the same one the hero panels draw, so the two pictures agree. The error is the position
+    error at the same sample, never a run average.
+    """
+    t, err, bound = _series(case)
+    end = max(float(o["end_s"]) for o in case["outages"])
+    i = int(np.searchsorted(t, end, side="right")) - 1
+    if i < 0:
+        raise ValueError("the outage ends before the first sample")
+    return float(t[i]), float(bound[i]), float(err[i])
+
+
+def _length(metres: float) -> str:
+    """A length in plain words: centimetres below one metre, metres above."""
+    return f"{metres * 100.0:.0f} cm" if metres < 1.0 else f"{metres:.1f} m"
+
+
+def plain_caption(claimed_m: float, error_m: float) -> tuple[str, str]:
+    """The two lines under the figure. The first is what the filter says, the second is the truth."""
+    return f"It says it is within {_length(claimed_m)}.", f"It is {_length(error_m)} off."
+
+
+def _commit() -> str:
+    try:
+        out = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=True)
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+    return out.stdout.strip() or "unknown"
+
+
+def fig_plain(cases: list[dict[str, Any]], out: Path, commit: str | None = None) -> Path | None:
+    """Write the plain-language figure for a reader with no estimation background.
+
+    One picture, drawn to scale at one instant of the vision case: the circle the filter claims contains its
+    position, and the dot where the position error actually is. The direction of the error is not shown.
+    Returns ``None`` when the result lacks the two hero cases.
+    """
+    panels = hero_cases(cases)
+    if not panels:
+        return None
+    t_s, claimed, error = plain_instant(panels[1][0])
+    says, truth = plain_caption(claimed, error)
+    fig, ax = plt.subplots(figsize=(4.5, 8.0))
+    reach = max(error, claimed) * 1.25
+    ax.set_xlim(-reach * 0.15, reach)
+    ax.set_ylim(-reach * 0.6, reach * 0.6)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    ax.add_patch(Circle((0.0, 0.0), claimed, facecolor=C_CLAIM, alpha=0.25, edgecolor=C_CLAIM, linewidth=1.5))
+    ax.plot([0.0], [0.0], "o", color=C_GREY, markersize=6)
+    ax.plot([error], [0.0], "o", color=C_ERR, markersize=11)
+    ax.annotate(
+        "what the filter claims",
+        (0.0, claimed),
+        (reach * 0.02, reach * 0.3),
+        color=C_CLAIM,
+        fontsize=11,
+        arrowprops={"arrowstyle": "-", "color": C_CLAIM},
+    )
+    ax.annotate(
+        "where the vehicle is",
+        (error, 0.0),
+        (error * 0.45, -reach * 0.3),
+        color=C_ERR,
+        fontsize=11,
+        arrowprops={"arrowstyle": "-", "color": C_ERR},
+    )
+    fig.text(0.5, 0.93, "The filter is sure.\nIt is wrong.", ha="center", va="center", fontsize=22, weight="bold")
+    fig.text(0.5, 0.2, says, ha="center", fontsize=15, color=C_CLAIM)
+    fig.text(0.5, 0.15, truth, ha="center", fontsize=15, color=C_ERR, weight="bold")
+    fig.text(0.5, 0.09, "So camera aiding ships switched off.", ha="center", fontsize=12)
+    fig.text(
+        0.5,
+        0.02,
+        f"SYNTHETIC RUN, seed 0, vision case, t = {t_s:.1f} s (end of the GNSS outage)\n"
+        f"Drawn to scale. The direction of the error is not shown. Generated at commit {commit or _commit()}.",
+        ha="center",
+        fontsize=6.5,
+        color=C_GREY,
+    )
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, dpi=160)
     plt.close(fig)
     return out
