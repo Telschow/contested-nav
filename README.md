@@ -2,6 +2,11 @@
 
 **Is the filter right about how wrong it is?**
 
+A navigation filter reports its position and also how sure it is. Here the filter says it is sure and is far off, so
+camera aiding is shipped switched off.
+
+![A small red circle, the position the filter claims, far from a blue dot, where the vehicle is, in one synthetic run](docs/figures/hero-plain.png)
+
 [![CI](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/ci.yml)
 [![Security](https://github.com/Telschow/contested-nav/actions/workflows/security.yml/badge.svg)](https://github.com/Telschow/contested-nav/actions/workflows/security.yml)
 [![Docs](https://github.com/Telschow/contested-nav/actions/workflows/pages.yml/badge.svg)](https://telschow.github.io/contested-nav/)

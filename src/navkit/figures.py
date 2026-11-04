@@ -24,7 +24,7 @@ matplotlib.use("Agg")  # headless: required for CI and for a server without a di
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .hero import animate_hero, fig_hero
+from .hero import animate_hero, fig_hero, fig_plain
 
 FIGDIR = Path("docs") / "figures"
 
@@ -329,6 +329,9 @@ def main(argv: list[str] | None = None) -> int:
     hero = fig_hero(cases, FIGDIR / "hero.png")
     if hero:
         made.append(hero)
+    plain = fig_plain(cases, FIGDIR / "hero-plain.png")
+    if plain:
+        made.append(plain)
     if args.animate:
         gif = animate_hero(cases, FIGDIR / "hero.gif")
         if gif:
