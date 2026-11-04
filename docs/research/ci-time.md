@@ -50,7 +50,7 @@ Whole-workflow wall-clock from `gh run list -w CI`: 42 to 75 minutes for code ch
 
 ### Slowest tests
 
-CI does not print durations: `addopts` in `pyproject.toml` is only `--strict-markers`, and the logs have no `slowest` section. I ran `python -m pytest --durations=40 -q -p no:cacheprovider` once, locally, in a venv at `/private/tmp/claude-501/-Users-daniel-Development-contested-nav/6c735db7-59ef-4062-bd95-42f8d7fa6480/scratchpad/venv` (Python 3.13.5, outside the repo tree). Result: single process, 8-core Apple-silicon Mac, `1182.40s (0:19:42)`.
+CI does not print durations: `addopts` in `pyproject.toml` is only `--strict-markers`, and the logs have no `slowest` section. I ran `python -m pytest --durations=40 -q -p no:cacheprovider` once, locally, in a fresh venv outside the repo tree (Python 3.13.5). Result: single process, 8-core Apple-silicon Mac, `1182.40s (0:19:42)`.
 
 This contradicts the "about 4 to 5 min" in CLAUDE.md. On this machine the suite takes about 20 minutes. CLAUDE.md should be corrected by the maintainer.
 
