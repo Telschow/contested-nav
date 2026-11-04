@@ -67,7 +67,7 @@ lands, at which point they become real tests.
 ## Datasets
 
 No real-sensor data is vendored, and none will be. TUM-VI is available from
-[TUM](https://cvg.cit.tum.de/research/vision/vi-dataset/) under its own terms;
+[TUM](https://cvg.cit.tum.de/data/datasets/visual-inertial-dataset) under its own terms;
 download it separately if you want to run the reference checks. Until then those
 tests skip, and the skip is visible in the suite output rather than hidden.
 

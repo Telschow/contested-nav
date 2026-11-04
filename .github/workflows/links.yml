@@ -34,6 +34,7 @@ jobs:
     # http(s) links need the network and fail for reasons that are not ours (a host that is down
     # for an hour), so they are checked weekly and on demand, never on a pull request.
     # safran-group.com and septentrio.com answer 403 to every automated client, so they are excluded.
+    # doi.org/10.1177 resolves to SAGE, which also answers 403 to automated clients.
     name: external links
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -48,5 +49,6 @@ jobs:
             --exclude 'localhost' --exclude '127\.0\.0\.1'
             --accept '200..=299,429'
             --exclude 'https://www\.safran-group\.com/' --exclude 'https://www\.septentrio\.com/'
+            --exclude 'https://doi\.org/10\.1177/'
             README.md CONTRIBUTING.md SECURITY.md 'docs/**/*.md'
           fail: true
