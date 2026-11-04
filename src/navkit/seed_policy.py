@@ -1,8 +1,8 @@
 """The seed ranges of the project, in one place.
 
 Seeds 0 to 99 are development seeds. Seeds 100 to 124 are the held-out set of ADR-0028, spent. From 125 the seeds are
-held-out blocks of 25 (ADR-0030), run one at a time through :mod:`navkit.candidate_gate`. Every sweep and study that is
-not one of those two procedures calls :func:`require_development` before it runs a case.
+held-out blocks of 25 (ADR-0030), run one at a time through :mod:`navkit.candidate_gate`. Every ``navkit sweep`` entry
+point that takes seeds calls :func:`require_development` before it runs a case. The two gate procedures are separate.
 """
 
 from __future__ import annotations

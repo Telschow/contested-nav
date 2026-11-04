@@ -202,9 +202,9 @@ def test_every_setting_is_a_valid_fdir_config() -> None:
 def test_the_seeds_are_the_development_set_and_never_the_reserved_ones() -> None:
     assert tuple(range(25)) == fa.SEEDS
     assert max(fa.SEEDS) < fa.RESERVED_SEED_START == 100
-    with pytest.raises(ValueError, match="reserved"):
+    with pytest.raises(ValueError, match="held-out"):
         fa.check_seeds([0, 1, 100])
-    with pytest.raises(ValueError, match="reserved"):
+    with pytest.raises(ValueError, match="held-out"):
         fa.check_seeds([124])
     fa.check_seeds(list(range(25)))
 
