@@ -9,7 +9,7 @@ PYTHON ?= python
 RESULTS ?= results/benchmark.json
 
 .DEFAULT_GOAL := help
-.PHONY: help install hooks test lint format cov check docs-fast bench figures docs-check srs docs docs-serve demo repro docker secrets clean
+.PHONY: help install hooks test lint format cov check docs-fast bench figures hero-video docs-check srs docs docs-serve demo repro docker secrets clean
 
 help: ## list the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -46,6 +46,10 @@ bench: ## run the benchmark and write results/benchmark.json
 
 figures: bench ## render docs/figures from a fresh benchmark, with the animation
 	$(PYTHON) -m navkit figures --results $(RESULTS) --animate
+
+hero-video: bench ## export the hero video, srt and poster to results/hero-video (local, needs ffmpeg, not run in CI)
+	$(PYTHON) -m navkit hero-video --results $(RESULTS)
+	$(PYTHON) -m navkit hero-video --results $(RESULTS) --landscape
 
 docs-check: ## fail if a documented table disagrees with the benchmark
 	$(PYTHON) scripts/check_doc_tables.py --results $(RESULTS)

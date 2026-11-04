@@ -44,6 +44,7 @@ from . import (
     figures,
     gm_tuning,
     gm_usefulness,
+    hero_video,
     mismatch_sweep,
     multipath_study,
     outage_sweep,
@@ -179,6 +180,7 @@ _COMMANDS: dict[str, tuple[Callable[[list[str] | None], int], str]] = {
     ),
     "gate": (_gate, "apply the B1 gate of ADR-0028 to the visual candidate over seeded runs"),
     "figures": (figures.main, "render the benchmark figures from a result JSON"),
+    "hero-video": (hero_video.main, "export the hero video from a result JSON (needs a system ffmpeg)"),
     "tumvi": (_tumvi, "fetch TUM VI room sequences (CC BY 4.0); run them with `navkit euroc run --dataset tumvi`"),
     "urbannav": (
         _urbannav,
