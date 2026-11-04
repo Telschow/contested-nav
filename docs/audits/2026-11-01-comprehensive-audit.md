@@ -38,7 +38,7 @@ sweeps have no held-out guard, CN-02) and correct a stale published status page 
 | Product maturity | SRS, risks, roadmap, an ADR series; SRS status section stale (CN-03); six ADRs await a decision with merged code. |
 | Documentation | Rigorous but dense; first screen hard for non-experts; some unscoped physical-cause wording (CN-12). |
 | Visual quality | Strong generated hero figure and GIF; no plain-language framing, no feed format. |
-| Portfolio readiness | High for technical reviewers; low for a 60-second reader until #256. |
+| Readiness for a first read | High for technical reviewers; low for a 60-second reader until #256. |
 
 ## 4. Subsystem inventory
 
@@ -77,12 +77,12 @@ stopped" (parent #250).
 ## 12. Product and usability
 
 The decision framing ("Should camera aiding be on when GNSS is denied? No, because it is
-confidently wrong") is the clearest product decision in the portfolio, and it is backed by a
+confidently wrong") is the clearest product decision in the project, and it is backed by a
 pre-registered gate. The intended user (a navigation or autonomy engineer deciding whether to
 trust a filter's uncertainty) is implicit; one sentence would make it explicit. The SRS is the
 weakest product artifact because its status section is typed (CN-03).
 
-## 13. Visual and portfolio presentation
+## 13. Visual presentation
 
 Existing: `docs/figures/hero.png`, `hero.gif`, `docs/assets/social-preview.png`, generated study
 figures, MkDocs Material site on Pages. Gap: the first screen speaks to experts only. Workstream:
@@ -105,9 +105,9 @@ worth more than new pages.
 | #182, #184, #185 | Open | Code slices #242, #244, #245 closed; commits `fc19ddf`, `ab43cdd`, `08428df` on `main` | Recommend maintainer verify and close (parent #250); not closed by the audit |
 | #186 | Open | Slice #243 closed; `3d12bbd` adds attribution variants | Same |
 | #181 Integrity record v2 | Open, ready-for-human | Consistent | No change |
-| #166, #118 Dead-reckoning horizon, protection level | Open, research | High-value for the nav-trust-c2 link (an integrity output a supervisor can act on) | No change; see portfolio roadmap |
+| #166, #118 Dead-reckoning horizon, protection level | Open, research | High-value for the nav-trust-c2 link (an integrity output a supervisor can act on) | No change; see the roadmap |
 | #116, #117 | Open, research | Consistent with B1 closure; low priority | No change |
-| #119 Consolidate docs | Open | Supports portfolio readability | No change |
+| #119 Consolidate docs | Open | Supports readability | No change |
 
 ## 16. New issues
 
