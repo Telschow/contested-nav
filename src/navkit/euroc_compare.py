@@ -35,7 +35,7 @@ from typing import Any
 
 import numpy as np
 
-from . import __version__
+from . import __version__, seed_policy
 from .euroc_eval import (
     CAVEATS,
     DATA_CLASS,
@@ -433,8 +433,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--starts", type=_floats, default=DEFAULT_STARTS, help="outage start times in s, comma separated")
     p.add_argument("--outage", type=float, default=DEFAULT_OUTAGE_S, help="outage length in s (default: %(default)s)")
-    p.add_argument("--seeds", type=int, default=2, help="noise seeds per case (default: %(default)s)")
-    p.add_argument("--first-seed", type=int, default=0, help="the seeds run are first-seed, first-seed + 1, ...")
+    p.add_argument(
+        "--seeds",
+        type=int,
+        default=2,
+        help="noise seeds per case (default: %(default)s); any run seed from 100 is refused",
+    )
+    p.add_argument(
+        "--first-seed",
+        type=int,
+        default=0,
+        help="the seeds run are first-seed, first-seed + 1, ...; they must stay below 100",
+    )
     p.add_argument(
         "--lost-threshold",
         type=float,
@@ -457,6 +467,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    try:
+        seed_policy.require_development(range(args.first_seed, args.first_seed + args.seeds))
+    except ValueError as exc:
+        build_parser().error(str(exc))
     skipped: dict[str, str] = {}
     sequences: list[str] = []
     root = args.root or ""  # replaced by the dataset's folder when a real run starts; unused with --from-csv
