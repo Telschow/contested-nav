@@ -30,7 +30,7 @@ Research*, 35(10), 1157-1163. Licence: set by the dataset's authors; read the te
 - **Runs can still fail.** Any run that is still lost is listed under its table. A median alone would
   hide it.
 - **The data is not in the repository.** Its rights statement is "In Copyright - Non-Commercial Use
-  Permitted". Fetch it yourself; only the results below are committed.
+  Permitted". Fetch it yourself; only the results below are committed. The committed result files inherit that statement: use them for non-commercial purposes only (see the License section of the README).
 
 ## Results
 
