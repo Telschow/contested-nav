@@ -27,6 +27,7 @@ from typing import Any
 
 import numpy as np
 
+from . import seed_policy
 from .euroc_compare import _ALL_CONFIGS
 from .euroc_eval import RunOptions, dataset_loader, list_sequence_dirs, run_sequence
 from .report.runner import Flags, Study, run_study
@@ -540,6 +541,7 @@ def _add_arguments(p: argparse.ArgumentParser) -> None:
 
 
 def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
+    seed_policy.require_development_or_exit(args.seeds)
     rows: list[dict[str, Any]] = []
     for ds, root in (("euroc", args.euroc_root), ("tumvi", args.tumvi_root)):
         rows += confirm_sweep(ds, root) if args.confirm else sweep_rows(ds, root, args.seeds)

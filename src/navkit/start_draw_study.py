@@ -76,8 +76,7 @@ HOOKS = {"full": keep, "no_attitude": zero_attitude, "attitude_only": attitude_o
 
 
 def refuse_held_out(seeds: list[int]) -> None:
-    if any(s >= HELD_OUT_FROM for s in seeds):
-        raise ValueError(f"seeds from {HELD_OUT_FROM} are the held-out set of ADR-0028; this study uses 0 to 9 only")
+    seed_policy.require_development(seeds)
 
 
 def run_study(doc: dict[str, Any], seeds: list[int] | None = None) -> list[dict[str, Any]]:

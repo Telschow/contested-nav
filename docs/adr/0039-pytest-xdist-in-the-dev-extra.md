@@ -1,6 +1,6 @@
 # ADR-0039: pytest-xdist in the dev extra
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0011](0011-ci-and-supply-chain.md), S1 in `CONSTRAINTS.md`
 
@@ -20,11 +20,11 @@ S1 constrains runtime dependencies only. The `dev` extra is not runtime. S1 does
 
 ## Decision
 
-To be written by the maintainer.
+Adopt option (b). `pytest-xdist` is in the `dev` extra. The plain test legs run with `-n auto --dist loadfile`, and `-n 3` on macOS. The coverage leg stays serial.
 
 ## Consequences
 
-To be confirmed with the decision. If (b) is chosen:
+What follows from the decision:
 
 - One new dev dependency. The runtime dependencies stay numpy, matplotlib and pyyaml.
 - `loadfile` keeps each file on one worker, so module-scoped fixtures are built once per file.

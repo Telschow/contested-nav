@@ -42,6 +42,7 @@ from typing import Any
 import numpy as np
 import yaml
 
+from . import seed_policy
 from .benchmark import default_config_path, run_case
 from .io.imu import DEFAULT_NOISE
 from .report.runner import Flags, Study, run_study
@@ -373,6 +374,9 @@ def _add_arguments(p: argparse.ArgumentParser) -> None:
 
 
 def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
+    seed_policy.require_development_or_exit(args.seeds)
+    seed_policy.require_development_or_exit(args.growth_seeds)
+    seed_policy.require_development_or_exit(args.fault_seeds)
     wanted = args.only or ["ablation", "escalation", "growth", "fault"]
     rows: list[dict[str, Any]] = []
     steps: dict[str, Callable[[], list[dict[str, Any]]]] = {

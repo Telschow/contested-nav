@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from . import seed_policy
 from . import slow_ramp as sr
 from .euroc_eval import dataset_loader, list_sequence_dirs
 from .report.runner import Flags, Study, run_study
@@ -92,6 +93,7 @@ def _add_arguments(p: argparse.ArgumentParser) -> None:
 
 
 def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
+    seed_policy.require_development_or_exit(args.seeds)
     rows: list[dict[str, Any]] = []
     for ds, root in (("euroc", args.euroc_root), ("tumvi", args.tumvi_root)):
         rows += sweep_rows(ds, root, SETTINGS[ds], args.seeds)

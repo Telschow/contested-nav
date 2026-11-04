@@ -43,6 +43,7 @@ from typing import Any
 import numpy as np
 import yaml
 
+from . import seed_policy
 from .benchmark import MEASUREMENT, _config_label, _jsonable, default_config_path, run_case
 from .fdir.status import STATUS_REACCEPTED_WITH_INFLATION, STATUS_SENSOR_FAULT
 from .outage_sweep import METRICS, _collect, _interval, summarise_cell
@@ -414,6 +415,7 @@ def _add_arguments(ap: argparse.ArgumentParser) -> None:
 
 def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
 
+    seed_policy.require_development_or_exit(args.seeds)
     config_given = args.config is not None
     if args.config is None:
         args.config = default_config_path()

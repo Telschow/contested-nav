@@ -141,10 +141,8 @@ SENSITIVITY_TABLE = Table(_sensitivity_columns(), key="constant")
 
 
 def check_seeds(seeds: Iterable[int]) -> None:
-    """Refuse any seed from the B1 gate's reserved range."""
-    bad = sorted(s for s in seeds if s >= RESERVED_SEED_START)
-    if bad:
-        raise ValueError(f"seeds {bad} are reserved for the B1 gate (ADR-0028, seeds {RESERVED_SEED_START} and up)")
+    """Refuse any seed from the held-out range, through the one policy module."""
+    seed_policy.require_development(seeds)
 
 
 def gate_threshold() -> float:
@@ -768,15 +766,12 @@ def _run(args: argparse.Namespace) -> list[dict[str, Any]]:
         reduced = n != SENSITIVITY_SEEDS or not full
     if n < 2:
         raise SystemExit("a spread needs at least 2 seeds")
+    seed_policy.require_development_or_exit(n)
     if args.page is not None and reduced:
         raise SystemExit("--page needs the full grid: drop --seeds, --faults and --constants")
-    try:
-        check_seeds(range(n))
-        if args.part == "rate":
-            return _write_under_compare(args, rate_rows(list(range(n))))
-        rows = sensitivity_rows(args.faults, args.constants, n, progress=True)
-    except ValueError as exc:
-        raise SystemExit(str(exc)) from exc
+    if args.part == "rate":
+        return _write_under_compare(args, rate_rows(list(range(n))))
+    rows = sensitivity_rows(args.faults, args.constants, n, progress=True)
     for r in rows:
         if r.get("value") is not None:
             r["value"] = _Setting(r["value"])

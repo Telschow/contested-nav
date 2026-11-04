@@ -132,7 +132,7 @@ Status: closed as characterised, not solved (ADR-0036). The gate of ADR-0028 fai
   [`docs/data/b1_gate_heldout.csv`](docs/data/b1_gate_heldout.csv). The status block above is generated from that file
   by `scripts/render_b1_heldout.py` and checked by a test.
 
-  Current status. Open, work stopped
+  Current status. Open, work stopped. The research question is closed (ADR-0036); what remains open is the capability.
   ([ADR-0036](docs/adr/0036-b1-is-closed-as-characterised-not-solved.md)). The shipped configuration is unchanged:
   `vision_enabled` stays `False`, the single anchor stays the default and the control row, and the stochastic clone,
   the adaptive visual noise scale and the Gauss-Markov model stay opt-in. What is known:
