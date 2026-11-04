@@ -267,3 +267,9 @@ not part of this repository. Only aggregate results are published here.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+The MIT licence covers the code. Some files in `docs/data/` are measurements computed from the EuRoC recordings, for
+example `euroc_compare.csv`, `euroc_validation.csv` and the `vo_*.csv` files. They are results, not the dataset. The
+EuRoC rights statement is "In Copyright - Non-Commercial Use Permitted", so use those files for non-commercial purposes
+only, whatever the MIT licence says about the code. The terms are the dataset authors' to set. Read them on the
+dataset page before any other use.
