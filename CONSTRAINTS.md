@@ -69,7 +69,8 @@ are skips, not passes, and are never counted as passes.
   because the alternative is an unverifiable dependency.
   S1 constrains the runtime (`[project] dependencies`). Test-only tools in
   `[project.optional-dependencies] dev` are allowed when they add no runtime
-  import: pytest, Hypothesis for property tests, ruff and mypy.
+  import: pytest, pytest-xdist for parallel test legs, Hypothesis for property
+  tests, ruff and mypy.
 
 - **S2: No third-party data is vendored.** Fetch locally; commit seeded
   configs and frozen figures instead.

@@ -48,7 +48,7 @@ from typing import Any
 import numpy as np
 import yaml
 
-from . import __version__
+from . import __version__, seed_policy
 from .benchmark import MEASUREMENT, _jsonable
 from .degrade.config import Outage
 from .degrade.inject import apply_gnss_outage
@@ -825,7 +825,7 @@ def _run_parser() -> argparse.ArgumentParser:
         "--root", default=None, help="where the fetch command wrote the files (default: the dataset's folder)"
     )
     p.add_argument("--outage", action="append", default=[], type=_parse_outage, metavar="START:DURATION")
-    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--seed", type=int, default=0, help="noise seed; from 100 are refused")
     p.add_argument("--gnss-rate", type=float, default=5.0, help="Hz (default: %(default)s)")
     p.add_argument("--gnss-sigma", type=float, default=0.8, help="metres, 1-sigma per axis (default: %(default)s)")
     p.add_argument(
@@ -864,6 +864,10 @@ def _run_parser() -> argparse.ArgumentParser:
 
 def run_command(argv: list[str]) -> int:
     args = _run_parser().parse_args(argv)
+    try:
+        seed_policy.require_development([args.seed])
+    except ValueError as exc:
+        _run_parser().error(str(exc))
     if not args.sequence:
         print("give at least one --sequence NAME", file=sys.stderr)
         return 2
