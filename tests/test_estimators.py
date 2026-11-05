@@ -200,6 +200,39 @@ def test_eskf_uses_every_available_gnss_fix(imu, truth) -> None:
     assert result.stats["gnss_updates_rejected"] == 0
 
 
+def test_reusing_one_filter_instance_does_not_carry_state_between_runs(imu, truth) -> None:
+    """A second run owns fresh logs and FDIR state.
+
+    Production callers build a new filter, so the leak was latent. It still made
+    the object dishonest: the second run appended to the first run's metadata
+    lists, which were handed out by reference, and inherited the first run's
+    FDIR counters and fault history.
+    """
+    cfg = EskfConfig(imu_noise=ImuNoiseModel(2e-4, 2e-3, 2e-6, 1e-4, 1e-5, 2e-3), gnss_position_sigma_m=0.1)
+    filt = ErrorStateKalmanFilter(cfg)
+    gnss = gnss_fixes(truth, GnssConfig(sigma_m=0.1, rate_hz=5.0))
+
+    first = filt.run(imu, gnss=gnss, vision=None)
+    first_innovations = len(first.trajectory.metadata["gnss_innovations"])
+    first_bias = len(first.trajectory.metadata["bias_log"])
+    first_events = list(first.trajectory.metadata["fdir_events"])
+    assert first_innovations > 0, "the fixture must exercise the GNSS log"
+
+    second = filt.run(imu, gnss=gnss, vision=None)
+
+    # Runtime is the only stat that is allowed to differ between two runs.
+    compare = {"realtime_factor"}
+    assert {k: v for k, v in second.stats.items() if k not in compare} == {
+        k: v for k, v in first.stats.items() if k not in compare
+    }
+    np.testing.assert_array_equal(second.trajectory.positions, first.trajectory.positions)
+    assert len(second.trajectory.metadata["gnss_innovations"]) == first_innovations
+    assert len(first.trajectory.metadata["gnss_innovations"]) == first_innovations
+    assert len(second.trajectory.metadata["bias_log"]) == first_bias
+    assert len(first.trajectory.metadata["bias_log"]) == first_bias
+    assert second.trajectory.metadata["fdir_events"] == first_events
+
+
 def test_single_visual_update_corrects_a_perturbed_state() -> None:
     """A single noiseless visual fix must pull the state onto the measurement.
 

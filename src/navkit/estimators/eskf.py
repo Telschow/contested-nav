@@ -1442,6 +1442,15 @@ class ErrorStateKalmanFilter:
         if n < 2:
             raise ValueError("ESKF needs at least 2 IMU samples")
 
+        # A run owns fresh diagnostics. Production callers build a new filter,
+        # but reusing one instance must not append to the previous run's GNSS
+        # logs or inherit its FDIR channels and fault history. The metadata below
+        # gets copies as well, so a later run cannot mutate an earlier result.
+        self.fdir.reset()
+        self.fdir_inflations = 0
+        self.gnss_innovations = []
+        self.bias_log = []
+
         x = self._initial_state()
         cfg0 = self.cfg
         self._vision_scales = (
@@ -1634,8 +1643,8 @@ class ErrorStateKalmanFilter:
         # The attitude block of the covariance, for scoring the attitude. In the metadata and not in the result type, so
         # that no existing output or signature changes.
         traj.metadata["rotation_cov"] = rot_cov
-        traj.metadata["gnss_innovations"] = self.gnss_innovations
-        traj.metadata["bias_log"] = self.bias_log
+        traj.metadata["gnss_innovations"] = list(self.gnss_innovations)
+        traj.metadata["bias_log"] = list(self.bias_log)
         traj.metadata["fdir_events"] = [e.as_dict() for e in self.fdir.events]
         # One record per epoch for downstream decision logic (ADR-0035). In the metadata, as the covariance is.
         traj.metadata["integrity"] = integrity
