@@ -87,8 +87,8 @@ def test_the_gnss_jacobian_has_a_unit_column_on_the_new_states_and_the_residual_
     x = f._initial_state()
     seen = {}
 
-    def spy(x_, residual, H, Rcov, sensor="unknown", t_s=0.0):
-        seen.update(H=H.copy(), residual=residual.copy())
+    def spy(x_, residual, H, Rcov, sensor="unknown", t_s=0.0, p_meas=None):
+        seen.update(H=H.copy(), residual=residual.copy(), p_meas=p_meas)
         return True, 0.0
 
     f._update = spy  # type: ignore[method-assign]
@@ -97,6 +97,7 @@ def test_the_gnss_jacobian_has_a_unit_column_on_the_new_states_and_the_residual_
     assert np.array_equal(seen["H"][:, 3:6], np.eye(3))
     assert np.array_equal(seen["H"][:, EG], np.eye(3))
     assert np.array_equal(seen["residual"], [1.0, 2.0, 3.0])
+    assert np.array_equal(seen["p_meas"], [1.0, 2.0, 3.0]), "the fix must reach _update as received"
     x["e_gnss"] = np.array([0.5, 0.0, 0.0])
     f._gnss_update(x, np.array([1.0, 2.0, 3.0]), 0.5)
     assert np.array_equal(seen["residual"], [0.5, 2.0, 3.0])
