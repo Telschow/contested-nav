@@ -95,12 +95,16 @@ matters as much as the sign. For a relative visual transform with
 | Block | Jacobian |
 | --- | --- |
 | attitude error | `H_theta = R_rel_pred` |
-| anchor attitude | `H_ct = −R_rel_pred` |
+| anchor rotation | `H_ct = −R_rel_pred · J_r(c_t)` |
 | position | `H_p = R_prevᵀ` |
 | anchor position | `H_cp = −R_prevᵀ` |
 
 `H_ct = −R_rel_pred` rather than `+R_rel_pred` is what makes modelling the anchor
-as filter state correct rather than merely different.
+as filter state correct rather than merely different. The `J_r(c_t)` factor is
+the exact derivative away from `c_t = 0`, where it is the identity. In the
+single-anchor model `c_t` is a body-frame perturbation of the relative rotation,
+not the stored anchor attitude, and the translation half omits the
+`[t]x c_t` term; both are known properties of the control model (ADR-0036).
 
 The rotation blocks are `R_rel_pred`, not the identity, because
 `rot_log(Q · Exp(v) · Qᵀ) = Q · v`: the conjugation identity rotates the

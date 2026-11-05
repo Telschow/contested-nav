@@ -8,11 +8,13 @@ Nominal state ``x = (R, p, v, b_a, b_g)``. The filter carries a 21-dimensional
     ``[dtheta (0:3), dp (3:6), dv (6:9), db_g (9:12), db_a (12:15),
        c_p (15:18), c_t (18:21)]``
 
-The first fifteen are the usual inertial states. ``c_p`` and ``c_t`` are the
-errors of the stored visual anchor position and attitude: nuisance parameters,
-not physical states, needed because an anchor is a pose the filter itself
-produced and its error is therefore not independent evidence. The module
-docstring below explains the failure they fix and the one they do not.
+The first fifteen are the usual inertial states. ``c_p`` names the stored
+anchor position error. ``c_t`` names a body-frame perturbation of the relative
+visual rotation in the single-anchor model, and the stored-pose attitude error
+in the clone model; ``_vision_update`` gives the convention for each. Both are
+nuisance parameters, not physical states, needed because an anchor is a pose the
+filter itself produced and its error is therefore not independent evidence. The
+module docstring below explains the failure they fix and the one they do not.
 
 The convention that the true state relates to the nominal one as
 ``R_true = R Exp(dtheta)``, ``p_true = p + dp``, ``v_true = v + dv``, and the
@@ -38,11 +40,15 @@ Measurement models
   ``Log(R_rel_meas R_rel_pred^T) = Log(R_rel_pred Exp(dtheta) R_rel_pred^T) =
   R_rel_pred dtheta``, so the attitude block of ``H`` is ``R_rel_pred`` and not
   the identity. The two agree only when ``R_rel_pred`` is the identity. With the
-  anchor modelled, the anchor attitude error enters through
-  ``-R_rel_pred J_r(c_t)``. The noise covariance is isotropic.
+  anchor modelled, ``c_t`` enters through ``-R_rel_pred J_r(c_t)``. It is a
+  perturbation of the relative rotation, not the stored anchor attitude (see
+  ``_vision_update``); that Jacobian is exact under the stated generative model.
+  The noise covariance is isotropic.
 * **Visual relative translation** ``t_rel = R_{i-1}^T (p_i - p_{i-1})``: with
   ``h(x) = R_prev^T (p_cur - p_prev)`` the residual is
-  ``t_meas - h(x_nom)`` and ``H = [0 R_prev^T 0 0 0]``.
+  ``t_meas - h(x_nom)`` and ``H = [0 R_prev^T 0 0 0]``. With the anchor modelled
+  the ``c_p`` column is ``-R_prev^T`` and there is no ``c_t`` column; the omitted
+  ``[t]x c_t`` term is a known limitation of the anchor model.
 
 The previous side of a visual constraint is the filter state saved at the
 *previous visual update*, not at the previous inertial tick. At 200 Hz
@@ -188,7 +194,9 @@ _IDX_BA = slice(12, 15)
 #: away. It carries no process noise, which is precisely what stops the filter
 #: from averaging it down like a random walk.
 _IDX_CP = slice(15, 18)
-#: Error in the stored visual anchor attitude, for the same reason.
+#: The anchor rotation nuisance. In the single-anchor model this is a body-frame
+#: perturbation of the relative rotation, not the stored attitude error; in the
+#: clone model it is the stored pose's attitude error. See ``_vision_update``.
 _IDX_CT = slice(18, 21)
 
 #: Nominal states, then the two anchor nuisance blocks. The dimension is derived
@@ -387,7 +395,10 @@ class EskfConfig:
     #: property of the visual front end, not of the navigation filter, so it is
     #: declared rather than derived from the filter's own covariance.
     anchor_pos_sigma_m: float = 1.0
-    #: Declared 1-sigma on a stored anchor attitude, in degrees.
+    #: Declared 1-sigma on the anchor rotation nuisance, in degrees. What it
+    #: seeds depends on the visual model: a body-frame relative-rotation
+    #: perturbation in the anchor model, a stored-attitude error in the clone
+    #: model.
     anchor_rot_sigma_deg: float = 5.0
     #: Random-walk strength on the stored anchor, in m per square-root second and deg per square-root
     #: second: the variance of the drift grows by this squared every second (``sigma^2 dt`` in Q), so
@@ -1163,11 +1174,13 @@ class ErrorStateKalmanFilter:
         tick: at 200 Hz inertial against 20 Hz vision, the previous tick is a
         different pose and using it would compare the current frame with itself.
         The saved keyframe is the filter state *after* the previous visual
-        correction, and its error is not zero. The anchor model carries that
-        error in the anchor states ``c_p`` and ``c_t`` with a declared prior, and
-        drops its correlation with the live state (ADR-0001). The clone model
-        (``vision_model="clone"``) carries both the error and the correlation
-        through the filter's own covariance.
+        correction, and its error is not zero. The anchor model carries the
+        position half as ``c_p`` and the rotation half as ``c_t``, a body-frame
+        perturbation of the relative rotation rather than the stored attitude
+        error, each with a declared prior, and drops the correlation with the
+        live state (ADR-0001). The clone model (``vision_model="clone"``)
+        carries both the error and the correlation through the filter's own
+        covariance, with ``c_p`` and ``c_t`` as the stored pose's errors.
 
         Returns ``(ok, normalised innovation, rotation_part_accepted)``.
         """
@@ -1216,11 +1229,22 @@ class ErrorStateKalmanFilter:
         # inter-frame rotation is small.
         # (Pinned against a finite-difference Jacobian in
         # tests/test_estimators.py, which is what caught it.)
-        # The anchor attitude carries an unknown constant error ``c_t``, so the
-        # predicted relative rotation is Exp(-c_t) R_rel_true rather than
-        # R_rel_true. It is a *state*, not a term added to the innovation noise:
-        # adding it to R would let the filter average it away, which is the
-        # self-confirmation failure this state exists to prevent.
+        # The anchor model carries ``c_t`` as an unknown body-frame
+        # perturbation of the relative rotation, not as the stored anchor
+        # attitude. At the consistent point
+        #   R_rel_meas == R_rel_pred Exp(-c_t),
+        # equivalently Exp(-c_t) == R_rel_pred^T R_rel_meas. It is a *state*, not
+        # a term added to the innovation noise: adding it to R would let the
+        # filter average it away, which is the self-confirmation failure this
+        # state exists to prevent. The clone model below uses the same state name
+        # for the stored pose's attitude error, which is a different convention;
+        # the Jacobian here is the anchor one, and central differences of this
+        # method's own residual pin it under the generative model above
+        # (tests/test_estimators.py).
+        # Known limitation: the translation half below has no ``c_t`` column, so
+        # the ``[t]x c_t`` term the clone model carries is absent. It is not
+        # added here: this is the declared control row (ADR-0036) and its
+        # behaviour stays unchanged.
         R_rel_pred = R_prev.T @ R_cur
         Rcov_rot = np.eye(3) * np.deg2rad(rot_sigma_deg) ** 2
         H_rot = np.zeros((3, self._n))
@@ -1262,6 +1286,10 @@ class ErrorStateKalmanFilter:
         # [0 R_prev^T 0 0 0 | 0 | -R_prev^T]. The anchor term is a state block
         # rather than an addition to the innovation covariance, for the same
         # reason as the attitude block above.
+        # There is no ``c_t`` column here, so the ``[t]x c_t`` term that the
+        # clone model carries is omitted. That is a known limitation of this
+        # control-row measurement model, not an oversight to patch silently:
+        # ADR-0036 keeps the row as the declared-broken control.
         H_trans = np.zeros((3, self._n))
         H_trans[:, _IDX_P] = R_prev.T
         Rcov_trans = np.eye(3) * trans_sigma_m**2

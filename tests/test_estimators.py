@@ -930,6 +930,11 @@ def test_attitude_jacobian_is_the_exact_derivative() -> None:
 def test_anchor_attitude_jacobian_is_the_exact_derivative() -> None:
     """H_ct = -R_rel_pred @ J_r(c_t), differenced at a non-zero operating point.
 
+    The generative model is the one documented in ``docs/MODEL.md`` and
+    ``docs/architecture.md``: ``R_rel_meas == R_rel_pred Exp(-c_t)``, so
+    ``c_t`` is a body-frame perturbation of the relative rotation, not the
+    stored anchor attitude the clone model uses.
+
     The operating point uses a non-zero c_t with a measurement made consistent
     with it (R_rel_meas == R_rel_pred Exp(-c_t)), so the rotation residual
     vanishes and the numerical derivative is the Jacobian rather than an
