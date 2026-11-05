@@ -988,7 +988,7 @@ class TestFrozenAnchorCrossCheck:
             "v": np.zeros(3),
             "b_a": np.zeros(3),
             "b_g": np.zeros(3),
-            "P": np.eye(21) * 0.01,
+            "P": np.eye(eskf._n) * 0.01,
             "R_vk": np.eye(3),
             "p_vk": np.zeros(3),
             "P_theta_vk": np.eye(3) * 0.01,
@@ -1007,10 +1007,16 @@ class TestFrozenAnchorCrossCheck:
                 "P_cp": np.eye(3) * 0.01,
             },
         }
+        if eskf._gg:
+            # The correlated GNSS error is part of the state exactly when the
+            # Gauss-Markov model is on; it is what makes the residual differ
+            # from the fix by more than the anchor error.
+            x["e_gnss"] = np.zeros(3)
         return eskf, x
 
-    def _forced_grant_update(self, eskf, x, offset_m, t_s=20.0):
-        """One GNSS update with FDIR's verdict forced to an inflated grant.
+    @staticmethod
+    def _forced_grant_decision():
+        """FDIR's verdict, forced to an inflated grant.
 
         `evaluate_and_adapt` is stubbed rather than driven, because reaching an
         inflated verdict requires a run of rejections that the state above will
@@ -1019,7 +1025,7 @@ class TestFrozenAnchorCrossCheck:
         """
         from navkit.fdir import GatingDecision
 
-        decision = GatingDecision(
+        return GatingDecision(
             accepted=True,
             mahalanobis_sq=float("inf"),
             threshold=float("inf"),
@@ -1029,6 +1035,10 @@ class TestFrozenAnchorCrossCheck:
             inflation_block=(3, 4, 5),
             outlier=True,
         )
+
+    def _forced_grant_update(self, eskf, x, offset_m, t_s=20.0):
+        """One GNSS update with FDIR's verdict forced to an inflated grant."""
+        decision = self._forced_grant_decision()
         eskf.fdir.evaluate_and_adapt = lambda *a, **k: decision
         try:
             return eskf._gnss_update(x, np.array([offset_m, 0.0, 0.0]), 0.8, t_s=t_s)
@@ -1056,6 +1066,38 @@ class TestFrozenAnchorCrossCheck:
         accepted, d2 = self._forced_grant_update(eskf, x, 5.0)
         assert accepted, f"a fix 5 m from the anchor was refused (d2={d2:.1f})"
         assert d2 < self.THRESHOLD_SQ
+
+    def test_the_cross_check_measures_the_fix_as_received(self):
+        """CN-07: with the GNSS Gauss-Markov model on, the residual is not the fix.
+
+        The residual is ``p_meas - (p + e_gnss)``, so rebuilding the fix as
+        ``residual + x["p"]`` subtracts the filter's own estimate of the
+        correlated error. Here the fix is 15 m from the anchor and the filter
+        has absorbed 3 m of it: the raw fix is ``d2 = 225 / 0.66 = 340.9`` and
+        must be refused, while the reconstruction is 12 m, ``d2 = 218.2``,
+        inside the threshold. Measuring the reconstruction hides exactly the
+        contradiction the cross-check exists to find.
+        """
+        eskf, x = self._granted_state(gnss_gm_error=True)
+        x["e_gnss"] = np.array([3.0, 0.0, 0.0])
+
+        accepted, d2 = self._forced_grant_update(eskf, x, 15.0)
+
+        assert not accepted, "the cross-check accepted the fix after de-biasing it by e_gnss"
+        assert d2 == pytest.approx(225.0 / (0.01 + 0.01 + 0.64))
+
+    def test_the_cross_check_cannot_run_without_the_raw_fix(self):
+        """Absence of the fix is an error, not a reason to reconstruct one."""
+        eskf, x = self._granted_state()
+        H = np.zeros((3, eskf._n))
+        H[0, 3] = H[1, 4] = H[2, 5] = 1.0
+        decision = self._forced_grant_decision()
+        eskf.fdir.evaluate_and_adapt = lambda *a, **k: decision
+        try:
+            with pytest.raises(ValueError, match="raw GNSS fix"):
+                eskf._update(x, np.zeros(3), H, np.eye(3) * 0.64, sensor="gnss", t_s=20.0)
+        finally:
+            del eskf.fdir.evaluate_and_adapt
 
     def test_the_threshold_separates_a_honest_return_from_a_spoof(self):
         """What the number is worth: 15^2 against the two populations.
@@ -1119,10 +1161,10 @@ class TestFrozenAnchorCrossCheck:
             by_time[(round(float(t_s), 4), sensor)] = d
             return d
 
-        def spy_update(self, x, residual, H, Rcov, sensor="unknown", t_s=0.0):
+        def spy_update(self, x, residual, H, Rcov, sensor="unknown", t_s=0.0, p_meas=None):
             grants = int(x.get("gnss_grants_since_verified", 0))
             snap = x.get("anchor_snapshot")
-            out = orig_update(self, x, residual, H, Rcov, sensor=sensor, t_s=t_s)
+            out = orig_update(self, x, residual, H, Rcov, sensor=sensor, t_s=t_s, p_meas=p_meas)
             d = by_time.get((round(float(t_s), 4), sensor))
             if sensor == "gnss" and d is not None and d.inflated:
                 observed.append((grants, snap is not None, True))
