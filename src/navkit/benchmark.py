@@ -54,6 +54,7 @@ from typing import Any
 import numpy as np
 import yaml
 
+from . import seed_policy
 from .degrade.config import Scenario, scenario_from_dict
 from .degrade.inject import config_hash, inject
 from .estimators.dead_reckoning import DeadReckoning
@@ -605,6 +606,10 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     args = ap.parse_args(argv)
+    try:
+        seed_policy.require_development([s for s in (args.seed, args.scene_seed) if s is not None])
+    except ValueError as exc:
+        ap.error(str(exc))
     config_given = args.config is not None
     if args.config is None:
         args.config = default_config_path()
