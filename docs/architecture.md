@@ -44,7 +44,7 @@ Supporting layers:
 | 9:12 | `db_g` | gyroscope bias | rad/s |
 | 12:15 | `db_a` | accelerometer bias | m/s^2 |
 | 15:18 | `c_p` | visual anchor position offset | m |
-| 18:21 | `c_t` | visual anchor attitude offset | rad |
+| 18:21 | `c_t` | body-frame perturbation of the relative visual rotation (anchor model) | rad |
 
 The first 15 are the conventional error-state IMU/GNSS ESKF. The last six
 are the visual anchor from ADR-0001.
@@ -68,7 +68,7 @@ t_rel = R_prev^T (p_cur - p_prev)
 
 This is not a measurement of world position. The translation half constrains the
 constant body-frame position offset `c_p`, and the rotation half constrains the
-constant body-frame attitude offset `c_t`. The Jacobians encode that
+body-frame perturbation of the relative rotation `c_t`. The Jacobians encode that
 distinction:
 
 | Block | Jacobian | Rationale |
@@ -87,6 +87,16 @@ identity is correct only in the special case `R_rel_pred == I`, because
 into the previous body frame, and that is the frame the residual is expressed
 in. Getting this wrong is a frame error rather than a sign error, so it is
 harder to spot and it stays small whenever the inter-frame rotation is small.
+
+**What `c_t` is.** In the single-anchor model `c_t` is not the stored
+anchor-attitude error. The measurement model is
+`R_rel_meas = R_rel_pred Exp(-c_t)`, so `c_t` perturbs the relative rotation in
+the body frame, and `H_ct = -R_rel_pred @ J_r(c_t)` is exact under that
+convention. Reading `c_t` as a stored-attitude error gives a different
+Jacobian. The translation half carries no `c_t` column, so it omits the
+`[t]x c_t` term; that is a known limitation of the anchor model, which stays the
+declared-broken control (ADR-0036). The clone model uses the stored-pose
+convention and carries both `c_t` columns.
 
 On the first accepted visual measurement the filter is *initialised*: the
 anchor is set from the measurement, no residual is applied to the navigation

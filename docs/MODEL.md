@@ -54,12 +54,28 @@ The filter carries a 21-element error state. The nominal state is `(R, p, v, b_a
 | 9:12 | `db_g` | gyro bias error | rad/s |
 | 12:15 | `db_a` | accelerometer bias error | m/s^2 |
 | 15:18 | `c_p` | error of the stored visual anchor position | m |
-| 18:21 | `c_t` | error of the stored visual anchor attitude | rad |
+| 18:21 | `c_t` | body-frame perturbation of the relative visual rotation (anchor model) | rad |
 
 The anchor states are nuisance parameters. Their corrections are computed and
 deliberately not applied (CN-003, see the comment in `_inject_correction`), which is
 part of why visual aiding stays overconfident ([ADR-0001](adr/0001-anchor-as-filter-state.md),
 [ADR-0003](adr/0003-ship-visual-disabled.md)).
+
+**What `c_t` means.** The single-anchor model does not carry the stored anchor
+attitude as a state. It carries `c_t` as a body-frame perturbation of the
+relative rotation between the keyframe and the current pose: the measurement
+model is `R_rel_meas = R_rel_pred Exp(-c_t)`, equivalently
+`Exp(-c_t) = R_rel_pred^T R_rel_meas`. The anchor rotation Jacobian is exact
+under this convention. Central differences of the filter's own residual pin it
+in `tests/test_estimators.py`; the audit measured agreement of about `1e-10`
+(CN-05). Reading `c_t` as the stored anchor-attitude error gives a different
+Jacobian and a mismatch of up to 0.18 rad in the rotation block.
+
+The anchor translation block has no `c_t` column, so it omits the `[t]x c_t`
+term that the clone model carries. That omission is a known limitation of the
+anchor model, which stays the declared-broken control ([ADR-0036](adr/0036-b1-is-closed-as-characterised-not-solved.md));
+it is not changed here. The clone model, which does carry the stored pose as a
+state, uses the stored-attitude convention and has both `c_t` columns.
 
 ## Seeding and determinism
 
@@ -113,7 +129,7 @@ and in [as implemented](#as-implemented-things-a-reader-should-know).
 | `vision_keyframe_interval` | accepted updates | `1` | Accepted visual updates between anchor re-commits; None holds one anchor for the run. |
 | `vision_anchor_modelled` | flag | `True` | Carry the anchor error as filter state (true) or fold it into measurement noise (false, kept to reproduce the failure). |
 | `anchor_pos_sigma_m` | m | `1.0` | Declared 1-sigma of a stored anchor position. |
-| `anchor_rot_sigma_deg` | deg | `5.0` | Declared 1-sigma of a stored anchor attitude. |
+| `anchor_rot_sigma_deg` | deg | `5.0` | Declared 1-sigma of the anchor attitude error `c_t`; the state-vector note above says what `c_t` means in each visual model. |
 | `anchor_pos_drift_sigma_m_sqrt_s` | m per sqrt(s) | `0.0` | Random-walk strength on the anchor position. It enters Q as sigma^2 dt, so the variance grows by its square each second and the unit is m/sqrt(s). Called `anchor_pos_drift_sigma_m_s` until P5-05; the old name is accepted with a deprecation warning. |
 | `anchor_rot_drift_sigma_deg_sqrt_s` | deg per sqrt(s) | `0.0` | Random-walk strength on the anchor attitude. Same convention as the position term. Old name `anchor_rot_drift_sigma_deg_s`, accepted with a warning. |
 | `gate_sigma` | multiples of predicted sigma | `5.0` | Per-component residual gate. |
