@@ -1,5 +1,11 @@
 # Comprehensive audit, 2026-11-01
 
+> **Status note, 2026-11-05, at `881f039`.** The report below describes `49d4310` and is left as written.
+> The current status of each item is in [the comment on #250](https://github.com/Telschow/contested-nav/issues/250).
+> In short: the seed-policy and EuRoC-notice items are fixed, the shared-stream choice is recorded in ADR-0010,
+> the B1 wording is separated, and the ADR decisions (#282), the EuRoC rights question (#278) and the
+> UrbanNav real-data runs (#274) wait for the maintainer.
+
 ## 1. Commit and scope
 
 - Commit: `49d431064e49c06474c389cd70ff69a92c7f55b5` (`main`, merge of PR #249). Working tree clean.
