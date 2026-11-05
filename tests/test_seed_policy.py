@@ -56,6 +56,16 @@ def test_every_generic_sweep_refuses_seed_101(module, capsys) -> None:
     assert "held-out" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("flag", ["--seed", "--scene-seed"])
+@pytest.mark.parametrize("value", ["100", "101", "-1"])
+def test_run_refuses_held_out_and_negative_seeds(flag: str, value: str, capsys) -> None:
+    with pytest.raises(SystemExit) as e:
+        cli.main(["run", flag, value, "--list"])
+    assert e.value.code == 2
+    err = capsys.readouterr().err
+    assert "held-out" in err or "negative" in err
+
+
 # --- the two seed-taking EuRoC commands --------------------------------------------------------
 
 

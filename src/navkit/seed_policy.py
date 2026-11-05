@@ -2,9 +2,9 @@
 
 Seeds 0 to 99 are development seeds. Seeds 100 to 124 are the held-out set of ADR-0028, spent. From 125 the seeds are
 held-out blocks of 25 (ADR-0030), run one at a time through :mod:`navkit.candidate_gate`. Every command that runs a
-case on seed numbers calls :func:`require_development` before it starts: the ``navkit sweep`` entry points, and
-``navkit euroc run`` and ``navkit euroc compare``. The B1 gate and the candidate gate are the two procedures allowed
-to use held-out seeds.
+case on seed numbers calls :func:`require_development` before it starts: the ``navkit sweep`` entry points,
+``navkit run --seed`` and ``--scene-seed``, ``navkit euroc run`` and ``navkit euroc compare``. The B1 gate and the
+candidate gate are the two procedures allowed to use held-out seeds.
 """
 
 from __future__ import annotations
