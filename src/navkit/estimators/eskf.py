@@ -857,6 +857,7 @@ class ErrorStateKalmanFilter:
         Rcov: np.ndarray,
         sensor: str = "unknown",
         t_s: float = 0.0,
+        p_meas: np.ndarray | None = None,
     ) -> tuple[bool, float]:
         """Standard linear KF update followed by the error-state reset.
 
@@ -905,7 +906,9 @@ class ErrorStateKalmanFilter:
 
         if decision.inflated:
             if sensor == "gnss" and x.get("gnss_grants_since_verified", 0) > 0:
-                disagrees, d2 = self._frozen_anchor_disagrees(x, residual, Rcov)
+                if p_meas is None:
+                    raise ValueError("the frozen-anchor cross-check needs the raw GNSS fix (p_meas)")
+                disagrees, d2 = self._frozen_anchor_disagrees(x, p_meas, Rcov)
                 if disagrees:
                     return False, d2
             S = self._apply_inflation(x, decision, H, Rcov, sensor)
@@ -976,8 +979,14 @@ class ErrorStateKalmanFilter:
             P[ridx, ridx] += decision.reexpansion_variance
             self.fdir_inflations += 1
 
-    def _frozen_anchor_disagrees(self, x: FilterState, residual: np.ndarray, Rcov: np.ndarray) -> tuple[bool, float]:
+    def _frozen_anchor_disagrees(self, x: FilterState, p_meas: np.ndarray, Rcov: np.ndarray) -> tuple[bool, float]:
         """Cross-check a GNSS fix against the visual anchor frozen at outage start.
+
+        ``p_meas`` is the fix as received. It is not reconstructed from the
+        residual: with the GNSS Gauss-Markov model the residual already has
+        ``e_gnss`` removed, so rebuilding the fix would de-bias it by the
+        filter's own estimate and hide the contradiction this check exists to
+        find (CN-07).
 
         Returns ``(disagrees, squared_distance)``. Only applies on second and later
         grants in an episode (ADR-0007): the first grant is the reacquisition; the
@@ -994,7 +1003,6 @@ class ErrorStateKalmanFilter:
             p_anchor = x["p_vk"] + x["c_p"]
             P_p_vk = x["P_p_vk"]
             P_cp = x["P"][_IDX_CP, _IDX_CP]
-        p_meas = residual + x["p"]
         z = p_meas - p_anchor
         # Anchor covariance: P_p_vk + P[c_p, c_p] + Rcov
         P_anchor = P_p_vk + P_cp + Rcov
@@ -1141,7 +1149,7 @@ class ErrorStateKalmanFilter:
             # The fix is the position plus the correlated error plus white noise (issue #244).
             H[:, _IDX_EG] = np.eye(3)
             predicted = predicted + x["e_gnss"]
-        return self._update(x, p_meas - predicted, H, Rcov, sensor="gnss", t_s=t_s)
+        return self._update(x, p_meas - predicted, H, Rcov, sensor="gnss", t_s=t_s, p_meas=p_meas)
 
     def _vision_update(
         self,
