@@ -574,6 +574,22 @@ The rows are in `docs/data/correlated_gnss.csv`, written by `navkit sweep correl
   and its error is not known.
 - It is not field performance.
 
+## Sanity checks
+
+Three checks on the runs above, as rows in `docs/data/urbannav_sanity.csv`, written by `navkit urbannav sanity`. The
+settings are constants in `src/navkit/urbannav_sanity.py`, declared before the run and not changed after it. The
+sentences below are checked against the rows by `tests/test_urbannav_sanity.py`. One sequence or two, one receiver, and
+the reference's own error is not known.
+
+- **Clock shift.** It was run on Deep-Urban-1 only, because Tunnel-1 has an outage and the outage window would have to
+  move with the clock. Moving the IMU clock by the declared shift in either direction raises both the mean NEES and the
+  ATE RMSE above the unshifted run. The unshifted run is the lowest of the three on both measures.
+- **Dead reckoning.** On Deep-Urban-1 the accelerometer alone drifts further over the declared stretch than the aided
+  run's horizontal RMSE. On Tunnel-1 the two are not like for like: the aided RMSE covers the whole run, including the
+  tunnel outage, so the ratio there says nothing about whether the aided filter beats dead reckoning.
+- **Spread of the lag correlation.** The estimators of the correlation of fix errors at the declared lag give different
+  values on Tunnel-1 and almost the same value on Deep-Urban-1. The spread is much smaller on Deep-Urban-1.
+
 ## What follows
 
 The attitude is the next thing to understand: a run that starts from a better alignment, or that holds the gyroscope
