@@ -120,3 +120,8 @@ def test_the_run_gives_rows_under_the_imposed_name_on_a_fixture(tmp_path):
     rows = ui.rows_for_outage("syn", o, seq, gnss, [], info, seeds=(0,))
     assert {r["sequence"] for r in rows} == {ui.row_sequence("syn", o)}
     assert {r["variant"] for r in rows} == set(ui.VARIANTS)
+
+
+def test_the_imposed_command_refuses_a_sequence_without_declared_outages(capsys):
+    assert ui.main(["--sequence", "tunnel1"]) == 1
+    assert "no imposed outages are declared" in capsys.readouterr().err

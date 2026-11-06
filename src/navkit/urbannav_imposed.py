@@ -24,6 +24,8 @@ UrbanNav CSVs are not touched.
 
 from __future__ import annotations
 
+import argparse
+import sys
 from dataclasses import dataclass
 from typing import Any
 
@@ -97,3 +99,40 @@ def rows_for_outage(
     spans = sorted([*own_spans, span])
     results = [ur.run_once(seq, cut, spans, cut_info, seed, v) for v in VARIANTS for seed in seeds]
     return ur.rows_for(row_sequence(seq_name, outage), results)
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(
+        prog="navkit urbannav imposed", description="Run the declared imposed outages on an aided UrbanNav sequence."
+    )
+    p.add_argument("--root", default="data/raw/urbannav")
+    p.add_argument("--sequence", "-s", default="deepurban1")
+    p.add_argument("--csv", default=None, help="write one row per seed and quantity to this file")
+    args = p.parse_args(argv)
+    try:
+        if args.sequence not in IMPOSED:
+            raise SequenceError(f"no imposed outages are declared for {args.sequence}")
+        seq, gnss, spans, info = ur.build(args.root, args.sequence)
+        if spans:
+            raise SequenceError(f"{args.sequence} has an outage of its own: imposed outages are for an aided sequence")
+        rows: list[dict[str, Any]] = []
+        for outage in IMPOSED[args.sequence]:
+            rows += rows_for_outage(args.sequence, outage, seq, gnss, spans, info)
+            print(f"{row_sequence(args.sequence, outage)} done", file=sys.stderr)
+    except SequenceError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    if args.csv:
+        try:
+            ur.TABLE.merge(args.csv, rows)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        print(f"wrote {args.csv}", file=sys.stderr)
+    else:
+        print("\n".join(f"{r['sequence']},{r['variant']},{r['seed']},{r['quantity']},{r['value']}" for r in rows))
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())
