@@ -57,6 +57,7 @@ from . import (
     start_draw_study,
     urbannav_check,
     urbannav_fix_errors,
+    urbannav_imposed,
     urbannav_run,
     urbannav_sanity,
     vision_ramp,
@@ -148,7 +149,7 @@ def _gate(argv: list[str] | None) -> int:
 
 
 def _urbannav(argv: list[str] | None) -> int:
-    """Route ``navkit urbannav fetch``, ``check``, ``run``, ``fixerrors`` and ``sanity``."""
+    """Route ``navkit urbannav fetch``, ``check``, ``run``, ``fixerrors``, ``sanity`` and ``imposed``."""
     args = list(argv or [])
     routes = {
         "fetch": urbannav_fetch.main,
@@ -156,9 +157,10 @@ def _urbannav(argv: list[str] | None) -> int:
         "run": urbannav_run.main,
         "fixerrors": urbannav_fix_errors.main,
         "sanity": urbannav_sanity.main,
+        "imposed": urbannav_imposed.main,
     }
     if not args or args[0] in ("-h", "--help") or args[0] not in routes:
-        usage = "usage: navkit urbannav {fetch,check,run,fixerrors,sanity} [options]"
+        usage = "usage: navkit urbannav {fetch,check,run,fixerrors,sanity,imposed} [options]"
         notes = (
             "  fetch  download the reference solution and IMU of UrbanNav sequences (MIT, cite Hsu et al. 2023)",
             "  check  measure what the fetched files contain and fill the UrbanNav data page",

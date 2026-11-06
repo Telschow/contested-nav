@@ -633,8 +633,32 @@ is not known. That ADR has no decision yet, so this is a result of a run, not an
 - What these rows do not say is that the receiver's errors follow this model, or that these values are right for
   it. One setting was run, and it was not tuned. Another setting could give another answer.
 
+## Imposed outages
+
+The aided Deep-Urban-1 run again, with an outage cut into the receiver's fixes by the code. The receiver reports none
+here by the rule of issue #95, and that rule is not changed. These outages are imposed and are not the receiver's own,
+so the rows say how the filter behaves through a denial of known position and length on real fixes and a real IMU. They
+say nothing about how often or how long a receiver loses its fix in a city. The starts and lengths are declared in
+`IMPOSED` in `src/navkit/urbannav_imposed.py` before any run: a short, a middle and a long outage, the lengths of the
+synthetic outage study, each run alone. The settings, the variants and the seeds are those of the aided run. The rows
+are in `docs/data/urbannav_imposed.csv` and the existing CSVs are unchanged. The sentences below are checked against
+the rows by `tests/test_urbannav_imposed_page.py`. One sequence, one receiver, imposed outages, and the reference's own
+error is not known.
+
+- **After the short outage the filter takes every returning fix, in both variants.** The gate rejects none.
+- **After the middle outage the filter also takes every returning fix and recovers, but it ends the outage with a
+  position error above the error it claims.** The horizontal error at the end of the outage is larger than the claimed
+  horizontal sigma.
+- **After the long outage the filter rejects every returning fix, in both variants and in every seed.** The GNSS channel
+  is declared faulted, no fix is accepted again, and the horizontal error after the outage is far above the error before
+  it. The filter does not recover on this sequence.
+- **The horizontal error at the end of the outage grows with the length of the outage.**
+- What these rows do not say is why the long outage is not recovered from. It could be the reacquisition rule, the
+  size of the drift against the gate, or a property of this sequence, and no run here separates them. Nor do they say
+  how a receiver's own outages behave. The oracle variants were not run.
+
 ## What follows
 
 The attitude is still the next thing to understand: a better start alignment and a held gyroscope bias were run (section
 above) and neither removes the excess. A correlated-error term was run on Deep-Urban-1 with one declared setting and
-lowers the overconfidence without removing it (section above). Imposed outages on Deep-Urban-1 are the next experiment. See [ADR-0026](adr/0026-urbannav-as-a-real-gnss-dataset.md).
+lowers the overconfidence without removing it (section above). Outages imposed on Deep-Urban-1 were run (section above): the long one is not recovered from, and the cause is not established. See [ADR-0026](adr/0026-urbannav-as-a-real-gnss-dataset.md).
