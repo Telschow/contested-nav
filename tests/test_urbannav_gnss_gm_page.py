@@ -9,7 +9,11 @@ import csv
 import statistics
 from pathlib import Path
 
+import pytest
+
 from navkit import urbannav_run as ur
+
+pytestmark = pytest.mark.docs_only
 
 ROOT = Path(__file__).resolve().parents[1]
 GM_CSV = ROOT / "docs" / "data" / "urbannav_gnss_gm.csv"
