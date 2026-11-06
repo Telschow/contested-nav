@@ -540,8 +540,10 @@ The table of fix errors above shows that on this sequence the receiver's errors 
 the correlation is high at the longer lags, and the effective sample size per axis is a small fraction of the number
 of fixes. Averaging correlated errors does not reduce the error the way the claimed covariance assumes, and the
 innovations stay small because the estimate follows the fixes. This is consistent with the rows above. It does not
-prove the cause, because the filter was not run with a correlated-error model here. The reference's own error is not
-known, and some of the correlated difference could be in the reference and not in the receiver.
+prove the cause, because the filter was not run with a correlated-error model here. A separate run with a
+correlated-error term, in the section [A correlated-error GNSS term](#a-correlated-error-gnss-term), does not remove the
+overconfidence. The reference's own error is not known, and some of the correlated difference could be in the reference
+and not in the receiver.
 
 The synthetic counterpart, where the cause is known, is below.
 
@@ -568,7 +570,7 @@ The rows are in `docs/data/correlated_gnss.csv`, written by `navkit sweep correl
 - It does not say how the filter does through an outage. Imposed outages are a separate experiment, and this section
   did not run one.
 - It does not carry over to another receiver, another city or another day.
-- It does not say whether a correlated-error model would repair the overconfidence. That was not run.
+- It does not say whether a correlated-error model would repair the overconfidence. That is a separate run, in the section [A correlated-error GNSS term](#a-correlated-error-gnss-term).
 - It makes no claim about the height, and the antenna offset from the IMU is not corrected.
 - It does not say how accurate the receiver is. The reference is a post-processed estimate with several quality codes,
   and its error is not known.
@@ -609,8 +611,30 @@ sample sizes, and the declared run's rows are unchanged. The sentences below are
   reports other quantities. Its two variants can only be compared with each other.
 - What these rows do not say is what does cause the excess. Neither variant removes it.
 
+## A correlated-error GNSS term
+
+The aided Deep-Urban-1 run again, with the optional time-correlated GNSS error term of
+the ADR for it (in `docs/adr`, titled "A correlated-error term for the GNSS update") switched on. It is off by default. The correlation
+time and the amplitude are the constants `GM_TAU_S` and `GM_SIGMA_M` in `src/navkit/urbannav_run.py`. They were declared
+before this run and are the values of the synthetic study, not a fit to this data. The receiver's own sigma stays the
+white part of each fix. The rows are in `docs/data/urbannav_gnss_gm.csv`, for both variants, with effective sample sizes,
+and the declared rows are unchanged. The sentences below are checked against the rows by
+`tests/test_urbannav_gnss_gm_page.py`. One sequence, one receiver, one setting of the term, and the reference's own error
+is not known. That ADR has no decision yet, so this is a result of a run, not an adopted model.
+
+- **The term lowers the mean horizontal NEES in both variants, and it stays above its expected value.** The filter is
+  less overconfident and still overconfident.
+- **The share of epochs inside the confidence ellipse rises and stays below the nominal level.**
+- **The position error is essentially unchanged.** The term changes what the filter claims, not where it puts the
+  estimate.
+- **The attitude NEES is essentially unchanged and stays far above its expected value.** The term does not touch the
+  attitude excess.
+- **The gate rejects no fix with the term, as without it.**
+- What these rows do not say is that the receiver's errors follow this model, or that these values are right for
+  it. One setting was run, and it was not tuned. Another setting could give another answer.
+
 ## What follows
 
 The attitude is still the next thing to understand: a better start alignment and a held gyroscope bias were run (section
-above) and neither removes the excess. A filter model for correlated receiver
-errors, which this page does not run, would be the next thing to try on Deep-Urban-1. See [ADR-0026](adr/0026-urbannav-as-a-real-gnss-dataset.md).
+above) and neither removes the excess. A correlated-error term was run on Deep-Urban-1 with one declared setting and
+lowers the overconfidence without removing it (section above). Imposed outages on Deep-Urban-1 are the next experiment. See [ADR-0026](adr/0026-urbannav-as-a-real-gnss-dataset.md).
