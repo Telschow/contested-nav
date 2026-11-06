@@ -142,3 +142,60 @@ def test_main_prints_without_csv_and_reports_a_missing_dataset(aided_root, tmp_p
 def test_real_data_rows_are_finite(tmp_path):  # pragma: no cover
     out = tmp_path / "r.csv"
     assert us.main(["--root", str(DATA), "--sequence", "tunnel1", "--csv", str(out)]) == 0
+
+
+# ------------------------------------ the statements of the "Sanity checks" section, each tied to the committed CSV
+
+SANITY_CSV = REPO / "docs" / "data" / "urbannav_sanity.csv"
+SANITY_PAGE = REPO / "docs" / "urbannav.md"
+TUNNEL, DEEP = "tunnel1", "deepurban1"
+
+
+def _sanity(sequence: str, quantity: str) -> float:
+    import csv
+
+    with SANITY_CSV.open(newline="", encoding="utf-8") as f:
+        (value,) = [
+            float(r["value"]) for r in csv.DictReader(f) if r["sequence"] == sequence and r["quantity"] == quantity
+        ]
+    return value
+
+
+def _section() -> str:
+    text = SANITY_PAGE.read_text(encoding="utf-8")
+    return text.split("## Sanity checks", 1)[1].split("\n## ", 1)[0]
+
+
+def test_statement_clock_shift_either_way_is_worse_than_the_unshifted_run() -> None:
+    assert _sanity(DEEP, "clock_shift") == us.CLOCK_SHIFT_S
+    for measure in ("hor_nees_mean", "ate_rmse"):
+        zero = _sanity(DEEP, f"clock_shift_zero_{measure}")
+        assert _sanity(DEEP, f"clock_shift_minus_{measure}") > zero
+        assert _sanity(DEEP, f"clock_shift_plus_{measure}") > zero
+    assert "The unshifted run is the lowest of the three on both measures" in _section()
+
+
+def test_statement_clock_shift_is_not_run_on_the_sequence_with_an_outage() -> None:
+    with pytest.raises(ValueError):
+        _sanity(TUNNEL, "clock_shift_zero_ate_rmse")
+    assert "Deep-Urban-1 only" in _section()
+
+
+def test_statement_dead_reckoning_beats_aided_only_where_there_is_no_outage() -> None:
+    assert _sanity(DEEP, "dead_reckoning_window") == us.DEAD_RECKONING_S
+    assert _sanity(DEEP, "dead_reckoning_accel_only_hor_err") > _sanity(DEEP, "dead_reckoning_aided_hor_rmse")
+    assert _sanity(DEEP, "dead_reckoning_to_aided_ratio") > 1
+    # On Tunnel-1 the ratio is below 1 only because the aided RMSE includes the outage: the two are not like for like.
+    assert _sanity(TUNNEL, "dead_reckoning_to_aided_ratio") < 1
+    assert "not like for like" in _section()
+
+
+def test_statement_lag_correlation_spread_is_much_smaller_on_deep_urban_1() -> None:
+    assert _sanity(TUNNEL, "fix_corr_lag") == us.FIX_LAG_S == _sanity(DEEP, "fix_corr_lag")
+    for seq in (TUNNEL, DEEP):
+        spread = _sanity(seq, "fix_corr_lag10s_spread")
+        assert spread == pytest.approx(
+            _sanity(seq, "fix_corr_lag10s_max") - _sanity(seq, "fix_corr_lag10s_min"), abs=1e-3
+        )
+    assert _sanity(DEEP, "fix_corr_lag10s_spread") < 0.01 * _sanity(TUNNEL, "fix_corr_lag10s_spread")
+    assert "The spread is much smaller on Deep-Urban-1" in _section()
