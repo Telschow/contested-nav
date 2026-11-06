@@ -19,6 +19,7 @@ import json
 import shutil
 import subprocess
 import sys
+import textwrap
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -120,7 +121,12 @@ def _scale(width: int, height: int) -> float:
 
 def _caption(fig: Figure, text: str, y: float, size: float, color: str = FG, weight: str = "normal") -> None:
     if text:
-        fig.text(0.5, y, text, ha="center", va="center", fontsize=size, color=color, weight=weight, wrap=True)
+        # Wrap to 84 percent of the frame width, so the text keeps a margin instead of running to the edge.
+        px_per_char = 0.55 * size * fig.dpi / 72.0
+        width = max(10, int(0.84 * fig.get_figwidth() * fig.dpi / px_per_char))
+        fig.text(
+            0.5, y, textwrap.fill(text, width), ha="center", va="center", fontsize=size, color=color, weight=weight
+        )
 
 
 def _footer(fig: Figure, text: str, scale: float) -> None:
