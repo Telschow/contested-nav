@@ -47,3 +47,6 @@ what it cost, and what was rejected.
 | [ADR-0040](0040-staleness-of-the-nis-windows.md) | Staleness of the NIS windows | proposed |
 | [ADR-0041](0041-a-correlated-error-term-for-the-gnss-update.md) | A correlated-error term for the GNSS update | proposed |
 | [ADR-0042](0042-publishing-rows-derived-from-euroc.md) | Publishing rows derived from EuRoC | accepted |
+| [ADR-0043](0043-camera-imu-extrinsic-and-time-offset-sensitivity.md) | Camera-IMU extrinsic and time-offset sensitivity | proposed |
+| [ADR-0044](0044-a-protection-level-from-the-calibrated-covariance.md) | A protection level from the calibrated covariance | proposed |
+| [ADR-0045](0045-a-dead-reckoning-horizon.md) | A dead-reckoning horizon | proposed |
