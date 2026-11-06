@@ -46,4 +46,4 @@ what it cost, and what was rejected.
 | [ADR-0039](0039-pytest-xdist-in-the-dev-extra.md) | pytest-xdist in the dev extra | accepted |
 | [ADR-0040](0040-staleness-of-the-nis-windows.md) | Staleness of the NIS windows | proposed |
 | [ADR-0041](0041-a-correlated-error-term-for-the-gnss-update.md) | A correlated-error term for the GNSS update | proposed |
-| [ADR-0042](0042-publishing-rows-derived-from-euroc.md) | Publishing rows derived from EuRoC | proposed |
+| [ADR-0042](0042-publishing-rows-derived-from-euroc.md) | Publishing rows derived from EuRoC | accepted |

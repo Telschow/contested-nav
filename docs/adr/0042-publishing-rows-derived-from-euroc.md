@@ -1,6 +1,6 @@
 # ADR-0042: Publishing rows derived from EuRoC
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-11
 - Related: [ADR-0010](0010-determinism-and-seeding.md), S2 in `CONSTRAINTS.md`, [#278](https://github.com/Telschow/contested-nav/issues/278), [#250](https://github.com/Telschow/contested-nav/issues/250)
 
@@ -31,11 +31,14 @@ This ADR does not give a legal opinion. Whether a derived row is an adaptation o
 
 ## Decision
 
-To be written by the maintainer.
+Adopt option (b). The rows stay, and the README notice stays as it is. The maintainer asks the dataset's authors whether publishing derived measurements is permitted, and the answer is recorded in this ADR. Until an answer arrives, option (a) applies.
 
 ## Consequences
 
-To be completed with the decision. Whichever option is chosen:
+- The question is open until the authors answer. If they refuse or do not reply, the maintainer decides whether to move to option (c).
+- A refusal leads to a follow-up ticket for aggregate-only replacement, not an in-place edit of the rows.
+- The EuRoC notice in the README states the final decision, once there is one.
+Whichever way it ends:
 
 - The EuRoC notice in the README states the decision, where a reader looks for the licence.
 - Committed rows change only through a follow-up ticket.
