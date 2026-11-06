@@ -590,8 +590,27 @@ the reference's own error is not known.
 - **Spread of the lag correlation.** The estimators of the correlation of fix errors at the declared lag give different
   values on Tunnel-1 and almost the same value on Deep-Urban-1. The spread is much smaller on Deep-Urban-1.
 
+## Attitude NEES: the start or the sensor
+
+Two diagnostics for the attitude NEES excess, run on both sequences with the settings declared in `ATTRIBUTION_DECLARED`
+in `src/navkit/urbannav_run.py` before any run. `start_attitude` starts from the reference attitude and changes nothing
+else. `held_gyro_bias` keeps the static start estimate of the gyroscope bias and does not estimate it. They are
+diagnostics that use the reference, not filters. The rows are in `docs/data/urbannav_attribution.csv`, with effective
+sample sizes, and the declared run's rows are unchanged. The sentences below are checked against the rows by
+`tests/test_urbannav_attribution.py`. One sequence at a time, one receiver, and the reference's own error is not known.
+
+- **Both variants stay far above the expected value on both sequences.** The expected attitude NEES is the number of
+  attitude axes.
+- **On Deep-Urban-1 a better start barely moves the attitude NEES.** It is close to the declared run's. The excess there
+  does not come from the start alignment.
+- **Holding the gyroscope bias makes the attitude NEES larger on both sequences.** It is larger than the start-attitude
+  variant's, and its effective sample size is smaller. So estimating the bias is not what causes the excess.
+- **Tunnel-1 has no declared-run attitude NEES row to compare with,** because the declared run there has an outage and
+  reports other quantities. Its two variants can only be compared with each other.
+- What these rows do not say is what does cause the excess. Neither variant removes it.
+
 ## What follows
 
-The attitude is the next thing to understand: a run that starts from a better alignment, or that holds the gyroscope
-bias, would show how much of this is the start and how much is the sensor. A filter model for correlated receiver
+The attitude is still the next thing to understand: a better start alignment and a held gyroscope bias were run (section
+above) and neither removes the excess. A filter model for correlated receiver
 errors, which this page does not run, would be the next thing to try on Deep-Urban-1. See [ADR-0026](adr/0026-urbannav-as-a-real-gnss-dataset.md).

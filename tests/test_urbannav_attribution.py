@@ -6,8 +6,11 @@ must give the rows they gave before, which a hash of the synthetic rows pins.
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
+import statistics
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -129,3 +132,68 @@ def test_each_variant_is_reported_with_effective_sample_sizes_with_or_without_an
     assert float(got["att_nees_ess"]) >= 1.0 and float(got["hor_nees_ess"]) >= 1.0
     assert {r["variant"] for r in rows} == {variant}
     assert not ur.is_aided(rows)
+
+
+# ------------------------------------ the statements of the "Attitude NEES: the start or the sensor" section
+
+ATTRIBUTION_CSV = Path(__file__).resolve().parents[1] / "docs" / "data" / "urbannav_attribution.csv"
+RUN_CSV = Path(__file__).resolve().parents[1] / "docs" / "data" / "urbannav_run.csv"
+PAGE = Path(__file__).resolve().parents[1] / "docs" / "urbannav.md"
+TUNNEL, DEEP = "tunnel1", "deepurban1"
+ATT_NEES_EXPECTED = 3.0  # the three attitude axes
+
+
+def _median(path: Path, seq: str, variant: str, quantity: str) -> float:
+    with path.open(newline="", encoding="utf-8") as f:
+        v = [
+            float(r["value"])
+            for r in csv.DictReader(f)
+            if r["sequence"] == seq and r["variant"] == variant and r["quantity"] == quantity
+        ]
+    assert v, f"no rows for {seq} {variant} {quantity}"
+    return statistics.median(v)
+
+
+def _att(seq: str, variant: str, quantity: str = "att_nees_mean") -> float:
+    return _median(ATTRIBUTION_CSV, seq, variant, quantity)
+
+
+def _section() -> str:
+    return (
+        PAGE.read_text(encoding="utf-8").split("## Attitude NEES: the start or the sensor", 1)[1].split("\n## ", 1)[0]
+    )
+
+
+def test_statement_both_variants_stay_far_above_the_expected_value() -> None:
+    for seq in (TUNNEL, DEEP):
+        for variant in ur.ATTRIBUTION_VARIANTS:
+            assert _att(seq, variant) > 3 * ATT_NEES_EXPECTED
+    assert "Both variants stay far above the expected value on both sequences" in _section()
+
+
+def test_statement_a_better_start_barely_moves_the_attitude_nees_on_deep_urban_1() -> None:
+    declared = _median(RUN_CSV, DEEP, "declared", "att_nees_mean")
+    assert abs(_att(DEEP, "start_attitude") - declared) < 0.1 * declared
+    assert "a better start barely moves the attitude NEES" in _section()
+
+
+def test_statement_holding_the_bias_makes_it_larger_with_a_smaller_effective_sample_size() -> None:
+    for seq in (TUNNEL, DEEP):
+        assert _att(seq, "held_gyro_bias") > _att(seq, "start_attitude")
+        assert _att(seq, "held_gyro_bias", "att_nees_ess") < _att(seq, "start_attitude", "att_nees_ess")
+    assert "Holding the gyroscope bias makes the attitude NEES larger on both sequences" in _section()
+
+
+def test_statement_tunnel_1_has_no_declared_attitude_nees_to_compare_with() -> None:
+    with RUN_CSV.open(newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert not [
+        r for r in rows if r["sequence"] == TUNNEL and r["variant"] == "declared" and r["quantity"] == "att_nees_mean"
+    ]
+    assert "Tunnel-1 has no declared-run attitude NEES row to compare with" in _section()
+
+
+def test_the_attribution_csv_holds_only_the_two_new_variants() -> None:
+    with ATTRIBUTION_CSV.open(newline="", encoding="utf-8") as f:
+        variants = {r["variant"] for r in csv.DictReader(f)}
+    assert variants == set(ur.ATTRIBUTION_VARIANTS)
