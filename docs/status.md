@@ -3,7 +3,8 @@
 - **Not field validated.** The benchmark is a synthetic fixture. Recorded IMU data
   ([EuRoC](euroc.md), [TUM VI](tumvi.md)) and one set of real camera frames
   ([a real front end](real_front_end.md)) are used with GNSS simulated from the ground truth. UrbanNav ([page](urbannav.md)) uses the receiver's own fixes. None of that
-  data is vendored, and no number is a field measurement.
+  data is vendored. The recorded data is real, but no result is field validation: the reference is a
+  post-processed estimate (UrbanNav) or a simulation, not a surveyed truth.
 - **Visual aiding under GNSS denial is untrustworthy with the shipped single anchor**, and disabled by default.
   See [concepts](concepts.md#the-one-thing-this-cannot-do). The opt-in stochastic clone
   ([ADR-0017](adr/0017-stochastic-clone-for-the-visual-update.md)) does not reject calibration in a single run for independent visual errors.

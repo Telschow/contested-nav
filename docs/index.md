@@ -24,7 +24,9 @@ overconfidence held in every run of every sweep (see [Results](results.md)).
 
 !!! warning "Mostly synthetic evidence"
     The table above comes from a deterministic known-answer fixture. The recorded-data pages use a
-    real IMU with GNSS simulated from the ground truth. No number here is a field measurement.
+    real IMU with GNSS simulated from the ground truth, and the UrbanNav page uses a real receiver's own fixes.
+    Recorded data is real, but no result here is field validation: the reference is a post-processed estimate
+    or a simulation, not a surveyed truth.
 
 ## How it works
 
