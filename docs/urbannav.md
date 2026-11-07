@@ -653,12 +653,15 @@ error is not known.
   is declared faulted, no fix is accepted again, and the horizontal error after the outage is far above the error before
   it. The filter does not recover on this sequence.
 - **The horizontal error at the end of the outage grows with the length of the outage.**
-- What these rows do not say is why the long outage is not recovered from. It could be the reacquisition rule, the
-  size of the drift against the gate, or a property of this sequence, and no run here separates them. Nor do they say
-  how a receiver's own outages behave. The oracle variants were not run.
+- What these rows do not say is why the long outage is not recovered from. HYPOTHESIS, from a one-seed development
+  diagnosis, recorded in the proposed ADR on sizing the reacquisition inflation, that is not in the CSV and is not
+  reproduced by code in this repository: the first returning fixes sit only just outside the gate, the inflation the
+  reacquisition rule may add is small against the covariance the filter already claims, so they stay rejected, the fault
+  is declared, and the unfused state drifts further from the fixes. No filter setting was changed in any row above. Nor
+  do these rows say how a receiver's own outages behave. The oracle variants were not run.
 
 ## What follows
 
 The attitude is still the next thing to understand: a better start alignment and a held gyroscope bias were run (section
 above) and neither removes the excess. A correlated-error term was run on Deep-Urban-1 with one declared setting and
-lowers the overconfidence without removing it (section above). Outages imposed on Deep-Urban-1 were run (section above): the long one is not recovered from, and the cause is not established. See [ADR-0026](adr/0026-urbannav-as-a-real-gnss-dataset.md).
+lowers the overconfidence without removing it (section above). Outages imposed on Deep-Urban-1 were run (section above): the long one is not recovered from, and the cause is a hypothesis, recorded in a proposed ADR. See [ADR-0026](adr/0026-urbannav-as-a-real-gnss-dataset.md).

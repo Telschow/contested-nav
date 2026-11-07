@@ -50,3 +50,4 @@ what it cost, and what was rejected.
 | [ADR-0043](0043-camera-imu-extrinsic-and-time-offset-sensitivity.md) | Camera-IMU extrinsic and time-offset sensitivity | accepted |
 | [ADR-0044](0044-a-protection-level-from-the-calibrated-covariance.md) | A protection level from the calibrated covariance | accepted |
 | [ADR-0045](0045-a-dead-reckoning-horizon.md) | A dead-reckoning horizon | accepted |
+| [ADR-0046](0046-size-the-reacquisition-inflation-by-the-innovation-covariance.md) | Size the reacquisition inflation by the innovation covariance | proposed |
