@@ -529,7 +529,8 @@ jobs:
       - name: The committed candidate gate (development seeds) and its n_eff pool match a fresh run
         # The gate of ADR-0030 on the development seeds 25 to 49 in two scenarios, and the pool of effective sample
         # sizes (seeds 25 to 99) that its simulated properties draw from. Held-out blocks (from seed 125) are
-        # never run here: the command refuses them without --held-out, and CI does not pass it. Text, integers and
+        # never run here: the candidate gate refuses them without --held-out, and CI does not pass it; the B1 gate refuses
+        # every held-out seed. Text, integers and
         # flags must match exactly; floats to 1e-6 relative.
         if: needs.changes.outputs.code == 'true' && matrix.leg == 'candidate-gate'
         run: |

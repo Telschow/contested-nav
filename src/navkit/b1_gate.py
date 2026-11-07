@@ -8,9 +8,10 @@ run through :func:`navkit.benchmark.run_case`, so the start draw of ADR-0027 app
 GNSS-outage window with the same half-open mask as the calibration report, and :func:`navkit.eval.gate.evaluate_b1_gate`
 applies the conditions.
 
-Seeds 100 to 124 are the held-out set. ADR-0028 allows one evaluation of it. The command refuses them unless
-``--held-out`` is given, and so does :func:`run_gate`. ``--held-out`` takes exactly that set. Every other seed must be
-a development seed: the later held-out blocks belong to :mod:`navkit.candidate_gate` (ADR-0030).
+Seeds 100 to 124 are the held-out set. ADR-0028 allowed one evaluation of it, and that evaluation is done
+(ADR-0036), so the set is spent. The command and :func:`run_gate` take development seeds only, and ``--held-out`` is
+refused outright. The later held-out blocks belong to :mod:`navkit.candidate_gate` (ADR-0030). The recorded held-out
+result is rendered from its CSV by ``scripts/render_b1_heldout.py``, which runs no case.
 
 Two further rows use the same function on the development seeds and are labelled DIAGNOSTIC: the single-anchor
 ``outage_visual`` (the gate has to be able to say no) and the plain clone ``outage_visual_clone``. They are not gate
@@ -109,15 +110,17 @@ def _touches_held_out(seeds: list[int]) -> bool:
     return any(s in HELD_OUT_SEEDS for s in seeds)
 
 
-def check_seeds(seeds: list[int], held_out: bool) -> None:
-    """Raise ``ValueError`` unless ``seeds`` are development seeds, or exactly the ADR-0028 set with ``held_out``."""
-    span = f"{HELD_OUT_SEEDS.start} to {HELD_OUT_SEEDS.stop - 1}"
-    if held_out:
-        if list(seeds) != list(HELD_OUT_SEEDS):
-            raise ValueError(f"with --held-out the seeds must be exactly {span}, the held-out set of ADR-0028")
-        return
+#: Why ``--held-out`` is refused. The flag stays so that the refusal says this, not "unrecognized arguments".
+SPENT = (
+    f"the held-out set of ADR-0028 (seeds {HELD_OUT_SEEDS.start} to {HELD_OUT_SEEDS.stop - 1}) was evaluated once and "
+    "is spent (ADR-0036); a new candidate is evaluated with `navkit gate candidate` (ADR-0030)"
+)
+
+
+def check_seeds(seeds: list[int]) -> None:
+    """Raise ``ValueError`` unless every seed is a development seed. Runs no case."""
     if _touches_held_out(seeds):
-        raise ValueError(f"seeds {span} are the held-out set of ADR-0028; give --held-out to evaluate it (single use)")
+        raise ValueError(f"seeds {HELD_OUT_SEEDS.start} to {HELD_OUT_SEEDS.stop - 1} are held-out: {SPENT}")
     seed_policy.require_development(seeds)
 
 
@@ -180,16 +183,16 @@ def run_arrays(name: str, case: dict[str, Any], defaults: dict[str, Any], seeds:
     return _stack(runs)
 
 
-def run_gate(seeds: list[int], held_out: bool = False, diagnostics: bool = True) -> list[dict[str, Any]]:
-    """Run the candidate, its control and (on development seeds) the two diagnostics, and return the CSV rows."""
-    check_seeds(seeds, held_out)
+def run_gate(seeds: list[int], diagnostics: bool = True) -> list[dict[str, Any]]:
+    """Run the candidate, its control and the two diagnostics on development seeds, and return the CSV rows."""
+    check_seeds(seeds)
     if len(seeds) < 2:
         raise ValueError("the gate needs at least two seeds")
     doc = _document()
     cases, defaults = doc["cases"], doc.get("defaults", {})
     control = run_arrays(CONTROL, cases[CONTROL], defaults, seeds)
     rows: list[dict[str, Any]] = []
-    for subject in subjects(cases, diagnostics and not held_out):
+    for subject in subjects(cases, diagnostics):
         arrays = run_arrays(subject.name, subject.case, defaults, seeds)
         result = evaluate_b1_gate(arrays["nees"], arrays["error"], arrays["sigma"], arrays["ate"], control["ate"])
         rows.extend(result_rows(subject, seeds, result))
@@ -309,16 +312,16 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
 
 
 class _Parser(argparse.ArgumentParser):
-    """Refuses seeds :func:`check_seeds` refuses, and says the set is single use when ``--held-out`` is given."""
+    """Refuses ``--held-out`` and every seed :func:`check_seeds` refuses."""
 
     def parse_args(self, args: Any = None, namespace: Any = None) -> argparse.Namespace:  # type: ignore[override]
         ns = super().parse_args(args, namespace)
+        if ns.held_out:
+            self.error(f"--held-out is refused: {SPENT}")
         try:
-            check_seeds(ns.seeds, ns.held_out)
+            check_seeds(ns.seeds)
         except ValueError as exc:
             self.error(str(exc))
-        if ns.held_out:
-            print("warning: the held-out set (seeds 100 to 124) is single use per ADR-0028.", file=sys.stderr)
         return ns
 
 
@@ -334,7 +337,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--seeds", type=_seeds_arg, required=True, help="A-B or a comma list; the gate uses exactly 25")
     ap.add_argument("--csv", type=Path, required=True, help="write the rows here")
     ap.add_argument("--page", type=Path, default=None, help="write the table between the b1-gate-dev markers")
-    ap.add_argument("--held-out", action="store_true", help="take exactly seeds 100 to 124 (single use, ADR-0028)")
+    ap.add_argument("--held-out", action="store_true", help="refused: the held-out set of ADR-0028 is spent")
     return ap
 
 
@@ -343,7 +346,7 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     if len(args.seeds) != GATE_RUNS:
         ap.error(f"the gate is decided on exactly {GATE_RUNS} seeds, got {len(args.seeds)}")
-    rows = run_gate(args.seeds, held_out=args.held_out)
+    rows = run_gate(args.seeds)
     args.csv.parent.mkdir(parents=True, exist_ok=True)
     args.csv.write_text(csv_text(rows), encoding="utf-8")
     print(f"wrote {args.csv}", file=sys.stderr)

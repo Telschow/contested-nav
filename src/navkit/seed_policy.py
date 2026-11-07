@@ -5,8 +5,8 @@ held-out blocks of 25 (ADR-0030), run one at a time through :mod:`navkit.candida
 case on seed numbers calls :func:`require_development` before it starts: the ``navkit sweep`` entry points,
 ``navkit run --seed`` and ``--scene-seed``, ``navkit euroc run`` and ``navkit euroc compare``. Seeds a config file
 sets itself are checked too: by ``navkit run`` before the first case, and by :func:`navkit.benchmark.run_case`
-whenever no ``seed`` replaces them. The B1 gate and the candidate gate are the two procedures allowed to use held-out
-seeds; the B1 gate takes only its own set, 100 to 124, and only with ``--held-out``.
+whenever no ``seed`` replaces them. The candidate gate is the one procedure allowed to use held-out
+seeds. The B1 gate takes development seeds only: its set, 100 to 124, is spent, and ``--held-out`` is refused.
 """
 
 from __future__ import annotations
