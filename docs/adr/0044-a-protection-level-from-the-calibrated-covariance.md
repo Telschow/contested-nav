@@ -1,10 +1,8 @@
 # ADR-0044: A protection level from the calibrated covariance
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-11
 - Related: [ADR-0035](0035-the-integrity-status-record.md), [ADR-0040](0040-staleness-of-the-nis-windows.md), [calibration](../calibration.md), [issue #118](https://github.com/Telschow/contested-nav/issues/118)
-
-This record has its context and options. The decision section is the maintainer's to write. No code is written until it is.
 
 ## Context
 
@@ -33,14 +31,13 @@ This record has its context and options. The decision section is the maintainer'
 
 ## Decision
 
-To be written by the maintainer.
+Adopt option (d), decided by the maintainer on 2026-11-07. A study only: the Gaussian-scaled bound and the conformal bound, side by side, with the exceedance rate per scenario. No field is added to the integrity record, which stays on schema version 1 (ADR-0040). Options (a), (b), (c) and (e) are not adopted.
 
 ## Consequences
 
-To be confirmed with the decision. If (b), (c), (d) or (e) is chosen:
-
 - The miss probability, the calibration set and the scenarios are declared before any run. Development seeds only.
 - The exceedance rate per scenario is generated and checked in CI, labelled synthetic where it is.
-- The name is chosen to avoid implying certified integrity, and the page says the repository makes no such claim.
-- Every number on the page is stated for the scenarios it was measured on. The conformal bound is not carried over to a different distribution without the shift measurement.
+- The name avoids "protection level", and the page says the repository makes no certified-integrity claim.
+- Every number is stated for the scenarios it was measured on. The conformal bound is not carried over to a different distribution without the shift measurement.
+- The study shows where the claimed bound is exceeded, including the imposed outages on Deep-Urban-1 (one sequence, one receiver, reference error unknown).
 - No runtime dependency changes.
