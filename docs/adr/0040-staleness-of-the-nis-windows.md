@@ -1,6 +1,6 @@
 # ADR-0040: Staleness of the NIS windows
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0006](0006-nis-window-monitor.md), [ADR-0035](0035-the-integrity-status-record.md), [issue #181](https://github.com/Telschow/contested-nav/issues/181)
 
@@ -24,13 +24,13 @@ A staleness rule needs a threshold, the age after which a sample no longer count
 
 ## Decision
 
-To be written by the maintainer.
+Adopt option (a), decided by the maintainer on 2026-11-07. Schema version 1 stays as it is. A consumer reads `seconds_since_absolute_fix` next to `monitored`. No staleness threshold is added, because nothing in the repository supports a value and no consumer exists. Options (b), (c) and (d) are not adopted. Revisit if a consumer appears or if `outage_control` evidence shows the stale `ok` hiding a diverging filter.
 
 ## Consequences
 
-To be confirmed with the decision. If (b), (c) or (d) is chosen:
+Because (a) is chosen:
 
-- The record changes meaning or fields, so it is schema version 2 (ADR-0035 requires a new version and a new ADR for that).
-- Tests come first: a known-answer case where GNSS stops and the channel is no longer reported as monitored after the window.
-- For (b) and (c), the threshold comes from a generated table over the outage scenarios, labelled synthetic, checked in CI.
+- The record, its fields and its schema version do not change.
+- ADR-0035 keeps saying that the windows never age. The consumer is told to read `seconds_since_absolute_fix` with `monitored`.
+- [Issue #181](https://github.com/Telschow/contested-nav/issues/181) stays open as a deferred item, not as work to do.
 - No runtime dependency changes.
