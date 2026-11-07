@@ -29,11 +29,17 @@ import { z } from "zod";
 // and validates it against this schema. We use Zod here, but any Standard
 // Schema validator works just as well, Valibot, ArkType, etc. See
 // https://standardschema.dev.
+//
+// The id must be an issue number. The branch is not taken from the planner:
+// the review prompt runs it inside shell blocks, and the planner reads issue
+// bodies, so a branch name from its text could carry a command.
 const planSchema = z.object({
   issues: z.array(
-    z.object({ id: z.string(), title: z.string(), branch: z.string() }),
+    z.object({ id: z.string().regex(/^[1-9][0-9]*$/), title: z.string() }),
   ),
 });
+
+const branchFor = (id: string) => `sandcastle/issue-${id}`;
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -93,7 +99,10 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     output: sandcastle.Output.object({ tag: "plan", schema: planSchema }),
   });
 
-  const issues = plan.output.issues;
+  const issues = plan.output.issues.map((issue) => ({
+    ...issue,
+    branch: branchFor(issue.id),
+  }));
 
   if (issues.length === 0) {
     // No unblocked work: either everything is done or everything is blocked.

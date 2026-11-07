@@ -27,11 +27,11 @@ If something fails, fix it and rerun only what failed. If the doc tables or metr
 
 # PUSH
 
-`main` rejects pushes from this sandbox (403), so deliver through a pull request. Only when every check above passes:
+Deliver through a pull request. Do not count on `main` rejecting a push: the branch rules do not stop this token today. Only when every check above passes:
 
 1. `git fetch origin`
 2. `git merge origin/main --no-edit`. If this brings in changes, rerun the checks.
-3. Check `git branch --show-current` is not `main`, then `git push origin HEAD` (the current branch, never `main`). If the current branch is `main`, stop and say so: a push to `main` skips the pull request, and the 403 is not guaranteed.
+3. Check `git branch --show-current` is not `main`, then `git push origin HEAD` (the current branch, never `main`). If the current branch is `main`, stop and say so: a push to `main` skips the pull request and nothing on the server stops it.
 
 Never force-push and never rewrite history. If the push is rejected, fetch, merge `origin/main` once more and try once more. If it is rejected again, stop and say so.
 

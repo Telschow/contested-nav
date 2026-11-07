@@ -4,7 +4,7 @@ site_url: https://telschow.github.io/contested-nav/
 repo_url: https://github.com/Telschow/contested-nav
 repo_name: Telschow/contested-nav
 edit_uri: edit/main/docs/
-copyright: MIT licensed. Not field validated.
+copyright: Code MIT licensed. Results derived from EuRoC are for non-commercial use (see the README). Not field validated.
 
 docs_dir: docs
 site_dir: site

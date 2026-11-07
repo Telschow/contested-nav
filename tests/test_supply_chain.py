@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import fnmatch
 import re
 from pathlib import Path
 from typing import Any
@@ -50,6 +51,39 @@ def test_the_dockerfile_base_image_is_pinned_by_digest() -> None:
     assert froms
     for image in froms:
         assert re.search(r"@sha256:[0-9a-f]{64}$", image), f"{image} is not pinned by digest"
+
+
+def _left_out_of_the_image(rel: str) -> bool:
+    """Whether ``.dockerignore`` drops ``rel`` from the build context. Plain patterns and ``**/``, no ``!``."""
+    lines = (ROOT / ".dockerignore").read_text(encoding="utf-8").splitlines()
+    patterns = [s.strip() for s in lines if s.strip() and not s.lstrip().startswith("#")]
+    assert not any(p.startswith("!") for p in patterns), "the helper does not model re-inclusion"
+    parts = rel.split("/")
+    prefixes = ["/".join(parts[: i + 1]) for i in range(len(parts))]
+    for pat in patterns:
+        tails = [pat, pat[3:]] if pat.startswith("**/") else [pat]
+        if any(fnmatch.fnmatchcase(p, t) for p in prefixes for t in tails):
+            return True
+    return False
+
+
+@pytest.mark.parametrize(
+    "rel, dropped",
+    [
+        (".env", True),
+        (".sandcastle/.env", True),  # holds the sandbox's GitHub and Claude tokens in a local checkout
+        (".sandcastle/worktrees/sandcastle-issue-1/src/navkit/cli.py", True),
+        (".sandcastle/logs/run.log", True),
+        ("node_modules/zod/package.json", True),
+        (".sandcastle/.env.example", False),
+        ("src/navkit/cli.py", False),
+        ("configs/benchmark.yaml", False),
+    ],
+)
+def test_the_image_build_leaves_local_secrets_out(rel: str, dropped: bool) -> None:
+    """The Dockerfile ends with ``COPY . .``, so whatever the context holds lands in a layer."""
+    assert "COPY . ." in (ROOT / "Dockerfile").read_text(encoding="utf-8")
+    assert _left_out_of_the_image(rel) is dropped
 
 
 def test_dependabot_keeps_the_base_image_and_the_actions_current() -> None:

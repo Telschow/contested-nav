@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from navkit import cli, euroc_compare, euroc_eval, mismatch_sweep, outage_sweep, scene_sweep, seed_policy, seed_sweep
@@ -217,3 +219,60 @@ def test_the_shared_study_runner_refuses_held_out_seeds(tmp_path, capsys) -> Non
     assert e.value.code == 2
     assert "held-out" in capsys.readouterr().err
     assert calls == []
+
+
+# --- seeds a config file sets itself ------------------------------------------------------------
+
+
+def _config_with_gnss_seed(tmp_path, seed: int) -> tuple[Path, str, dict]:
+    import yaml
+
+    from navkit.benchmark import default_config_path
+
+    doc = yaml.safe_load(default_config_path().read_text())
+    name = next(n for n, c in doc["cases"].items() if (c.get("scenario") or {}).get("gnss"))
+    doc["cases"][name]["scenario"]["gnss"]["seed"] = seed
+    path = tmp_path / "cfg.yaml"
+    path.write_text(yaml.safe_dump(doc))
+    return path, name, doc
+
+
+def test_run_refuses_a_config_whose_own_seed_is_held_out(tmp_path, monkeypatch, capsys) -> None:
+    from navkit import benchmark
+
+    calls: list[str] = []
+    monkeypatch.setattr(benchmark, "run_case", lambda name, *a, **k: calls.append(name))
+    path, name, _ = _config_with_gnss_seed(tmp_path, 150)
+    with pytest.raises(SystemExit) as e:
+        cli.main(["run", "--config", str(path), "--only", name])
+    assert e.value.code == 2
+    assert "held-out" in capsys.readouterr().err
+    assert calls == []
+
+
+def test_run_case_refuses_a_configured_held_out_seed_before_it_builds_anything(tmp_path, monkeypatch) -> None:
+    from navkit import benchmark
+
+    def never(*a, **k):  # if the guard is missing, stop before any seeded draw
+        raise AssertionError("run_case reached the streams")
+
+    monkeypatch.setattr(benchmark, "synthetic_trajectory", never)
+    _, name, doc = _config_with_gnss_seed(tmp_path, 150)
+    with pytest.raises(ValueError, match="held-out"):
+        benchmark.run_case(name, doc["cases"][name], doc.get("defaults", {}))
+
+
+def test_an_explicit_seed_replaces_the_configured_one(tmp_path, monkeypatch) -> None:
+    """The sweeps and the gates pass ``seed=``. The config's own value is then not used, so it is not checked."""
+    from navkit import benchmark
+
+    class Reached(Exception):
+        pass
+
+    def stop(*a, **k):
+        raise Reached
+
+    monkeypatch.setattr(benchmark, "synthetic_trajectory", stop)
+    _, name, doc = _config_with_gnss_seed(tmp_path, 150)
+    with pytest.raises(Reached):
+        benchmark.run_case(name, doc["cases"][name], doc.get("defaults", {}), seed=5)

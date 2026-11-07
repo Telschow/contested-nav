@@ -12,3 +12,9 @@ dist
 .hypothesis
 opencode.json
 .opencode
+# Local secrets and tooling outside the package. The Dockerfile copies the whole context.
+.env
+**/.env
+node_modules
+.sandcastle/logs
+.sandcastle/worktrees

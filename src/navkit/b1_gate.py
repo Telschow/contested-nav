@@ -9,7 +9,8 @@ GNSS-outage window with the same half-open mask as the calibration report, and :
 applies the conditions.
 
 Seeds 100 to 124 are the held-out set. ADR-0028 allows one evaluation of it. The command refuses them unless
-``--held-out`` is given, and so does :func:`run_gate`.
+``--held-out`` is given, and so does :func:`run_gate`. ``--held-out`` takes exactly that set. Every other seed must be
+a development seed: the later held-out blocks belong to :mod:`navkit.candidate_gate` (ADR-0030).
 
 Two further rows use the same function on the development seeds and are labelled DIAGNOSTIC: the single-anchor
 ``outage_visual`` (the gate has to be able to say no) and the plain clone ``outage_visual_clone``. They are not gate
@@ -108,6 +109,18 @@ def _touches_held_out(seeds: list[int]) -> bool:
     return any(s in HELD_OUT_SEEDS for s in seeds)
 
 
+def check_seeds(seeds: list[int], held_out: bool) -> None:
+    """Raise ``ValueError`` unless ``seeds`` are development seeds, or exactly the ADR-0028 set with ``held_out``."""
+    span = f"{HELD_OUT_SEEDS.start} to {HELD_OUT_SEEDS.stop - 1}"
+    if held_out:
+        if list(seeds) != list(HELD_OUT_SEEDS):
+            raise ValueError(f"with --held-out the seeds must be exactly {span}, the held-out set of ADR-0028")
+        return
+    if _touches_held_out(seeds):
+        raise ValueError(f"seeds {span} are the held-out set of ADR-0028; give --held-out to evaluate it (single use)")
+    seed_policy.require_development(seeds)
+
+
 # --------------------------------------------------------------------------------------------- the runs
 
 
@@ -169,8 +182,7 @@ def run_arrays(name: str, case: dict[str, Any], defaults: dict[str, Any], seeds:
 
 def run_gate(seeds: list[int], held_out: bool = False, diagnostics: bool = True) -> list[dict[str, Any]]:
     """Run the candidate, its control and (on development seeds) the two diagnostics, and return the CSV rows."""
-    if _touches_held_out(seeds) and not held_out:
-        raise ValueError("seeds 100 to 124 are the held-out set of ADR-0028 and need held_out=True")
+    check_seeds(seeds, held_out)
     if len(seeds) < 2:
         raise ValueError("the gate needs at least two seeds")
     doc = _document()
@@ -297,14 +309,16 @@ def markdown_table(rows: list[dict[str, Any]]) -> str:
 
 
 class _Parser(argparse.ArgumentParser):
-    """Refuses the held-out seeds unless ``--held-out`` is given, and says the set is single use when it is."""
+    """Refuses seeds :func:`check_seeds` refuses, and says the set is single use when ``--held-out`` is given."""
 
     def parse_args(self, args: Any = None, namespace: Any = None) -> argparse.Namespace:  # type: ignore[override]
         ns = super().parse_args(args, namespace)
+        try:
+            check_seeds(ns.seeds, ns.held_out)
+        except ValueError as exc:
+            self.error(str(exc))
         if ns.held_out:
             print("warning: the held-out set (seeds 100 to 124) is single use per ADR-0028.", file=sys.stderr)
-        elif _touches_held_out(ns.seeds):
-            self.error("seeds 100 to 124 are the held-out set of ADR-0028; give --held-out to evaluate it (single use)")
         return ns
 
 
@@ -320,7 +334,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--seeds", type=_seeds_arg, required=True, help="A-B or a comma list; the gate uses exactly 25")
     ap.add_argument("--csv", type=Path, required=True, help="write the rows here")
     ap.add_argument("--page", type=Path, default=None, help="write the table between the b1-gate-dev markers")
-    ap.add_argument("--held-out", action="store_true", help="allow seeds 100 to 124 (single use, ADR-0028)")
+    ap.add_argument("--held-out", action="store_true", help="take exactly seeds 100 to 124 (single use, ADR-0028)")
     return ap
 
 

@@ -18,8 +18,8 @@ with the reference's inside an outage, which was a diagnostic of the receiver's 
 question to answer here.
 
 Results are rows in the format of :func:`urbannav_run.rows_for`, under a sequence name of their own
-(``deepurban1_imposed_<start>s_<duration>s``). This module writes no CSV and no page. Rows in the committed
-UrbanNav CSVs are not touched.
+(``deepurban1_imposed_<start>s_<duration>s``). This module writes no page. With ``--csv`` it merges its rows
+into that file under those names; rows of other sequences in the file are not touched.
 """
 
 from __future__ import annotations

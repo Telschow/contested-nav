@@ -240,7 +240,7 @@ def test_the_deep_urban_section_says_what_it_is_and_what_it_is_not():
         "aided run",
         "not applicable",
         "right about how wrong it is",
-        "multipath fixes",
+        "not measured here",
         "It is not field performance",
         "Imposed outages are a separate experiment",
     ):

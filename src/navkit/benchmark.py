@@ -277,6 +277,14 @@ def _eskf_config(scenario: Scenario, keys: dict[str, Any]) -> EskfConfig:
     )
 
 
+def stream_seeds(scenario: Scenario) -> list[int]:
+    """The seeds of a scenario's stochastic streams: GNSS, vision and, when it has one, camera drop."""
+    seeds = [scenario.gnss.seed, scenario.vision.seed]
+    if scenario.camera_drop is not None:
+        seeds.append(scenario.camera_drop.seed)
+    return seeds
+
+
 def run_case(
     name: str,
     case: dict[str, Any],
@@ -357,6 +365,10 @@ def run_case(
         scenario.vision.seed = seed
         if scenario.camera_drop is not None:
             scenario.camera_drop.seed = seed
+    else:
+        # The case's own seeds are used as written, so they must be development seeds. Only an explicit ``seed``
+        # replaces them: the sweeps check theirs, and the two gates pass their own sets.
+        seed_policy.require_development(stream_seeds(scenario))
 
     # Clean streams from the analytic reference, then degraded by the scenario.
     reference = synthetic_trajectory(syn, name=f"{name}-reference")
@@ -629,6 +641,14 @@ def main(argv: list[str] | None = None) -> int:
     unknown = [k for k in selected if k not in cases]
     if unknown:
         raise SystemExit(f"unknown case(s): {', '.join(unknown)}; known: {', '.join(cases)}")
+    if args.seed is None:
+        # Refuse before the first case runs, not when run_case reaches the offending one.
+        for name in selected:
+            scenario = scenario_from_dict(cases[name].get("scenario", {}))
+            try:
+                seed_policy.require_development(stream_seeds(scenario) if scenario is not None else [])
+            except ValueError as exc:
+                ap.error(f"case {name!r} in {args.config}: {exc}")
 
     results: list[dict[str, Any]] = []
     for name in selected:
