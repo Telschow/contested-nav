@@ -1,10 +1,8 @@
 # ADR-0043: Camera-IMU extrinsic and time-offset sensitivity
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-11
 - Related: [ADR-0036](0036-b1-is-closed-as-characterised-not-solved.md), [fault matrix](../faults.md), [model assumptions](../MODEL.md), [issue #117](https://github.com/Telschow/contested-nav/issues/117)
-
-This record has its context and options. The decision section is the maintainer's to write. No code is written until it is.
 
 ## Context
 
@@ -28,11 +26,11 @@ This record has its context and options. The decision section is the maintainer'
 
 ## Decision
 
-To be written by the maintainer.
+Adopt option (b), decided by the maintainer on 2026-11-07. A synthetic sensitivity sweep on development seeds, with the extrinsic rotation, the visual time offset and the IMU time offset in one grid. The grid, the scenarios and the definition of "moves the verdict" are declared in code before the run. Options (c) and (d) are not adopted. (c) can follow if (b) shows sensitivity.
 
 ## Consequences
 
-To be confirmed with the decision. If (b) or (c) is chosen:
+Because (b) is chosen:
 
 - The grid (angles, offsets), the scenarios and the definition of "moves the verdict" are declared in code before any run.
 - Development seeds only. No held-out seed is run.
