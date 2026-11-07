@@ -14,6 +14,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .. import seed_policy
 from .page import block_is_current, write_block
 from .table import Row, Table
 
@@ -133,7 +134,13 @@ def _csv_differences(study: Study, compare: Path, rows: list[Row]) -> list[str]:
 
 
 def run_study(study: Study, argv: list[str] | None = None) -> int:
-    args = build_parser(study).parse_args(argv)
+    ap = build_parser(study)
+    args = ap.parse_args(argv)
+    if getattr(args, "seeds", None) is not None and study.flags.seeds:
+        try:
+            seed_policy.require_development(args.seeds)
+        except ValueError as exc:
+            ap.error(str(exc))
     csv_path: Path | None = getattr(args, "csv", None)
     page_path: Path | None = getattr(args, "page", None)
     compare: Path | None = getattr(args, "compare", None)
