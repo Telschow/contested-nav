@@ -37,7 +37,7 @@ deliberate decision to live with it). A risk's status changes only with evidence
   so a reader quotes a number as if it were a measurement of a real system.
 - **In place.** "Not field validated" is on the README, the social preview and
   [Scope and responsible use](docs/scope.md). [LIMITATIONS](docs/defense/LIMITATIONS.md) L1 and
-  L5 state what the data cannot support. [REAL_SYSTEMS](docs/REAL_SYSTEMS.md) lists the
+  L5 state what the data cannot support. [Path to real systems](docs/defense/LIMITATIONS.md#6-path-to-real-systems) lists the
   sim-to-real gap.
 - **Early warning.** A quoted number in a doc or issue with no scenario name next to it.
 - **Next.** No real GNSS outage is evaluated in the committed results yet; [ADR-0026](docs/adr/0026-urbannav-as-a-real-gnss-dataset.md) (proposed) covers it.
