@@ -121,7 +121,6 @@ nav:
           - Sensors and degradation: api/sensors.md
           - Geometry and types: api/geometry.md
           - Benchmark and CLI: api/benchmark.md
-      - Path to real systems: REAL_SYSTEMS.md
   - Decisions:
       - ADR index: adr/index.md
       - "0001 Anchor as filter state": adr/0001-anchor-as-filter-state.md

@@ -151,5 +151,5 @@ navkit euroc compare --from-csv docs/data/euroc_validation.csv --page docs/euroc
 navkit euroc compare --from-csv docs/data/euroc_compare.csv --page docs/euroc.md     # rebuild the main table only
 ```
 
-The fetch step and the archive layout are described in [Path to real systems](REAL_SYSTEMS.md) and in
+The fetch step and the archive layout are described in [Path to real systems](defense/LIMITATIONS.md#6-path-to-real-systems) and in
 the `navkit.io.euroc_fetch` module.
