@@ -70,7 +70,9 @@ navkit euroc compare --markdown               # default vs preset over every fet
 ```
 
 The data is not vendored. Its rights statement is "In Copyright - Non-Commercial Use Permitted", so
-the files go under `data/raw/`, which git ignores, and only aggregate results may be committed. A
+the files go under `data/raw/`, which git ignores. Results computed from them are committed, including per-frame
+front-end errors in `docs/data/vo_errors.csv`; whether those rows may stay is open
+([ADR-0042](adr/0042-publishing-rows-derived-from-euroc.md)). A
 result from this path is labelled `real_imu_simulated_gnss`. It tests the filter against real
 inertial noise and a known reference. It is not GNSS-denied navigation in the field. The decision
 behind it is [ADR-0013](adr/0013-recorded-imu-with-simulated-gnss.md).

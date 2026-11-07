@@ -322,7 +322,7 @@ What the section tests:
    attitude normalised errors over the whole run and by third of the run, the pooled 2-sigma coverage per axis, the
    sigma the filter claims against the receiver's own, and the fixes' own normalised error against the receiver's
    reported sigma.
-2. **How the gate behaves on real multipath fixes.** The rows are the fixes it rejects, whether the channel is
+2. **How the gate behaves on real urban fixes.** Multipath is the likely cause of their errors, but it is not measured here. The rows are the fixes it rejects, whether the channel is
    declared faulty, and the NIS against the gate's level.
 
 **As declared**, one scalar GNSS sigma for every fix:

@@ -208,8 +208,9 @@ All of it, with sources, is in [Status and limits](docs/status.md) and
 The code was written mostly with an AI coding assistant (Claude Code). The maintainer sets the scope and the order of
 work, and the project's rule is that the maintainer writes and accepts the decision in each ADR. The evidence to trust
 is the gates, not the authorship: finite-difference checks on the measurement Jacobians, property tests, a golden
-snapshot of the benchmark, and CI. Since the first week of the repository, every change lands through a pull request
-that must pass CI and that the maintainer merges.
+snapshot of the benchmark, and CI. Most changes land through a pull request that passes CI. That is the practice, not
+a rule the repository enforces: a few commits went to `main` directly, and the Sandcastle automation merges its own
+pull requests.
 
 ## Scope and responsible use
 
@@ -256,10 +257,10 @@ tests/        unit, property, golden-snapshot and documentation consistency test
 Recorded data and its citations:
 
 - **EuRoC** ([page](docs/euroc.md)): Burri, M. et al. (2016). The EuRoC micro aerial vehicle datasets. *The International
-  Journal of Robotics Research*, 35(10), 1157-1163. Licence: set by the dataset's authors (ETH Zurich ASL); read the terms on the
-  dataset page before reuse. Not verified here.
+  Journal of Robotics Research*, 35(10), 1157-1163. Rights statement: "In Copyright - Non-Commercial Use
+  Permitted", set by the dataset's authors (ETH Zurich ASL). See the License section below for the committed result files.
 - **TUM VI** ([page](docs/tumvi.md)): Schubert, D. et al. (2018). The TUM VI benchmark for evaluating visual-inertial odometry.
-  *IROS 2018*. Licence: set by the dataset's authors; read the terms on the dataset page before reuse. Not verified here.
+  *IROS 2018*. Licence: CC BY 4.0, as the dataset page states; the [TUM VI page](docs/tumvi.md) gives the attribution.
 - **UrbanNav** ([page](docs/urbannav.md)): Hsu, L.-T. et al. (2023). UrbanNav: an open-sourced multisensory dataset for urban
   positioning. *NAVIGATION*. Licence: MIT, as stated by the authors.
 
@@ -278,4 +279,6 @@ for example `euroc_*.csv`, `vo_*.csv`, `fault_classification*.csv`, `multipath_*
 `slow_ramp.csv`, `vision_ramp.csv` and `timing.csv`. They are results, not the dataset. The EuRoC rights statement is
 "In Copyright - Non-Commercial Use Permitted", so use those files for non-commercial purposes only, whatever the MIT
 licence says about the code. The terms are the dataset authors' to set. Read them on the dataset page before any other
-use.
+use. Some of those files also hold rows computed from TUM VI. Whether the per-run and per-frame rows may stay
+published is an open maintainer decision: [ADR-0042](docs/adr/0042-publishing-rows-derived-from-euroc.md),
+[issue #278](https://github.com/Telschow/contested-nav/issues/278). No answer from the rights holder is recorded.

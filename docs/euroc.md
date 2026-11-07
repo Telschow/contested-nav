@@ -6,7 +6,8 @@ decision behind it is [ADR-0013](adr/0013-recorded-imu-with-simulated-gnss.md); 
 are discussed in [ADR-0014](adr/0014-textbook-imu-process-noise-by-default.md).
 
 Citation: Burri, M. et al. (2016). The EuRoC micro aerial vehicle datasets. *The International Journal of Robotics
-Research*, 35(10), 1157-1163. Licence: set by the dataset's authors; read the terms on the dataset page before reuse. Not verified here.
+Research*, 35(10), 1157-1163. Rights statement: "In Copyright - Non-Commercial Use Permitted", set by the dataset's authors. Whether the committed
+result rows may stay published is open ([ADR-0042](adr/0042-publishing-rows-derived-from-euroc.md)).
 
 ## Read this before quoting anything
 
