@@ -78,6 +78,10 @@ def test_rows_are_named_apart_from_the_receivers_own_sequence():
 
 
 def test_the_docstring_states_its_scope():
+    """A wording tripwire: it proves the scope words are in the module docstring, not that the data has that scope.
+
+    The behaviour is checked by the known-answer tests above and the CSV checks below.
+    """
     doc = ui.__doc__ or ""
     assert "one sequence" in doc and "one receiver" in doc
     assert "not the receiver's own" in doc

@@ -83,3 +83,63 @@ def test_the_independent_seeding_leaves_the_default_seeds_alone():
     assert sse.stream_seeds(5, "shared") == (5, 5)
     with pytest.raises(ValueError):
         sse.stream_seeds(5, "other")
+
+
+# ------------------------------------------------------------------------------- the streams-only seeding (CN-AUD-01)
+
+
+class _Scenario:
+    def __init__(self, gnss: int, vision: int) -> None:
+        from types import SimpleNamespace
+
+        self.name = "case"
+        self.gnss = SimpleNamespace(seed=gnss)
+        self.vision = SimpleNamespace(seed=vision)
+
+
+def test_streams_only_uses_the_independent_seeds():
+    assert sse.stream_seeds(4, sse.STREAMS_ONLY) == sse.stream_seeds(4, "independent")
+
+
+def test_the_pin_gives_the_imu_channels_the_shared_draw_and_nothing_else_changes():
+    original = sse.inject._derive_seed
+    shared = _Scenario(4, 4)
+    independent = _Scenario(*sse.stream_seeds(4, "independent"))
+    assert original(independent, "imu") != original(shared, "imu")
+    with sse.imu_pinned_to_shared(4):
+        for channel in sse.IMU_CHANNELS:
+            assert sse.inject._derive_seed(independent, channel) == original(shared, channel)
+        # a channel outside the pin keeps its own hash
+        assert sse.inject._derive_seed(independent, "other") == original(independent, "other")
+    assert sse.inject._derive_seed is original
+
+
+def test_the_pin_is_undone_after_an_error():
+    original = sse.inject._derive_seed
+    with pytest.raises(RuntimeError), sse.imu_pinned_to_shared(1):
+        raise RuntimeError
+    assert sse.inject._derive_seed is original
+
+
+@pytest.mark.docs_only
+def test_the_original_columns_are_the_first_fourteen(rows):
+    assert sse.CSV_FIELDS[:14] == (
+        "case",
+        "seed",
+        *(f"{m}_{s}" for m in sse.METRICS for s in ("shared", "independent", "diff")),
+    )
+
+
+@pytest.mark.docs_only
+def test_each_streams_difference_is_streams_only_minus_shared(rows):
+    for r in rows:
+        for m in sse.METRICS:
+            assert r[f"{m}_diff_streams"] == pytest.approx(r[f"{m}_streams_only"] - r[f"{m}_shared"])
+
+
+@pytest.mark.docs_only
+def test_without_vision_the_streams_only_run_is_the_shared_run(rows):
+    """Known answer: ``outage_control`` has no vision, so pinning the IMU leaves nothing that differs."""
+    for r in (r for r in rows if r["case"] == "outage_control"):
+        for m in sse.METRICS:
+            assert r[f"{m}_diff_streams"] == pytest.approx(0.0, abs=1e-9 * max(1.0, abs(r[f"{m}_shared"])))

@@ -1,6 +1,6 @@
 # ADR-0025: A calibrated stage 1 for fault detection
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0021](0021-fault-classification-from-innovations.md), [ADR-0022](0022-multipath-signature.md), [fault classification](../fault_classification.md)
 
@@ -24,7 +24,7 @@ maximum raises 23 alarms and the fitted bound 10.
 
 ## Decision
 
-To be written by the maintainer.
+Adopt option 2 as the rule of the fault-classification study, decided by the maintainer on 2026-11-07: a fitted one-sided bound per feature, 0.5% each, fixed before the unseen controls were scored. Option 1 stays as the comparison row. Option 3 is the follow-up and is not started. No detector is added to the filter.
 
 ## Evidence
 
