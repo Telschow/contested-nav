@@ -20,8 +20,18 @@ events, under both seedings, and their difference (independent minus shared). Th
 
 A side effect of the method: :func:`navkit.degrade.inject._derive_seed` hashes both the GNSS and the vision seed, so
 changing the vision seed also changes the IMU noise draw of every case, ``outage_control`` included. The difference
-below is therefore the effect of the new vision seed on the vision noise and on the IMU noise together. It is not
-the effect of the vision rotation noise alone.
+``independent`` minus ``shared`` is therefore the effect of the new vision seed on the vision noise and on the IMU
+noise together. It is not the effect of the vision rotation noise alone.
+
+``streams_only`` separates the two (post-remediation audit, CN-AUD-01). It uses the seeds of ``independent`` and, for
+the duration of one run, pins the IMU noise draws to the ones ``shared`` has, by answering the two IMU channels of
+``_derive_seed`` with the hash of the shared seeds. Nothing in ``src/navkit/degrade`` changes, and the pin is
+undone after the run. Then:
+
+* ``streams_only`` minus ``shared`` is the effect of the GNSS/vision stream relationship alone, with the IMU fixed;
+* ``independent`` minus ``streams_only`` is the effect of redrawing the IMU alone.
+
+On ``outage_control``, which has no vision, ``streams_only`` equals ``shared`` exactly: a known answer the tests check.
 
 Seeds from 100 are refused through :func:`navkit.seed_policy.require_development`. The output is deterministic.
 """
@@ -29,12 +39,16 @@ Seeds from 100 are refused through :func:`navkit.seed_policy.require_development
 from __future__ import annotations
 
 import argparse
+import contextlib
 import copy
 import csv
+import importlib
 import io
 import math
 import statistics
+from collections.abc import Iterator
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -52,6 +66,11 @@ from .report.table import Column, Table
 CASES = ("outage_visual", "vision_only", "outage_visual_clone", "outage_control")
 SINGLE_ANCHOR = "outage_visual"
 SEEDINGS = ("shared", "independent")
+#: ``independent``'s seeds with the IMU noise pinned to the ``shared`` draw. The third column, not in ``SEEDINGS``.
+STREAMS_ONLY = "streams_only"
+#: ``navkit.degrade`` re-exports a function named ``inject``, so ``from .degrade import inject`` gives the function.
+inject: Any = importlib.import_module("navkit.degrade.inject")
+IMU_CHANNELS = ("imu", "imu_bias0")
 DEFAULT_SEEDS = range(0, 10)
 #: The second entry of the ``SeedSequence`` that gives the vision stream its own seed. After 1013 and 1014 in models.py.
 VISION_STREAM = 1015
@@ -62,7 +81,13 @@ LABELS = {
     "coverage_2sigma": "2-sigma coverage",
     "fdir_events": "FDIR events",
 }
-CSV_FIELDS = ("case", "seed", *(f"{m}_{s}" for m in METRICS for s in ("shared", "independent", "diff")))
+#: The first fourteen columns are the ones of the original study, unchanged. The ``streams_only`` ones follow.
+CSV_FIELDS = (
+    "case",
+    "seed",
+    *(f"{m}_{s}" for m in METRICS for s in ("shared", "independent", "diff")),
+    *(f"{m}_{s}" for m in METRICS for s in (STREAMS_ONLY, "diff_streams")),
+)
 TABLE = Table(
     (Column("case"), Column("seed", int), *(Column(f, float) for f in CSV_FIELDS[2:])),
     key="case",
@@ -75,10 +100,10 @@ def stream_seeds(seed: int, seeding: str) -> tuple[int, int]:
     """The (GNSS, vision) seeds for a case seed. ``shared`` is what the benchmark does."""
     if seeding == "shared":
         return seed, seed
-    if seeding == "independent":
+    if seeding in ("independent", STREAMS_ONLY):
         vision = int(np.random.SeedSequence([seed, VISION_STREAM]).generate_state(1)[0])
         return seed, vision
-    raise ValueError(f"seeding must be one of {', '.join(SEEDINGS)}, got {seeding!r}")
+    raise ValueError(f"seeding must be one of {', '.join((*SEEDINGS, STREAMS_ONLY))}, got {seeding!r}")
 
 
 def _metrics(rec: dict[str, Any]) -> dict[str, float]:
@@ -91,7 +116,29 @@ def _metrics(rec: dict[str, Any]) -> dict[str, float]:
     }
 
 
+@contextlib.contextmanager
+def imu_pinned_to_shared(seed: int) -> Iterator[None]:
+    """Answer the IMU channels of ``_derive_seed`` as if the GNSS and vision seeds were both ``seed``, then undo it."""
+    original = inject._derive_seed
+
+    def pinned(scenario: Any, channel: str) -> int:
+        if channel in IMU_CHANNELS:
+            scenario = SimpleNamespace(
+                name=scenario.name, gnss=SimpleNamespace(seed=seed), vision=SimpleNamespace(seed=seed)
+            )
+        return original(scenario, channel)
+
+    inject._derive_seed = pinned
+    try:
+        yield
+    finally:
+        inject._derive_seed = original
+
+
 def _run_one(name: str, case: dict[str, Any], defaults: dict[str, Any], seed: int, seeding: str) -> dict[str, float]:
+    if seeding == STREAMS_ONLY:
+        with imu_pinned_to_shared(seed):
+            return _run_one(name, case, defaults, seed, "independent")
     if seeding == "shared":
         return _metrics(run_case(name, copy.deepcopy(case), defaults, seed=seed))
     gnss, vision = stream_seeds(seed, seeding)
@@ -113,12 +160,14 @@ def run_study(doc: dict[str, Any], seeds: list[int] | None = None) -> list[dict[
     rows: list[dict[str, Any]] = []
     for name in CASES:
         for seed in use:
-            by = {s: _run_one(name, cases[name], defaults, seed, s) for s in SEEDINGS}
+            by = {s: _run_one(name, cases[name], defaults, seed, s) for s in (*SEEDINGS, STREAMS_ONLY)}
             row: dict[str, Any] = {"case": name, "seed": seed}
             for m in METRICS:
                 row[f"{m}_shared"] = by["shared"][m]
                 row[f"{m}_independent"] = by["independent"][m]
                 row[f"{m}_diff"] = by["independent"][m] - by["shared"][m]
+                row[f"{m}_{STREAMS_ONLY}"] = by[STREAMS_ONLY][m]
+                row[f"{m}_diff_streams"] = by[STREAMS_ONLY][m] - by["shared"][m]
             rows.append(row)
     return rows
 
@@ -157,13 +206,13 @@ def median_of(rows: list[dict[str, Any]], case: str, field: str) -> float:
     return statistics.median(r[field] for r in rows if r["case"] == case)
 
 
-def largest_change(rows: list[dict[str, Any]]) -> tuple[str, str, float]:
-    """The (case, metric, relative change of the median) with the largest absolute relative change of the median."""
+def largest_change(rows: list[dict[str, Any]], seeding: str = "independent") -> tuple[str, str, float]:
+    """The (case, metric, relative change of the median against ``shared``) with the largest absolute change."""
     best = ("", "", 0.0)
     for case in CASES:
         for m in ("ate_rmse_m", "nees_mean"):
             base = median_of(rows, case, f"{m}_shared")
-            rel = (median_of(rows, case, f"{m}_independent") - base) / base
+            rel = (median_of(rows, case, f"{m}_{seeding}") - base) / base
             if abs(rel) > abs(best[2]):
                 best = (case, m, rel)
     return best
@@ -177,31 +226,41 @@ def _fmt(m: str, v: float) -> str:
     return f"{v:.1f}"
 
 
+def _change_sentence(rows: list[dict[str, Any]], seeding: str, what: str) -> str:
+    case, metric, rel = largest_change(rows, seeding)
+    return (
+        f"With {what}, the largest change of a median against the shared stream is in `{case}`, {LABELS[metric]}: "
+        f"{abs(rel) * 100:.1f} percent {'lower' if rel < 0 else 'higher'}."
+    )
+
+
 def markdown_section(rows: list[dict[str, Any]]) -> str:
-    """The generated section of ``docs/calibration.md``: a table and one sentence, both from the rows."""
+    """The generated section of ``docs/calibration.md``: a table and two sentences, all from the rows."""
     n = len({r["seed"] for r in rows})
-    case, metric, rel = largest_change(rows)
+    columns = (*SEEDINGS, STREAMS_ONLY)
     lines = [
         f"**What the shared noise stream changes ({LABEL}; MEASUREMENT).** At equal seeds the GNSS noise and the "
         "visual rotation noise are one normal sequence. Each case below was run over "
-        f"{n} seeds twice: with that shared stream, and with the vision seed derived from the case seed and a stream "
-        "id. The table gives the median over the seeds under both seedings. This measures the difference and decides "
-        "nothing.",
+        f"{n} seeds three times: with that shared stream; with the vision seed derived from the case seed and a "
+        "stream id (independent), which also redraws the IMU noise, because the IMU seed is hashed from both seeds; "
+        "and with the same independent seeds but the IMU noise pinned to its shared draw (streams only). The table "
+        "gives the median over the seeds. This measures the difference and decides nothing.",
         "",
-        "| Case | Metric | Shared | Independent |",
-        "|---|---|---:|---:|",
+        "| Case | Metric | Shared | Independent | Streams only (IMU fixed) |",
+        "|---|---|---:|---:|---:|",
     ]
     for c in CASES:
         for m in METRICS:
-            a, b = (median_of(rows, c, f"{m}_{s}") for s in SEEDINGS)
-            lines.append(f"| `{c}` | {LABELS[m]} | {_fmt(m, a)} | {_fmt(m, b)} |")
+            a, b, d = (median_of(rows, c, f"{m}_{s}") for s in columns)
+            lines.append(f"| `{c}` | {LABELS[m]} | {_fmt(m, a)} | {_fmt(m, b)} | {_fmt(m, d)} |")
     lines += [
         "",
-        f"The largest change of a median is in `{case}`, {LABELS[metric]}: {abs(rel) * 100:.1f} percent "
-        f"{'lower' if rel < 0 else 'higher'} with independent streams. "
-        "The single-anchor control `outage_visual` is in the table. Changing the vision seed also changes the IMU "
-        "noise draw of every case, because the IMU seed is hashed from both seeds, so `outage_control`, which has no "
-        "vision, moves too. The difference is the effect of both changes together.",
+        _change_sentence(rows, STREAMS_ONLY, "only the stream relationship changed (IMU fixed)")
+        + " "
+        + _change_sentence(rows, "independent", "the streams and the IMU draw both changed"),
+        "The no-vision control `outage_control` has no vision stream, so its streams-only column equals the shared "
+        "one. The single-anchor control `outage_visual` is in the table. The medians are over "
+        f"{n} development seeds of {len(CASES)} cases, not a test of significance.",
         "",
         "The rows are in `docs/data/shared_stream_effect.csv`, written by `navkit sweep shared-stream`, and the "
         "page section is checked against them by `tests/test_shared_stream_effect.py`.",

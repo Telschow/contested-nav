@@ -1,6 +1,6 @@
 # ADR-0041: A correlated-error term for the GNSS update
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0034](0034-a-gauss-markov-model-of-the-correlated-visual-error.md), [ADR-0026](0026-urbannav-as-a-real-gnss-dataset.md), [issue #183](https://github.com/Telschow/contested-nav/issues/183), [issue #184](https://github.com/Telschow/contested-nav/issues/184), [issue #244](https://github.com/Telschow/contested-nav/issues/244)
 
@@ -28,13 +28,11 @@ No run on the real data is made here. That belongs to issue #184.
 
 ## Decision
 
-To be written by the maintainer.
+Adopt option (b), decided by the maintainer on 2026-11-07. Gauss-Markov error states for the GNSS update, off by default, with a declared correlation time and a declared amplitude added on top of the receiver's own variance. This is what shipped in [issue #244](https://github.com/Telschow/contested-nav/issues/244) and was run on Deep-Urban-1 in the rows of `docs/data/urbannav_gnss_gm.csv`. Options (a), (c), (d) and (e) are not adopted.
 
 ## Consequences
 
-To be confirmed with the decision.
-
-- The term stays optional and off by default whatever is decided.
-- If (b) or (c) is kept, the values of `gnss_gm_tau_s` and `gnss_gm_sigma_m` need a source other than the run they are scored on.
-- The run rows and the page statements belong to issue #184 and need their own CSV and tests.
+- The term stays optional and off by default. With it off, every output and the config hash are byte-identical to before.
+- `gnss_gm_tau_s` and `gnss_gm_sigma_m` are the values of the synthetic study of issue #183, declared before that study. They are not derived from the run they are scored on, which is the limit of the real-data rows: one sequence, one receiver, the reference's own error unknown.
+- Option (c), splitting the declared variance into a correlated and a white share, remains available if the added amplitude proves to matter.
 - No runtime dependency changes.

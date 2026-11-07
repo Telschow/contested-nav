@@ -47,7 +47,7 @@ is 95% (AC-04).
 Constraint S1 keeps the runtime to Python, NumPy, Matplotlib and PyYAML so that every number can
 be traced to code in the repository, including the chi-square quantiles. Coverage is measured by
 the project's own script for the same reason. Test-only tools (pytest, Hypothesis, ruff, mypy)
-are allowed in the dev extra. See [Design constraints](design-constraints.md).
+are allowed in the dev extra. See [Design constraints](https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md).
 
 ## Why do I get slightly different digits on my machine?
 
@@ -86,7 +86,7 @@ navkit euroc compare --dataset tumvi --markdown
 
 Results from this path are on [the EuRoC page](euroc.md) and [the TUM VI page](tumvi.md), each with the
 caveats beside the table and the runs that still fail listed. A test compares the ground-truth attitude rate with the recorded gyroscope
-on every fetched sequence. See [Path to real systems](REAL_SYSTEMS.md).
+on every fetched sequence. See [Path to real systems](defense/LIMITATIONS.md#6-path-to-real-systems).
 
 ## Does the repository implement the known fixes for the overconfidence?
 
