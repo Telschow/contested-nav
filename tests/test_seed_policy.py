@@ -136,12 +136,13 @@ def test_held_out_constants_are_defined_once() -> None:
 
 # --- the inventory: a new seed flag cannot ship without a refusal case -------------------------
 
-#: Modules with a seed argument that are not development-only: the two gate procedures may use held-out seeds.
-GATE_MODULES = {"b1_gate.py", "candidate_gate.py"}
+#: Modules with a seed argument that are not development-only: the candidate gate may use held-out blocks.
+GATE_MODULES = {"candidate_gate.py"}
 #: Every other module with a ``--...seed...`` argument, and where its refusal is tested.
 #: ``sweep`` modules are in ``SEED_SWEEPS`` or the generic list above, ``run`` and ``euroc`` have their own tests.
 GUARDED_MODULES = {
     "attribution.py",
+    "b1_gate.py",  # tests/test_b1_gate.py: development seeds only, --held-out refused (ADR-0028 set spent)
     "runner.py",  # the shared study runner, for any study that declares Flags(seeds=True)
     "benchmark.py",
     "correlated_gnss_study.py",

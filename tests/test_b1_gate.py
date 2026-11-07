@@ -278,38 +278,35 @@ def test_the_command_accepts_other_seeds_without_the_flag(text):
     assert args.held_out is False and len(args.seeds) >= 1
 
 
-def test_the_flag_allows_the_held_out_seeds_and_says_it_is_single_use(capsys):
-    args = b1_gate.build_parser().parse_args(["--seeds", "100-124", "--csv", "x.csv", "--held-out"])
-    assert list(args.seeds) == list(range(100, 125))
-    assert "single use" in capsys.readouterr().err
-
-
-@pytest.mark.parametrize("text", ["125-149", "0-24", "101-125", "100-123"])
-def test_the_flag_allows_only_the_b1_held_out_set(text, capsys):
-    """Later blocks belong to the candidate gate (ADR-0030); the flag is not a way around it."""
+@pytest.mark.parametrize("text", ["100-124", "0-24", "125-149"])
+def test_the_held_out_flag_is_refused_outright(text, capsys):
+    """The set of ADR-0028 was evaluated once and is spent (ADR-0036). A new candidate goes to the candidate gate."""
     with pytest.raises(SystemExit) as stop:
         b1_gate.build_parser().parse_args(["--seeds", text, "--csv", "x.csv", "--held-out"])
     assert stop.value.code == 2
-    assert "100 to 124" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "spent" in err and "navkit gate candidate" in err
 
 
-def test_the_run_function_refuses_later_blocks_with_or_without_the_flag(monkeypatch):
-    def never(*a, **k):  # if the guard is missing, stop here: no held-out seed is ever run
+@pytest.fixture
+def no_run(monkeypatch):
+    def never(*a, **k):  # if a guard is missing, stop here: no held-out seed is ever run
         raise AssertionError("the gate reached a run")
 
     monkeypatch.setattr(b1_gate, "_document", never)
     monkeypatch.setattr(b1_gate, "run_arrays", never)
-    with pytest.raises(ValueError, match="held-out"):
-        b1_gate.run_gate(list(range(125, 150)))
-    with pytest.raises(ValueError, match="100 to 124"):
-        b1_gate.run_gate(list(range(125, 150)), held_out=True)
 
 
-def test_the_run_function_refuses_the_held_out_seeds_itself():
+@pytest.mark.parametrize("seeds", [list(range(100, 125)), list(range(125, 150)), [3, 110]])
+def test_the_run_function_refuses_every_held_out_seed(seeds, no_run):
     with pytest.raises(ValueError, match="held-out"):
-        b1_gate.run_gate(list(range(100, 125)))
-    with pytest.raises(ValueError, match="held-out"):
-        b1_gate.run_gate([3, 110])
+        b1_gate.run_gate(seeds)
+
+
+def test_the_run_function_has_no_held_out_mode():
+    import inspect
+
+    assert "held_out" not in inspect.signature(b1_gate.run_gate).parameters
 
 
 def test_the_command_fixes_the_gate_at_twenty_five_seeds(capsys):

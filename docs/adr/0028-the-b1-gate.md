@@ -62,3 +62,5 @@ Passing the gate does not by itself change `vision_enabled`; that stays a separa
 Note (2026-10-22): for new candidates the gate statistic and scenarios are those of [ADR-0030](0030-the-gate-for-the-next-visual-update-candidate.md); the result recorded here stands.
 
 Note (2026-10-23): the synthetic visual translation noise this ADR was measured on is corrected by [ADR-0033](0033-one-convention-for-the-synthetic-visual-translation-noise.md); see there for what is regenerated.
+
+Note (2026-11-07): the held-out set is spent. `navkit gate b1` takes development seeds only and refuses `--held-out` outright (maintainer decision). The recorded result is rendered from `docs/data/b1_gate_heldout.csv` and is not re-run.

@@ -136,7 +136,7 @@ def _gate(argv: list[str] | None) -> int:
     if not args or args[0] in ("-h", "--help") or args[0] not in routes:
         usage = "usage: navkit gate {b1,candidate,n-eff-pool,tune-scale,tune-gm,usefulness-s2} [options]"
         notes = (
-            "  b1          the B1 gate of ADR-0028 on the candidate over 25 seeds (seeds 100 to 124 need --held-out)",
+            "  b1          the B1 gate of ADR-0028 over 25 development seeds (its held-out set is spent)",
             "  candidate   the gate of ADR-0030 in two scenarios (seeds from 125 are held-out blocks, one at a time)",
             "  n-eff-pool  the effective sample sizes that the simulated properties of ADR-0030 draw from",
             "  tune-scale  the pre-registered tuning run of the adaptive visual scale (ADR-0031), seeds 0 to 99 only",
