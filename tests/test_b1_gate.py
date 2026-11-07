@@ -262,7 +262,9 @@ def test_bad_input_is_refused():
 # ------------------------------------------------------------------------------ the held-out seeds guard
 
 
-@pytest.mark.parametrize("text", ["100-124", "0-124", "124-124", "100,101", "99-100", "24-100"])
+@pytest.mark.parametrize(
+    "text", ["100-124", "0-124", "124-124", "100,101", "99-100", "24-100", "125-149", "99-125", "150-174"]
+)
 def test_the_command_refuses_the_held_out_seeds_without_the_flag(text, capsys):
     with pytest.raises(SystemExit) as stop:
         b1_gate.build_parser().parse_args(["--seeds", text, "--csv", "x.csv"])
@@ -270,7 +272,7 @@ def test_the_command_refuses_the_held_out_seeds_without_the_flag(text, capsys):
     assert "held-out" in capsys.readouterr().err
 
 
-@pytest.mark.parametrize("text", ["0-24", "0-99", "125-149", "24-24", "5,6,7"])
+@pytest.mark.parametrize("text", ["0-24", "0-99", "24-24", "5,6,7"])
 def test_the_command_accepts_other_seeds_without_the_flag(text):
     args = b1_gate.build_parser().parse_args(["--seeds", text, "--csv", "x.csv"])
     assert args.held_out is False and len(args.seeds) >= 1
@@ -280,6 +282,27 @@ def test_the_flag_allows_the_held_out_seeds_and_says_it_is_single_use(capsys):
     args = b1_gate.build_parser().parse_args(["--seeds", "100-124", "--csv", "x.csv", "--held-out"])
     assert list(args.seeds) == list(range(100, 125))
     assert "single use" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("text", ["125-149", "0-24", "101-125", "100-123"])
+def test_the_flag_allows_only_the_b1_held_out_set(text, capsys):
+    """Later blocks belong to the candidate gate (ADR-0030); the flag is not a way around it."""
+    with pytest.raises(SystemExit) as stop:
+        b1_gate.build_parser().parse_args(["--seeds", text, "--csv", "x.csv", "--held-out"])
+    assert stop.value.code == 2
+    assert "100 to 124" in capsys.readouterr().err
+
+
+def test_the_run_function_refuses_later_blocks_with_or_without_the_flag(monkeypatch):
+    def never(*a, **k):  # if the guard is missing, stop here: no held-out seed is ever run
+        raise AssertionError("the gate reached a run")
+
+    monkeypatch.setattr(b1_gate, "_document", never)
+    monkeypatch.setattr(b1_gate, "run_arrays", never)
+    with pytest.raises(ValueError, match="held-out"):
+        b1_gate.run_gate(list(range(125, 150)))
+    with pytest.raises(ValueError, match="100 to 124"):
+        b1_gate.run_gate(list(range(125, 150)), held_out=True)
 
 
 def test_the_run_function_refuses_the_held_out_seeds_itself():

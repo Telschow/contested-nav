@@ -5,7 +5,7 @@ ADIS16448). The decision behind it is [ADR-0016](adr/0016-tum-vi-as-a-second-rec
 the one of [ADR-0013](adr/0013-recorded-imu-with-simulated-gnss.md).
 
 Citation: Schubert, D. et al. (2018). The TUM VI benchmark for evaluating visual-inertial odometry. *IROS 2018*.
-Licence: set by the dataset's authors; read the terms on the dataset page before reuse. Not verified here.
+Licence: CC BY 4.0, as the dataset page states. The attribution is under "Read this before quoting anything" below.
 
 ## Read this before quoting anything
 
