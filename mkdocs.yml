@@ -93,7 +93,7 @@ nav:
       - Why it is not a tuning problem: concepts.md
       - Calibration, read correctly: calibration.md
       - Architecture: architecture.md
-      - Design constraints: design-constraints.md
+      - Design constraints: https://github.com/Telschow/contested-nav/blob/main/CONSTRAINTS.md
   - Evidence:
       - Results: results.md
       - Scenarios: scenarios.md
