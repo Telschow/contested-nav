@@ -1,6 +1,6 @@
 # ADR-0026: UrbanNav as a dataset with real GNSS outages
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-10
 - Related: [ADR-0013](0013-recorded-imu-with-simulated-gnss.md), [ADR-0016](0016-tum-vi-as-a-second-recorded-dataset.md), [UrbanNav](../urbannav.md)
 
@@ -45,7 +45,9 @@ any code here and are not a result of this repository. They are in the pull requ
 
 ## Decision
 
-To be written by the maintainer.
+Adopt options 2 and 4, decided by the maintainer on 2026-11-07. Tunnel-1 is run with the F9P's own NMEA fixes, and Deep-Urban-1 is run as well, with the outage rule fixed before any filter ran and not tuned on Deep-Urban-1. Option 3 (a position solver on the RINEX observations) is not adopted: it would make this project maintain a solver outside the filter's scope. Option 1 is not adopted.
+
+The consequences that followed are on [the UrbanNav page](../urbannav.md), each stated for one sequence and one receiver with the reference's own error unknown: the filter is inconsistent with GNSS available, the outage error is tilt-driven, and a long imposed outage latches the GNSS fault ([issue #298](https://github.com/Telschow/contested-nav/issues/298)).
 
 ## Evidence
 

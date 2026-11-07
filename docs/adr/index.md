@@ -29,8 +29,8 @@ what it cost, and what was rejected.
 | [ADR-0022](0022-multipath-signature.md) | A multipath signature on the GNSS innovations | accepted |
 | [ADR-0023](0023-clone-against-a-measured-front-end.md) | The clone against a measured front end | accepted |
 | [ADR-0024](0024-assumed-noise-for-the-opt-in-clone.md) | The assumed visual noise of the opt-in clone | accepted |
-| [ADR-0025](0025-calibrated-stage-one-for-fault-detection.md) | A calibrated stage 1 for fault detection | proposed |
-| [ADR-0026](0026-urbannav-as-a-real-gnss-dataset.md) | UrbanNav as a dataset with real GNSS outages | proposed |
+| [ADR-0025](0025-calibrated-stage-one-for-fault-detection.md) | A calibrated stage 1 for fault detection | accepted |
+| [ADR-0026](0026-urbannav-as-a-real-gnss-dataset.md) | UrbanNav as a dataset with real GNSS outages | accepted |
 | [ADR-0027](0027-how-the-synthetic-runs-are-initialised.md) | How the synthetic runs are initialised | accepted |
 | [ADR-0028](0028-the-b1-gate.md) | The B1 gate: when visual fusion may ship | accepted |
 | [ADR-0029](0029-how-a-single-runs-verdict-is-formed.md) | How a single run's verdict is formed | accepted |
@@ -44,8 +44,8 @@ what it cost, and what was rejected.
 | [ADR-0037](0037-covariance-intersection-as-a-visual-update-baseline.md) | Covariance intersection as a visual-update baseline | proposed |
 | [ADR-0038](0038-one-report-package-for-generated-pages-and-results-tables.md) | One report package for generated pages and results tables | accepted |
 | [ADR-0039](0039-pytest-xdist-in-the-dev-extra.md) | pytest-xdist in the dev extra | accepted |
-| [ADR-0040](0040-staleness-of-the-nis-windows.md) | Staleness of the NIS windows | proposed |
-| [ADR-0041](0041-a-correlated-error-term-for-the-gnss-update.md) | A correlated-error term for the GNSS update | proposed |
+| [ADR-0040](0040-staleness-of-the-nis-windows.md) | Staleness of the NIS windows | accepted |
+| [ADR-0041](0041-a-correlated-error-term-for-the-gnss-update.md) | A correlated-error term for the GNSS update | accepted |
 | [ADR-0042](0042-publishing-rows-derived-from-euroc.md) | Publishing rows derived from EuRoC | accepted |
 | [ADR-0043](0043-camera-imu-extrinsic-and-time-offset-sensitivity.md) | Camera-IMU extrinsic and time-offset sensitivity | accepted |
 | [ADR-0044](0044-a-protection-level-from-the-calibrated-covariance.md) | A protection level from the calibrated covariance | accepted |
