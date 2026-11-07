@@ -303,9 +303,10 @@ def test_the_run_function_refuses_every_held_out_seed(seeds, no_run):
         b1_gate.run_gate(seeds)
 
 
-def test_the_run_function_has_no_held_out_mode(no_run):
-    with pytest.raises(TypeError):
-        b1_gate.run_gate(list(range(100, 125)), held_out=True)  # type: ignore[call-arg]
+def test_the_run_function_has_no_held_out_mode():
+    import inspect
+
+    assert "held_out" not in inspect.signature(b1_gate.run_gate).parameters
 
 
 def test_the_command_fixes_the_gate_at_twenty_five_seeds(capsys):
