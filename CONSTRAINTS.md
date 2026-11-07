@@ -4,7 +4,7 @@ Invariants this project holds itself to. Every entry is either currently true
 or is a stated blocker; nothing here is aspirational. Ratchets are measured,
 not estimated, and the command to re-measure each one is given.
 
-Last measured: more than <!-- metric:tests_collected_floor -->2700<!-- /metric --> tests collected, all of which pass except the deliberate
+Last measured: more than <!-- metric:tests_collected_floor -->2800<!-- /metric --> tests collected, all of which pass except the deliberate
 xfails and the skips that `pytest -rs` lists, and <!-- metric:coverage_percent -->94.9<!-- /metric -->%
 line coverage (<!-- metric:coverage_lines_hit -->15550<!-- /metric -->/<!-- metric:coverage_lines_total -->16379<!-- /metric --> executable lines) on **CPython <!-- metric:coverage_python -->3.12<!-- /metric -->**, measured
 with `python scripts/coverage_report.py`. The figures come from `docs/data/metrics.json`, which `scripts/metrics.py` checks in CI. Coverage is quoted from that script alone:
@@ -92,7 +92,7 @@ the floors themselves are enforced by `scripts/coverage_report.py --ratchet`.
 
 | Ratchet | Floor | Current (CPython <!-- metric:coverage_python -->3.12<!-- /metric -->) | Re-measure with |
 |---|---:|---:|---|
-| Tests collected | 405 | more than <!-- metric:tests_collected_floor -->2700<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
+| Tests collected | 405 | more than <!-- metric:tests_collected_floor -->2800<!-- /metric --> | `pytest`, `scripts/metrics.py --check` |
 | Tests passing | 300 | all collected, except the deliberate xfails and the listed skips | `pytest -rs` |
 | Line coverage | 75% | <!-- metric:coverage_percent -->94.9<!-- /metric -->% | `scripts/coverage_report.py`, `scripts/metrics.py --check-coverage` |
 | `io/trajectory.py` coverage | 85% | 95.0% | as above |

@@ -646,28 +646,29 @@ In scenario S2, for the plain clone (no model): the NEES conditions do not all h
 
 <!-- shared-stream:start -->
 
-**What the shared noise stream changes (development seeds, synthetic; MEASUREMENT).** At equal seeds the GNSS noise and the visual rotation noise are one normal sequence. Each case below was run over 10 seeds twice: with that shared stream, and with the vision seed derived from the case seed and a stream id. The table gives the median over the seeds under both seedings. This measures the difference and decides nothing.
+**What the shared noise stream changes (development seeds, synthetic; MEASUREMENT).** At equal seeds the GNSS noise and the visual rotation noise are one normal sequence. Each case below was run over 10 seeds three times: with that shared stream; with the vision seed derived from the case seed and a stream id (independent), which also redraws the IMU noise, because the IMU seed is hashed from both seeds; and with the same independent seeds but the IMU noise pinned to its shared draw (streams only). The table gives the median over the seeds. This measures the difference and decides nothing.
 
-| Case | Metric | Shared | Independent |
-|---|---|---:|---:|
-| `outage_visual` | ATE RMSE | 25.44 m | 25.53 m |
-| `outage_visual` | mean NEES | 29904.1 | 30347.4 |
-| `outage_visual` | 2-sigma coverage | 0.071 | 0.076 |
-| `outage_visual` | FDIR events | 49.0 | 49.0 |
-| `vision_only` | ATE RMSE | 54.23 m | 52.38 m |
-| `vision_only` | mean NEES | 133504.2 | 124823.9 |
-| `vision_only` | 2-sigma coverage | 0.012 | 0.012 |
-| `vision_only` | FDIR events | 0.0 | 0.0 |
-| `outage_visual_clone` | ATE RMSE | 0.86 m | 0.80 m |
-| `outage_visual_clone` | mean NEES | 3.3 | 2.5 |
-| `outage_visual_clone` | 2-sigma coverage | 1.000 | 0.999 |
-| `outage_visual_clone` | FDIR events | 0.0 | 0.0 |
-| `outage_control` | ATE RMSE | 9.74 m | 9.83 m |
-| `outage_control` | mean NEES | 2.9 | 3.0 |
-| `outage_control` | 2-sigma coverage | 1.000 | 1.000 |
-| `outage_control` | FDIR events | 0.0 | 0.0 |
+| Case | Metric | Shared | Independent | Streams only (IMU fixed) |
+|---|---|---:|---:|---:|
+| `outage_visual` | ATE RMSE | 25.44 m | 25.53 m | 25.68 m |
+| `outage_visual` | mean NEES | 29904.1 | 30347.4 | 30724.9 |
+| `outage_visual` | 2-sigma coverage | 0.071 | 0.076 | 0.077 |
+| `outage_visual` | FDIR events | 49.0 | 49.0 | 49.0 |
+| `vision_only` | ATE RMSE | 54.23 m | 52.38 m | 51.35 m |
+| `vision_only` | mean NEES | 133504.2 | 124823.9 | 119591.4 |
+| `vision_only` | 2-sigma coverage | 0.012 | 0.012 | 0.012 |
+| `vision_only` | FDIR events | 0.0 | 0.0 | 0.0 |
+| `outage_visual_clone` | ATE RMSE | 0.86 m | 0.80 m | 0.81 m |
+| `outage_visual_clone` | mean NEES | 3.3 | 2.5 | 2.5 |
+| `outage_visual_clone` | 2-sigma coverage | 1.000 | 0.999 | 1.000 |
+| `outage_visual_clone` | FDIR events | 0.0 | 0.0 | 0.0 |
+| `outage_control` | ATE RMSE | 9.74 m | 9.83 m | 9.74 m |
+| `outage_control` | mean NEES | 2.9 | 3.0 | 2.9 |
+| `outage_control` | 2-sigma coverage | 1.000 | 1.000 | 1.000 |
+| `outage_control` | FDIR events | 0.0 | 0.0 | 0.0 |
 
-The largest change of a median is in `outage_visual_clone`, mean NEES: 21.8 percent lower with independent streams. The single-anchor control `outage_visual` is in the table. Changing the vision seed also changes the IMU noise draw of every case, because the IMU seed is hashed from both seeds, so `outage_control`, which has no vision, moves too. The difference is the effect of both changes together.
+With only the stream relationship changed (IMU fixed), the largest change of a median against the shared stream is in `outage_visual_clone`, mean NEES: 23.0 percent lower. With the streams and the IMU draw both changed, the largest change of a median against the shared stream is in `outage_visual_clone`, mean NEES: 21.8 percent lower.
+The no-vision control `outage_control` has no vision stream, so its streams-only column equals the shared one. The single-anchor control `outage_visual` is in the table. The medians are over 10 development seeds of 4 cases, not a test of significance.
 
 The rows are in `docs/data/shared_stream_effect.csv`, written by `navkit sweep shared-stream`, and the page section is checked against them by `tests/test_shared_stream_effect.py`.
 
