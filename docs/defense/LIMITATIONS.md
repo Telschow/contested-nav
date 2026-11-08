@@ -19,10 +19,15 @@ The benchmark is a synthetic fixture: an analytic trajectory with the filter
 initialised at the truth plus an error drawn from its own declared prior
 ([ADR-0027](../adr/0027-how-the-synthetic-runs-are-initialised.md)). Two public recorded datasets (EuRoC and TUM VI)
 can be fetched and evaluated, with GNSS simulated from their ground truth, and one
-study uses real camera frames. None of that data is vendored.
+study uses real camera frames. A third (UrbanNav) has a real GNSS receiver: one u-blox
+F9P on two recordings, scored against a post-processed reference whose error is unknown
+([UrbanNav](../urbannav.md)). None of that data is vendored.
 
-**Consequence:** no number here is a field measurement. GNSS is never real, so
-receiver latency, multipath, lever arm and real interference are not characterised.
+**Consequence:** no number here is a field measurement. GNSS is real only on the two
+UrbanNav recordings, from one receiver, and simulated everywhere else. That is recorded
+data, not field validation: one receiver, one reference of unknown error, and outages that
+are either the receiver's own or imposed on its recorded fixes. Receiver latency,
+multipath, lever arm and real interference are not characterised.
 Bias stability, temperature behaviour and vibration response are only as good as
 the public recordings.
 
